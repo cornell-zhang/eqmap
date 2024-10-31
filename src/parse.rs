@@ -8,9 +8,20 @@ use std::collections::HashMap;
 
 use sv_parser::{unwrap_node, Identifier, Locate, NodeEvent, RefNode};
 
-/// This prints out the source name for modules, nets, and ports
+/// A wrapper for parsing verilog at file `path` with content `s`
+pub fn sv_parse_wrapper(
+    s: &str,
+    path: &std::path::Path,
+) -> Result<sv_parser::SyntaxTree, sv_parser::Error> {
+    let incl: Vec<std::path::PathBuf> = vec![];
+    match sv_parser::parse_sv_str(s, path, &HashMap::new(), &incl, true, false) {
+        Ok((ast, _defs)) => Ok(ast),
+        Err(e) => Err(e),
+    }
+}
+
+/// For a `node` in the ast, this returns the source name for modules, nets, and ports (if one exists)
 pub fn get_identifier(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<String, String> {
-    // unwrap_node! can take multiple types
     let id: Option<Locate> = match unwrap_node!(
         node,
         SimpleIdentifier,
@@ -46,7 +57,7 @@ pub fn get_identifier(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<Stri
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Represent a signal declaration in the verilog
+/// Represents a signal declaration in the verilog
 pub struct SVSignal {
     /// The bitwidth of the signal
     bw: usize,
@@ -55,23 +66,32 @@ pub struct SVSignal {
 }
 
 impl SVSignal {
+    /// Create a new signal with a bitwidth `bw` and name
     pub fn new(bw: usize, name: String) -> Self {
         SVSignal { bw, name }
     }
 }
 
-/// For the `inputs` and `outputs` of a primitive, the key is driven by the value.
-/// E.g. (I0, a) in inputs and (y, O) in outputs
+/// The [SVPrimitive] struct represents a primitive instance in the inputted structural verilog.
+/// For now, it show always be a LUT.
+/// For the `inputs` and `outputs` pairs of a primitive, the key is driven by the value.
+/// E.g. (I0, a) in inputs and (y, O) in outputs. Input I0 is driven by signal a, signal y is driven by output O.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SVPrimitive {
+    /// The name of the primitive
     prim: String,
+    /// The name of the instance
     name: String,
+    /// Maps input ports to their signal driver
     inputs: HashMap<String, String>,
+    /// Maps output signals to their port driver
     outputs: HashMap<String, String>,
+    /// Stores arguments to module parameters as well as any other attribute
     attributes: HashMap<String, String>,
 }
 
 impl SVPrimitive {
+    /// Create a new empty primitive with module name `prim` and instance name `name`
     pub fn new(prim: String, name: String) -> Self {
         SVPrimitive {
             prim,
@@ -82,6 +102,7 @@ impl SVPrimitive {
         }
     }
 
+    /// Create a new LUT primitive with size `k`, instance name `name`, and program `program`
     pub fn new_lut(k: usize, name: String, program: u64) -> Self {
         let mut attributes = HashMap::new();
         attributes.insert("program".to_string(), format!("{}", program));
@@ -95,18 +116,24 @@ impl SVPrimitive {
         }
     }
 
-    /// The port is driven by the signal
-    fn add_input(&mut self, port: String, signal: String) {
-        self.inputs.insert(port, signal);
+    /// Add an input connection
+    fn add_input(&mut self, port: String, signal: String) -> Result<(), String> {
+        match self.inputs.insert(port, signal) {
+            Some(_) => Err("Port is already driven".to_string()),
+            None => Ok(()),
+        }
     }
 
-    /// The signal is driven by the port
-    fn add_output(&mut self, port: String, signal: String) {
-        self.outputs.insert(signal, port);
+    /// Add an output connection
+    fn add_output(&mut self, port: String, signal: String) -> Result<(), String> {
+        match self.outputs.insert(signal, port) {
+            Some(_) => Err("Signal is already driven".to_string()),
+            None => Ok(()),
+        }
     }
 
-    /// Add signal to input for output based on port name
-    pub fn add_signal(&mut self, port: String, signal: String) {
+    /// Create an IO connection to the primitive based on port name. This is based on the Xilinx port naming conventions.
+    pub fn add_signal(&mut self, port: String, signal: String) -> Result<(), String> {
         match port.as_str() {
             "I0" | "I1" | "I2" | "I3" | "I4" | "I5" => self.add_input(port, signal),
             "O" | "Y" => self.add_output(port, signal),
@@ -116,16 +143,24 @@ impl SVPrimitive {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Represents a Verilog Module. For now it can only have one output.
 pub struct SVModule {
+    /// The file name of the module
     pub fname: Option<String>,
+    /// The name of the module
     pub name: String,
+    /// All nets declared by the module (including inputs and outputs)
     pub signals: Vec<SVSignal>,
+    /// All primitive instances in the module
     pub instances: Vec<SVPrimitive>,
+    /// All input signals to the module
     pub inputs: Vec<SVSignal>,
+    /// All output signals from the module
     pub outputs: Vec<SVSignal>,
 }
 
 impl SVModule {
+    /// Create an empty module with name `name`
     pub fn new(name: String) -> Self {
         SVModule {
             fname: None,
@@ -137,22 +172,36 @@ impl SVModule {
         }
     }
 
+    /// Set the file name of the module
+    pub fn with_fname(self, fname: String) -> Self {
+        SVModule {
+            fname: Some(fname),
+            ..self
+        }
+    }
+
+    /// Append a list of primitive instances to the module
     pub fn append_insts(&mut self, insts: &mut Vec<SVPrimitive>) {
         self.instances.append(insts);
     }
 
+    /// Append a list of inputs to the module
     pub fn append_inputs(&mut self, inputs: &mut Vec<SVSignal>) {
         self.inputs.append(inputs);
     }
 
+    /// Append a list of outputs to the module
     pub fn append_outputs(&mut self, outputs: &mut Vec<SVSignal>) {
         self.outputs.append(outputs);
     }
 
+    /// Append a list of net declarations to the module
     pub fn append_signals(&mut self, outputs: &mut Vec<SVSignal>) {
         self.signals.append(outputs);
     }
 
+    /// From a parsed verilog ast, create a new module and fill it with its primitives and connections.
+    /// This method only works on structural verilog.
     pub fn from_ast(ast: &sv_parser::SyntaxTree) -> Result<Self, String> {
         let mut modules = vec![];
         // Current primitive instances in current module
@@ -258,7 +307,7 @@ impl SVModule {
                     cur_insts
                         .last_mut()
                         .unwrap()
-                        .add_signal(port_name.unwrap(), arg_name.unwrap());
+                        .add_signal(port_name.unwrap(), arg_name.unwrap())?;
                 }
                 NodeEvent::Leave(RefNode::NamedPortConnection(_connection)) => (),
 
@@ -321,10 +370,17 @@ fn test_signal_visit() {
               .O (y)
           );
         endmodule";
-    let incl: Vec<std::path::PathBuf> = vec![];
-    let (ast, _defs) =
-        sv_parser::parse_sv_str(module, "verilog", &HashMap::new(), &incl, true, true).unwrap();
-    let signals = SVModule::from_ast(&ast);
-    eprintln!("{:?}", signals);
-    assert!(signals.is_ok());
+    let ast = sv_parse_wrapper(module, std::path::Path::new("mux_4_1.v")).unwrap();
+    let module = SVModule::from_ast(&ast);
+    assert!(module.is_ok());
+    let module = module.unwrap();
+    assert_eq!(module.instances.len(), 1);
+    assert_eq!(module.inputs.len(), 6);
+    assert_eq!(module.outputs.len(), 1);
+    assert_eq!(module.name, "mux_4_1");
+    let instance = module.instances.first().unwrap();
+    assert_eq!(instance.prim, "LUT6");
+    assert_eq!(instance.name, "_0_");
+    assert_eq!(instance.attributes.len(), 2);
+    assert_eq!(instance.attributes["program"], "17361601744336890538");
 }
