@@ -10,3 +10,6 @@ clap = { version = "4.5.20", features = ["derive"] }
 egg = "0.9.5"
 indicatif = "0.17.8"
 sv-parser = "0.13.3"
+
+[lints.clippy]
+manual_range_contains = "allow"

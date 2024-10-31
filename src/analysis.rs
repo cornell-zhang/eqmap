@@ -14,7 +14,7 @@ use egg::{Analysis, DidMerge};
 /// An e-class is typically a boolean signal.
 /// However, we store constants and input aliases for folding.
 /// A [lut::LutLang::Program] should never really be rewritten, so storing programs allow us to quickly check if a class is a program and extract the program.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct LutAnalysisData {
     /// If a class is a Program(u64), it should be by itself
     program: Option<u64>,
@@ -31,15 +31,6 @@ impl LutAnalysisData {
             program,
             const_val,
             input,
-        }
-    }
-
-    /// The default value for gates/LUTs
-    pub fn default() -> Self {
-        Self {
-            program: None,
-            const_val: None,
-            input: None,
         }
     }
 

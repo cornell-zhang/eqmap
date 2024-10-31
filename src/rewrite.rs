@@ -82,8 +82,8 @@ pub fn shannon_expansion() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
 }
 
 fn p_q_cut_fuse(p: usize, q: usize) -> Rewrite<lut::LutLang, LutAnalysis> {
-    assert!(p <= 6);
-    assert!(q <= 6);
+    assert!(p <= lut::LutLang::MAX_LUT_SIZE);
+    assert!(q <= lut::LutLang::MAX_LUT_SIZE);
     let mut pi: Vec<String> = Vec::new();
     let mut qi: Vec<String> = Vec::new();
     for i in 0..p {
@@ -270,9 +270,7 @@ impl Applier<lut::LutLang, LutAnalysis> for PermuteInput {
         assert!(self.pos < operands.len());
 
         let mut swaperands = operands.clone();
-        let tmp = swaperands[self.pos];
-        swaperands[self.pos] = swaperands[self.pos - 1];
-        swaperands[self.pos - 1] = tmp;
+        swaperands.swap(self.pos, self.pos - 1);
 
         let mut c = Vec::from(&[new_program_id]);
         c.append(&mut swaperands);
@@ -482,7 +480,7 @@ impl FuseCut {
     /// `pos_map` contains the offsets of the inputs in larger cut contained in `bv`. The offsets are relative to the msb.
     /// Finally, remember that `bv` is lsb first, whereas [egg::Id] arrays are msb first.
     fn get_input_vec(bv: &BitVec, pos_map: &HashMap<egg::Id, usize>, inputs: &[egg::Id]) -> BitVec {
-        assert!(inputs.len() <= 6);
+        assert!(inputs.len() <= lut::LutLang::MAX_LUT_SIZE);
         assert!(inputs.len() <= bv.len());
         let mut new_bv = bitvec!(usize, Lsb0; 0; inputs.len());
         for (i, input) in inputs.iter().enumerate() {

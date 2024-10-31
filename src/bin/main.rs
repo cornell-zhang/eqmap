@@ -26,16 +26,37 @@ where
     Ok(())
 }
 
+/// A request to simplify an expression.
+struct SimplifyRequest<'a, A> {
+    /// The expression to simplify.
+    expr: &'a RecExpr<lut::LutLang>,
+
+    /// The rewrite rules used to simplify the expression.
+    rules: &'a Vec<Rewrite<lut::LutLang, A>>,
+
+    /// The greatest fan-in on any LUT in an expression.
+    k: usize,
+
+    /// If true, a proof of the simplification should be generation. If false, no proof will be
+    /// generated.
+    gen_proof: bool,
+
+    /// If true, a progress bar will be displayed, else no progress bar will be displayed.
+    prog_bar: bool,
+
+    /// The timelimit, in seconds, given to the search.
+    timeout: u64,
+
+    /// The maximum number of enodes in a searched egraph.
+    node_limit: usize,
+
+    /// The maximum number of iterations of rewrites applied to the egraph.
+    iter_limit: usize,
+}
+
 /// simplify `expr` using egg with at most `k` fan-in on LUTs
 fn simplify_expr<A>(
-    expr: &RecExpr<lut::LutLang>,
-    rules: &Vec<Rewrite<lut::LutLang, A>>,
-    k: usize,
-    gen_proof: bool,
-    prog_bar: bool,
-    timeout: u64,
-    node_limit: usize,
-    iter_limit: usize,
+    req: &SimplifyRequest<A>,
 ) -> (RecExpr<lut::LutLang>, Option<Explanation<lut::LutLang>>)
 where
     A: Analysis<lut::LutLang> + std::default::Default,
@@ -43,7 +64,7 @@ where
     // simplify the expression using a Runner, which creates an e-graph with
     // the given expression and runs the given rules over it
 
-    let runner = if gen_proof {
+    let runner = if req.gen_proof {
         eprintln!("WARNING: Proof generation is on (slow)");
         Runner::default().with_explanations_enabled()
     } else {
@@ -60,14 +81,14 @@ where
 
     let runner = runner
         .with_scheduler(bos)
-        .with_time_limit(Duration::from_secs(timeout))
-        .with_node_limit(node_limit)
-        .with_iter_limit(iter_limit);
+        .with_time_limit(Duration::from_secs(req.timeout))
+        .with_node_limit(req.node_limit)
+        .with_iter_limit(req.iter_limit);
 
-    let runner = if prog_bar {
+    let runner = if req.prog_bar {
         let (mut iter_bar, mut node_bar) = (
-            mp.add(ProgressBar::new(iter_limit as u64).with_message("iterations")),
-            mp.add(ProgressBar::new(node_limit as u64)),
+            mp.add(ProgressBar::new(req.iter_limit as u64).with_message("iterations")),
+            mp.add(ProgressBar::new(req.node_limit as u64)),
         );
         iter_bar.set_style(
             ProgressStyle::with_template("[{bar:60.cyan/blue}] {pos}/{len} iterations").unwrap(),
@@ -80,31 +101,31 @@ where
         runner
     };
 
-    let mut runner = runner.with_expr(&expr).run(rules);
+    let mut runner = runner.with_expr(req.expr).run(req.rules);
 
     // Clear the progress bar
     mp.clear().unwrap();
 
     // the Runner knows which e-class the expression given with `with_expr` is in
     let root = runner.roots[0];
-    if gen_proof {
+    if req.gen_proof {
         let report = runner.report();
-        eprintln!("INFO: {}", report.to_string().replace("\n", "\nINFO: "));
+        eprintln!("INFO: {}", report.to_string().replace('\n', "\nINFO: "));
     }
 
     // use an Extractor to pick the best element of the root eclass
     let extraction_start = Instant::now();
-    let extractor = Extractor::new(&runner.egraph, KLUTCostFn::new(k));
+    let extractor = Extractor::new(&runner.egraph, KLUTCostFn::new(req.k));
     let (_best_cost, best) = extractor.find_best(root);
     let extraction_time = extraction_start.elapsed();
-    if gen_proof {
+    if req.gen_proof {
         eprintln!(
             "INFO: Extraction time: {} seconds",
             extraction_time.as_secs_f64()
         );
     }
-    let expl = if gen_proof {
-        runner.explain_equivalence(&expr, &best).into()
+    let expl = if req.gen_proof {
+        runner.explain_equivalence(req.expr, &best).into()
     } else {
         None
     };
@@ -126,9 +147,18 @@ fn simplify(s: &str) -> String {
     let mut rules = all_rules_minus_dsd();
     rules.append(&mut known_decompositions());
 
-    simplify_expr(&expr, &rules, 4, false, false, 20, 20_000, 30)
-        .0
-        .to_string()
+    let req = SimplifyRequest {
+        expr: &expr,
+        rules: &rules,
+        k: 4,
+        gen_proof: false,
+        prog_bar: false,
+        timeout: 20,
+        node_limit: 20_000,
+        iter_limit: 30,
+    };
+
+    simplify_expr(&req).0.to_string()
 }
 
 #[test]
@@ -276,16 +306,18 @@ fn main() -> std::io::Result<()> {
             eprintln!("WARNING: Running with debug assertions is slow");
         }
 
-        let (simplified, expl) = simplify_expr(
-            &expr,
-            &rules,
-            args.k,
-            args.verbose,
-            true, // let's always use a progress bar for now
-            args.timeout,
-            args.node_limit,
-            args.iter_limit,
-        );
+        let req = SimplifyRequest {
+            expr: &expr,
+            rules: &rules,
+            k: args.k,
+            gen_proof: args.verbose,
+            prog_bar: true,
+            timeout: args.timeout,
+            node_limit: args.node_limit,
+            iter_limit: args.iter_limit,
+        };
+
+        let (simplified, expl) = simplify_expr(&req);
         let expl: Option<String> = match expl {
             Some(mut e) => {
                 let proof = e.get_flat_string();
@@ -296,13 +328,13 @@ fn main() -> std::io::Result<()> {
         };
 
         if args.verbose {
-            eprintln!("INFO: {}", expl.as_ref().unwrap().replace("\n", "\nINFO: "));
+            eprintln!("INFO: {}", expl.as_ref().unwrap().replace('\n', "\nINFO: "));
             eprintln!("INFO: ============================================================");
         } else {
-            eprintln!("{} => ", expr.to_string());
+            eprintln!("{} => ", expr);
         }
 
-        println!("{}", simplified.to_string());
+        println!("{}", simplified);
 
         // Verify functionality
         if args.no_verify {
