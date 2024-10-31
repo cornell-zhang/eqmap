@@ -254,10 +254,10 @@ impl SVModule {
                     let id = unwrap_node!(inst, InstanceIdentifier).unwrap();
                     let inst_name = get_identifier(id, ast).unwrap();
                     let prim: Vec<&str> = mod_name.split("LUT").collect();
-                    if prim.len() != 2 || prim[0] != "" {
+                    if prim.len() != 2 || !prim[0].is_empty() {
                         return Err("Expected LUT primitive".to_string());
                     }
-                    let size = match usize::from_str_radix(prim.last().unwrap(), 10) {
+                    let size = match prim.last().unwrap().parse::<usize>() {
                         Ok(x) => x,
                         Err(_) => return Err("Expected LUT primitive".to_string()),
                     };
