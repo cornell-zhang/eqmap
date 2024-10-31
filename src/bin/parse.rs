@@ -329,25 +329,6 @@ fn analyze_defs(syntax_tree: &SyntaxTree) {
                     Some(x) => x,
                 };
                 println!("            inst_name: {}", escape_str(id));
-                // Now do the ports
-                let ports = match unwrap_node!(x, ListOf) {
-                    None => {
-                        continue;
-                    }
-                    Some(x) => x,
-                };
-                // eprintln!("ports: {:?}", ports);
-                let id = get_identifiers(ports);
-                // eprintln!("id: {:?}", id);
-                for id in id {
-                    let id = match syntax_tree.get_str(&id) {
-                        None => {
-                            continue;
-                        }
-                        Some(x) => x,
-                    };
-                    println!("                ports: {}", escape_str(id));
-                }
             }
             RefNode::PackageImportItem(x) => {
                 // write the package name

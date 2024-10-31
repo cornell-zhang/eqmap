@@ -4,31 +4,37 @@
 
 */
 
-use std::{collections::HashMap, path::PathBuf};
+use std::collections::HashMap;
 
-use sv_parser::{unwrap_node, Identifier, Locate, NetDeclaration, Node, NodeEvent, RefNode};
+use sv_parser::{unwrap_node, Identifier, Locate, NodeEvent, RefNode};
 
 /// This prints out the source name for modules, nets, and ports
 pub fn get_identifier(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<String, String> {
     // unwrap_node! can take multiple types
-    let id: Option<Locate> =
-        match unwrap_node!(node, SimpleIdentifier, EscapedIdentifier, NetIdentifier) {
-            Some(RefNode::SimpleIdentifier(x)) => Some(x.nodes.0),
-            Some(RefNode::EscapedIdentifier(x)) => Some(x.nodes.0),
-            Some(RefNode::NetIdentifier(x)) => match &x.nodes.0 {
-                Identifier::SimpleIdentifier(x) => Some(x.nodes.0),
-                Identifier::EscapedIdentifier(x) => Some(x.nodes.0),
-            },
-            Some(RefNode::PortIdentifier(x)) => match &x.nodes.0 {
-                Identifier::SimpleIdentifier(x) => Some(x.nodes.0),
-                Identifier::EscapedIdentifier(x) => Some(x.nodes.0),
-            },
-            Some(RefNode::Identifier(x)) => match x {
-                Identifier::SimpleIdentifier(x) => Some(x.nodes.0),
-                Identifier::EscapedIdentifier(x) => Some(x.nodes.0),
-            },
-            _ => None,
-        };
+    let id: Option<Locate> = match unwrap_node!(
+        node,
+        SimpleIdentifier,
+        EscapedIdentifier,
+        NetIdentifier,
+        PortIdentifier,
+        Identifier
+    ) {
+        Some(RefNode::SimpleIdentifier(x)) => Some(x.nodes.0),
+        Some(RefNode::EscapedIdentifier(x)) => Some(x.nodes.0),
+        Some(RefNode::NetIdentifier(x)) => match &x.nodes.0 {
+            Identifier::SimpleIdentifier(x) => Some(x.nodes.0),
+            Identifier::EscapedIdentifier(x) => Some(x.nodes.0),
+        },
+        Some(RefNode::PortIdentifier(x)) => match &x.nodes.0 {
+            Identifier::SimpleIdentifier(x) => Some(x.nodes.0),
+            Identifier::EscapedIdentifier(x) => Some(x.nodes.0),
+        },
+        Some(RefNode::Identifier(x)) => match x {
+            Identifier::SimpleIdentifier(x) => Some(x.nodes.0),
+            Identifier::EscapedIdentifier(x) => Some(x.nodes.0),
+        },
+        _ => None,
+    };
 
     match id {
         None => Err("Expected a Simple, Escaped, or Net identifier".to_string()),
@@ -54,30 +60,58 @@ impl SVSignal {
     }
 }
 
+/// For the `inputs` and `outputs` of a primitive, the key is driven by the value.
+/// E.g. (I0, a) in inputs and (y, O) in outputs
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SVInstance {
-    module: String,
+pub struct SVPrimitive {
+    prim: String,
     name: String,
     inputs: HashMap<String, String>,
     outputs: HashMap<String, String>,
+    attributes: HashMap<String, String>,
 }
 
-impl SVInstance {
-    pub fn new(module: String, name: String) -> Self {
-        SVInstance {
-            module,
+impl SVPrimitive {
+    pub fn new(prim: String, name: String) -> Self {
+        SVPrimitive {
+            prim,
             name,
             inputs: HashMap::new(),
             outputs: HashMap::new(),
+            attributes: HashMap::new(),
         }
     }
 
-    pub fn add_input(&mut self, port: String, signal: String) {
+    pub fn new_lut(k: usize, name: String, program: u64) -> Self {
+        let mut attributes = HashMap::new();
+        attributes.insert("program".to_string(), format!("{}", program));
+        attributes.insert("size".to_string(), format!("{}", k));
+        SVPrimitive {
+            prim: format!("LUT{}", k),
+            name,
+            inputs: HashMap::new(),
+            outputs: HashMap::new(),
+            attributes,
+        }
+    }
+
+    /// The port is driven by the signal
+    fn add_input(&mut self, port: String, signal: String) {
         self.inputs.insert(port, signal);
     }
 
-    pub fn add_output(&mut self, port: String, signal: String) {
-        self.outputs.insert(port, signal);
+    /// The signal is driven by the port
+    fn add_output(&mut self, port: String, signal: String) {
+        self.outputs.insert(signal, port);
+    }
+
+    /// Add signal to input for output based on port name
+    pub fn add_signal(&mut self, port: String, signal: String) {
+        match port.as_str() {
+            "I0" | "I1" | "I2" | "I3" | "I4" | "I5" => self.add_input(port, signal),
+            "O" | "Y" => self.add_output(port, signal),
+            _ => panic!("Unknown port name"),
+        }
     }
 }
 
@@ -86,7 +120,7 @@ pub struct SVModule {
     pub fname: Option<String>,
     pub name: String,
     pub signals: Vec<SVSignal>,
-    pub instances: Vec<SVInstance>,
+    pub instances: Vec<SVPrimitive>,
     pub inputs: Vec<SVSignal>,
     pub outputs: Vec<SVSignal>,
 }
@@ -103,7 +137,7 @@ impl SVModule {
         }
     }
 
-    pub fn append_insts(&mut self, insts: &mut Vec<SVInstance>) {
+    pub fn append_insts(&mut self, insts: &mut Vec<SVPrimitive>) {
         self.instances.append(insts);
     }
 
@@ -119,11 +153,15 @@ impl SVModule {
         self.signals.append(outputs);
     }
 
-    pub fn from_ast(ast: &sv_parser::SyntaxTree) -> Result<Vec<Self>, String> {
+    pub fn from_ast(ast: &sv_parser::SyntaxTree) -> Result<Self, String> {
         let mut modules = vec![];
-        let mut cur_insts: Vec<SVInstance> = vec![];
+        // Current primitive instances in current module
+        let mut cur_insts: Vec<SVPrimitive> = vec![];
+        // Inputs to current module
         let mut cur_inputs: Vec<SVSignal> = vec![];
+        // Outputs to current module
         let mut cur_outputs: Vec<SVSignal> = vec![];
+        // All declared nets in the module (including inputs and outputs)
         let mut cur_signals: Vec<SVSignal> = vec![];
 
         for node_event in ast.into_iter().event() {
@@ -166,13 +204,49 @@ impl SVModule {
                     let mod_name = get_identifier(id, ast).unwrap();
                     let id = unwrap_node!(inst, InstanceIdentifier).unwrap();
                     let inst_name = get_identifier(id, ast).unwrap();
-                    cur_insts.push(SVInstance::new(mod_name, inst_name));
+                    let prim: Vec<&str> = mod_name.split("LUT").collect();
+                    if prim.len() != 2 || prim[0] != "" {
+                        return Err("Expected LUT primitive".to_string());
+                    }
+                    let size = match usize::from_str_radix(prim.last().unwrap(), 10) {
+                        Ok(x) => x,
+                        Err(_) => return Err("Expected LUT primitive".to_string()),
+                    };
+                    let id = unwrap_node!(inst, NamedParameterAssignment).unwrap();
+                    let program: u64 =
+                        if let RefNode::HexValue(v) = unwrap_node!(id, HexValue).unwrap() {
+                            let loc = v.nodes.0;
+                            let loc = ast.get_str(&loc).unwrap();
+                            match u64::from_str_radix(loc, 16) {
+                                Ok(x) => x,
+                                Err(_) => return Err("Expected hex value INIT string".to_string()),
+                            }
+                        } else {
+                            return Err("Expected hex value INIT string".to_string());
+                        };
+                    cur_insts.push(SVPrimitive::new_lut(size, inst_name, program));
                 }
                 NodeEvent::Leave(RefNode::ModuleInstantiation(_inst)) => (),
 
                 // Handle input decl
+                // TODO(mrh259): Handle bitwidth. Different declaration styles will need to be handled
+                NodeEvent::Enter(RefNode::InputDeclarationNet(output)) => {
+                    let id = unwrap_node!(output, PortIdentifier).unwrap();
+                    let name = get_identifier(id, ast).unwrap();
+                    cur_inputs.push(SVSignal::new(1, name));
+                }
+
+                NodeEvent::Leave(RefNode::InputDeclarationNet(_output)) => (),
 
                 // Handle output decl
+                // TODO(mrh259): Handle bitwidth. Different declaration styles will need to be handled
+                NodeEvent::Enter(RefNode::OutputDeclarationNet(output)) => {
+                    let id = unwrap_node!(output, PortIdentifier).unwrap();
+                    let name = get_identifier(id, ast).unwrap();
+                    cur_outputs.push(SVSignal::new(1, name));
+                }
+
+                NodeEvent::Leave(RefNode::OutputDeclarationNet(_output)) => (),
 
                 // Handle instance args
                 NodeEvent::Enter(RefNode::NamedPortConnection(connection)) => {
@@ -181,13 +255,12 @@ impl SVModule {
                     let arg = unwrap_node!(connection, Expression).unwrap();
                     let arg = unwrap_node!(arg, HierarchicalIdentifier).unwrap();
                     let arg_name = get_identifier(arg, ast);
-                    // TODO: check if port is input or output
                     cur_insts
                         .last_mut()
                         .unwrap()
-                        .add_input(port_name.unwrap(), arg_name.unwrap());
+                        .add_signal(port_name.unwrap(), arg_name.unwrap());
                 }
-                NodeEvent::Leave(RefNode::NamedPortConnection(connection)) => (),
+                NodeEvent::Leave(RefNode::NamedPortConnection(_connection)) => (),
 
                 // Handle wire/net decl
                 NodeEvent::Enter(RefNode::NetDeclAssignment(net_decl)) => {
@@ -203,7 +276,11 @@ impl SVModule {
             }
         }
 
-        Ok(modules)
+        if modules.len() != 1 {
+            return Err("Expected exactly one module".to_string());
+        }
+
+        Ok(modules.pop().unwrap())
     }
 }
 
@@ -216,7 +293,7 @@ fn test_signal_visit() {
             d,
             s0,
             s1,
-            yEnter
+            y
         );
           input a;
           wire a;
@@ -244,10 +321,10 @@ fn test_signal_visit() {
               .O (y)
           );
         endmodule";
-    let incl: Vec<PathBuf> = vec![];
+    let incl: Vec<std::path::PathBuf> = vec![];
     let (ast, _defs) =
         sv_parser::parse_sv_str(module, "verilog", &HashMap::new(), &incl, true, true).unwrap();
-    let signals = SVModule::from_ast(&ast).unwrap();
+    let signals = SVModule::from_ast(&ast);
     eprintln!("{:?}", signals);
-    assert_eq!(signals.len(), 1);
+    assert!(signals.is_ok());
 }
