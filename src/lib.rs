@@ -11,6 +11,7 @@ TODO: overview, tutorial, testing, research papers
 pub mod analysis;
 pub mod cost;
 pub mod lut;
+pub mod parse;
 pub mod rewrite;
 
 #[cfg(test)]

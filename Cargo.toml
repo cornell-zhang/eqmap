@@ -2,12 +2,11 @@
 name = "lut-synth"
 version = "0.1.0"
 edition = "2021"
-
-# [[bin]]
-# name = "cool-tool"
+default-run = "main"
 
 [dependencies]
 bitvec = "1.0.1"
 clap = { version = "4.5.20", features = ["derive"] }
 egg = "0.9.5"
 indicatif = "0.17.8"
+sv-parser = "0.13.3"
