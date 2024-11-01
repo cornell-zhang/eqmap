@@ -9,6 +9,7 @@ cargo run --release tests/lutlang/examples.txt -k 4 -v | FileCheck tests/lutlang
 # Verilog compilation tests
 cargo run --release --bin parse-verilog -- tests/verilog/mux_4_1_synth.v 2>>/dev/null | FileCheck tests/verilog/mux_4_1_synth.v
 cargo run --release --bin parse-verilog -- tests/verilog/mux_4_1_k3.v 2>>/dev/null | FileCheck tests/verilog/mux_4_1_k3.v
+cargo run --release --bin parse-verilog -- tests/verilog/add_synth.v 2>>/dev/null | FileCheck tests/verilog/add_synth.v
 
 
 echo "SUCCESS"
