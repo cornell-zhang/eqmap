@@ -125,16 +125,22 @@ impl SVPrimitive {
 
     /// Add an input connection
     fn add_input(&mut self, port: String, signal: String) -> Result<(), String> {
-        match self.inputs.insert(port, signal) {
-            Some(_) => Err("Port is already driven".to_string()),
+        match self.inputs.insert(port.clone(), signal) {
+            Some(d) => Err(format!(
+                "Port {} is already driven on instance {} of {} by {}",
+                port, self.name, self.prim, d
+            )),
             None => Ok(()),
         }
     }
 
     /// Add an output connection
     fn add_output(&mut self, port: String, signal: String) -> Result<(), String> {
-        match self.outputs.insert(signal, port) {
-            Some(_) => Err("Signal is already driven".to_string()),
+        match self.outputs.insert(signal.clone(), port) {
+            Some(d) => Err(format!(
+                "Port {} is already driven on instance {} of {} by {}",
+                signal, self.name, self.prim, d
+            )),
             None => Ok(()),
         }
     }
@@ -220,7 +226,12 @@ impl SVModule {
     pub fn get_driving_primitive(&self, signal: &str) -> Result<&SVPrimitive, String> {
         match self.driving_module.get(signal) {
             Some(idx) => Ok(&self.instances[*idx]),
-            None => Err("Signal is not driven".to_string()),
+            None => Err(format!(
+                "{}: Signal {} is not driven by any primitive in {}",
+                self.fname.clone().unwrap_or("".to_string()),
+                signal,
+                self.name
+            )),
         }
     }
 
@@ -284,11 +295,14 @@ impl SVModule {
                     let inst_name = get_identifier(id, ast).unwrap();
                     let prim: Vec<&str> = mod_name.split("LUT").collect();
                     if prim.len() != 2 || !prim[0].is_empty() {
-                        return Err("Expected LUT primitive".to_string());
+                        return Err(format!(
+                            "Expected a LUT primitive. Found primitive {}",
+                            mod_name
+                        ));
                     }
                     let size = match prim.last().unwrap().parse::<usize>() {
                         Ok(x) => x,
-                        Err(_) => return Err("Expected LUT primitive".to_string()),
+                        Err(_) => return Err(format!("Could not parse LUT size for {}", mod_name)),
                     };
                     let id = unwrap_node!(inst, NamedParameterAssignment).unwrap();
                     let program: u64 =
@@ -297,10 +311,18 @@ impl SVModule {
                             let loc = ast.get_str(&loc).unwrap();
                             match u64::from_str_radix(loc, 16) {
                                 Ok(x) => x,
-                                Err(_) => return Err("Expected hex value INIT string".to_string()),
+                                Err(_) => {
+                                    return Err(format!(
+                                        "Could not parse hex value from INIT string {}",
+                                        loc
+                                    ))
+                                }
                             }
                         } else {
-                            return Err("Expected hex value INIT string".to_string());
+                            return Err(format!(
+                                "LUT {} should have INIT value written in hexadecimal",
+                                mod_name
+                            ));
                         };
                     cur_insts.push(SVPrimitive::new_lut(size, inst_name, program));
                 }
@@ -389,7 +411,11 @@ impl SVModule {
     /// Convert the module to a [LutLang] expression
     pub fn to_expr(&self) -> Result<RecExpr<LutLang>, String> {
         if self.outputs.len() != 1 {
-            return Err("Expected exactly one output.".to_string());
+            return Err(format!(
+                "{}: Expected exactly one output in module {}.",
+                self.fname.clone().unwrap_or("".to_string()),
+                self.name
+            ));
         }
 
         let root = &self.outputs.first().unwrap().name;
