@@ -4,7 +4,10 @@
 
 */
 
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 use egg::{Id, RecExpr};
 use sv_parser::{unwrap_node, Identifier, Locate, NodeEvent, RefNode};
@@ -14,10 +17,11 @@ use super::lut::LutLang;
 /// A wrapper for parsing verilog at file `path` with content `s`
 pub fn sv_parse_wrapper(
     s: &str,
-    path: &std::path::Path,
+    path: Option<PathBuf>,
 ) -> Result<sv_parser::SyntaxTree, sv_parser::Error> {
     let incl: Vec<std::path::PathBuf> = vec![];
-    match sv_parser::parse_sv_str(s, path, &HashMap::new(), &incl, true, false) {
+    let path = path.unwrap_or(Path::new("top.v").to_path_buf());
+    match sv_parser::parse_sv_str(s, &path, &HashMap::new(), &incl, true, false) {
         Ok((ast, _defs)) => Ok(ast),
         Err(e) => Err(e),
     }
@@ -220,6 +224,7 @@ impl SVModule {
         }
     }
 
+    /// An O(n) method to check if a net is an input to the module
     pub fn is_an_input(&self, signal: &str) -> bool {
         self.inputs.iter().any(|x| x.name == signal)
     }
@@ -360,14 +365,16 @@ impl SVModule {
         match self.get_driving_primitive(signal) {
             Ok(primitive) => {
                 let mut subexpr: Vec<Id> = vec![];
+                let program: u64 = primitive.attributes["program"].parse().unwrap();
+                subexpr.push(expr.add(LutLang::Program(program)));
                 for input in (0..primitive.inputs.len()).rev().map(|x| format!("I{}", x)) {
                     let driver = primitive
                         .inputs
                         .get(&input)
                         .expect("Expect LUT to have input driven");
-                    subexpr.push(self.get_expr(&driver, expr)?);
+                    subexpr.push(self.get_expr(driver, expr)?);
                 }
-                todo!("Make the LUT")
+                Ok(expr.add(LutLang::Lut(subexpr.into())))
             }
             Err(e) => {
                 if self.is_an_input(signal) {
@@ -379,12 +386,16 @@ impl SVModule {
         }
     }
 
+    /// Convert the module to a [LutLang] expression
     pub fn to_expr(&self) -> Result<RecExpr<LutLang>, String> {
         if self.outputs.len() != 1 {
             return Err("Expected exactly one output.".to_string());
         }
 
-        todo!("use get_expr")
+        let root = &self.outputs.first().unwrap().name;
+        let mut expr = RecExpr::default();
+        self.get_expr(root, &mut expr)?;
+        Ok(expr)
     }
 }
 
@@ -425,7 +436,7 @@ fn test_signal_visit() {
               .O (y)
           );
         endmodule";
-    let ast = sv_parse_wrapper(module, std::path::Path::new("mux_4_1.v")).unwrap();
+    let ast = sv_parse_wrapper(module, None).unwrap();
     let module = SVModule::from_ast(&ast);
     assert!(module.is_ok());
     let module = module.unwrap();

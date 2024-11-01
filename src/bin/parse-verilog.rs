@@ -1,6 +1,6 @@
 use std::{
     io::{stdin, Read},
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 use clap::Parser;
@@ -17,24 +17,28 @@ fn main() -> std::io::Result<()> {
     let args = Args::parse();
     let mut buf = String::new();
 
-    let path: PathBuf = match args.input {
+    let path: Option<PathBuf> = match args.input {
         Some(p) => {
             std::fs::File::open(&p)?.read_to_string(&mut buf)?;
-            p
+            Some(p)
         }
         None => {
             stdin().read_to_string(&mut buf)?;
-            Path::new("test").to_path_buf()
+            None
         }
     };
 
-    let ast = sv_parse_wrapper(&buf, &path)
+    let ast = sv_parse_wrapper(&buf, path)
         .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
     let f =
         SVModule::from_ast(&ast).map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
-    println!("{:?}", f);
+    let expr = f
+        .to_expr()
+        .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+
+    println!("{}", expr);
 
     Ok(())
 }
