@@ -70,13 +70,13 @@ jobs:
       - name: Build (release)
         run: cargo build --release --verbose
       - name: Run integration tests (release, )
-        run: time cargo run --release -- tests/hard_examples.txt
+        run: time cargo run --release -- tests/lutlang/hard_examples.txt
       - name: Run integration tests (release, proof gen)
-        run: time cargo run --release -- tests/hard_examples.txt --verbose
+        run: time cargo run --release -- tests/lutlang/hard_examples.txt --verbose
       - name: Run comparator (release, proof gen)
-        run: time cargo run --release -- tests/gate_compare.txt --verbose
+        run: time cargo run --release -- tests/lutlang/gate_compare.txt --verbose
       - name: Run comparator (release,)
-        run: time cargo run --release -- tests/gate_compare.txt
+        run: time cargo run --release -- tests/lutlang/gate_compare.txt
 
 
   mdformat:
