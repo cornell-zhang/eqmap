@@ -49,14 +49,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Install FileCheck
+        run: sudo apt install llvm-17-tools && sudo ln -s /usr/bin/FileCheck-17 /usr/bin/FileCheck
       - name: Build (debug)
         run: cargo build --verbose
       - name: Build (release)
         run: cargo build --release --verbose
       - name: Run cargo tests (release)
         run: cargo test --release --verbose
-      - name: Install FileCheck
-        run: sudo apt install llvm-18-tools && sudo ln -s /usr/bin/FileCheck-18 /usr/bin/FileCheck
       - name: Run integration tests
         run: chmod +x runTests.sh && ./runTests.sh
 
