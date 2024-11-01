@@ -1,4 +1,0 @@
-(LUT 202 s0 a b)
-(LUT 44234 s1 s0 b a)
-(LUT 51952 s1 (LUT 61642 s1 s0 c d) a b)
-(LUT 202 s0 a b)

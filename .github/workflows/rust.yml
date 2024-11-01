@@ -55,10 +55,10 @@ jobs:
         run: cargo build --release --verbose
       - name: Run cargo tests (release)
         run: cargo test --release --verbose
-      - name: Run integration tests (debug)
-        run: cargo run tests/examples.txt > examples_debug.out && diff examples_debug.out tests/examples.out
-      - name: Run integration tests (debug, verbose)
-        run: cargo run tests/examples.txt --verbose > examples_debug_verbose.out && diff examples_debug_verbose.out tests/examples.out
+      - name: Install FileCheck
+        run: sudo apt install llvm-18-tools && sudo ln -s /usr/bin/FileCheck-18 /usr/bin/FileCheck
+      - name: Run integration tests
+        run: chmod +x runTests.sh && ./runTests.sh
 
   speed:
     name: Test Speed
