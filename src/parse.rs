@@ -6,7 +6,10 @@
 
 use std::collections::HashMap;
 
+use egg::{Id, RecExpr};
 use sv_parser::{unwrap_node, Identifier, Locate, NodeEvent, RefNode};
+
+use super::lut::LutLang;
 
 /// A wrapper for parsing verilog at file `path` with content `s`
 pub fn sv_parse_wrapper(
@@ -157,6 +160,8 @@ pub struct SVModule {
     pub inputs: Vec<SVSignal>,
     /// All output signals from the module
     pub outputs: Vec<SVSignal>,
+    /// Returns the index of the primitive instance that drives a particular net
+    pub driving_module: HashMap<String, usize>,
 }
 
 impl SVModule {
@@ -169,6 +174,7 @@ impl SVModule {
             instances: vec![],
             inputs: vec![],
             outputs: vec![],
+            driving_module: HashMap::new(),
         }
     }
 
@@ -182,6 +188,12 @@ impl SVModule {
 
     /// Append a list of primitive instances to the module
     pub fn append_insts(&mut self, insts: &mut Vec<SVPrimitive>) {
+        let new_index = self.instances.len();
+        for (i, inst) in insts.iter().enumerate() {
+            for (signal, _port) in inst.outputs.iter() {
+                self.driving_module.insert(signal.clone(), new_index + i);
+            }
+        }
         self.instances.append(insts);
     }
 
@@ -198,6 +210,18 @@ impl SVModule {
     /// Append a list of net declarations to the module
     pub fn append_signals(&mut self, outputs: &mut Vec<SVSignal>) {
         self.signals.append(outputs);
+    }
+
+    /// Get the driving primitive for a signal
+    pub fn get_driving_primitive(&self, signal: &str) -> Result<&SVPrimitive, String> {
+        match self.driving_module.get(signal) {
+            Some(idx) => Ok(&self.instances[*idx]),
+            None => Err("Signal is not driven".to_string()),
+        }
+    }
+
+    pub fn is_an_input(&self, signal: &str) -> bool {
+        self.inputs.iter().any(|x| x.name == signal)
     }
 
     /// From a parsed verilog ast, create a new module and fill it with its primitives and connections.
@@ -330,6 +354,37 @@ impl SVModule {
         }
 
         Ok(modules.pop().unwrap())
+    }
+
+    fn get_expr(&self, signal: &str, expr: &mut RecExpr<LutLang>) -> Result<Id, String> {
+        match self.get_driving_primitive(signal) {
+            Ok(primitive) => {
+                let mut subexpr: Vec<Id> = vec![];
+                for input in (0..primitive.inputs.len()).rev().map(|x| format!("I{}", x)) {
+                    let driver = primitive
+                        .inputs
+                        .get(&input)
+                        .expect("Expect LUT to have input driven");
+                    subexpr.push(self.get_expr(&driver, expr)?);
+                }
+                todo!("Make the LUT")
+            }
+            Err(e) => {
+                if self.is_an_input(signal) {
+                    Ok(expr.add(LutLang::Var(signal.into())))
+                } else {
+                    Err(e)
+                }
+            }
+        }
+    }
+
+    pub fn to_expr(&self) -> Result<RecExpr<LutLang>, String> {
+        if self.outputs.len() != 1 {
+            return Err("Expected exactly one output.".to_string());
+        }
+
+        todo!("use get_expr")
     }
 }
 
