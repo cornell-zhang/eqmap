@@ -345,9 +345,9 @@ impl Applier<lut::LutLang, LutAnalysis> for CombineAlikeInputs {
         }
         let mut new_prog = bitvec!(usize, Lsb0; 0; 1 << (k-1));
         for i in 0..(1 << (k - 2)) {
-            let eval_e = lut::eval_lut_bv(program, &lut::to_bitvec(i << 2, 1 << k));
+            let eval_e = lut::eval_lut_bv(program, &lut::to_bitvec(i << 2, 1 << k).unwrap());
             new_prog.set((i << 1) as usize, eval_e);
-            let eval_o = lut::eval_lut_bv(program, &lut::to_bitvec((i << 2) + 3, 1 << k));
+            let eval_o = lut::eval_lut_bv(program, &lut::to_bitvec((i << 2) + 3, 1 << k).unwrap());
             new_prog.set((i << 1) as usize + 1, eval_o);
         }
         let new_prog = lut::from_bitvec(&new_prog);
@@ -548,7 +548,7 @@ impl Applier<lut::LutLang, LutAnalysis> for FuseCut {
         let mut new_prog = bitvec!(usize, Lsb0; 0; 1 << nk);
         // sweep inputs
         for i in 0..(1 << nk) {
-            let bv = to_bitvec(i, nk);
+            let bv = to_bitvec(i, nk).unwrap();
             let rhs_bv = FuseCut::get_input_vec(&bv, &pos_map, &rhs_operands);
             let rhs_eval = lut::eval_lut_bv(rhs_program, &rhs_bv);
             let mut root_bv = bitvec!(usize, Lsb0; 0; root_operands.len() + 1);
