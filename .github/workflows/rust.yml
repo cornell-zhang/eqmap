@@ -43,7 +43,7 @@ jobs:
         run: cargo clippy --all-targets --all-features
 
   build:
-    name: Build and Test
+    name: Integration Tests
     runs-on: ubuntu-latest
 
     steps:

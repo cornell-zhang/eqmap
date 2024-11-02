@@ -15,8 +15,6 @@ pub mod rewrite;
 
 #[cfg(test)]
 mod tests {
-    use std::u64;
-
     use analysis::LutAnalysis;
     use egg::{Analysis, RecExpr};
     use lut::LutLang;
