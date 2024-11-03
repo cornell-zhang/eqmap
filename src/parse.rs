@@ -1,6 +1,7 @@
 /*!
 
-  Parse verilog
+  Parse a rigid form of structural verilog and covert it into a [SVModule] struct.
+  This struct can then be converted into a [LutLang] expression.
 
 */
 
@@ -86,29 +87,18 @@ impl SVSignal {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SVPrimitive {
     /// The name of the primitive
-    prim: String,
+    pub prim: String,
     /// The name of the instance
-    name: String,
+    pub name: String,
     /// Maps input ports to their signal driver
     inputs: HashMap<String, String>,
     /// Maps output signals to their port driver
     outputs: HashMap<String, String>,
     /// Stores arguments to module parameters as well as any other attribute
-    attributes: HashMap<String, String>,
+    pub attributes: HashMap<String, String>,
 }
 
 impl SVPrimitive {
-    /// Create a new empty primitive with module name `prim` and instance name `name`
-    pub fn new(prim: String, name: String) -> Self {
-        SVPrimitive {
-            prim,
-            name,
-            inputs: HashMap::new(),
-            outputs: HashMap::new(),
-            attributes: HashMap::new(),
-        }
-    }
-
     /// Create a new LUT primitive with size `k`, instance name `name`, and program `program`
     pub fn new_lut(k: usize, name: String, program: u64) -> Self {
         let mut attributes = HashMap::new();
@@ -150,7 +140,7 @@ impl SVPrimitive {
         match port.as_str() {
             "I0" | "I1" | "I2" | "I3" | "I4" | "I5" => self.add_input(port, signal),
             "O" | "Y" => self.add_output(port, signal),
-            _ => panic!("Unknown port name"),
+            _ => return Err("Unknown port name".to_string()),
         }
     }
 }
@@ -423,56 +413,4 @@ impl SVModule {
         self.get_expr(root, &mut expr)?;
         Ok(expr)
     }
-}
-
-#[test]
-fn test_signal_visit() {
-    let module = "module mux_4_1 (
-            a,
-            b,
-            c,
-            d,
-            s0,
-            s1,
-            y
-        );
-          input a;
-          wire a;
-          input b;
-          wire b;
-          input c;
-          wire c;
-          input d;
-          wire d;
-          input s0;
-          wire s0;
-          input s1;
-          wire s1;
-          output y;
-          wire y;
-          LUT6 #(
-              .INIT(64'hf0f0ccccff00aaaa)
-          ) _0_ (
-              .I0(d),
-              .I1(c),
-              .I2(a),
-              .I3(b),
-              .I4(s1),
-              .I5(s0),
-              .O (y)
-          );
-        endmodule";
-    let ast = sv_parse_wrapper(module, None).unwrap();
-    let module = SVModule::from_ast(&ast);
-    assert!(module.is_ok());
-    let module = module.unwrap();
-    assert_eq!(module.instances.len(), 1);
-    assert_eq!(module.inputs.len(), 6);
-    assert_eq!(module.outputs.len(), 1);
-    assert_eq!(module.name, "mux_4_1");
-    let instance = module.instances.first().unwrap();
-    assert_eq!(instance.prim, "LUT6");
-    assert_eq!(instance.name, "_0_");
-    assert_eq!(instance.attributes.len(), 2);
-    assert_eq!(instance.attributes["program"], "17361601744336890538");
 }

@@ -19,6 +19,7 @@ mod tests {
     use analysis::LutAnalysis;
     use egg::{Analysis, RecExpr};
     use lut::{verify_expr, LutLang};
+    use parse::{sv_parse_wrapper, SVModule, SVPrimitive};
 
     use super::*;
 
@@ -136,5 +137,88 @@ mod tests {
         assert!(lut.verify_rec(&expr).is_err());
         assert!(lut.get_program(&expr).is_err());
         assert!(verify_expr(&expr).is_err());
+    }
+
+    fn get_struct_verilog() -> String {
+        "module mux_4_1 (
+            a,
+            b,
+            c,
+            d,
+            s0,
+            s1,
+            y
+        );
+          input a;
+          wire a;
+          input b;
+          wire b;
+          input c;
+          wire c;
+          input d;
+          wire d;
+          input s0;
+          wire s0;
+          input s1;
+          wire s1;
+          output y;
+          wire y;
+          LUT6 #(
+              .INIT(64'hf0f0ccccff00aaaa)
+          ) _0_ (
+              .I0(d),
+              .I1(c),
+              .I2(a),
+              .I3(b),
+              .I4(s1),
+              .I5(s0),
+              .O (y)
+          );
+        endmodule"
+            .to_string()
+    }
+
+    #[test]
+    fn test_parse_verilog() {
+        let module = get_struct_verilog();
+        let ast = sv_parse_wrapper(&module, None).unwrap();
+        let module = SVModule::from_ast(&ast);
+        assert!(module.is_ok());
+        let module = module.unwrap();
+        assert_eq!(module.instances.len(), 1);
+        assert_eq!(module.inputs.len(), 6);
+        assert_eq!(module.outputs.len(), 1);
+        assert_eq!(module.name, "mux_4_1");
+        let instance = module.instances.first().unwrap();
+        assert_eq!(instance.prim, "LUT6");
+        assert_eq!(instance.name, "_0_");
+        assert_eq!(instance.attributes.len(), 2);
+        assert_eq!(instance.attributes["program"], "17361601744336890538");
+    }
+
+    #[test]
+    fn test_verilog_to_expr() {
+        let module = get_struct_verilog();
+        let ast = sv_parse_wrapper(&module, None).unwrap();
+        let module = SVModule::from_ast(&ast)
+            .unwrap()
+            .with_fname("mux_4_1".to_string());
+        assert!(module.name == "mux_4_1");
+        let expr = module.to_expr().unwrap();
+        assert_eq!(
+            expr.to_string(),
+            "(LUT 17361601744336890538 s0 s1 b a c d)".to_string()
+        );
+    }
+
+    #[test]
+    fn test_primitive_connections() {
+        let mut prim = SVPrimitive::new_lut(4, "_0_".to_string(), 1);
+        assert!(prim.add_signal("I8".to_string(), "a".to_string()).is_err());
+        assert!(prim.add_signal("I0".to_string(), "a".to_string()).is_ok());
+        assert!(prim.add_signal("I0".to_string(), "a".to_string()).is_err());
+        assert!(prim.add_signal("Y".to_string(), "b".to_string()).is_ok());
+        assert!(prim.add_signal("Y".to_string(), "b".to_string()).is_err());
+        assert!(prim.add_signal("bad".to_string(), "a".to_string()).is_err());
     }
 }
