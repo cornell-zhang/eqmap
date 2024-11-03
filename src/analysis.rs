@@ -63,11 +63,18 @@ pub struct LutAnalysis;
 impl Analysis<lut::LutLang> for LutAnalysis {
     type Data = LutAnalysisData;
     fn merge(&mut self, to: &mut Self::Data, from: Self::Data) -> DidMerge {
-        assert!(to.program == from.program);
-        assert!(
-            to.const_val == from.const_val || to.const_val.is_none() || from.const_val.is_none()
-        );
-        assert!(to.input == from.input || to.input.is_none() || from.input.is_none());
+        if to.program != from.program {
+            panic!("Tried to merge to different programs");
+        }
+        if !(to.const_val == from.const_val || to.const_val.is_none() || from.const_val.is_none()) {
+            // Later we will want to relax this condition for constant folding.
+            // For now, it is a good sanity check.
+            panic!("Cannot merge constant type with non-constant type.");
+        }
+        if !(to.input == from.input || to.input.is_none() || from.input.is_none()) {
+            // Later, we will want to relax this condition when we're okay with input aliasing.
+            panic!("Cannot merge input type with non-input type.");
+        }
         let mut merged = to.clone();
         merged.const_val = from.const_val.or(to.const_val);
         merged.input = from.input.clone().or(to.input.clone());
@@ -77,7 +84,6 @@ impl Analysis<lut::LutLang> for LutAnalysis {
     }
     fn make(_egraph: &egg::EGraph<lut::LutLang, Self>, enode: &lut::LutLang) -> Self::Data {
         match enode {
-            lut::LutLang::Lut(_l) => LutAnalysisData::new(None, None, None),
             lut::LutLang::Program(p) => LutAnalysisData::new(Some(*p), None, None),
             lut::LutLang::Const(c) => LutAnalysisData::new(None, Some(*c), None),
             lut::LutLang::Var(v) => LutAnalysisData::new(None, None, Some(v.to_string())),
@@ -125,7 +131,7 @@ impl Analysis<lut::LutLang> for LutAnalysis {
                                 let repl = egraph.add(lut::LutLang::Const(!const_val));
                                 egraph.union(id, repl);
                             }
-                            _ => (),
+                            _ => unreachable!(),
                         }
                     }
                 }

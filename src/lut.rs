@@ -263,11 +263,24 @@ pub fn eval_lut(p: u64, inputs: &[bool]) -> bool {
 }
 
 /// Convert a [u64] LUT program to a lsb-first [BitVec] of length `capacity`
-pub fn to_bitvec(p: u64, capacity: usize) -> BitVec {
-    assert!(capacity <= 64);
+pub fn to_bitvec(p: u64, capacity: usize) -> Result<BitVec, String> {
+    if capacity > 64 {
+        return Err("Capacity must be less than or equal to 64".to_string());
+    }
+    let maxval = if capacity == 64 {
+        u64::MAX
+    } else {
+        (1 << capacity) - 1
+    };
+    if p > maxval {
+        return Err(format!(
+            "Program value {} is too large for capacity {}",
+            p, capacity
+        ));
+    }
     let mut bv: BitVec = bitvec!(usize, Lsb0; 0; capacity);
     bv[0..capacity].store::<u64>(p);
-    bv
+    Ok(bv)
 }
 
 /// Convert a lsb-first [BitVec] LUT program to a [u64]
@@ -305,7 +318,7 @@ pub fn swap_pos(bv: &u64, k: usize, pos: usize) -> u64 {
     assert!(pos < k - 1);
     let mut table: Vec<BitVec> = Vec::new();
     for i in 0..(1 << k) {
-        table.push(to_bitvec(i, k));
+        table.push(to_bitvec(i, k).unwrap());
     }
 
     // Swap the bit at `pos` in the truth table entries. Then use those entries to index the new
@@ -319,7 +332,7 @@ pub fn swap_pos(bv: &u64, k: usize, pos: usize) -> u64 {
     let mut nbv: BitVec = bitvec!(usize, Lsb0; 0; 1 << k);
     for (i, entry) in table.iter().enumerate().take(1 << k) {
         let index = from_bitvec(entry) as usize;
-        nbv.set(index, eval_lut_bv(*bv, &to_bitvec(i as u64, k)));
+        nbv.set(index, eval_lut_bv(*bv, &to_bitvec(i as u64, k).unwrap()));
     }
     from_bitvec(&nbv)
 }
