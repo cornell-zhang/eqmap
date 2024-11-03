@@ -38,7 +38,7 @@ if __name__ == "__main__":
     percent = args.percent
     passed = True
 
-    print("### Code Coverage Summary", file=args.output)
+    print(f"### Code Coverage Summary ({percent:.2f}%)", file=args.output)
 
     for datum in data:
         files = datum["files"]
