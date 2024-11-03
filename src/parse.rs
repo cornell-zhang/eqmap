@@ -140,7 +140,7 @@ impl SVPrimitive {
         match port.as_str() {
             "I0" | "I1" | "I2" | "I3" | "I4" | "I5" => self.add_input(port, signal),
             "O" | "Y" => self.add_output(port, signal),
-            _ => return Err("Unknown port name".to_string()),
+            _ => Err("Unknown port name".to_string()),
         }
     }
 }
