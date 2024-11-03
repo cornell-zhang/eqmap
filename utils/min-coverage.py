@@ -37,6 +37,9 @@ if __name__ == "__main__":
     data = data["data"]
     percent = args.percent
     passed = True
+
+    print("### Code Coverage Summary", file=args.output)
+
     for datum in data:
         files = datum["files"]
         for record in files:
@@ -47,7 +50,10 @@ if __name__ == "__main__":
                 continue
             lineCoverage = record["summary"]["lines"]["percent"]
             if lineCoverage < percent:
-                print(f"{name}: Only {lineCoverage:.2f}% by line", file=args.output)
+                print(
+                    f"#### {name}: Only {lineCoverage:.2f}% by line", file=args.output
+                )
+                print(f"```rust", file=args.output)
                 passed = False
                 with open(name, "r") as f:
                     lines = f.readlines()
@@ -66,9 +72,10 @@ if __name__ == "__main__":
                                 and not content.startswith("#")
                             ):
                                 print(
-                                    f"({lineCoverage:.2f}%) {stem}:{line}: {txt}",
+                                    f"{txt} // {stem}:{line}",
                                     file=args.output,
                                 )
                                 printed.add(line)
+                print(f"```", file=args.output)
 
     sys.exit(0 if passed else 1)
