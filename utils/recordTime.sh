@@ -2,7 +2,7 @@
 FORMAT="real %e s\nuser %U s\nsys %S s\nmem %M KB"
 FILE="time.txt"
 TIME_ARGS="-f $FORMAT --append -o $FILE"
-MAIN_ARGS="tests/hard_examples.txt -k 4 -t 60 -s 15000"
+MAIN_ARGS="tests/lutlang/hard_examples.txt -k 4 -t 60 -s 15000"
 set -exo pipefail
 
 # Collect timing information

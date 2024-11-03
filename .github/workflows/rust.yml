@@ -58,7 +58,7 @@ jobs:
       - name: Run cargo tests (release)
         run: cargo test --release --verbose
       - name: Run integration tests
-        run: chmod +x runTests.sh && ./runTests.sh
+        run: chmod +x utils/runTests.sh && ./utils/runTests.sh
 
   speed:
     name: Test Speed
