@@ -161,6 +161,28 @@ fn simplify(s: &str) -> String {
     simplify_expr(&req).0.to_string()
 }
 
+#[allow(dead_code)]
+/// parse an expression, simplify it with DSD and at most 4 fan-in, and pretty print it back out
+fn simplify_w_proof(s: &str) -> String {
+    // parse the expression, the type annotation tells it which Language to use
+    let expr: RecExpr<lut::LutLang> = s.parse().unwrap();
+    let mut rules = all_rules_minus_dsd();
+    rules.append(&mut known_decompositions());
+
+    let req = SimplifyRequest {
+        expr: &expr,
+        rules: &rules,
+        k: 4,
+        gen_proof: true,
+        prog_bar: false,
+        timeout: 20,
+        node_limit: 20_000,
+        iter_limit: 30,
+    };
+
+    simplify_expr(&req).0.to_string()
+}
+
 #[test]
 fn simple_tests() {
     assert_eq!(simplify("(LUT 2 a b)"), "(LUT 2 a b)");
@@ -179,6 +201,11 @@ fn redundant_inputs() {
     assert_eq!(simplify("(LUT 1 a a a a a)"), "(LUT 1 a)");
     assert_eq!(simplify("(LUT 1 a a a a a a)"), "(LUT 1 a)");
     assert_eq!(simplify("(LUT 1 a b a b a b)"), "(LUT 1 a b)");
+}
+
+#[test]
+fn test_proof_generation() {
+    assert_eq!(simplify_w_proof("(LUT 1 a b a b a b)"), "(LUT 1 a b)");
 }
 
 #[test]
@@ -207,6 +234,14 @@ fn test_incorrect_dsd() {
         let other: RecExpr<lut::LutLang> = format!("(LUT {} s1 s0 a b c d)", p).parse().unwrap();
         assert!(!lut::LutLang::func_equiv_always(&expr, &other));
     }
+}
+
+#[test]
+fn test_const_input() {
+    // TODO(matth2k): Don't yet have a method to show that an LUT is invariant to an input.
+    assert_eq!(simplify("(LUT 202 true a b)"), "(LUT 12 a b)");
+    assert_eq!(simplify("(LUT 0 a)"), "false");
+    assert_eq!(simplify("(LUT 3 a)"), "true");
 }
 
 /// LUT Network Synthesis with E-Graphs

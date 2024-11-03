@@ -17,7 +17,7 @@ pub mod rewrite;
 mod tests {
     use analysis::LutAnalysis;
     use egg::{Analysis, RecExpr};
-    use lut::LutLang;
+    use lut::{verify_expr, LutLang};
 
     use super::*;
 
@@ -77,6 +77,8 @@ mod tests {
         assert_eq!(prog_analysis.get_program(), Ok(prog));
         assert!(const_analysis.get_program().is_err());
         assert!(prog_analysis.get_as_const().is_err());
+        assert!(!const_analysis.is_an_input());
+        assert!(!prog_analysis.is_an_input());
     }
 
     #[test]
@@ -86,5 +88,52 @@ mod tests {
         let bv = lut::to_bitvec(prog, 64);
         assert!(bv.is_ok());
         assert_eq!(prog, lut::from_bitvec(&bv.unwrap()));
+    }
+
+    #[test]
+    fn test_principal_inputs() {
+        let input = "a";
+        let input_node = LutLang::Var(input.to_string().into());
+        let egraph = egg::EGraph::default();
+        let input_analysis = LutAnalysis::make(&egraph, &input_node);
+        assert!(input_analysis.is_an_input());
+        assert!(input_analysis.get_as_const().is_err());
+        assert!(input_analysis.get_program().is_err());
+    }
+
+    #[test]
+    fn test_bad_var() {
+        let input = "NOR";
+        let input_node = LutLang::Var(input.to_string().into());
+        let mut expr: RecExpr<LutLang> = RecExpr::default();
+        expr.add(input_node.clone());
+        assert!(input_node.verify_rec(&expr).is_err());
+    }
+
+    #[test]
+    fn test_lut_too_big() {
+        let input = "a";
+        let input_node = LutLang::Var(input.to_string().into());
+        let mut expr: RecExpr<LutLang> = RecExpr::default();
+        let id = expr.add(input_node.clone());
+        let lut =
+            LutLang::Lut(vec![expr.add(LutLang::Program(0)), id, id, id, id, id, id, id].into());
+        expr.add(lut.clone());
+        assert!(lut.verify_rec(&expr).is_err());
+        assert!(lut.get_program(&expr).is_err());
+        assert!(lut.get_lut_size().is_err());
+    }
+
+    #[test]
+    fn test_missing_program() {
+        let input = "a";
+        let input_node = LutLang::Var(input.to_string().into());
+        let mut expr: RecExpr<LutLang> = RecExpr::default();
+        let id = expr.add(input_node.clone());
+        let lut = LutLang::Lut(vec![id, id, id, id, id, id].into());
+        expr.add(lut.clone());
+        assert!(lut.verify_rec(&expr).is_err());
+        assert!(lut.get_program(&expr).is_err());
+        assert!(verify_expr(&expr).is_err());
     }
 }

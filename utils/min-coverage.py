@@ -78,4 +78,6 @@ if __name__ == "__main__":
                                 printed.add(line)
                 print(f"```", file=args.output)
 
+    if passed:
+        print("All files passed", file=args.output)
     sys.exit(0 if passed else 1)
