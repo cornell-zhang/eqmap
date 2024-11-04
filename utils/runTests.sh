@@ -1,6 +1,9 @@
 #!/bin/bash
 set -exo pipefail
 
+cargo build
+cargo build --release
+
 # Optimization tests on LutLang IR
 cargo run --release tests/lutlang/examples.txt -k 4 --no-verify | FileCheck tests/lutlang/examples.txt
 cargo run --release tests/lutlang/bus.txt -k 4 -n 24 | FileCheck tests/lutlang/bus.txt
