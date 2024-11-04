@@ -398,7 +398,7 @@ pub fn node_dominates(expr: &RecExpr<LutLang>, n: Id, other: Id) -> Result<bool,
     let other_node = &expr[other];
     let node = &expr[n];
 
-    if node.deep_equals(other_node, &expr) {
+    if node.deep_equals(other_node, expr) {
         return Ok(true);
     }
 
