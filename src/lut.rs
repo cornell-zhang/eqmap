@@ -83,6 +83,8 @@ impl LutLang {
                 for id in l.iter() {
                     if let LutLang::Program(_) = expr[*id] {
                         return Err("Bus cannot contain a program".to_string());
+                    } else if let LutLang::Bus(_) = expr[*id] {
+                        return Err("Bus construct cannot be nested".to_string());
                     }
                 }
             }

@@ -228,4 +228,45 @@ mod tests {
         let swapped: RecExpr<LutLang> = "(BUS (MUX s0 a b) (LUT 202 s0 a b))".parse().unwrap();
         assert!(LutLang::func_equiv_always(&bus, &swapped));
     }
+
+    #[test]
+    fn test_bad_bus() {
+        let bus: RecExpr<LutLang> =
+            "(BUS (BUS (LUT 202 s0 a b) (MUX s0 a b)) (BUS (LUT 202 s0 a b) (MUX s0 a b)))"
+                .parse()
+                .unwrap();
+        let root = bus.as_ref().last().unwrap();
+        assert!(root.verify_rec(&bus).is_err());
+
+        let bus: RecExpr<LutLang> = "(BUS 1234 12346)".parse().unwrap();
+        let root = bus.as_ref().last().unwrap();
+        assert!(root.verify_rec(&bus).is_err());
+
+        let bus: RecExpr<LutLang> = "(BUS a1 a2)".parse().unwrap();
+        let root = bus.as_ref().last().unwrap();
+        assert!(root.verify_rec(&bus).is_ok());
+    }
+
+    #[test]
+    fn test_not_equiv() {
+        let xor: RecExpr<LutLang> = "(XOR a b)".parse().unwrap();
+        let nor: RecExpr<LutLang> = "(NOR a b)".parse().unwrap();
+        assert!(LutLang::func_equiv_always(
+            &xor,
+            &"(LUT 6 a b)".parse().unwrap()
+        ));
+        assert!(!LutLang::func_equiv_always(
+            &xor,
+            &"(LUT 4 a b)".parse().unwrap()
+        ));
+        assert!(!LutLang::func_equiv_always(
+            &xor,
+            &"(LUT 2 a b)".parse().unwrap()
+        ));
+        assert!(LutLang::func_equiv_always(
+            &nor,
+            &"(LUT 1 a b)".parse().unwrap()
+        ));
+        assert!(!LutLang::func_equiv_always(&xor, &nor));
+    }
 }
