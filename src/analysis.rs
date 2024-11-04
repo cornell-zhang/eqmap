@@ -22,15 +22,23 @@ pub struct LutAnalysisData {
     const_val: Option<bool>,
     /// Eventually, this should be a vector so we can store aliases
     input: Option<String>,
+    /// The bus size of the node (if it is a bus)
+    size: Option<usize>,
 }
 
 impl LutAnalysisData {
     /// Create a new LutAnalysisData struct
-    pub fn new(program: Option<u64>, const_val: Option<bool>, input: Option<String>) -> Self {
+    pub fn new(
+        program: Option<u64>,
+        const_val: Option<bool>,
+        input: Option<String>,
+        size: Option<usize>,
+    ) -> Self {
         Self {
             program,
             const_val,
             input,
+            size,
         }
     }
 
@@ -64,7 +72,10 @@ impl Analysis<lut::LutLang> for LutAnalysis {
     type Data = LutAnalysisData;
     fn merge(&mut self, to: &mut Self::Data, from: Self::Data) -> DidMerge {
         if to.program != from.program {
-            panic!("Tried to merge to different programs");
+            panic!("Tried to merge two different programs");
+        }
+        if to.size != from.size {
+            panic!("Tried to merge two conflicting bus sizes");
         }
         if !(to.const_val == from.const_val || to.const_val.is_none() || from.const_val.is_none()) {
             // Later we will want to relax this condition for constant folding.
@@ -84,9 +95,10 @@ impl Analysis<lut::LutLang> for LutAnalysis {
     }
     fn make(_egraph: &egg::EGraph<lut::LutLang, Self>, enode: &lut::LutLang) -> Self::Data {
         match enode {
-            lut::LutLang::Program(p) => LutAnalysisData::new(Some(*p), None, None),
-            lut::LutLang::Const(c) => LutAnalysisData::new(None, Some(*c), None),
-            lut::LutLang::Var(v) => LutAnalysisData::new(None, None, Some(v.to_string())),
+            lut::LutLang::Program(p) => LutAnalysisData::new(Some(*p), None, None, None),
+            lut::LutLang::Const(c) => LutAnalysisData::new(None, Some(*c), None, None),
+            lut::LutLang::Var(v) => LutAnalysisData::new(None, None, Some(v.to_string()), None),
+            lut::LutLang::Bus(b) => LutAnalysisData::new(None, None, None, Some(b.len())),
             _ => LutAnalysisData::default(),
         }
     }

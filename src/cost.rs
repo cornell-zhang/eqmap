@@ -36,6 +36,7 @@ impl CostFunction<LutLang> for KLUTCostFn {
                 }
             }
             LutLang::Program(_) => 0,
+            LutLang::Bus(_) => 0,
             LutLang::Const(_) => 0,
             LutLang::Var(_) => 1,
             LutLang::DC => 0,

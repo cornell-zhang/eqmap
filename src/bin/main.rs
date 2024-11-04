@@ -283,7 +283,7 @@ struct Args {
     node_limit: usize,
 
     /// Maximum number of rewrite iterations
-    #[arg(short = 'n', long, default_value_t = 20)]
+    #[arg(short = 'n', long, default_value_t = 24)]
     iter_limit: usize,
 }
 

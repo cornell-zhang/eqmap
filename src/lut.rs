@@ -28,6 +28,7 @@ define_language! {
         "XOR" = Xor([Id; 2]),
         "NOT" = Not([Id; 1]),
         "LUT" = Lut(Box<[Id]>), // Program is first
+        "BUS" = Bus(Box<[Id]>), // a bus of nodes
     }
 }
 
@@ -54,7 +55,7 @@ impl LutLang {
                 }
             }
             LutLang::Var(f) => match f.as_str() {
-                "NOR" | "LUT" | "MUX" | "AND" | "XOR" | "NOT" => Err(
+                "NOR" | "LUT" | "MUX" | "AND" | "XOR" | "NOT" | "BUS" => Err(
                     "Variable name is already reserved. Check for missing parentheses.".to_string(),
                 ),
                 _ => Ok(()),
@@ -77,6 +78,12 @@ impl LutLang {
                     }
                 } else {
                     return Err("LUT must have a program".to_string());
+                }
+            } else if let LutLang::Bus(l) = self {
+                for id in l.iter() {
+                    if let LutLang::Program(_) = expr[*id] {
+                        return Err("Bus cannot contain a program".to_string());
+                    }
                 }
             }
         }
@@ -125,7 +132,13 @@ impl LutLang {
                 self.verify()?;
                 Ok(Vec::from(&l[1..]))
             }
-            _ => Err("Not a LUT".to_string()),
+            LutLang::And(_)
+            | LutLang::Xor(_)
+            | LutLang::Nor(_)
+            | LutLang::Mux(_)
+            | LutLang::Not(_)
+            | LutLang::Bus(_) => Ok(Vec::from(self.children())),
+            _ => Err("Not a LUT or gate".to_string()),
         }
     }
 
@@ -141,21 +154,21 @@ impl LutLang {
     }
 
     /// Evaluates the boolean value of a [LutLang] node contained in `expr` given the input state `inputs`
-    fn eval(&self, inputs: &HashMap<String, bool>, expr: &RecExpr<Self>) -> bool {
+    fn eval(&self, inputs: &HashMap<String, bool>, expr: &RecExpr<Self>) -> BitVec {
         match self {
-            LutLang::Const(b) => *b,
-            LutLang::Var(s) => *inputs.get(s.as_str()).unwrap(),
+            LutLang::Const(b) => bitvec!(usize, Lsb0; *b as usize; 1),
+            LutLang::Var(s) => bitvec!(usize, Lsb0; *inputs.get(s.as_str()).unwrap() as usize; 1),
             LutLang::Program(_) => panic!("Program node should not be evaluated"),
-            LutLang::DC => false,
+            LutLang::DC => bitvec!(usize, Lsb0; 0; 1),
             LutLang::Nor(a) => {
                 let a0 = &a[0];
                 let a1 = &a[1];
-                !(expr[*a0].eval(inputs, expr) || expr[*a1].eval(inputs, expr))
+                !(expr[*a0].eval(inputs, expr) | expr[*a1].eval(inputs, expr))
             }
             LutLang::And(a) => {
                 let a0 = &a[0];
                 let a1 = &a[1];
-                expr[*a0].eval(inputs, expr) && expr[*a1].eval(inputs, expr)
+                expr[*a0].eval(inputs, expr) & expr[*a1].eval(inputs, expr)
             }
             LutLang::Xor(a) => {
                 let a0 = &a[0];
@@ -170,7 +183,9 @@ impl LutLang {
                 let a0 = &a[0];
                 let a1 = &a[1];
                 let a2 = &a[2];
-                if expr[*a0].eval(inputs, expr) {
+                let sel = expr[*a0].eval(inputs, expr);
+                let len = self.len();
+                if sel.ge(&bitvec!(usize, Lsb0; 0; len)) {
                     expr[*a1].eval(inputs, expr)
                 } else {
                     expr[*a2].eval(inputs, expr)
@@ -183,9 +198,18 @@ impl LutLang {
                 };
                 let x: Vec<bool> = a[1..]
                     .iter()
-                    .map(|id| expr[*id].eval(inputs, expr))
+                    .map(|id| expr[*id].eval(inputs, expr)[0])
                     .collect();
-                eval_lut(p, &x)
+
+                let t = eval_lut(p, &x);
+                bitvec!(usize, Lsb0; t as usize; 1)
+            }
+            LutLang::Bus(a) => {
+                let mut bv: BitVec = BitVec::with_capacity(a.len());
+                for id in a.iter().rev() {
+                    bv.push(expr[*id].eval(inputs, expr)[0]);
+                }
+                bv
             }
         }
     }
@@ -383,7 +407,8 @@ impl CostFunction<LutLang> for NumKLUTsCostFn {
             | LutLang::Mux(_)
             | LutLang::And(_)
             | LutLang::Xor(_)
-            | LutLang::Not(_) => 0,
+            | LutLang::Not(_)
+            | LutLang::Bus(_) => 0,
         };
         enode.fold(op_cost, |sum, id| sum + costs(id))
     }

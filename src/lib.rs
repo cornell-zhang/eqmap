@@ -221,4 +221,11 @@ mod tests {
         assert!(prim.add_signal("Y".to_string(), "b".to_string()).is_err());
         assert!(prim.add_signal("bad".to_string(), "a".to_string()).is_err());
     }
+
+    #[test]
+    fn test_bus_type() {
+        let bus: RecExpr<LutLang> = "(BUS (LUT 202 s0 a b) (MUX s0 a b))".parse().unwrap();
+        let swapped: RecExpr<LutLang> = "(BUS (MUX s0 a b) (LUT 202 s0 a b))".parse().unwrap();
+        assert!(LutLang::func_equiv_always(&bus, &swapped));
+    }
 }
