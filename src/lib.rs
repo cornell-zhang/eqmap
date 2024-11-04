@@ -17,8 +17,8 @@ pub mod rewrite;
 #[cfg(test)]
 mod tests {
     use analysis::LutAnalysis;
-    use egg::{Analysis, RecExpr};
-    use lut::{verify_expr, LutLang};
+    use egg::{Analysis, Language, RecExpr};
+    use lut::{node_dominates, verify_expr, LutLang};
     use parse::{sv_parse_wrapper, SVModule, SVPrimitive};
 
     use super::*;
@@ -268,5 +268,23 @@ mod tests {
             &"(LUT 1 a b)".parse().unwrap()
         ));
         assert!(!LutLang::func_equiv_always(&xor, &nor));
+    }
+
+    #[test]
+    fn test_dominance() {
+        let bus: RecExpr<LutLang> =
+            "(BUS (XOR (XOR a b) cin) (NOT (NOR (AND a b) (AND cin (XOR a b)))) (XOR a b))"
+                .parse()
+                .unwrap();
+        let bus_node = bus.as_ref().last().unwrap();
+        let sum = bus_node.children()[0];
+        let carry = bus_node.children()[1];
+        let xor = bus_node.children()[2];
+        assert!(!node_dominates(&bus, sum, carry).unwrap());
+        assert!(!node_dominates(&bus, carry, sum).unwrap());
+        assert!(node_dominates(&bus, sum, sum).unwrap());
+        assert!(node_dominates(&bus, carry, carry).unwrap());
+        assert!(node_dominates(&bus, xor, carry).unwrap());
+        assert!(node_dominates(&bus, xor, sum).unwrap());
     }
 }

@@ -226,6 +226,26 @@ impl LutLang {
             == other[(other.as_ref().len() - 1).into()].eval(inputs, other)
     }
 
+    /// Since variables/leaves can be duplicated in expressions, we sometimes need to do deep checks for equality.
+    /// This function returns true if the two nodes contained in `expr` are equal.
+    pub fn deep_equals(&self, other: &Self, expr: &RecExpr<Self>) -> bool {
+        if self == other {
+            return true;
+        }
+
+        if self.children().len() != other.children().len() {
+            return false;
+        }
+
+        for (a, b) in self.children().iter().zip(other.children()) {
+            if !expr[*a].deep_equals(&expr[*b], expr) {
+                return false;
+            }
+        }
+
+        true
+    }
+
     fn get_inputs(&self) -> Vec<String> {
         match self {
             LutLang::Var(s) => vec![s.as_str().to_string()],
@@ -361,6 +381,34 @@ pub fn swap_pos(bv: &u64, k: usize, pos: usize) -> u64 {
         nbv.set(index, eval_lut_bv(*bv, &to_bitvec(i as u64, k).unwrap()));
     }
     from_bitvec(&nbv)
+}
+
+/// Return whether node `node` dominates node `other` within the expression `expr`.
+/// This function calls [LutLang::deep_equals], so this is an expensive call.
+pub fn node_dominates(expr: &RecExpr<LutLang>, n: Id, other: Id) -> Result<bool, String> {
+    let largest_id: Id = (expr.as_ref().len() - 1).into();
+    if n > largest_id || other > largest_id {
+        return Err("Node id out of bounds".to_string());
+    }
+
+    if n == other {
+        return Ok(true);
+    }
+
+    let other_node = &expr[other];
+    let node = &expr[n];
+
+    if node.deep_equals(other_node, &expr) {
+        return Ok(true);
+    }
+
+    for child in expr[other].children() {
+        if node_dominates(expr, n, *child)? {
+            return Ok(true);
+        }
+    }
+
+    Ok(false)
 }
 
 /// The size of a given LUT.
