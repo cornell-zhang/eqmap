@@ -24,7 +24,7 @@ An early experiment on representing LUT networks within E-Graphs for logic synth
 
 `cargo build`
 
-`cargo run < examples.txt # Run the synthesizer on a few examples`
+`cargo run < tests/lutlang/examples.txt # Run the synthesizer on a few examples`
 
 ### Docs
 
@@ -32,7 +32,9 @@ You can generate most of the documentation with `cargo doc`.
 
 Here is a rough outline of the type system defined by `LutLang`:
 
-`<LutLang> ::= <Program> | <Node>`
+`<LutLang> ::= <Program> | <Node> | BUS <Node> ... <Node>`
+
+It is important to note that there is an implicit coversion from BUS types to Node types. The least significant bit is taken.
 
 `<Node> ::= <Const> | x | <Input> | NOR <Node> <Node> | MUX <Node> <Node> <Node> | LUT <Program> <Node> ... <Node>`
 
