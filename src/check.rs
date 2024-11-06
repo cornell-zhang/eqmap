@@ -16,7 +16,7 @@ pub enum Check {
 }
 
 impl Check {
-    /// Unwrape a conclusive result
+    /// Unwrap a conclusive result
     pub fn unwrap(self) -> bool {
         match self {
             Check::Equiv => true,
