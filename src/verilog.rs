@@ -6,7 +6,7 @@
 */
 
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, HashSet},
     fmt,
     path::{Path, PathBuf},
 };
@@ -151,7 +151,7 @@ impl fmt::Display for SVPrimitive {
         let indent = " ".repeat(2);
         writeln!(f, "{}{} #(", indent, self.prim)?;
         for (i, (key, value)) in self.attributes.iter().enumerate() {
-            let indent = " ".repeat(level + 2);
+            let indent = " ".repeat(level + 4);
             write!(f, "{}.{}({})", indent, key, value)?;
             if i == self.attributes.len() - 1 {
                 writeln!(f)?;
@@ -161,11 +161,11 @@ impl fmt::Display for SVPrimitive {
         }
         writeln!(f, "{}) {} (", indent, self.name)?;
         for (input, value) in self.inputs.iter() {
-            let indent = " ".repeat(level + 2);
+            let indent = " ".repeat(level + 4);
             writeln!(f, "{}.{}({}),", indent, input, value)?;
         }
         for (i, (value, output)) in self.outputs.iter().enumerate() {
-            let indent = " ".repeat(level + 2);
+            let indent = " ".repeat(level + 4);
             write!(f, "{}.{}({})", indent, output, value)?;
             if i == self.outputs.len() - 1 {
                 writeln!(f)?;
@@ -173,7 +173,7 @@ impl fmt::Display for SVPrimitive {
                 writeln!(f, ",")?;
             }
         }
-        writeln!(f, "{});", indent)
+        write!(f, "{});", indent)
     }
 }
 
@@ -473,23 +473,28 @@ impl fmt::Display for SVModule {
             }
         }
         writeln!(f, "{});", indent)?;
+        let mut already_decl: HashSet<String> = HashSet::new();
         for input in self.inputs.iter() {
             let indent = " ".repeat(level + 2);
             writeln!(f, "{}input {};", indent, input.name)?;
             writeln!(f, "{}wire {};", indent, input.name)?;
+            already_decl.insert(input.name.clone());
         }
         for output in self.outputs.iter() {
             let indent = " ".repeat(level + 2);
             writeln!(f, "{}output {};", indent, output.name)?;
             writeln!(f, "{}wire {};", indent, output.name)?;
+            already_decl.insert(output.name.clone());
         }
         for signal in self.signals.iter() {
             let indent = " ".repeat(level + 2);
-            writeln!(f, "{}wire {};", indent, signal.name)?;
+            if !already_decl.contains(&signal.name) {
+                writeln!(f, "{}wire {};", indent, signal.name)?;
+            }
         }
         for instance in self.instances.iter() {
             writeln!(f, "{}", instance)?;
         }
-        writeln!(f, "{}endmodule", indent)
+        write!(f, "{}endmodule", indent)
     }
 }
