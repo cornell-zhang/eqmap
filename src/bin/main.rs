@@ -376,7 +376,7 @@ fn main() -> std::io::Result<()> {
             eprintln!("INFO: Skipping functionality tests...");
         } else {
             let result = LutExprInfo::new(expr).check(&simplified);
-            if result.is_not_equiv() || result.is_inconclusive() {
+            if !result.is_equiv() {
                 match expl.as_ref() {
                     Some(e) => eprintln!("ERROR: Failed for explanation {}", e),
                     None => eprintln!("ERROR: Failed for unknown reason. Try running with --verbose for an attempted proof"),
