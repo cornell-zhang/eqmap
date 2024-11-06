@@ -167,7 +167,7 @@ impl fmt::Display for SVPrimitive {
         for (i, (value, output)) in self.outputs.iter().enumerate() {
             let indent = " ".repeat(level + 2);
             write!(f, "{}.{}({})", indent, output, value)?;
-            if i == self.attributes.len() - 1 {
+            if i == self.outputs.len() - 1 {
                 writeln!(f)?;
             } else {
                 writeln!(f, ",")?;
@@ -451,5 +451,45 @@ impl SVModule {
         let mut expr = RecExpr::default();
         self.get_expr(root, &mut expr)?;
         Ok(expr)
+    }
+}
+
+impl fmt::Display for SVModule {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let level = 0;
+        let indent = " ".repeat(level);
+        writeln!(f, "{} module {} (", indent, self.name)?;
+        for input in self.inputs.iter() {
+            let indent = " ".repeat(level + 4);
+            writeln!(f, "{}{},", indent, input.name)?;
+        }
+        for (i, output) in self.outputs.iter().enumerate() {
+            let indent = " ".repeat(level + 4);
+            write!(f, "{}{}", indent, output.name)?;
+            if i == self.outputs.len() - 1 {
+                writeln!(f)?;
+            } else {
+                writeln!(f, ",")?;
+            }
+        }
+        writeln!(f, "{});", indent)?;
+        for input in self.inputs.iter() {
+            let indent = " ".repeat(level + 2);
+            writeln!(f, "{}input {};", indent, input.name)?;
+            writeln!(f, "{}wire {};", indent, input.name)?;
+        }
+        for output in self.outputs.iter() {
+            let indent = " ".repeat(level + 2);
+            writeln!(f, "{}output {};", indent, output.name)?;
+            writeln!(f, "{}wire {};", indent, output.name)?;
+        }
+        for signal in self.signals.iter() {
+            let indent = " ".repeat(level + 2);
+            writeln!(f, "{}wire {};", indent, signal.name)?;
+        }
+        for instance in self.instances.iter() {
+            writeln!(f, "{}", instance)?;
+        }
+        writeln!(f, "{}endmodule", indent)
     }
 }
