@@ -9,6 +9,7 @@ TODO: overview, tutorial, testing, research papers
 */
 
 pub mod analysis;
+pub mod check;
 pub mod cost;
 pub mod lut;
 pub mod parse;
@@ -232,7 +233,7 @@ mod tests {
     fn test_bus_type() {
         let bus: RecExpr<LutLang> = "(BUS (LUT 202 s0 a b) (MUX s0 a b))".parse().unwrap();
         let swapped: RecExpr<LutLang> = "(BUS (MUX s0 a b) (LUT 202 s0 a b))".parse().unwrap();
-        assert!(LutLang::func_equiv(&bus, &swapped));
+        assert!(LutLang::func_equiv(&bus, &swapped).unwrap());
     }
 
     #[test]
@@ -257,11 +258,11 @@ mod tests {
     fn test_not_equiv() {
         let xor: RecExpr<LutLang> = "(XOR a b)".parse().unwrap();
         let nor: RecExpr<LutLang> = "(NOR a b)".parse().unwrap();
-        assert!(LutLang::func_equiv(&xor, &"(LUT 6 a b)".parse().unwrap()));
-        assert!(!LutLang::func_equiv(&xor, &"(LUT 4 a b)".parse().unwrap()));
-        assert!(!LutLang::func_equiv(&xor, &"(LUT 2 a b)".parse().unwrap()));
-        assert!(LutLang::func_equiv(&nor, &"(LUT 1 a b)".parse().unwrap()));
-        assert!(!LutLang::func_equiv(&xor, &nor));
+        assert!(LutLang::func_equiv(&xor, &"(LUT 6 a b)".parse().unwrap()).unwrap());
+        assert!(!LutLang::func_equiv(&xor, &"(LUT 4 a b)".parse().unwrap()).unwrap());
+        assert!(!LutLang::func_equiv(&xor, &"(LUT 2 a b)".parse().unwrap()).unwrap());
+        assert!(LutLang::func_equiv(&nor, &"(LUT 1 a b)".parse().unwrap()).unwrap());
+        assert!(!LutLang::func_equiv(&xor, &nor).unwrap());
     }
 
     #[test]

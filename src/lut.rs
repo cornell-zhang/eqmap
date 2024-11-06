@@ -6,6 +6,7 @@
 use std::collections::HashMap;
 
 use super::analysis::LutAnalysis;
+use super::check::{equivalent, not_equivalent, Check};
 use bitvec::prelude::*;
 use egg::define_language;
 use egg::CostFunction;
@@ -278,7 +279,7 @@ impl LutLang {
 
     /// Given two expressions and a set of input values,
     /// this funcion returns true if they represent the same boolean function
-    pub fn func_equiv(expr: &RecExpr<Self>, other: &RecExpr<Self>) -> bool {
+    pub fn func_equiv(expr: &RecExpr<Self>, other: &RecExpr<Self>) -> Check {
         let root = &expr[(expr.as_ref().len() - 1).into()];
         let inputs = root.get_input_set(expr);
         for i in 0..1 << inputs.len() {
@@ -289,10 +290,10 @@ impl LutLang {
                 .collect();
 
             if !Self::eval(expr, &input_map) == Self::eval(other, &input_map) {
-                return false;
+                return not_equivalent();
             }
         }
-        true
+        equivalent()
     }
 }
 
@@ -482,7 +483,7 @@ impl LutExprInfo {
     }
 
     /// This funcion returns true if the expression represents the same boolean function
-    pub fn check(&self, other: &RecExpr<LutLang>) -> bool {
+    pub fn check(&self, other: &RecExpr<LutLang>) -> Check {
         LutLang::func_equiv(&self.expr, other)
     }
 

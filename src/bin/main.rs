@@ -212,16 +212,16 @@ fn test_proof_generation() {
 fn test_eval() {
     let expr: RecExpr<lut::LutLang> = "(MUX s0 a b)".parse().unwrap();
     let other: RecExpr<lut::LutLang> = "(LUT 202 s0 a b)".parse().unwrap();
-    assert!(lut::LutLang::func_equiv(&expr, &other));
+    assert!(lut::LutLang::func_equiv(&expr, &other).unwrap());
 }
 
 #[test]
 fn test_dsd() {
     let expr: RecExpr<lut::LutLang> = "(MUX s1 (MUX s0 a b) (MUX s0 c d))".parse().unwrap();
     let other: RecExpr<lut::LutLang> = "(LUT 18374951396690406058 s1 s0 a b c d)".parse().unwrap();
-    assert!(lut::LutLang::func_equiv(&expr, &other));
+    assert!(lut::LutLang::func_equiv(&expr, &other).unwrap());
     let dsd: RecExpr<lut::LutLang> = "(LUT 51952 s1 (LUT 61642 s1 s0 c d) a b)".parse().unwrap();
-    assert!(lut::LutLang::func_equiv(&other, &dsd));
+    assert!(lut::LutLang::func_equiv(&other, &dsd).unwrap());
 }
 
 #[test]
@@ -232,7 +232,7 @@ fn test_incorrect_dsd() {
         let pos_to_flip: usize = i;
         let p = p ^ (1 << pos_to_flip);
         let other: RecExpr<lut::LutLang> = format!("(LUT {} s1 s0 a b c d)", p).parse().unwrap();
-        assert!(!lut::LutLang::func_equiv(&expr, &other));
+        assert!(!lut::LutLang::func_equiv(&expr, &other).unwrap());
     }
 }
 
@@ -376,7 +376,7 @@ fn main() -> std::io::Result<()> {
             eprintln!("INFO: Skipping functionality tests...");
         } else {
             let result = LutExprInfo::new(expr).check(&simplified);
-            if !result {
+            if result.is_not_equiv() || result.is_inconclusive() {
                 match expl.as_ref() {
                     Some(e) => eprintln!("ERROR: Failed for explanation {}", e),
                     None => eprintln!("ERROR: Failed for unknown reason. Try running with --verbose for an attempted proof"),
