@@ -156,7 +156,7 @@ impl LutLang {
     }
 
     /// Evaluates the boolean value of a [LutLang] node contained in `expr` given the input state `inputs`
-    fn eval(&self, inputs: &HashMap<String, bool>, expr: &RecExpr<Self>) -> BitVec {
+    fn eval_rec(&self, inputs: &HashMap<String, bool>, expr: &RecExpr<Self>) -> BitVec {
         match self {
             LutLang::Const(b) => bitvec!(usize, Lsb0; *b as usize; 1),
             LutLang::Var(s) => bitvec!(usize, Lsb0; *inputs.get(s.as_str()).unwrap() as usize; 1),
@@ -165,32 +165,32 @@ impl LutLang {
             LutLang::Nor(a) => {
                 let a0 = &a[0];
                 let a1 = &a[1];
-                !(expr[*a0].eval(inputs, expr) | expr[*a1].eval(inputs, expr))
+                !(expr[*a0].eval_rec(inputs, expr) | expr[*a1].eval_rec(inputs, expr))
             }
             LutLang::And(a) => {
                 let a0 = &a[0];
                 let a1 = &a[1];
-                expr[*a0].eval(inputs, expr) & expr[*a1].eval(inputs, expr)
+                expr[*a0].eval_rec(inputs, expr) & expr[*a1].eval_rec(inputs, expr)
             }
             LutLang::Xor(a) => {
                 let a0 = &a[0];
                 let a1 = &a[1];
-                expr[*a0].eval(inputs, expr) ^ expr[*a1].eval(inputs, expr)
+                expr[*a0].eval_rec(inputs, expr) ^ expr[*a1].eval_rec(inputs, expr)
             }
             LutLang::Not(a) => {
                 let a0 = &a[0];
-                !expr[*a0].eval(inputs, expr)
+                !expr[*a0].eval_rec(inputs, expr)
             }
             LutLang::Mux(a) => {
                 let a0 = &a[0];
                 let a1 = &a[1];
                 let a2 = &a[2];
-                let sel = expr[*a0].eval(inputs, expr);
+                let sel = expr[*a0].eval_rec(inputs, expr);
                 let len = self.len();
                 if sel.ge(&bitvec!(usize, Lsb0; 0; len)) {
-                    expr[*a1].eval(inputs, expr)
+                    expr[*a1].eval_rec(inputs, expr)
                 } else {
-                    expr[*a2].eval(inputs, expr)
+                    expr[*a2].eval_rec(inputs, expr)
                 }
             }
             LutLang::Lut(a) => {
@@ -200,7 +200,7 @@ impl LutLang {
                 };
                 let x: Vec<bool> = a[1..]
                     .iter()
-                    .map(|id| expr[*id].eval(inputs, expr)[0])
+                    .map(|id| expr[*id].eval_rec(inputs, expr)[0])
                     .collect();
 
                 let t = eval_lut(p, &x);
@@ -209,21 +209,16 @@ impl LutLang {
             LutLang::Bus(a) => {
                 let mut bv: BitVec = BitVec::with_capacity(a.len());
                 for id in a.iter().rev() {
-                    bv.push(expr[*id].eval(inputs, expr)[0]);
+                    bv.push(expr[*id].eval_rec(inputs, expr)[0]);
                 }
                 bv
             }
         }
     }
 
-    /// This funcion returns true if two expressions evaluate to the same value under the certain `inputs`
-    pub fn func_equiv(
-        expr: &RecExpr<Self>,
-        other: &RecExpr<Self>,
-        inputs: &HashMap<String, bool>,
-    ) -> bool {
-        expr[(expr.as_ref().len() - 1).into()].eval(inputs, expr)
-            == other[(other.as_ref().len() - 1).into()].eval(inputs, other)
+    /// This funcion evaluates the `expr` under the certain `inputs`
+    pub fn eval(expr: &RecExpr<Self>, inputs: &HashMap<String, bool>) -> BitVec {
+        expr[(expr.as_ref().len() - 1).into()].eval_rec(inputs, expr)
     }
 
     /// Since variables/leaves can be duplicated in expressions, we sometimes need to do deep checks for equality.
@@ -283,7 +278,7 @@ impl LutLang {
 
     /// Given two expressions and a set of input values,
     /// this funcion returns true if they represent the same boolean function
-    pub fn func_equiv_always(expr: &RecExpr<Self>, other: &RecExpr<Self>) -> bool {
+    pub fn func_equiv(expr: &RecExpr<Self>, other: &RecExpr<Self>) -> bool {
         let root = &expr[(expr.as_ref().len() - 1).into()];
         let inputs = root.get_input_set(expr);
         for i in 0..1 << inputs.len() {
@@ -292,8 +287,8 @@ impl LutLang {
                 .cloned()
                 .zip((0..inputs.len()).map(|j| (i >> j) & 1 == 1))
                 .collect();
-            let result = Self::func_equiv(expr, other, &input_map);
-            if !result {
+
+            if !Self::eval(expr, &input_map) == Self::eval(other, &input_map) {
                 return false;
             }
         }
@@ -393,34 +388,6 @@ pub fn swap_pos(bv: &u64, k: usize, pos: usize) -> u64 {
     from_bitvec(&nbv)
 }
 
-/// Return whether node `node` dominates node `other` within the expression `expr`.
-/// This function calls [LutLang::deep_equals], so this is an expensive call.
-pub fn node_dominates(expr: &RecExpr<LutLang>, n: Id, other: Id) -> Result<bool, String> {
-    let largest_id: Id = (expr.as_ref().len() - 1).into();
-    if n > largest_id || other > largest_id {
-        return Err("Node id out of bounds".to_string());
-    }
-
-    if n == other {
-        return Ok(true);
-    }
-
-    let other_node = &expr[other];
-    let node = &expr[n];
-
-    if node.deep_equals(other_node, expr) {
-        return Ok(true);
-    }
-
-    for child in expr[other].children() {
-        if node_dominates(expr, n, *child)? {
-            return Ok(true);
-        }
-    }
-
-    Ok(false)
-}
-
 /// The size of a given LUT.
 enum LutSize {
     /// A LUT of given size.
@@ -474,13 +441,87 @@ impl CostFunction<LutLang> for NumKLUTsCostFn {
     }
 }
 
-/// Returns the number of luts in the given expr.
-pub fn get_lut_count(expr: &RecExpr<LutLang>) -> u64 {
-    NumKLUTsCostFn::new(LutSize::Any).cost_rec(expr)
+#[derive(Debug, Clone, PartialEq, Eq)]
+/// A struct to facilitate certain analyses on LUT expressions.
+/// For example, finding common subexpressions, testing if a expression is canonical,
+/// getting lut counts, or model checking.
+pub struct LutExprInfo {
+    /// The expression
+    expr: RecExpr<LutLang>,
+    /// The root of the expression
+    root: Id,
 }
 
-/// Returns the number of k-luts in the given expr.
-pub fn get_lut_count_k(expr: &RecExpr<LutLang>, k: usize) -> u64 {
-    let size = LutSize::Size(k);
-    NumKLUTsCostFn::new(size).cost_rec(expr)
+impl LutExprInfo {
+    /// Create a new LutExprInfo from a given expression.
+    pub fn new(expr: RecExpr<LutLang>) -> Self {
+        let root = (expr.as_ref().len() - 1).into();
+        Self { expr, root }
+    }
+
+    /// Return a copy of the expression.
+    pub fn get_expr(&self) -> RecExpr<LutLang> {
+        self.expr.clone()
+    }
+
+    /// Return the root Id
+    pub fn get_root(&self) -> Id {
+        self.root
+    }
+
+    /// Look at a subexpression rooted at `root`.
+    pub fn with_root(&self, root: Id) -> Option<Self> {
+        if root >= self.expr.as_ref().len().into() {
+            None
+        } else {
+            Some(Self {
+                expr: self.expr.clone(),
+                root,
+            })
+        }
+    }
+
+    /// This funcion returns true if the expression represents the same boolean function
+    pub fn check(&self, other: &RecExpr<LutLang>) -> bool {
+        LutLang::func_equiv(&self.expr, other)
+    }
+
+    /// Return whether node `node` dominates node `other` within the expression.
+    /// This function calls [LutLang::deep_equals], so this is an expensive call.
+    pub fn dominates(&self, n: Id, other: Id) -> Result<bool, String> {
+        let largest_id: Id = (self.expr.as_ref().len() - 1).into();
+        if n > largest_id || other > largest_id {
+            return Err("Node id out of bounds".to_string());
+        }
+
+        if n == other {
+            return Ok(true);
+        }
+
+        let other_node = &self.expr[other];
+        let node = &self.expr[n];
+
+        if node.deep_equals(other_node, &self.expr) {
+            return Ok(true);
+        }
+
+        for child in self.expr[other].children() {
+            if self.dominates(n, *child)? {
+                return Ok(true);
+            }
+        }
+
+        Ok(false)
+    }
+
+    /// Returns the number of luts in the given expr.
+    pub fn get_lut_count(&self) -> u64 {
+        NumKLUTsCostFn::new(LutSize::Any).cost_rec(&self.expr)
+    }
+
+    /// Returns the number of k-luts in the given expr.
+    pub fn get_lut_count_k(&self, k: usize) -> u64 {
+        let size = LutSize::Size(k);
+        NumKLUTsCostFn::new(size).cost_rec(&self.expr)
+    }
 }

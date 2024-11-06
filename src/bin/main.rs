@@ -3,7 +3,7 @@ use egg::*;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use lut_synth::{
     cost::KLUTCostFn,
-    lut,
+    lut::{self, LutExprInfo},
     rewrite::{all_rules_minus_dsd, known_decompositions},
 };
 use std::{
@@ -212,16 +212,16 @@ fn test_proof_generation() {
 fn test_eval() {
     let expr: RecExpr<lut::LutLang> = "(MUX s0 a b)".parse().unwrap();
     let other: RecExpr<lut::LutLang> = "(LUT 202 s0 a b)".parse().unwrap();
-    assert!(lut::LutLang::func_equiv_always(&expr, &other));
+    assert!(lut::LutLang::func_equiv(&expr, &other));
 }
 
 #[test]
 fn test_dsd() {
     let expr: RecExpr<lut::LutLang> = "(MUX s1 (MUX s0 a b) (MUX s0 c d))".parse().unwrap();
     let other: RecExpr<lut::LutLang> = "(LUT 18374951396690406058 s1 s0 a b c d)".parse().unwrap();
-    assert!(lut::LutLang::func_equiv_always(&expr, &other));
+    assert!(lut::LutLang::func_equiv(&expr, &other));
     let dsd: RecExpr<lut::LutLang> = "(LUT 51952 s1 (LUT 61642 s1 s0 c d) a b)".parse().unwrap();
-    assert!(lut::LutLang::func_equiv_always(&other, &dsd));
+    assert!(lut::LutLang::func_equiv(&other, &dsd));
 }
 
 #[test]
@@ -232,7 +232,7 @@ fn test_incorrect_dsd() {
         let pos_to_flip: usize = i;
         let p = p ^ (1 << pos_to_flip);
         let other: RecExpr<lut::LutLang> = format!("(LUT {} s1 s0 a b c d)", p).parse().unwrap();
-        assert!(!lut::LutLang::func_equiv_always(&expr, &other));
+        assert!(!lut::LutLang::func_equiv(&expr, &other));
     }
 }
 
@@ -375,7 +375,7 @@ fn main() -> std::io::Result<()> {
         if args.no_verify {
             eprintln!("INFO: Skipping functionality tests...");
         } else {
-            let result = lut::LutLang::func_equiv_always(&expr, &simplified);
+            let result = LutExprInfo::new(expr).check(&simplified);
             if !result {
                 match expl.as_ref() {
                     Some(e) => eprintln!("ERROR: Failed for explanation {}", e),

@@ -18,7 +18,7 @@ pub mod rewrite;
 mod tests {
     use analysis::LutAnalysis;
     use egg::{Analysis, Language, RecExpr};
-    use lut::{node_dominates, verify_expr, LutLang};
+    use lut::{verify_expr, LutExprInfo, LutLang};
     use parse::{sv_parse_wrapper, SVModule, SVPrimitive};
 
     use super::*;
@@ -51,19 +51,25 @@ mod tests {
 
     #[test]
     fn test_get_lut_count() {
-        assert_eq!(2, lut::get_lut_count(&make_simple_nested_lut()));
-        assert_eq!(1, lut::get_lut_count(&make_four_lut()));
-        assert_eq!(1, lut::get_lut_count(&make_three_lut()));
+        assert_eq!(
+            2,
+            LutExprInfo::new(make_simple_nested_lut()).get_lut_count()
+        );
+        assert_eq!(1, LutExprInfo::new(make_four_lut()).get_lut_count());
+        assert_eq!(1, LutExprInfo::new(make_three_lut()).get_lut_count());
     }
 
     #[test]
     fn test_get_lut_k_count() {
-        assert_eq!(2, lut::get_lut_count_k(&make_simple_nested_lut(), 4));
-        assert_eq!(0, lut::get_lut_count_k(&make_simple_nested_lut(), 3));
-        assert_eq!(1, lut::get_lut_count_k(&make_four_lut(), 4));
-        assert_eq!(0, lut::get_lut_count_k(&make_four_lut(), 6));
-        assert_eq!(1, lut::get_lut_count_k(&make_three_lut(), 3));
-        assert_eq!(0, lut::get_lut_count_k(&make_three_lut(), 6));
+        let info = LutExprInfo::new(make_simple_nested_lut());
+        assert_eq!(2, info.get_lut_count_k(4));
+        assert_eq!(0, info.get_lut_count_k(3));
+        let info = LutExprInfo::new(make_four_lut());
+        assert_eq!(1, info.get_lut_count_k(4));
+        assert_eq!(0, info.get_lut_count_k(6));
+        let info = LutExprInfo::new(make_three_lut());
+        assert_eq!(1, info.get_lut_count_k(3));
+        assert_eq!(0, info.get_lut_count_k(6));
     }
 
     #[test]
@@ -226,7 +232,7 @@ mod tests {
     fn test_bus_type() {
         let bus: RecExpr<LutLang> = "(BUS (LUT 202 s0 a b) (MUX s0 a b))".parse().unwrap();
         let swapped: RecExpr<LutLang> = "(BUS (MUX s0 a b) (LUT 202 s0 a b))".parse().unwrap();
-        assert!(LutLang::func_equiv_always(&bus, &swapped));
+        assert!(LutLang::func_equiv(&bus, &swapped));
     }
 
     #[test]
@@ -251,23 +257,11 @@ mod tests {
     fn test_not_equiv() {
         let xor: RecExpr<LutLang> = "(XOR a b)".parse().unwrap();
         let nor: RecExpr<LutLang> = "(NOR a b)".parse().unwrap();
-        assert!(LutLang::func_equiv_always(
-            &xor,
-            &"(LUT 6 a b)".parse().unwrap()
-        ));
-        assert!(!LutLang::func_equiv_always(
-            &xor,
-            &"(LUT 4 a b)".parse().unwrap()
-        ));
-        assert!(!LutLang::func_equiv_always(
-            &xor,
-            &"(LUT 2 a b)".parse().unwrap()
-        ));
-        assert!(LutLang::func_equiv_always(
-            &nor,
-            &"(LUT 1 a b)".parse().unwrap()
-        ));
-        assert!(!LutLang::func_equiv_always(&xor, &nor));
+        assert!(LutLang::func_equiv(&xor, &"(LUT 6 a b)".parse().unwrap()));
+        assert!(!LutLang::func_equiv(&xor, &"(LUT 4 a b)".parse().unwrap()));
+        assert!(!LutLang::func_equiv(&xor, &"(LUT 2 a b)".parse().unwrap()));
+        assert!(LutLang::func_equiv(&nor, &"(LUT 1 a b)".parse().unwrap()));
+        assert!(!LutLang::func_equiv(&xor, &nor));
     }
 
     #[test]
@@ -281,13 +275,14 @@ mod tests {
         let carry = bus_node.children()[1];
         let xor = bus_node.children()[2];
         let and = bus_node.children()[3];
-        assert!(!node_dominates(&bus, sum, carry).unwrap());
-        assert!(!node_dominates(&bus, carry, sum).unwrap());
-        assert!(node_dominates(&bus, sum, sum).unwrap());
-        assert!(node_dominates(&bus, carry, carry).unwrap());
-        assert!(node_dominates(&bus, xor, carry).unwrap());
-        assert!(node_dominates(&bus, xor, sum).unwrap());
-        assert!(node_dominates(&bus, and, carry).unwrap());
-        assert!(!node_dominates(&bus, and, sum).unwrap());
+        let info = LutExprInfo::new(bus);
+        assert!(!info.dominates(sum, carry).unwrap());
+        assert!(!info.dominates(carry, sum).unwrap());
+        assert!(info.dominates(sum, sum).unwrap());
+        assert!(info.dominates(carry, carry).unwrap());
+        assert!(info.dominates(xor, carry).unwrap());
+        assert!(info.dominates(xor, sum).unwrap());
+        assert!(info.dominates(and, carry).unwrap());
+        assert!(!info.dominates(and, sum).unwrap());
     }
 }
