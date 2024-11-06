@@ -197,11 +197,10 @@ mod tests {
         assert_eq!(module.outputs.len(), 1);
         assert_eq!(module.name, "mux_4_1");
         let instance = module.instances.first().unwrap();
-        instance.emit_instance();
         assert_eq!(instance.prim, "LUT6");
         assert_eq!(instance.name, "_0_");
-        assert_eq!(instance.attributes.len(), 2);
-        assert_eq!(instance.attributes["program"], "17361601744336890538");
+        assert_eq!(instance.attributes.len(), 1);
+        assert_eq!(instance.attributes["INIT"], "64'hf0f0ccccff00aaaa");
     }
 
     #[test]

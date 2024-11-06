@@ -7,7 +7,7 @@
 
 use std::{
     collections::{BTreeMap, HashMap},
-    fmt::format,
+    fmt,
     path::{Path, PathBuf},
 };
 
@@ -143,38 +143,37 @@ impl SVPrimitive {
             _ => Err("Unknown port name".to_string()),
         }
     }
+}
 
-    /// Emit the verilog instantiation of this primitive
-    pub fn emit_instance(&self) -> String {
+impl fmt::Display for SVPrimitive {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let level = 2;
         let indent = " ".repeat(2);
-        let mut s = format!("{}{} #(\n", indent, self.prim);
+        writeln!(f, "{}{} #(", indent, self.prim)?;
         for (i, (key, value)) in self.attributes.iter().enumerate() {
             let indent = " ".repeat(level + 2);
-            s.push_str(format!("{}.{}({})", indent, key, value).as_str());
+            write!(f, "{}.{}({})", indent, key, value)?;
             if i == self.attributes.len() - 1 {
-                s.push_str("\n");
+                writeln!(f)?;
             } else {
-                s.push_str(",\n");
+                writeln!(f, ",")?;
             }
         }
-        s.push_str(format!("{}) {} (\n", indent, self.name).as_str());
+        writeln!(f, "{}) {} (", indent, self.name)?;
         for (input, value) in self.inputs.iter() {
             let indent = " ".repeat(level + 2);
-            s.push_str(format!("{}.{}({}),\n", indent, input, value).as_str());
+            writeln!(f, "{}.{}({}),", indent, input, value)?;
         }
         for (i, (value, output)) in self.outputs.iter().enumerate() {
             let indent = " ".repeat(level + 2);
-            s.push_str(format!("{}.{}({})", indent, output, value).as_str());
+            write!(f, "{}.{}({})", indent, output, value)?;
             if i == self.attributes.len() - 1 {
-                s.push_str("\n");
+                writeln!(f)?;
             } else {
-                s.push_str(",\n");
+                writeln!(f, ",")?;
             }
         }
-        s.push_str(format!("{});", indent).as_str());
-        eprintln!("{}", s);
-        s
+        writeln!(f, "{});", indent)
     }
 }
 
@@ -414,10 +413,9 @@ impl SVModule {
                     .attributes
                     .get("INIT")
                     .expect("Only LUT primitives are supported");
-                let program: u64 = if program.starts_with("64'h") {
-                    u64::from_str_radix(&program[4..], 16).unwrap()
-                } else {
-                    program.parse().unwrap()
+                let program: u64 = match program.strip_prefix("64'h") {
+                    Some(p) => u64::from_str_radix(p, 16).unwrap(),
+                    None => program.parse().unwrap(),
                 };
                 subexpr.push(expr.add(LutLang::Program(program)));
                 for input in (0..primitive.inputs.len()).rev().map(|x| format!("I{}", x)) {
