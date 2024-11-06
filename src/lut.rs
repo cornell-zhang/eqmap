@@ -237,13 +237,23 @@ impl LutLang {
             return false;
         }
 
-        for (a, b) in self.children().iter().zip(other.children()) {
-            if !expr[*a].deep_equals(&expr[*b], expr) {
-                return false;
+        match (self, other) {
+            (LutLang::Lut(_), LutLang::Lut(_))
+            | (LutLang::And(_), LutLang::And(_))
+            | (LutLang::Xor(_), LutLang::Xor(_))
+            | (LutLang::Nor(_), LutLang::Nor(_))
+            | (LutLang::Not(_), LutLang::Not(_))
+            | (LutLang::Mux(_), LutLang::Mux(_))
+            | (LutLang::Bus(_), LutLang::Bus(_)) => {
+                for (a, b) in self.children().iter().zip(other.children()) {
+                    if !expr[*a].deep_equals(&expr[*b], expr) {
+                        return false;
+                    }
+                }
+                true
             }
+            _ => false,
         }
-
-        true
     }
 
     fn get_inputs(&self) -> Vec<String> {

@@ -273,18 +273,21 @@ mod tests {
     #[test]
     fn test_dominance() {
         let bus: RecExpr<LutLang> =
-            "(BUS (XOR (XOR a b) cin) (NOT (NOR (AND a b) (AND cin (XOR a b)))) (XOR a b))"
+            "(BUS (XOR (XOR a b) cin) (NOT (NOR (AND a b) (AND cin (XOR a b)))) (XOR a b) (AND a b))"
                 .parse()
                 .unwrap();
         let bus_node = bus.as_ref().last().unwrap();
         let sum = bus_node.children()[0];
         let carry = bus_node.children()[1];
         let xor = bus_node.children()[2];
+        let and = bus_node.children()[3];
         assert!(!node_dominates(&bus, sum, carry).unwrap());
         assert!(!node_dominates(&bus, carry, sum).unwrap());
         assert!(node_dominates(&bus, sum, sum).unwrap());
         assert!(node_dominates(&bus, carry, carry).unwrap());
         assert!(node_dominates(&bus, xor, carry).unwrap());
         assert!(node_dominates(&bus, xor, sum).unwrap());
+        assert!(node_dominates(&bus, and, carry).unwrap());
+        assert!(!node_dominates(&bus, and, sum).unwrap());
     }
 }
