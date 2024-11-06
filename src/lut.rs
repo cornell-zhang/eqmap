@@ -16,7 +16,7 @@ use egg::RecExpr;
 use egg::Symbol;
 
 define_language! {
-    /// Definitions of e-node types. [Program] is the only node type that is not a net/signal.
+    /// Definitions of e-node types. Programs are the only node type that is not a net/signal.
     #[allow(missing_docs)]
     pub enum LutLang {
         Const(bool),
@@ -524,5 +524,42 @@ impl LutExprInfo {
     pub fn get_lut_count_k(&self, k: usize) -> u64 {
         let size = LutSize::Size(k);
         NumKLUTsCostFn::new(size).cost_rec(&self.expr)
+    }
+
+    /// Returns `true` is the expression has common subexpressions that need to be eliminated
+    pub fn is_reduntant(&self) -> bool {
+        let slice = self.expr.as_ref();
+
+        for i in 0..slice.len() {
+            for j in i + 1..slice.len() {
+                if slice[i].deep_equals(&slice[j], &self.expr) {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
+    /// Returns `true` if the expression contains unmapped logic gates
+    pub fn contains_gates(&self) -> bool {
+        let slice = self.expr.as_ref();
+
+        for n in slice {
+            match n {
+                LutLang::And(_)
+                | LutLang::Xor(_)
+                | LutLang::Nor(_)
+                | LutLang::Mux(_)
+                | LutLang::Not(_) => return true,
+                _ => (),
+            }
+        }
+        false
+    }
+
+    /// Returns `true` if the expression is canonical
+    pub fn is_canonical(&self) -> bool {
+        !(self.is_reduntant() || self.contains_gates())
     }
 }

@@ -286,4 +286,19 @@ mod tests {
         assert!(info.dominates(and, carry).unwrap());
         assert!(!info.dominates(and, sum).unwrap());
     }
+
+    #[test]
+    fn test_canonical() {
+        let bus: RecExpr<LutLang> =
+            "(BUS (XOR (XOR a b) cin) (NOT (NOR (AND a b) (AND cin (XOR a b)))) (XOR a b))"
+                .parse()
+                .unwrap();
+        let info = LutExprInfo::new(bus);
+
+        // The egg implementation of parsing does not reuse common expressions
+        // This is annoying
+        assert!(info.is_reduntant());
+        assert!(info.contains_gates());
+        assert!(!info.is_canonical());
+    }
 }
