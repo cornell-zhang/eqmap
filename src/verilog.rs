@@ -6,7 +6,8 @@
 */
 
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
+    fmt::format,
     path::{Path, PathBuf},
 };
 
@@ -91,24 +92,23 @@ pub struct SVPrimitive {
     /// The name of the instance
     pub name: String,
     /// Maps input ports to their signal driver
-    inputs: HashMap<String, String>,
+    inputs: BTreeMap<String, String>,
     /// Maps output signals to their port driver
-    outputs: HashMap<String, String>,
+    outputs: BTreeMap<String, String>,
     /// Stores arguments to module parameters as well as any other attribute
-    pub attributes: HashMap<String, String>,
+    pub attributes: BTreeMap<String, String>,
 }
 
 impl SVPrimitive {
     /// Create a new LUT primitive with size `k`, instance name `name`, and program `program`
     pub fn new_lut(k: usize, name: String, program: u64) -> Self {
-        let mut attributes = HashMap::new();
-        attributes.insert("program".to_string(), format!("{}", program));
-        attributes.insert("size".to_string(), format!("{}", k));
+        let mut attributes = BTreeMap::new();
+        attributes.insert("INIT".to_string(), format!("64'h{:016x}", program));
         SVPrimitive {
             prim: format!("LUT{}", k),
             name,
-            inputs: HashMap::new(),
-            outputs: HashMap::new(),
+            inputs: BTreeMap::new(),
+            outputs: BTreeMap::new(),
             attributes,
         }
     }
@@ -142,6 +142,39 @@ impl SVPrimitive {
             "O" | "Y" => self.add_output(port, signal),
             _ => Err("Unknown port name".to_string()),
         }
+    }
+
+    /// Emit the verilog instantiation of this primitive
+    pub fn emit_instance(&self) -> String {
+        let level = 2;
+        let indent = " ".repeat(2);
+        let mut s = format!("{}{} #(\n", indent, self.prim);
+        for (i, (key, value)) in self.attributes.iter().enumerate() {
+            let indent = " ".repeat(level + 2);
+            s.push_str(format!("{}.{}({})", indent, key, value).as_str());
+            if i == self.attributes.len() - 1 {
+                s.push_str("\n");
+            } else {
+                s.push_str(",\n");
+            }
+        }
+        s.push_str(format!("{}) {} (\n", indent, self.name).as_str());
+        for (input, value) in self.inputs.iter() {
+            let indent = " ".repeat(level + 2);
+            s.push_str(format!("{}.{}({}),\n", indent, input, value).as_str());
+        }
+        for (i, (value, output)) in self.outputs.iter().enumerate() {
+            let indent = " ".repeat(level + 2);
+            s.push_str(format!("{}.{}({})", indent, output, value).as_str());
+            if i == self.attributes.len() - 1 {
+                s.push_str("\n");
+            } else {
+                s.push_str(",\n");
+            }
+        }
+        s.push_str(format!("{});", indent).as_str());
+        eprintln!("{}", s);
+        s
     }
 }
 
@@ -377,7 +410,15 @@ impl SVModule {
         match self.get_driving_primitive(signal) {
             Ok(primitive) => {
                 let mut subexpr: Vec<Id> = vec![];
-                let program: u64 = primitive.attributes["program"].parse().unwrap();
+                let program = primitive
+                    .attributes
+                    .get("INIT")
+                    .expect("Only LUT primitives are supported");
+                let program: u64 = if program.starts_with("64'h") {
+                    u64::from_str_radix(&program[4..], 16).unwrap()
+                } else {
+                    program.parse().unwrap()
+                };
                 subexpr.push(expr.add(LutLang::Program(program)));
                 for input in (0..primitive.inputs.len()).rev().map(|x| format!("I{}", x)) {
                     let driver = primitive

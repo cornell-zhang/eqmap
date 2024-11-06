@@ -4,7 +4,7 @@ use std::{
 };
 
 use clap::Parser;
-use lut_synth::parse::{sv_parse_wrapper, SVModule};
+use lut_synth::verilog::{sv_parse_wrapper, SVModule};
 /// Parse structural verilog into a LutLang Expression
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

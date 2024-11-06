@@ -12,15 +12,15 @@ pub mod analysis;
 pub mod check;
 pub mod cost;
 pub mod lut;
-pub mod parse;
 pub mod rewrite;
+pub mod verilog;
 
 #[cfg(test)]
 mod tests {
     use analysis::LutAnalysis;
     use egg::{Analysis, Language, RecExpr};
     use lut::{verify_expr, LutExprInfo, LutLang};
-    use parse::{sv_parse_wrapper, SVModule, SVPrimitive};
+    use verilog::{sv_parse_wrapper, SVModule, SVPrimitive};
 
     use super::*;
 
@@ -197,6 +197,7 @@ mod tests {
         assert_eq!(module.outputs.len(), 1);
         assert_eq!(module.name, "mux_4_1");
         let instance = module.instances.first().unwrap();
+        instance.emit_instance();
         assert_eq!(instance.prim, "LUT6");
         assert_eq!(instance.name, "_0_");
         assert_eq!(instance.attributes.len(), 2);
