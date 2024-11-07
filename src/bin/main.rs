@@ -238,8 +238,8 @@ fn test_incorrect_dsd() {
 
 #[test]
 fn test_const_input() {
-    // TODO(matth2k): Don't yet have a method to show that an LUT is invariant to an input.
-    assert_eq!(simplify("(LUT 202 true a b)"), "(LUT 12 a b)");
+    // TODO(matth2k): Don't yet have a general method to show that an LUT is invariant to an input.
+    assert_eq!(simplify("(LUT 202 true a b)"), "a");
     assert_eq!(simplify("(LUT 0 a)"), "false");
     assert_eq!(simplify("(LUT 3 a)"), "true");
 }

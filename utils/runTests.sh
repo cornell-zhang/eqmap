@@ -18,3 +18,4 @@ cargo run --release --bin parse-verilog -- --round-trip tests/verilog/roundtrip.
 
 
 echo "SUCCESS"
+
