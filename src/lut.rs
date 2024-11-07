@@ -30,8 +30,19 @@ define_language! {
         "NOT" = Not([Id; 1]),
         "LUT" = Lut(Box<[Id]>), // Program is first
         "BUS" = Bus(Box<[Id]>), // a bus of nodes
+        "REG" = Reg([Id; 1]),
     }
 }
+// struct Register {
+//     data: LutLang,
+// }
+
+// enum EvalElement {
+//     Bit(bool),
+//     Register(Register),
+// }
+
+// type EvalResult = Vec<EvalElement>;
 
 impl LutLang {
     /// Maximum size allowed for a LUT.
@@ -56,7 +67,7 @@ impl LutLang {
                 }
             }
             LutLang::Var(f) => match f.as_str() {
-                "NOR" | "LUT" | "MUX" | "AND" | "XOR" | "NOT" | "BUS" => Err(
+                "NOR" | "LUT" | "MUX" | "AND" | "XOR" | "NOT" | "BUS" | "REG" => Err(
                     "Variable name is already reserved. Check for missing parentheses.".to_string(),
                 ),
                 _ => Ok(()),
@@ -213,6 +224,10 @@ impl LutLang {
                     bv.push(expr[*id].eval_rec(inputs, expr)[0]);
                 }
                 bv
+            }
+            LutLang::Reg(a) => {
+                let a0 = &a[0];
+                expr[*a0].eval_rec(inputs, expr)
             }
         }
     }
@@ -436,7 +451,8 @@ impl CostFunction<LutLang> for NumKLUTsCostFn {
             | LutLang::And(_)
             | LutLang::Xor(_)
             | LutLang::Not(_)
-            | LutLang::Bus(_) => 0,
+            | LutLang::Bus(_)
+            | LutLang::Reg(_) => 0,
         };
         enode.fold(op_cost, |sum, id| sum + costs(id))
     }
