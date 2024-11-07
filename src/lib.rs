@@ -311,7 +311,11 @@ mod tests {
         let res = LutLang::eval(&short_circuit, &HashMap::new());
         assert!(res.is_ok());
         let check = LutLang::func_equiv(&const_false, &short_circuit);
-        eprintln!("{}", check);
+        assert!(check.is_equiv());
+        let check = LutLang::func_equiv(
+            &"true".parse().unwrap(),
+            &"(NOT (NOR x true))".parse().unwrap(),
+        );
         assert!(check.is_equiv());
     }
 }

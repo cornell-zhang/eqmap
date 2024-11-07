@@ -173,12 +173,44 @@ impl LutLang {
             LutLang::Nor(a) => {
                 let a0 = &a[0];
                 let a1 = &a[1];
-                Ok(!(expr[*a0].eval_rec(inputs, expr)? | expr[*a1].eval_rec(inputs, expr)?))
+                // Implement short-circuiting
+                let or_res = match (
+                    expr[*a0].eval_rec(inputs, expr),
+                    expr[*a1].eval_rec(inputs, expr),
+                ) {
+                    (Ok(a), Ok(b)) => Ok(a | b),
+                    (Err(e), Ok(a)) | (Ok(a), Err(e)) => {
+                        if a.eq(&bitvec!(usize, Lsb0; 1; a.len())) {
+                            Ok(bitvec!(usize, Lsb0; 1; a.len()))
+                        } else {
+                            Err(e)
+                        }
+                    }
+                    (Err(e), Err(_)) => Err(e),
+                };
+                match or_res {
+                    Ok(a) => Ok(!a),
+                    Err(e) => Err(e),
+                }
             }
             LutLang::And(a) => {
                 let a0 = &a[0];
                 let a1 = &a[1];
-                Ok(expr[*a0].eval_rec(inputs, expr)? & expr[*a1].eval_rec(inputs, expr)?)
+                // Implement short-circuiting
+                match (
+                    expr[*a0].eval_rec(inputs, expr),
+                    expr[*a1].eval_rec(inputs, expr),
+                ) {
+                    (Ok(a), Ok(b)) => Ok(a & b),
+                    (Err(e), Ok(a)) | (Ok(a), Err(e)) => {
+                        if a.eq(&bitvec!(usize, Lsb0; 0; a.len())) {
+                            Ok(bitvec!(usize, Lsb0; 0; a.len()))
+                        } else {
+                            Err(e)
+                        }
+                    }
+                    (Err(e), Err(_)) => Err(e),
+                }
             }
             LutLang::Xor(a) => {
                 let a0 = &a[0];
