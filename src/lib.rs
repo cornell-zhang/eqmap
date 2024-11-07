@@ -206,6 +206,52 @@ mod tests {
     }
 
     #[test]
+    fn test_verilog_roundtrip() {
+        let module = get_struct_verilog();
+        let ast = sv_parse_wrapper(&module, None).unwrap();
+        let module = SVModule::from_ast(&ast).unwrap();
+        let output = module.to_string();
+        // This test is so ugly >:(
+        let golden = " module mux_4_1 (
+    a,
+    b,
+    c,
+    d,
+    s0,
+    s1,
+    y
+);
+  input a;
+  wire a;
+  input b;
+  wire b;
+  input c;
+  wire c;
+  input d;
+  wire d;
+  input s0;
+  wire s0;
+  input s1;
+  wire s1;
+  output y;
+  wire y;
+  LUT6 #(
+      .INIT(64'hf0f0ccccff00aaaa)
+  ) _0_ (
+      .I0(d),
+      .I1(c),
+      .I2(a),
+      .I3(b),
+      .I4(s1),
+      .I5(s0),
+      .O(y)
+  );
+endmodule"
+            .to_string();
+        assert_eq!(output, golden);
+    }
+
+    #[test]
     fn test_verilog_to_expr() {
         let module = get_struct_verilog();
         let ast = sv_parse_wrapper(&module, None).unwrap();
