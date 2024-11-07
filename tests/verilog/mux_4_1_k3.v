@@ -1,4 +1,4 @@
-// RUN: cargo run --release --bin parse-verilog -- %s 2>>/dev/null | FileCheck %s
+// RUN: parse-verilog %s 2>>/dev/null | FileCheck %s
 
 module mux_4_1 (
     a,

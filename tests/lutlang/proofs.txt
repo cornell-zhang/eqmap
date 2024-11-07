@@ -1,0 +1,17 @@
+// RUN: cargo run --release %s -k 4 --no-verify --verbose 2>>/dev/null | FileCheck %s
+
+// MUX with exact inputs
+(MUX s1 (MUX s0 a b) (MUX s0 a b))
+// CHECK: (LUT 202 s0 a b)
+
+// MUX with match cuts
+(MUX s1 (MUX s0 a b) (MUX s0 b a))
+// CHECK: (LUT 44234 s1 s0 b a)
+
+// 4:1 mux
+(MUX s1 (MUX s0 a b) (MUX s0 c d))
+// CHECK: (LUT 51952 s1 (LUT 61642 s1 s0 c d) a b)
+
+// We can create the circuit by hand too
+(NOT (NOR (AND s0 a) (AND (NOT s0) b)))
+// CHECK: (LUT 202 s0 a b)
