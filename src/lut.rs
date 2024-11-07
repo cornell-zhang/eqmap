@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 
 use super::analysis::LutAnalysis;
-use super::check::{equivalent, not_equivalent, Check};
+use super::check::{equivalent, inconclusive, not_equivalent, Check};
 use bitvec::prelude::*;
 use egg::define_language;
 use egg::CostFunction;
@@ -156,37 +156,44 @@ impl LutLang {
         }
     }
 
-    /// Evaluates the boolean value of a [LutLang] node contained in `expr` given the input state `inputs`
-    fn eval_rec(&self, inputs: &HashMap<String, bool>, expr: &RecExpr<Self>) -> BitVec {
+    /// Evaluates the combinational logic of a [LutLang] node contained in `expr` given the input state `inputs`
+    fn eval_rec(
+        &self,
+        inputs: &HashMap<String, bool>,
+        expr: &RecExpr<Self>,
+    ) -> Result<BitVec, String> {
         match self {
-            LutLang::Const(b) => bitvec!(usize, Lsb0; *b as usize; 1),
-            LutLang::Var(s) => bitvec!(usize, Lsb0; *inputs.get(s.as_str()).unwrap() as usize; 1),
+            LutLang::Const(b) => Ok(bitvec!(usize, Lsb0; *b as usize; 1)),
+            LutLang::Var(s) => match inputs.get(s.as_str()) {
+                Some(b) => Ok(bitvec!(usize, Lsb0; *b as usize; 1)),
+                None => Err(format!("Input {} is not driven", s.as_str())),
+            },
             LutLang::Program(_) => panic!("Program node should not be evaluated"),
-            LutLang::DC => bitvec!(usize, Lsb0; 0; 1),
+            LutLang::DC => Ok(bitvec!(usize, Lsb0; 0; 1)),
             LutLang::Nor(a) => {
                 let a0 = &a[0];
                 let a1 = &a[1];
-                !(expr[*a0].eval_rec(inputs, expr) | expr[*a1].eval_rec(inputs, expr))
+                Ok(!(expr[*a0].eval_rec(inputs, expr)? | expr[*a1].eval_rec(inputs, expr)?))
             }
             LutLang::And(a) => {
                 let a0 = &a[0];
                 let a1 = &a[1];
-                expr[*a0].eval_rec(inputs, expr) & expr[*a1].eval_rec(inputs, expr)
+                Ok(expr[*a0].eval_rec(inputs, expr)? & expr[*a1].eval_rec(inputs, expr)?)
             }
             LutLang::Xor(a) => {
                 let a0 = &a[0];
                 let a1 = &a[1];
-                expr[*a0].eval_rec(inputs, expr) ^ expr[*a1].eval_rec(inputs, expr)
+                Ok(expr[*a0].eval_rec(inputs, expr)? ^ expr[*a1].eval_rec(inputs, expr)?)
             }
             LutLang::Not(a) => {
                 let a0 = &a[0];
-                !expr[*a0].eval_rec(inputs, expr)
+                Ok(!expr[*a0].eval_rec(inputs, expr)?)
             }
             LutLang::Mux(a) => {
                 let a0 = &a[0];
                 let a1 = &a[1];
                 let a2 = &a[2];
-                let sel = expr[*a0].eval_rec(inputs, expr);
+                let sel = expr[*a0].eval_rec(inputs, expr)?;
                 let len = self.len();
                 if sel.ge(&bitvec!(usize, Lsb0; 0; len)) {
                     expr[*a1].eval_rec(inputs, expr)
@@ -199,26 +206,27 @@ impl LutLang {
                     LutLang::Program(p) => p,
                     _ => panic!("First element of LUT must be a program"),
                 };
-                let x: Vec<bool> = a[1..]
-                    .iter()
-                    .map(|id| expr[*id].eval_rec(inputs, expr)[0])
-                    .collect();
+
+                let mut x: Vec<bool> = Vec::new();
+                for operand in &a[1..] {
+                    x.push(expr[*operand].eval_rec(inputs, expr)?[0]);
+                }
 
                 let t = eval_lut(p, &x);
-                bitvec!(usize, Lsb0; t as usize; 1)
+                Ok(bitvec!(usize, Lsb0; t as usize; 1))
             }
             LutLang::Bus(a) => {
                 let mut bv: BitVec = BitVec::with_capacity(a.len());
                 for id in a.iter().rev() {
-                    bv.push(expr[*id].eval_rec(inputs, expr)[0]);
+                    bv.push(expr[*id].eval_rec(inputs, expr)?[0]);
                 }
-                bv
+                Ok(bv)
             }
         }
     }
 
-    /// This funcion evaluates the `expr` under the certain `inputs`
-    pub fn eval(expr: &RecExpr<Self>, inputs: &HashMap<String, bool>) -> BitVec {
+    /// This funcion evaluates the `expr` as combinational logic under given `inputs`
+    pub fn eval(expr: &RecExpr<Self>, inputs: &HashMap<String, bool>) -> Result<BitVec, String> {
         expr[(expr.as_ref().len() - 1).into()].eval_rec(inputs, expr)
     }
 
@@ -278,7 +286,7 @@ impl LutLang {
     }
 
     /// Given two expressions and a set of input values,
-    /// this funcion returns true if they represent the same boolean function
+    /// this funcion returns true if they represent the same combinational logic
     pub fn func_equiv(expr: &RecExpr<Self>, other: &RecExpr<Self>) -> Check {
         let root = &expr[(expr.as_ref().len() - 1).into()];
         let inputs = root.get_input_set(expr);
@@ -289,8 +297,14 @@ impl LutLang {
                 .zip((0..inputs.len()).map(|j| (i >> j) & 1 == 1))
                 .collect();
 
-            if !Self::eval(expr, &input_map) == Self::eval(other, &input_map) {
-                return not_equivalent();
+            match (Self::eval(expr, &input_map), Self::eval(other, &input_map)) {
+                (Ok(e), Ok(o)) => {
+                    if e != o {
+                        return not_equivalent();
+                    }
+                }
+                (Ok(_), Err(_)) | (Err(_), Ok(_)) => return not_equivalent(),
+                _ => return inconclusive(),
             }
         }
         equivalent()

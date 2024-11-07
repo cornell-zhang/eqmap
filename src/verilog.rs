@@ -23,7 +23,7 @@ pub fn sv_parse_wrapper(
 ) -> Result<sv_parser::SyntaxTree, sv_parser::Error> {
     let incl: Vec<std::path::PathBuf> = vec![];
     let path = path.unwrap_or(Path::new("top.v").to_path_buf());
-    match sv_parser::parse_sv_str(s, &path, &HashMap::new(), &incl, true, false) {
+    match sv_parser::parse_sv_str(s, path, &HashMap::new(), &incl, true, false) {
         Ok((ast, _defs)) => Ok(ast),
         Err(e) => Err(e),
     }
