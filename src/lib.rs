@@ -259,7 +259,7 @@ endmodule"
             .unwrap()
             .with_fname("mux_4_1".to_string());
         assert!(module.name == "mux_4_1");
-        let expr = module.to_expr().unwrap();
+        let expr = module.as_expr().unwrap();
         assert_eq!(
             expr.to_string(),
             "(LUT 17361601744336890538 s0 s1 b a c d)".to_string()

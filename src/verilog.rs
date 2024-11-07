@@ -79,6 +79,11 @@ impl SVSignal {
     pub fn new(bw: usize, name: String) -> Self {
         SVSignal { bw, name }
     }
+
+    /// Get the name of the signal
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
 }
 
 /// The [SVPrimitive] struct represents a primitive instance in the inputted structural verilog.
@@ -437,8 +442,33 @@ impl SVModule {
         }
     }
 
+    /// Get a separate [LutLang] expression for every output in the module
+    pub fn get_exprs(&self) -> Result<Vec<(String, RecExpr<LutLang>)>, String> {
+        let mut exprs = vec![];
+        for output in self.outputs.iter() {
+            let mut expr = RecExpr::default();
+            self.get_expr(&output.name, &mut expr)?;
+            exprs.push((output.name.clone(), expr));
+        }
+        Ok(exprs)
+    }
+
+    /// Get a single [LutLang] expression for the module as a bus
+    pub fn as_single_expr(&self) -> Result<RecExpr<LutLang>, String> {
+        let mut expr: RecExpr<LutLang> = RecExpr::default();
+        let mut outputs: Vec<Id> = vec![];
+        for output in self.outputs.iter() {
+            outputs.push(self.get_expr(&output.name, &mut expr)?);
+        }
+        if outputs.len() > 1 {
+            expr.add(LutLang::Bus(outputs.into()));
+        }
+
+        Ok(expr)
+    }
+
     /// Convert the module to a [LutLang] expression
-    pub fn to_expr(&self) -> Result<RecExpr<LutLang>, String> {
+    pub fn as_expr(&self) -> Result<RecExpr<LutLang>, String> {
         if self.outputs.len() != 1 {
             return Err(format!(
                 "{}: Expected exactly one output in module {}.",
@@ -447,10 +477,12 @@ impl SVModule {
             ));
         }
 
-        let root = &self.outputs.first().unwrap().name;
-        let mut expr = RecExpr::default();
-        self.get_expr(root, &mut expr)?;
-        Ok(expr)
+        Ok(self.get_exprs()?.pop().unwrap().1)
+    }
+
+    /// Get the name of the outputs of the module
+    pub fn get_outputs(&self) -> Vec<&str> {
+        self.outputs.iter().map(|x| x.get_name()).collect()
     }
 }
 
