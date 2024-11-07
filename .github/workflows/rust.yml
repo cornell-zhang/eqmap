@@ -58,7 +58,7 @@ jobs:
       - name: Run cargo tests (release)
         run: cargo test --release --verbose
       - name: Run integration tests
-        run: chmod +x utils/runTests.sh && ./utils/runTests.sh
+        run: PATH=$PWD/target/release:$PATH python3 utils/test-runner.py tests -j 2
 
   speed:
     name: Test Speed

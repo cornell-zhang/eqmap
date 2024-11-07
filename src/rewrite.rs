@@ -160,6 +160,7 @@ pub fn all_rules_minus_dsd() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     rules.push(rewrite!("lut1-const-f"; "(LUT 0 ?a)" => "false"));
     rules.push(rewrite!("lut1-const-t"; "(LUT 3 ?a)" => "true"));
     rules.push(rewrite!("lut1-const-id"; "(LUT 2 ?a)" => "?a"));
+    rules.push(rewrite!("lut2-invariant"; "(LUT 12 ?a ?b)" => "(LUT 2 ?a)"));
     rules.push(rewrite!("lut1-const-if"; "(LUT 1 false)" => "true"));
     rules.push(rewrite!("lut1-const-it"; "(LUT 1 true)" => "false"));
 
