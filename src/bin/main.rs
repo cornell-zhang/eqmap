@@ -375,7 +375,7 @@ fn main() -> std::io::Result<()> {
         if args.no_verify {
             eprintln!("INFO: Skipping functionality tests...");
         } else {
-            let result = LutExprInfo::new(expr).check(&simplified);
+            let result = LutExprInfo::new(&expr).check(&simplified);
             if !result.is_equiv() {
                 match expl.as_ref() {
                     Some(e) => eprintln!("ERROR: Failed for explanation {}", e),

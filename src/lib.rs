@@ -56,21 +56,24 @@ mod tests {
     fn test_get_lut_count() {
         assert_eq!(
             2,
-            LutExprInfo::new(make_simple_nested_lut()).get_lut_count()
+            LutExprInfo::new(&make_simple_nested_lut()).get_lut_count()
         );
-        assert_eq!(1, LutExprInfo::new(make_four_lut()).get_lut_count());
-        assert_eq!(1, LutExprInfo::new(make_three_lut()).get_lut_count());
+        assert_eq!(1, LutExprInfo::new(&make_four_lut()).get_lut_count());
+        assert_eq!(1, LutExprInfo::new(&make_three_lut()).get_lut_count());
     }
 
     #[test]
     fn test_get_lut_k_count() {
-        let info = LutExprInfo::new(make_simple_nested_lut());
+        let lut = make_simple_nested_lut();
+        let info = LutExprInfo::new(&lut);
         assert_eq!(2, info.get_lut_count_k(4));
         assert_eq!(0, info.get_lut_count_k(3));
-        let info = LutExprInfo::new(make_four_lut());
+        let lut = make_four_lut();
+        let info = LutExprInfo::new(&lut);
         assert_eq!(1, info.get_lut_count_k(4));
         assert_eq!(0, info.get_lut_count_k(6));
-        let info = LutExprInfo::new(make_three_lut());
+        let lut = make_three_lut();
+        let info = LutExprInfo::new(&lut);
         assert_eq!(1, info.get_lut_count_k(3));
         assert_eq!(0, info.get_lut_count_k(6));
     }
@@ -324,7 +327,7 @@ endmodule"
         let carry = bus_node.children()[1];
         let xor = bus_node.children()[2];
         let and = bus_node.children()[3];
-        let info = LutExprInfo::new(bus);
+        let info = LutExprInfo::new(&bus);
         assert!(!info.dominates(sum, carry).unwrap());
         assert!(!info.dominates(carry, sum).unwrap());
         assert!(info.dominates(sum, sum).unwrap());
@@ -341,7 +344,7 @@ endmodule"
             "(BUS (XOR (XOR a b) cin) (NOT (NOR (AND a b) (AND cin (XOR a b)))) (XOR a b))"
                 .parse()
                 .unwrap();
-        let info = LutExprInfo::new(bus);
+        let info = LutExprInfo::new(&bus);
 
         // The egg implementation of parsing does not reuse common expressions
         // This is annoying

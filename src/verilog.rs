@@ -14,7 +14,7 @@ use std::{
 use egg::{Id, RecExpr};
 use sv_parser::{unwrap_node, Identifier, Locate, NodeEvent, RefNode};
 
-use super::lut::LutLang;
+use super::lut::{LutExprInfo, LutLang};
 
 /// A wrapper for parsing verilog at file `path` with content `s`
 pub fn sv_parse_wrapper(
@@ -410,8 +410,17 @@ impl SVModule {
         Ok(modules.pop().unwrap())
     }
 
-    fn get_expr(&self, signal: &str, expr: &mut RecExpr<LutLang>) -> Result<Id, String> {
-        match self.get_driving_primitive(signal) {
+    fn get_expr<'a>(
+        &'a self,
+        signal: &'a str,
+        expr: &mut RecExpr<LutLang>,
+        map: &mut HashMap<&'a str, Id>,
+    ) -> Result<Id, String> {
+        if map.contains_key(signal) {
+            return Ok(*map.get(signal).unwrap());
+        }
+
+        let id = match self.get_driving_primitive(signal) {
             Ok(primitive) => {
                 let mut subexpr: Vec<Id> = vec![];
                 let program = primitive
@@ -428,7 +437,7 @@ impl SVModule {
                         .inputs
                         .get(&input)
                         .expect("Expect LUT to have input driven");
-                    subexpr.push(self.get_expr(driver, expr)?);
+                    subexpr.push(self.get_expr(driver, expr, map)?);
                 }
                 Ok(expr.add(LutLang::Lut(subexpr.into())))
             }
@@ -439,7 +448,10 @@ impl SVModule {
                     Err(e)
                 }
             }
-        }
+        }?;
+
+        map.insert(signal, id);
+        Ok(id)
     }
 
     /// Get a separate [LutLang] expression for every output in the module
@@ -447,7 +459,7 @@ impl SVModule {
         let mut exprs = vec![];
         for output in self.outputs.iter() {
             let mut expr = RecExpr::default();
-            self.get_expr(&output.name, &mut expr)?;
+            self.get_expr(&output.name, &mut expr, &mut HashMap::new())?;
             exprs.push((output.name.clone(), expr));
         }
         Ok(exprs)
@@ -456,15 +468,20 @@ impl SVModule {
     /// Get a single [LutLang] expression for the module as a bus
     pub fn as_single_expr(&self) -> Result<RecExpr<LutLang>, String> {
         let mut expr: RecExpr<LutLang> = RecExpr::default();
+        let mut map = HashMap::new();
         let mut outputs: Vec<Id> = vec![];
         for output in self.outputs.iter() {
-            outputs.push(self.get_expr(&output.name, &mut expr)?);
+            outputs.push(self.get_expr(&output.name, &mut expr, &mut map)?);
         }
         if outputs.len() > 1 {
             expr.add(LutLang::Bus(outputs.into()));
         }
-
-        Ok(expr)
+        let canonical = LutExprInfo::new(&expr).is_canonical();
+        if !canonical {
+            Err("Outputted expression is not canonical".to_string())
+        } else {
+            Ok(expr)
+        }
     }
 
     /// Convert the module to a [LutLang] expression

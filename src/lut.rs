@@ -491,16 +491,16 @@ impl CostFunction<LutLang> for NumKLUTsCostFn {
 /// A struct to facilitate certain analyses on LUT expressions.
 /// For example, finding common subexpressions, testing if a expression is canonical,
 /// getting lut counts, or model checking.
-pub struct LutExprInfo {
+pub struct LutExprInfo<'a> {
     /// The expression
-    expr: RecExpr<LutLang>,
+    expr: &'a RecExpr<LutLang>,
     /// The root of the expression
     root: Id,
 }
 
-impl LutExprInfo {
+impl<'a> LutExprInfo<'a> {
     /// Create a new LutExprInfo from a given expression.
-    pub fn new(expr: RecExpr<LutLang>) -> Self {
+    pub fn new(expr: &'a RecExpr<LutLang>) -> Self {
         let root = (expr.as_ref().len() - 1).into();
         Self { expr, root }
     }
@@ -521,7 +521,7 @@ impl LutExprInfo {
             None
         } else {
             Some(Self {
-                expr: self.expr.clone(),
+                expr: self.expr,
                 root,
             })
         }
@@ -529,7 +529,7 @@ impl LutExprInfo {
 
     /// This funcion returns true if the expression represents the same boolean function
     pub fn check(&self, other: &RecExpr<LutLang>) -> Check {
-        LutLang::func_equiv(&self.expr, other)
+        LutLang::func_equiv(self.expr, other)
     }
 
     /// Return whether node `node` dominates node `other` within the expression.
@@ -547,7 +547,7 @@ impl LutExprInfo {
         let other_node = &self.expr[other];
         let node = &self.expr[n];
 
-        if node.deep_equals(other_node, &self.expr) {
+        if node.deep_equals(other_node, self.expr) {
             return Ok(true);
         }
 
@@ -562,13 +562,13 @@ impl LutExprInfo {
 
     /// Returns the number of luts in the given expr.
     pub fn get_lut_count(&self) -> u64 {
-        NumKLUTsCostFn::new(LutSize::Any).cost_rec(&self.expr)
+        NumKLUTsCostFn::new(LutSize::Any).cost_rec(self.expr)
     }
 
     /// Returns the number of k-luts in the given expr.
     pub fn get_lut_count_k(&self, k: usize) -> u64 {
         let size = LutSize::Size(k);
-        NumKLUTsCostFn::new(size).cost_rec(&self.expr)
+        NumKLUTsCostFn::new(size).cost_rec(self.expr)
     }
 
     /// Returns `true` is the expression has common subexpressions that need to be eliminated
@@ -576,8 +576,15 @@ impl LutExprInfo {
         let slice = self.expr.as_ref();
 
         for i in 0..slice.len() {
-            for j in i + 1..slice.len() {
-                if slice[i].deep_equals(&slice[j], &self.expr) {
+            let n = &slice[i];
+
+            // We honestly don't care about redundant program leaves
+            if matches!(n, LutLang::Program(_)) {
+                continue;
+            }
+
+            for o in slice.iter().skip(i + 1) {
+                if n.deep_equals(o, self.expr) {
                     return true;
                 }
             }
