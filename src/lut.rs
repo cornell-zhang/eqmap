@@ -56,7 +56,7 @@ impl LutLang {
                 }
             }
             LutLang::Var(f) => match f.as_str() {
-                "NOR" | "LUT" | "MUX" | "AND" | "XOR" | "NOT" | "BUS" => Err(
+                "NOR" | "LUT" | "MUX" | "AND" | "XOR" | "NOT" | "BUS" | "DC" | "x" => Err(
                     "Variable name is already reserved. Check for missing parentheses.".to_string(),
                 ),
                 _ => Ok(()),
@@ -169,7 +169,7 @@ impl LutLang {
                 None => Err(format!("Input {} is not driven", s.as_str())),
             },
             LutLang::Program(_) => panic!("Program node should not be evaluated"),
-            LutLang::DC => Ok(bitvec!(usize, Lsb0; 0; 1)),
+            LutLang::DC => Err("DC".to_string()),
             LutLang::Nor(a) => {
                 let a0 = &a[0];
                 let a1 = &a[1];
@@ -303,7 +303,6 @@ impl LutLang {
                         return not_equivalent();
                     }
                 }
-                (Ok(_), Err(_)) | (Err(_), Ok(_)) => return not_equivalent(),
                 _ => return inconclusive(),
             }
         }

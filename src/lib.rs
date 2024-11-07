@@ -17,6 +17,8 @@ pub mod verilog;
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use analysis::LutAnalysis;
     use egg::{Analysis, Language, RecExpr};
     use lut::{verify_expr, LutExprInfo, LutLang};
@@ -300,5 +302,16 @@ mod tests {
         assert!(info.is_reduntant());
         assert!(info.contains_gates());
         assert!(!info.is_canonical());
+    }
+
+    #[test]
+    fn test_dont_care() {
+        let const_false: RecExpr<LutLang> = "false".parse().unwrap();
+        let short_circuit: RecExpr<LutLang> = "(AND false x)".parse().unwrap();
+        let res = LutLang::eval(&short_circuit, &HashMap::new());
+        assert!(res.is_ok());
+        let check = LutLang::func_equiv(&const_false, &short_circuit);
+        eprintln!("{}", check);
+        assert!(check.is_equiv());
     }
 }
