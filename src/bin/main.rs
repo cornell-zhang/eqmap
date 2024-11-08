@@ -4,7 +4,7 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use lut_synth::{
     cost::KLUTCostFn,
     lut::{self, LutExprInfo},
-    rewrite::{all_rules_minus_dsd, known_decompositions},
+    rewrite::{all_rules_minus_dsd, known_decompositions, register_retiming},
 };
 use std::{
     io::{IsTerminal, Read, Write},
@@ -259,6 +259,10 @@ struct Args {
     #[arg(short = 'd', long, default_value_t = false)]
     no_dsd: bool,
 
+    /// Don't use register retiming
+    #[arg(short = 'r', long, default_value_t = false)]
+    no_retime: bool,
+
     /// Print explanations (this generates a proof and runs longer)
     #[arg(short = 'v', long, default_value_t = false)]
     verbose: bool,
@@ -314,6 +318,10 @@ fn main() -> std::io::Result<()> {
     let mut rules = all_rules_minus_dsd();
     if !args.no_dsd {
         rules.append(&mut known_decompositions());
+    }
+
+    if !args.no_retime {
+        rules.append(&mut register_retiming());
     }
 
     if args.verbose {

@@ -33,6 +33,33 @@ where
     rules
 }
 
+/// Move registers around LUTs
+pub fn register_retiming<A>() -> Vec<Rewrite<lut::LutLang, A>>
+where
+    A: Analysis<lut::LutLang> + std::default::Default,
+{
+    let mut rules: Vec<Rewrite<lut::LutLang, A>> = Vec::new();
+    // Logic element conversions
+    rules.append(&mut rewrite!("lut1-retime"; "(LUT ?p (REG ?a))" <=> "(REG (LUT ?p ?a))"));
+    rules.append(
+        &mut rewrite!("lut2-retime"; "(LUT ?p (REG ?a) (REG ?b))" <=> "(REG (LUT ?p ?a ?b))"),
+    );
+    rules.append(
+        &mut rewrite!("lut3-retime"; "(LUT ?p (REG ?a) (REG ?b) (REG ?c))" <=> "(REG (LUT ?p ?a ?b ?c))"),
+    );
+    rules.append(
+        &mut rewrite!("lut4-retime"; "(LUT ?p (REG ?a) (REG ?b) (REG ?c) (REG ?d))" <=> "(REG (LUT ?p ?a ?b ?c ?d))"),
+    );
+    rules.append(
+        &mut rewrite!("lut5-retime"; "(LUT ?p (REG ?a) (REG ?b) (REG ?c) (REG ?d) (REG ?e))" <=> "(REG (LUT ?p ?a ?b ?c ?d ?e))"),
+    );
+    rules.append(
+        &mut rewrite!("lut6-retime"; "(LUT ?p (REG ?a) (REG ?b) (REG ?c) (REG ?d) (REG ?e) (REG ?f))" <=> "(REG (LUT ?p ?a ?b ?c ?d ?e ?f))"),
+    );
+
+    rules
+}
+
 /// Returns a list of rules for permuting inputs in LUTs. Each instance of these rules forms a group under composition (https://en.wikipedia.org/wiki/Symmetric_group).
 /// Each of these groups have k-1 generators.
 pub fn permute_groups() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
