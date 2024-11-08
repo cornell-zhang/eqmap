@@ -6,14 +6,15 @@
 */
 
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap, HashSet},
+    fmt,
     path::{Path, PathBuf},
 };
 
 use egg::{Id, RecExpr};
 use sv_parser::{unwrap_node, Identifier, Locate, NodeEvent, RefNode};
 
-use super::lut::LutLang;
+use super::lut::{LutExprInfo, LutLang};
 
 /// A wrapper for parsing verilog at file `path` with content `s`
 pub fn sv_parse_wrapper(
@@ -22,7 +23,7 @@ pub fn sv_parse_wrapper(
 ) -> Result<sv_parser::SyntaxTree, sv_parser::Error> {
     let incl: Vec<std::path::PathBuf> = vec![];
     let path = path.unwrap_or(Path::new("top.v").to_path_buf());
-    match sv_parser::parse_sv_str(s, &path, &HashMap::new(), &incl, true, false) {
+    match sv_parser::parse_sv_str(s, path, &HashMap::new(), &incl, true, false) {
         Ok((ast, _defs)) => Ok(ast),
         Err(e) => Err(e),
     }
@@ -78,6 +79,11 @@ impl SVSignal {
     pub fn new(bw: usize, name: String) -> Self {
         SVSignal { bw, name }
     }
+
+    /// Get the name of the signal
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
 }
 
 /// The [SVPrimitive] struct represents a primitive instance in the inputted structural verilog.
@@ -91,24 +97,23 @@ pub struct SVPrimitive {
     /// The name of the instance
     pub name: String,
     /// Maps input ports to their signal driver
-    inputs: HashMap<String, String>,
+    inputs: BTreeMap<String, String>,
     /// Maps output signals to their port driver
-    outputs: HashMap<String, String>,
+    outputs: BTreeMap<String, String>,
     /// Stores arguments to module parameters as well as any other attribute
-    pub attributes: HashMap<String, String>,
+    pub attributes: BTreeMap<String, String>,
 }
 
 impl SVPrimitive {
     /// Create a new LUT primitive with size `k`, instance name `name`, and program `program`
     pub fn new_lut(k: usize, name: String, program: u64) -> Self {
-        let mut attributes = HashMap::new();
-        attributes.insert("program".to_string(), format!("{}", program));
-        attributes.insert("size".to_string(), format!("{}", k));
+        let mut attributes = BTreeMap::new();
+        attributes.insert("INIT".to_string(), format!("64'h{:016x}", program));
         SVPrimitive {
             prim: format!("LUT{}", k),
             name,
-            inputs: HashMap::new(),
-            outputs: HashMap::new(),
+            inputs: BTreeMap::new(),
+            outputs: BTreeMap::new(),
             attributes,
         }
     }
@@ -142,6 +147,38 @@ impl SVPrimitive {
             "O" | "Y" => self.add_output(port, signal),
             _ => Err("Unknown port name".to_string()),
         }
+    }
+}
+
+impl fmt::Display for SVPrimitive {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let level = 2;
+        let indent = " ".repeat(2);
+        writeln!(f, "{}{} #(", indent, self.prim)?;
+        for (i, (key, value)) in self.attributes.iter().enumerate() {
+            let indent = " ".repeat(level + 4);
+            write!(f, "{}.{}({})", indent, key, value)?;
+            if i == self.attributes.len() - 1 {
+                writeln!(f)?;
+            } else {
+                writeln!(f, ",")?;
+            }
+        }
+        writeln!(f, "{}) {} (", indent, self.name)?;
+        for (input, value) in self.inputs.iter() {
+            let indent = " ".repeat(level + 4);
+            writeln!(f, "{}.{}({}),", indent, input, value)?;
+        }
+        for (i, (value, output)) in self.outputs.iter().enumerate() {
+            let indent = " ".repeat(level + 4);
+            write!(f, "{}.{}({})", indent, output, value)?;
+            if i == self.outputs.len() - 1 {
+                writeln!(f)?;
+            } else {
+                writeln!(f, ",")?;
+            }
+        }
+        write!(f, "{});", indent)
     }
 }
 
@@ -373,18 +410,34 @@ impl SVModule {
         Ok(modules.pop().unwrap())
     }
 
-    fn get_expr(&self, signal: &str, expr: &mut RecExpr<LutLang>) -> Result<Id, String> {
-        match self.get_driving_primitive(signal) {
+    fn get_expr<'a>(
+        &'a self,
+        signal: &'a str,
+        expr: &mut RecExpr<LutLang>,
+        map: &mut HashMap<&'a str, Id>,
+    ) -> Result<Id, String> {
+        if map.contains_key(signal) {
+            return Ok(*map.get(signal).unwrap());
+        }
+
+        let id = match self.get_driving_primitive(signal) {
             Ok(primitive) => {
                 let mut subexpr: Vec<Id> = vec![];
-                let program: u64 = primitive.attributes["program"].parse().unwrap();
+                let program = primitive
+                    .attributes
+                    .get("INIT")
+                    .expect("Only LUT primitives are supported");
+                let program: u64 = match program.strip_prefix("64'h") {
+                    Some(p) => u64::from_str_radix(p, 16).unwrap(),
+                    None => program.parse().unwrap(),
+                };
                 subexpr.push(expr.add(LutLang::Program(program)));
                 for input in (0..primitive.inputs.len()).rev().map(|x| format!("I{}", x)) {
                     let driver = primitive
                         .inputs
                         .get(&input)
                         .expect("Expect LUT to have input driven");
-                    subexpr.push(self.get_expr(driver, expr)?);
+                    subexpr.push(self.get_expr(driver, expr, map)?);
                 }
                 Ok(expr.add(LutLang::Lut(subexpr.into())))
             }
@@ -395,11 +448,44 @@ impl SVModule {
                     Err(e)
                 }
             }
+        }?;
+
+        map.insert(signal, id);
+        Ok(id)
+    }
+
+    /// Get a separate [LutLang] expression for every output in the module
+    pub fn get_exprs(&self) -> Result<Vec<(String, RecExpr<LutLang>)>, String> {
+        let mut exprs = vec![];
+        for output in self.outputs.iter() {
+            let mut expr = RecExpr::default();
+            self.get_expr(&output.name, &mut expr, &mut HashMap::new())?;
+            exprs.push((output.name.clone(), expr));
+        }
+        Ok(exprs)
+    }
+
+    /// Get a single [LutLang] expression for the module as a bus
+    pub fn as_single_expr(&self) -> Result<RecExpr<LutLang>, String> {
+        let mut expr: RecExpr<LutLang> = RecExpr::default();
+        let mut map = HashMap::new();
+        let mut outputs: Vec<Id> = vec![];
+        for output in self.outputs.iter() {
+            outputs.push(self.get_expr(&output.name, &mut expr, &mut map)?);
+        }
+        if outputs.len() > 1 {
+            expr.add(LutLang::Bus(outputs.into()));
+        }
+        let canonical = LutExprInfo::new(&expr).is_canonical();
+        if !canonical {
+            Err("Outputted expression is not canonical".to_string())
+        } else {
+            Ok(expr)
         }
     }
 
     /// Convert the module to a [LutLang] expression
-    pub fn to_expr(&self) -> Result<RecExpr<LutLang>, String> {
+    pub fn as_expr(&self) -> Result<RecExpr<LutLang>, String> {
         if self.outputs.len() != 1 {
             return Err(format!(
                 "{}: Expected exactly one output in module {}.",
@@ -408,9 +494,56 @@ impl SVModule {
             ));
         }
 
-        let root = &self.outputs.first().unwrap().name;
-        let mut expr = RecExpr::default();
-        self.get_expr(root, &mut expr)?;
-        Ok(expr)
+        Ok(self.get_exprs()?.pop().unwrap().1)
+    }
+
+    /// Get the name of the outputs of the module
+    pub fn get_outputs(&self) -> Vec<&str> {
+        self.outputs.iter().map(|x| x.get_name()).collect()
+    }
+}
+
+impl fmt::Display for SVModule {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let level = 0;
+        let indent = " ".repeat(level);
+        writeln!(f, "{} module {} (", indent, self.name)?;
+        for input in self.inputs.iter() {
+            let indent = " ".repeat(level + 4);
+            writeln!(f, "{}{},", indent, input.name)?;
+        }
+        for (i, output) in self.outputs.iter().enumerate() {
+            let indent = " ".repeat(level + 4);
+            write!(f, "{}{}", indent, output.name)?;
+            if i == self.outputs.len() - 1 {
+                writeln!(f)?;
+            } else {
+                writeln!(f, ",")?;
+            }
+        }
+        writeln!(f, "{});", indent)?;
+        let mut already_decl: HashSet<String> = HashSet::new();
+        for input in self.inputs.iter() {
+            let indent = " ".repeat(level + 2);
+            writeln!(f, "{}input {};", indent, input.name)?;
+            writeln!(f, "{}wire {};", indent, input.name)?;
+            already_decl.insert(input.name.clone());
+        }
+        for output in self.outputs.iter() {
+            let indent = " ".repeat(level + 2);
+            writeln!(f, "{}output {};", indent, output.name)?;
+            writeln!(f, "{}wire {};", indent, output.name)?;
+            already_decl.insert(output.name.clone());
+        }
+        for signal in self.signals.iter() {
+            let indent = " ".repeat(level + 2);
+            if !already_decl.contains(&signal.name) {
+                writeln!(f, "{}wire {};", indent, signal.name)?;
+            }
+        }
+        for instance in self.instances.iter() {
+            writeln!(f, "{}", instance)?;
+        }
+        write!(f, "{}endmodule", indent)
     }
 }

@@ -4,13 +4,19 @@ use std::{
 };
 
 use clap::Parser;
-use lut_synth::parse::{sv_parse_wrapper, SVModule};
+use lut_synth::verilog::{sv_parse_wrapper, SVModule};
 /// Parse structural verilog into a LutLang Expression
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
     /// Path to input file. If not provided, reads from stdin
     input: Option<PathBuf>,
+    /// Convert from and to verilog
+    #[arg(short = 'r', long, default_value_t = false)]
+    round_trip: bool,
+    /// Get a separate expression for each output
+    #[arg(short = 'm', long, default_value_t = false)]
+    multiple_expr: bool,
 }
 
 fn main() -> std::io::Result<()> {
@@ -34,11 +40,25 @@ fn main() -> std::io::Result<()> {
     let f =
         SVModule::from_ast(&ast).map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
-    let expr = f
-        .to_expr()
-        .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
-
-    println!("{}", expr);
+    if !args.round_trip {
+        if args.multiple_expr {
+            let exprs = f
+                .get_exprs()
+                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+            for (y, expr) in exprs {
+                eprintln!("{}: {}", y, expr);
+                println!("{}", expr);
+            }
+        } else {
+            let expr = f
+                .as_single_expr()
+                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+            eprintln!("{:?}", f.get_outputs());
+            println!("{}", expr);
+        }
+    } else {
+        println!("{}", f);
+    }
 
     Ok(())
 }

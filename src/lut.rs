@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 
 use super::analysis::LutAnalysis;
-use super::check::{equivalent, not_equivalent, Check};
+use super::check::{equivalent, inconclusive, not_equivalent, Check};
 use bitvec::prelude::*;
 use egg::define_language;
 use egg::CostFunction;
@@ -67,7 +67,7 @@ impl LutLang {
                 }
             }
             LutLang::Var(f) => match f.as_str() {
-                "NOR" | "LUT" | "MUX" | "AND" | "XOR" | "NOT" | "BUS" | "REG" => Err(
+                "NOR" | "LUT" | "MUX" | "AND" | "XOR" | "NOT" | "BUS" | "DC" | "x" | "REG" => Err(
                     "Variable name is already reserved. Check for missing parentheses.".to_string(),
                 ),
                 _ => Ok(()),
@@ -167,37 +167,76 @@ impl LutLang {
         }
     }
 
-    /// Evaluates the boolean value of a [LutLang] node contained in `expr` given the input state `inputs`
-    fn eval_rec(&self, inputs: &HashMap<String, bool>, expr: &RecExpr<Self>) -> BitVec {
+    /// Evaluates the combinational logic of a [LutLang] node contained in `expr` given the input state `inputs`
+    fn eval_rec(
+        &self,
+        inputs: &HashMap<String, bool>,
+        expr: &RecExpr<Self>,
+    ) -> Result<BitVec, String> {
         match self {
-            LutLang::Const(b) => bitvec!(usize, Lsb0; *b as usize; 1),
-            LutLang::Var(s) => bitvec!(usize, Lsb0; *inputs.get(s.as_str()).unwrap() as usize; 1),
+            LutLang::Const(b) => Ok(bitvec!(usize, Lsb0; *b as usize; 1)),
+            LutLang::Var(s) => match inputs.get(s.as_str()) {
+                Some(b) => Ok(bitvec!(usize, Lsb0; *b as usize; 1)),
+                None => Err(format!("Input {} is not driven", s.as_str())),
+            },
             LutLang::Program(_) => panic!("Program node should not be evaluated"),
-            LutLang::DC => bitvec!(usize, Lsb0; 0; 1),
+            LutLang::DC => Err("DC".to_string()),
             LutLang::Nor(a) => {
                 let a0 = &a[0];
                 let a1 = &a[1];
-                !(expr[*a0].eval_rec(inputs, expr) | expr[*a1].eval_rec(inputs, expr))
+                // Implement short-circuiting
+                let or_res = match (
+                    expr[*a0].eval_rec(inputs, expr),
+                    expr[*a1].eval_rec(inputs, expr),
+                ) {
+                    (Ok(a), Ok(b)) => Ok(a | b),
+                    (Err(e), Ok(a)) | (Ok(a), Err(e)) => {
+                        if a.eq(&bitvec!(usize, Lsb0; 1; a.len())) {
+                            Ok(bitvec!(usize, Lsb0; 1; a.len()))
+                        } else {
+                            Err(e)
+                        }
+                    }
+                    (Err(e), Err(_)) => Err(e),
+                };
+                match or_res {
+                    Ok(a) => Ok(!a),
+                    Err(e) => Err(e),
+                }
             }
             LutLang::And(a) => {
                 let a0 = &a[0];
                 let a1 = &a[1];
-                expr[*a0].eval_rec(inputs, expr) & expr[*a1].eval_rec(inputs, expr)
+                // Implement short-circuiting
+                match (
+                    expr[*a0].eval_rec(inputs, expr),
+                    expr[*a1].eval_rec(inputs, expr),
+                ) {
+                    (Ok(a), Ok(b)) => Ok(a & b),
+                    (Err(e), Ok(a)) | (Ok(a), Err(e)) => {
+                        if a.eq(&bitvec!(usize, Lsb0; 0; a.len())) {
+                            Ok(bitvec!(usize, Lsb0; 0; a.len()))
+                        } else {
+                            Err(e)
+                        }
+                    }
+                    (Err(e), Err(_)) => Err(e),
+                }
             }
             LutLang::Xor(a) => {
                 let a0 = &a[0];
                 let a1 = &a[1];
-                expr[*a0].eval_rec(inputs, expr) ^ expr[*a1].eval_rec(inputs, expr)
+                Ok(expr[*a0].eval_rec(inputs, expr)? ^ expr[*a1].eval_rec(inputs, expr)?)
             }
             LutLang::Not(a) => {
                 let a0 = &a[0];
-                !expr[*a0].eval_rec(inputs, expr)
+                Ok(!expr[*a0].eval_rec(inputs, expr)?)
             }
             LutLang::Mux(a) => {
                 let a0 = &a[0];
                 let a1 = &a[1];
                 let a2 = &a[2];
-                let sel = expr[*a0].eval_rec(inputs, expr);
+                let sel = expr[*a0].eval_rec(inputs, expr)?;
                 let len = self.len();
                 if sel.ge(&bitvec!(usize, Lsb0; 0; len)) {
                     expr[*a1].eval_rec(inputs, expr)
@@ -210,20 +249,21 @@ impl LutLang {
                     LutLang::Program(p) => p,
                     _ => panic!("First element of LUT must be a program"),
                 };
-                let x: Vec<bool> = a[1..]
-                    .iter()
-                    .map(|id| expr[*id].eval_rec(inputs, expr)[0])
-                    .collect();
+
+                let mut x: Vec<bool> = Vec::new();
+                for operand in &a[1..] {
+                    x.push(expr[*operand].eval_rec(inputs, expr)?[0]);
+                }
 
                 let t = eval_lut(p, &x);
-                bitvec!(usize, Lsb0; t as usize; 1)
+                Ok(bitvec!(usize, Lsb0; t as usize; 1))
             }
             LutLang::Bus(a) => {
                 let mut bv: BitVec = BitVec::with_capacity(a.len());
                 for id in a.iter().rev() {
-                    bv.push(expr[*id].eval_rec(inputs, expr)[0]);
+                    bv.push(expr[*id].eval_rec(inputs, expr)?[0]);
                 }
-                bv
+                Ok(bv)
             }
             LutLang::Reg(a) => {
                 let a0 = &a[0];
@@ -232,8 +272,8 @@ impl LutLang {
         }
     }
 
-    /// This funcion evaluates the `expr` under the certain `inputs`
-    pub fn eval(expr: &RecExpr<Self>, inputs: &HashMap<String, bool>) -> BitVec {
+    /// This funcion evaluates the `expr` as combinational logic under given `inputs`
+    pub fn eval(expr: &RecExpr<Self>, inputs: &HashMap<String, bool>) -> Result<BitVec, String> {
         expr[(expr.as_ref().len() - 1).into()].eval_rec(inputs, expr)
     }
 
@@ -293,7 +333,7 @@ impl LutLang {
     }
 
     /// Given two expressions and a set of input values,
-    /// this funcion returns true if they represent the same boolean function
+    /// this funcion returns true if they represent the same combinational logic
     pub fn func_equiv(expr: &RecExpr<Self>, other: &RecExpr<Self>) -> Check {
         let root = &expr[(expr.as_ref().len() - 1).into()];
         let inputs = root.get_input_set(expr);
@@ -304,8 +344,13 @@ impl LutLang {
                 .zip((0..inputs.len()).map(|j| (i >> j) & 1 == 1))
                 .collect();
 
-            if !Self::eval(expr, &input_map) == Self::eval(other, &input_map) {
-                return not_equivalent();
+            match (Self::eval(expr, &input_map), Self::eval(other, &input_map)) {
+                (Ok(e), Ok(o)) => {
+                    if e != o {
+                        return not_equivalent();
+                    }
+                }
+                _ => return inconclusive(),
             }
         }
         equivalent()
@@ -462,16 +507,16 @@ impl CostFunction<LutLang> for NumKLUTsCostFn {
 /// A struct to facilitate certain analyses on LUT expressions.
 /// For example, finding common subexpressions, testing if a expression is canonical,
 /// getting lut counts, or model checking.
-pub struct LutExprInfo {
+pub struct LutExprInfo<'a> {
     /// The expression
-    expr: RecExpr<LutLang>,
+    expr: &'a RecExpr<LutLang>,
     /// The root of the expression
     root: Id,
 }
 
-impl LutExprInfo {
+impl<'a> LutExprInfo<'a> {
     /// Create a new LutExprInfo from a given expression.
-    pub fn new(expr: RecExpr<LutLang>) -> Self {
+    pub fn new(expr: &'a RecExpr<LutLang>) -> Self {
         let root = (expr.as_ref().len() - 1).into();
         Self { expr, root }
     }
@@ -492,7 +537,7 @@ impl LutExprInfo {
             None
         } else {
             Some(Self {
-                expr: self.expr.clone(),
+                expr: self.expr,
                 root,
             })
         }
@@ -500,7 +545,7 @@ impl LutExprInfo {
 
     /// This funcion returns true if the expression represents the same boolean function
     pub fn check(&self, other: &RecExpr<LutLang>) -> Check {
-        LutLang::func_equiv(&self.expr, other)
+        LutLang::func_equiv(self.expr, other)
     }
 
     /// Return whether node `node` dominates node `other` within the expression.
@@ -518,7 +563,7 @@ impl LutExprInfo {
         let other_node = &self.expr[other];
         let node = &self.expr[n];
 
-        if node.deep_equals(other_node, &self.expr) {
+        if node.deep_equals(other_node, self.expr) {
             return Ok(true);
         }
 
@@ -533,13 +578,13 @@ impl LutExprInfo {
 
     /// Returns the number of luts in the given expr.
     pub fn get_lut_count(&self) -> u64 {
-        NumKLUTsCostFn::new(LutSize::Any).cost_rec(&self.expr)
+        NumKLUTsCostFn::new(LutSize::Any).cost_rec(self.expr)
     }
 
     /// Returns the number of k-luts in the given expr.
     pub fn get_lut_count_k(&self, k: usize) -> u64 {
         let size = LutSize::Size(k);
-        NumKLUTsCostFn::new(size).cost_rec(&self.expr)
+        NumKLUTsCostFn::new(size).cost_rec(self.expr)
     }
 
     /// Returns `true` is the expression has common subexpressions that need to be eliminated
@@ -547,8 +592,15 @@ impl LutExprInfo {
         let slice = self.expr.as_ref();
 
         for i in 0..slice.len() {
-            for j in i + 1..slice.len() {
-                if slice[i].deep_equals(&slice[j], &self.expr) {
+            let n = &slice[i];
+
+            // We honestly don't care about redundant program leaves
+            if matches!(n, LutLang::Program(_)) {
+                continue;
+            }
+
+            for o in slice.iter().skip(i + 1) {
+                if n.deep_equals(o, self.expr) {
                     return true;
                 }
             }

@@ -4,6 +4,8 @@
 
 */
 
+use std::fmt;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// An enum to help facilitate model checking down the road
 pub enum Check {
@@ -52,6 +54,12 @@ impl Check {
     /// Returns `true` if the check is conclusive
     pub fn is_conclusive(&self) -> bool {
         !self.is_inconclusive()
+    }
+}
+
+impl fmt::Display for Check {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 

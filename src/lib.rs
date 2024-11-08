@@ -12,15 +12,17 @@ pub mod analysis;
 pub mod check;
 pub mod cost;
 pub mod lut;
-pub mod parse;
 pub mod rewrite;
+pub mod verilog;
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use analysis::LutAnalysis;
     use egg::{Analysis, Language, RecExpr};
     use lut::{verify_expr, LutExprInfo, LutLang};
-    use parse::{sv_parse_wrapper, SVModule, SVPrimitive};
+    use verilog::{sv_parse_wrapper, SVModule, SVPrimitive};
 
     use super::*;
 
@@ -54,21 +56,24 @@ mod tests {
     fn test_get_lut_count() {
         assert_eq!(
             2,
-            LutExprInfo::new(make_simple_nested_lut()).get_lut_count()
+            LutExprInfo::new(&make_simple_nested_lut()).get_lut_count()
         );
-        assert_eq!(1, LutExprInfo::new(make_four_lut()).get_lut_count());
-        assert_eq!(1, LutExprInfo::new(make_three_lut()).get_lut_count());
+        assert_eq!(1, LutExprInfo::new(&make_four_lut()).get_lut_count());
+        assert_eq!(1, LutExprInfo::new(&make_three_lut()).get_lut_count());
     }
 
     #[test]
     fn test_get_lut_k_count() {
-        let info = LutExprInfo::new(make_simple_nested_lut());
+        let lut = make_simple_nested_lut();
+        let info = LutExprInfo::new(&lut);
         assert_eq!(2, info.get_lut_count_k(4));
         assert_eq!(0, info.get_lut_count_k(3));
-        let info = LutExprInfo::new(make_four_lut());
+        let lut = make_four_lut();
+        let info = LutExprInfo::new(&lut);
         assert_eq!(1, info.get_lut_count_k(4));
         assert_eq!(0, info.get_lut_count_k(6));
-        let info = LutExprInfo::new(make_three_lut());
+        let lut = make_three_lut();
+        let info = LutExprInfo::new(&lut);
         assert_eq!(1, info.get_lut_count_k(3));
         assert_eq!(0, info.get_lut_count_k(6));
     }
@@ -199,8 +204,54 @@ mod tests {
         let instance = module.instances.first().unwrap();
         assert_eq!(instance.prim, "LUT6");
         assert_eq!(instance.name, "_0_");
-        assert_eq!(instance.attributes.len(), 2);
-        assert_eq!(instance.attributes["program"], "17361601744336890538");
+        assert_eq!(instance.attributes.len(), 1);
+        assert_eq!(instance.attributes["INIT"], "64'hf0f0ccccff00aaaa");
+    }
+
+    #[test]
+    fn test_verilog_roundtrip() {
+        let module = get_struct_verilog();
+        let ast = sv_parse_wrapper(&module, None).unwrap();
+        let module = SVModule::from_ast(&ast).unwrap();
+        let output = module.to_string();
+        // This test is so ugly >:(
+        let golden = " module mux_4_1 (
+    a,
+    b,
+    c,
+    d,
+    s0,
+    s1,
+    y
+);
+  input a;
+  wire a;
+  input b;
+  wire b;
+  input c;
+  wire c;
+  input d;
+  wire d;
+  input s0;
+  wire s0;
+  input s1;
+  wire s1;
+  output y;
+  wire y;
+  LUT6 #(
+      .INIT(64'hf0f0ccccff00aaaa)
+  ) _0_ (
+      .I0(d),
+      .I1(c),
+      .I2(a),
+      .I3(b),
+      .I4(s1),
+      .I5(s0),
+      .O(y)
+  );
+endmodule"
+            .to_string();
+        assert_eq!(output, golden);
     }
 
     #[test]
@@ -211,7 +262,7 @@ mod tests {
             .unwrap()
             .with_fname("mux_4_1".to_string());
         assert!(module.name == "mux_4_1");
-        let expr = module.to_expr().unwrap();
+        let expr = module.as_expr().unwrap();
         assert_eq!(
             expr.to_string(),
             "(LUT 17361601744336890538 s0 s1 b a c d)".to_string()
@@ -276,7 +327,7 @@ mod tests {
         let carry = bus_node.children()[1];
         let xor = bus_node.children()[2];
         let and = bus_node.children()[3];
-        let info = LutExprInfo::new(bus);
+        let info = LutExprInfo::new(&bus);
         assert!(!info.dominates(sum, carry).unwrap());
         assert!(!info.dominates(carry, sum).unwrap());
         assert!(info.dominates(sum, sum).unwrap());
@@ -293,12 +344,27 @@ mod tests {
             "(BUS (XOR (XOR a b) cin) (NOT (NOR (AND a b) (AND cin (XOR a b)))) (XOR a b))"
                 .parse()
                 .unwrap();
-        let info = LutExprInfo::new(bus);
+        let info = LutExprInfo::new(&bus);
 
         // The egg implementation of parsing does not reuse common expressions
         // This is annoying
         assert!(info.is_reduntant());
         assert!(info.contains_gates());
         assert!(!info.is_canonical());
+    }
+
+    #[test]
+    fn test_dont_care() {
+        let const_false: RecExpr<LutLang> = "false".parse().unwrap();
+        let short_circuit: RecExpr<LutLang> = "(AND false x)".parse().unwrap();
+        let res = LutLang::eval(&short_circuit, &HashMap::new());
+        assert!(res.is_ok());
+        let check = LutLang::func_equiv(&const_false, &short_circuit);
+        assert!(check.is_equiv());
+        let check = LutLang::func_equiv(
+            &"true".parse().unwrap(),
+            &"(NOT (NOR x true))".parse().unwrap(),
+        );
+        assert!(check.is_equiv());
     }
 }
