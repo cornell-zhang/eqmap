@@ -252,8 +252,12 @@ struct Args {
     input: Option<PathBuf>,
 
     /// Don't verify functionality of the output
-    #[arg(short = 'c', long, default_value_t = false)]
+    #[arg(short = 'f', long, default_value_t = false)]
     no_verify: bool,
+
+    /// Opt a specific LUT expr instead of from file
+    #[arg(short = 'c', long)]
+    command: Option<String>,
 
     /// Don't use disjoint set decompositions
     #[arg(short = 'd', long, default_value_t = false)]
@@ -299,7 +303,9 @@ fn main() -> std::io::Result<()> {
         eprintln!("WARNING: Debug assertions are enabled");
     }
 
-    if args.input.is_some() {
+    if args.command.is_some() {
+        buf = args.command.unwrap();
+    } else if args.input.is_some() {
         std::fs::File::open(args.input.unwrap())?.read_to_string(&mut buf)?;
     } else {
         let mut stdin = std::io::stdin();
@@ -384,7 +390,7 @@ fn main() -> std::io::Result<()> {
             eprintln!("INFO: Skipping functionality tests...");
         } else {
             let result = LutExprInfo::new(&expr).check(&simplified);
-            if result.is_inconclusive() {
+            if result.is_inconclusive() && args.verbose {
                 eprintln!("WARNING: Functionality verification inconclusive");
             }
             if result.is_not_equiv() {
