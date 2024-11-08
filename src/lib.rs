@@ -367,4 +367,24 @@ endmodule"
         );
         assert!(check.is_equiv());
     }
+
+    #[test]
+    fn test_reg() {
+        // Make sure any expression that include reg return inconclusive equivalence
+        let simple_reg_expr: RecExpr<LutLang> = "(REG a)".parse().unwrap();
+        assert!(
+            LutLang::func_equiv(&simple_reg_expr, &"(REG a)".parse().unwrap()).is_inconclusive()
+        );
+        assert!(
+            LutLang::func_equiv(&simple_reg_expr, &"(REG (REG a))".parse().unwrap())
+                .is_inconclusive()
+        );
+        assert!(
+            LutLang::func_equiv(&simple_reg_expr, &"(XOR c (REG d))".parse().unwrap())
+                .is_inconclusive()
+        );
+        let compicated_reg_expr: RecExpr<LutLang> =
+            "AND (AND a b) (XOR (AND c (REG a)) d)".parse().unwrap();
+        assert!(LutLang::func_equiv(&compicated_reg_expr, &simple_reg_expr).is_inconclusive());
+    }
 }

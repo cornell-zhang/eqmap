@@ -33,16 +33,6 @@ define_language! {
         "REG" = Reg([Id; 1]),
     }
 }
-// struct Register {
-//     data: LutLang,
-// }
-
-// enum EvalElement {
-//     Bit(bool),
-//     Register(Register),
-// }
-
-// type EvalResult = Vec<EvalElement>;
 
 impl LutLang {
     /// Maximum size allowed for a LUT.
@@ -265,10 +255,7 @@ impl LutLang {
                 }
                 Ok(bv)
             }
-            LutLang::Reg(a) => {
-                let a0 = &a[0];
-                expr[*a0].eval_rec(inputs, expr)
-            }
+            LutLang::Reg(_) => Err("REG is not combinational logic".to_string()),
         }
     }
 
@@ -303,6 +290,7 @@ impl LutLang {
                 }
                 true
             }
+            (LutLang::Reg(_), LutLang::Reg(_)) => false, // Inconclusive if comparing 2 regs
             _ => false,
         }
     }
