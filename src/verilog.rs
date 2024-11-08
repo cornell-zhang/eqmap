@@ -105,12 +105,25 @@ pub struct SVPrimitive {
 }
 
 impl SVPrimitive {
-    /// Create a new LUT primitive with size `k`, instance name `name`, and program `program`
+    /// Create a new unconnected LUT primitive with size `k`, instance name `name`, and program `program`
     pub fn new_lut(k: usize, name: String, program: u64) -> Self {
         let mut attributes = BTreeMap::new();
         attributes.insert("INIT".to_string(), format!("64'h{:016x}", program));
         SVPrimitive {
             prim: format!("LUT{}", k),
+            name,
+            inputs: BTreeMap::new(),
+            outputs: BTreeMap::new(),
+            attributes,
+        }
+    }
+
+    /// Create a new unconnected FDRE primitive with instance name `name`
+    pub fn new_reg(name: String) -> Self {
+        let mut attributes = BTreeMap::new();
+        attributes.insert("INIT".to_string(), "1'hx".to_string());
+        SVPrimitive {
+            prim: "FDRE".to_string(),
             name,
             inputs: BTreeMap::new(),
             outputs: BTreeMap::new(),
@@ -143,8 +156,9 @@ impl SVPrimitive {
     /// Create an IO connection to the primitive based on port name. This is based on the Xilinx port naming conventions.
     pub fn add_signal(&mut self, port: String, signal: String) -> Result<(), String> {
         match port.as_str() {
-            "I0" | "I1" | "I2" | "I3" | "I4" | "I5" => self.add_input(port, signal),
-            "O" | "Y" => self.add_output(port, signal),
+            "I0" | "I1" | "I2" | "I3" | "I4" | "I5" | "D" => self.add_input(port, signal),
+            "O" | "Y" | "Q" => self.add_output(port, signal),
+            "C" | "CE" | "R" => Ok(()),
             _ => Err("Unknown port name".to_string()),
         }
     }
@@ -165,9 +179,18 @@ impl fmt::Display for SVPrimitive {
             }
         }
         writeln!(f, "{}) {} (", indent, self.name)?;
+        if self.prim.as_str() == "FDRE" {
+            let indent = " ".repeat(level + 4);
+            writeln!(f, "{}.C(clk),", indent)?;
+            writeln!(f, "{}.CE(1'h1),", indent)?;
+        }
         for (input, value) in self.inputs.iter() {
             let indent = " ".repeat(level + 4);
             writeln!(f, "{}.{}({}),", indent, input, value)?;
+        }
+        if self.prim.as_str() == "FDRE" {
+            let indent = " ".repeat(level + 4);
+            writeln!(f, "{}.R(1'h0),", indent)?;
         }
         for (i, (value, output)) in self.outputs.iter().enumerate() {
             let indent = " ".repeat(level + 4);
@@ -267,6 +290,26 @@ impl SVModule {
         self.inputs.iter().any(|x| x.name == signal)
     }
 
+    fn is_lut_prim(name: &str) -> Option<usize> {
+        match name.strip_prefix("LUT") {
+            Some(x) => match x.parse::<usize>() {
+                Ok(x) => {
+                    if x > 6 {
+                        panic!("Only support LUTs up to size 6");
+                    } else {
+                        Some(x)
+                    }
+                }
+                Err(_) => panic!("Could not parse LUT size"),
+            },
+            None => None,
+        }
+    }
+
+    fn is_reg_prim(name: &str) -> bool {
+        name == "FDRE"
+    }
+
     /// From a parsed verilog ast, create a new module and fill it with its primitives and connections.
     /// This method only works on structural verilog.
     pub fn from_ast(ast: &sv_parser::SyntaxTree) -> Result<Self, String> {
@@ -320,38 +363,41 @@ impl SVModule {
                     let mod_name = get_identifier(id, ast).unwrap();
                     let id = unwrap_node!(inst, InstanceIdentifier).unwrap();
                     let inst_name = get_identifier(id, ast).unwrap();
-                    let prim: Vec<&str> = mod_name.split("LUT").collect();
-                    if prim.len() != 2 || !prim[0].is_empty() {
-                        return Err(format!(
-                            "Expected a LUT primitive. Found primitive {}",
-                            mod_name
-                        ));
-                    }
-                    let size = match prim.last().unwrap().parse::<usize>() {
-                        Ok(x) => x,
-                        Err(_) => return Err(format!("Could not parse LUT size for {}", mod_name)),
-                    };
-                    let id = unwrap_node!(inst, NamedParameterAssignment).unwrap();
-                    let program: u64 =
-                        if let RefNode::HexValue(v) = unwrap_node!(id, HexValue).unwrap() {
-                            let loc = v.nodes.0;
-                            let loc = ast.get_str(&loc).unwrap();
-                            match u64::from_str_radix(loc, 16) {
-                                Ok(x) => x,
-                                Err(_) => {
-                                    return Err(format!(
-                                        "Could not parse hex value from INIT string {}",
-                                        loc
-                                    ))
+
+                    if let Some(k) = Self::is_lut_prim(&mod_name) {
+                        let id = unwrap_node!(inst, NamedParameterAssignment).unwrap();
+                        let program: u64 =
+                            if let RefNode::HexValue(v) = unwrap_node!(id, HexValue).unwrap() {
+                                let loc = v.nodes.0;
+                                let loc = ast.get_str(&loc).unwrap();
+                                match u64::from_str_radix(loc, 16) {
+                                    Ok(x) => x,
+                                    Err(_) => {
+                                        return Err(format!(
+                                            "Could not parse hex value from INIT string {}",
+                                            loc
+                                        ))
+                                    }
                                 }
-                            }
-                        } else {
-                            return Err(format!(
-                                "LUT {} should have INIT value written in hexadecimal",
-                                mod_name
-                            ));
-                        };
-                    cur_insts.push(SVPrimitive::new_lut(size, inst_name, program));
+                            } else {
+                                return Err(format!(
+                                    "LUT {} should have INIT value written in hexadecimal",
+                                    mod_name
+                                ));
+                            };
+                        cur_insts.push(SVPrimitive::new_lut(k, inst_name, program));
+                        continue;
+                    }
+
+                    if Self::is_reg_prim(&mod_name) {
+                        cur_insts.push(SVPrimitive::new_reg(inst_name));
+                        continue;
+                    }
+
+                    return Err(format!(
+                        "Expected a LUT or FDRE primitive. Found primitive {} {:?}",
+                        mod_name, inst
+                    ));
                 }
                 NodeEvent::Leave(RefNode::ModuleInstantiation(_inst)) => (),
 
@@ -378,14 +424,30 @@ impl SVModule {
                 // Handle instance args
                 NodeEvent::Enter(RefNode::NamedPortConnection(connection)) => {
                     let port = unwrap_node!(connection, PortIdentifier).unwrap();
-                    let port_name = get_identifier(port, ast);
+                    let port_name = get_identifier(port, ast).unwrap();
                     let arg = unwrap_node!(connection, Expression).unwrap();
-                    let arg = unwrap_node!(arg, HierarchicalIdentifier).unwrap();
-                    let arg_name = get_identifier(arg, ast);
-                    cur_insts
-                        .last_mut()
-                        .unwrap()
-                        .add_signal(port_name.unwrap(), arg_name.unwrap())?;
+                    let arg_i = unwrap_node!(arg.clone(), HierarchicalIdentifier);
+
+                    match arg_i {
+                        Some(n) => {
+                            let arg_name = get_identifier(n, ast);
+                            cur_insts
+                                .last_mut()
+                                .unwrap()
+                                .add_signal(port_name, arg_name.unwrap())?;
+                        }
+                        None => {
+                            // Ignore clock enable and resets
+                            if port_name == "CE" || port_name == "R" {
+                                if unwrap_node!(arg, PrimaryLiteral).is_none() {
+                                    panic!("Port {} should be driven constant", port_name);
+                                }
+                                continue;
+                            } else {
+                                panic!("Expected a HierarchicalIdentifier for port {}", port_name);
+                            }
+                        }
+                    }
                 }
                 NodeEvent::Leave(RefNode::NamedPortConnection(_connection)) => (),
 
@@ -422,24 +484,31 @@ impl SVModule {
 
         let id = match self.get_driving_primitive(signal) {
             Ok(primitive) => {
-                let mut subexpr: Vec<Id> = vec![];
                 let program = primitive
                     .attributes
                     .get("INIT")
-                    .expect("Only LUT primitives are supported");
-                let program: u64 = match program.strip_prefix("64'h") {
-                    Some(p) => u64::from_str_radix(p, 16).unwrap(),
-                    None => program.parse().unwrap(),
-                };
-                subexpr.push(expr.add(LutLang::Program(program)));
-                for input in (0..primitive.inputs.len()).rev().map(|x| format!("I{}", x)) {
-                    let driver = primitive
-                        .inputs
-                        .get(&input)
-                        .expect("Expect LUT to have input driven");
-                    subexpr.push(self.get_expr(driver, expr, map)?);
+                    .expect("Only LUT and FDRE primitives are supported");
+
+                if Self::is_reg_prim(primitive.prim.as_str()) {
+                    let d = primitive.inputs.first_key_value().unwrap().1;
+                    let d = self.get_expr(d, expr, map)?;
+                    Ok(expr.add(LutLang::Reg([d])))
+                } else {
+                    let mut subexpr: Vec<Id> = vec![];
+                    let program: u64 = match program.strip_prefix("64'h") {
+                        Some(p) => u64::from_str_radix(p, 16).unwrap(),
+                        None => program.parse().unwrap(),
+                    };
+                    subexpr.push(expr.add(LutLang::Program(program)));
+                    for input in (0..primitive.inputs.len()).rev().map(|x| format!("I{}", x)) {
+                        let driver = primitive
+                            .inputs
+                            .get(&input)
+                            .expect("Expect LUT to have input driven");
+                        subexpr.push(self.get_expr(driver, expr, map)?);
+                    }
+                    Ok(expr.add(LutLang::Lut(subexpr.into())))
                 }
-                Ok(expr.add(LutLang::Lut(subexpr.into())))
             }
             Err(e) => {
                 if self.is_an_input(signal) {
@@ -507,7 +576,7 @@ impl fmt::Display for SVModule {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let level = 0;
         let indent = " ".repeat(level);
-        writeln!(f, "{} module {} (", indent, self.name)?;
+        writeln!(f, "{}module {} (", indent, self.name)?;
         for input in self.inputs.iter() {
             let indent = " ".repeat(level + 4);
             writeln!(f, "{}{},", indent, input.name)?;
