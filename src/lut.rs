@@ -290,7 +290,7 @@ impl LutLang {
                 }
                 true
             }
-            (LutLang::Reg(_), LutLang::Reg(_)) => false, // Inconclusive if comparing 2 regs
+            (_, LutLang::Reg(_)) | (LutLang::Reg(_), _) => false, //  Comparing any expression with a reg is inconclusive
             _ => false,
         }
     }
