@@ -282,7 +282,8 @@ impl LutLang {
             | (LutLang::Nor(_), LutLang::Nor(_))
             | (LutLang::Not(_), LutLang::Not(_))
             | (LutLang::Mux(_), LutLang::Mux(_))
-            | (LutLang::Bus(_), LutLang::Bus(_)) => {
+            | (LutLang::Bus(_), LutLang::Bus(_))
+            | (LutLang::Reg(_), LutLang::Reg(_)) => {
                 for (a, b) in self.children().iter().zip(other.children()) {
                     if !expr[*a].deep_equals(&expr[*b], expr) {
                         return false;
@@ -290,7 +291,6 @@ impl LutLang {
                 }
                 true
             }
-            (_, LutLang::Reg(_)) | (LutLang::Reg(_), _) => false, //  Comparing any expression with a reg is inconclusive
             _ => false,
         }
     }
@@ -323,6 +323,11 @@ impl LutLang {
     /// Given two expressions and a set of input values,
     /// this funcion returns true if they represent the same combinational logic
     pub fn func_equiv(expr: &RecExpr<Self>, other: &RecExpr<Self>) -> Check {
+        // First double check for structural equality
+        if deep_equals(expr, other) {
+            return equivalent();
+        }
+
         let root = &expr[(expr.as_ref().len() - 1).into()];
         let inputs = root.get_input_set(expr);
         for i in 0..1 << inputs.len() {
@@ -343,6 +348,32 @@ impl LutLang {
         }
         equivalent()
     }
+}
+
+/// Given two expressions, concatenate them and find if their roots are structurally equivalent
+pub fn deep_equals(expr: &RecExpr<LutLang>, other: &RecExpr<LutLang>) -> bool {
+    let concat = concat_expr(expr, other);
+    let r0 = &concat[(expr.as_ref().len() - 1).into()];
+    let r1 = &concat[(concat.as_ref().len() - 1).into()];
+    r0.deep_equals(r1, &concat)
+}
+
+fn concat_expr<L>(expr: &RecExpr<L>, other: &RecExpr<L>) -> RecExpr<L>
+where
+    L: Language,
+{
+    let rlen = expr.as_ref().len();
+
+    let mut remap: Vec<L> = other
+        .as_ref()
+        .iter()
+        .cloned()
+        .map(|n| n.map_children(|c| (usize::from(c) + rlen).into()))
+        .collect();
+
+    let mut newexpr: Vec<L> = expr.as_ref().to_vec();
+    newexpr.append(&mut remap);
+    RecExpr::from(newexpr)
 }
 
 /// Verify the grammar of a [LutLang] expression from its root

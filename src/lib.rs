@@ -372,9 +372,7 @@ endmodule"
     fn test_reg() {
         // Make sure any expression that include reg return inconclusive equivalence
         let simple_reg_expr: RecExpr<LutLang> = "(REG a)".parse().unwrap();
-        assert!(
-            LutLang::func_equiv(&simple_reg_expr, &"(REG a)".parse().unwrap()).is_inconclusive()
-        );
+        assert!(LutLang::func_equiv(&simple_reg_expr, &"(REG a)".parse().unwrap()).is_equiv());
         assert!(
             LutLang::func_equiv(&simple_reg_expr, &"(AND a b)".parse().unwrap()).is_inconclusive()
         );
