@@ -35,8 +35,9 @@ Here is a rough outline of the type system defined by `LutLang`:
 `<LutLang> ::= <Program> | <Node> | BUS <Node> ... <Node>`
 
 It is important to note that there is an implicit coversion from BUS types to Node types. The least significant bit is taken.
+REG expressions trivially result in inconclusive. Sequential logic isn't fully supported yet.
 
-`<Node> ::= <Const> | x | <Input> | NOR <Node> <Node> | MUX <Node> <Node> <Node> | LUT <Program> <Node> ... <Node>`
+`<Node> ::= <Const> | x | <Input> | NOR <Node> <Node> | MUX <Node> <Node> <Node> | LUT <Program> <Node> ... <Node> | REG <Node>`
 
 `<Const> ::= false | true // Base type is a bool`
 
