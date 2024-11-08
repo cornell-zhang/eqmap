@@ -190,6 +190,31 @@ mod tests {
             .to_string()
     }
 
+    fn get_fdre_verilog() -> String {
+        "module mux_4_1 (
+            d,
+            clk,
+            y
+        );
+          input d;
+          wire d;
+          input clk;
+          wire clk;
+          output y;
+          wire y;
+          FDRE #(
+              .INIT(1'hx)
+          ) _0_ (
+              .C (clk),
+              .CE(1'h1),
+              .D (d),
+              .Q (y),
+              .R (1'h0)
+          );
+        endmodule"
+            .to_string()
+    }
+
     #[test]
     fn test_parse_verilog() {
         let module = get_struct_verilog();
@@ -267,6 +292,39 @@ endmodule"
             expr.to_string(),
             "(LUT 17361601744336890538 s0 s1 b a c d)".to_string()
         );
+    }
+
+    #[test]
+    fn test_fdre_verilog() {
+        let module = get_fdre_verilog();
+        let ast = sv_parse_wrapper(&module, None).unwrap();
+        let module = SVModule::from_ast(&ast);
+        assert!(module.is_ok());
+        let module = module.unwrap();
+        let output = module.to_string();
+        let golden = "module mux_4_1 (
+    d,
+    clk,
+    y
+);
+  input d;
+  wire d;
+  input clk;
+  wire clk;
+  output y;
+  wire y;
+  FDRE #(
+      .INIT(1'hx)
+  ) _0_ (
+      .C(clk),
+      .CE(1'h1),
+      .D(d),
+      .R(1'h0),
+      .Q(y)
+  );
+endmodule"
+            .to_string();
+        assert_eq!(output, golden);
     }
 
     #[test]
