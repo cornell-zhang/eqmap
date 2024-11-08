@@ -215,7 +215,7 @@ mod tests {
         let module = SVModule::from_ast(&ast).unwrap();
         let output = module.to_string();
         // This test is so ugly >:(
-        let golden = " module mux_4_1 (
+        let golden = "module mux_4_1 (
     a,
     b,
     c,
