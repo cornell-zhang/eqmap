@@ -376,8 +376,7 @@ endmodule"
             LutLang::func_equiv(&simple_reg_expr, &"(REG a)".parse().unwrap()).is_inconclusive()
         );
         assert!(
-            LutLang::func_equiv(&simple_reg_expr, &"(REG (REG a))".parse().unwrap())
-                .is_inconclusive()
+            LutLang::func_equiv(&simple_reg_expr, &"(AND a b)".parse().unwrap()).is_inconclusive()
         );
         assert!(
             LutLang::func_equiv(&simple_reg_expr, &"(XOR c (REG d))".parse().unwrap())
