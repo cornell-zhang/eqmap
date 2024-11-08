@@ -301,6 +301,10 @@ endmodule"
         let module = SVModule::from_ast(&ast);
         assert!(module.is_ok());
         let module = module.unwrap();
+        assert_eq!(
+            module.as_single_expr().unwrap().to_string(),
+            "(REG d)".to_string()
+        );
         let output = module.to_string();
         let golden = "module mux_4_1 (
     d,

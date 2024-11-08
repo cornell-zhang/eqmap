@@ -440,11 +440,17 @@ impl SVModule {
                             // Ignore clock enable and resets
                             if port_name == "CE" || port_name == "R" {
                                 if unwrap_node!(arg, PrimaryLiteral).is_none() {
-                                    panic!("Port {} should be driven constant", port_name);
+                                    return Err(format!(
+                                        "Port {} should be driven constant",
+                                        port_name
+                                    ));
                                 }
                                 continue;
                             } else {
-                                panic!("Expected a HierarchicalIdentifier for port {}", port_name);
+                                return Err(format!(
+                                    "Expected a HierarchicalIdentifier for port {}",
+                                    port_name
+                                ));
                             }
                         }
                     }
