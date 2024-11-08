@@ -376,6 +376,12 @@ fn main() -> std::io::Result<()> {
             eprintln!("INFO: Skipping functionality tests...");
         } else {
             let result = LutExprInfo::new(&expr).check(&simplified);
+            if !result.is_conclusive() {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "Functionality verification failed. Result inconclusive.",
+                ));
+            }
             if !result.is_equiv() {
                 match expl.as_ref() {
                     Some(e) => eprintln!("ERROR: Failed for explanation {}", e),
