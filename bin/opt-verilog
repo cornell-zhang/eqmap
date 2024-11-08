@@ -1,0 +1,4 @@
+#!/usr/bin/bash
+set -eo pipefail
+cargo build --release 2>>/dev/null
+cargo run --quiet --release --bin parse-verilog -- $1 | cargo run --quiet --release -- $2 $3 $4 $5
