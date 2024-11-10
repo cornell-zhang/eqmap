@@ -1,0 +1,15 @@
+// LUT invariant to f
+(LUT 12 a f)
+// CHECK: a
+
+// LUT invariant to a and c
+(LUT 204 a b c)
+// CHECK: b
+
+// LUT invariant to b
+(LUT 160 a b c)
+// CHECK: (LUT 8 a c)
+
+// LUT invariant to a and e
+(LUT 1060126512 a b c d e)
+// CHECK: (LUT 116 b c d)
