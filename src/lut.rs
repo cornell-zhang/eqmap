@@ -432,28 +432,29 @@ pub fn eval_lut_bv(p: u64, inputs: &BitVec) -> bool {
     (p >> index) & 1 == 1
 }
 
-// // Calculate the position of the MSB and convert to usize
-// let msb_pos = (63 - p.leading_zeros()) as usize;
+/// Returns true if LUT is invariant to the last operand
+pub fn lut_invariant_to_last_operand(p: &u64) -> bool {
+    for j in (0..=64).step_by(2) {
+        let bit = (p >> j) & 1;
+        let val = (p >> j + 1) & 1;
+        if bit != val {
+            return false;
+        }
+    }
+    return true;
+}
 
-// for j in 0..num_operands {
-//     let val = (p >> j) & 1;
-//     let mut invariant = true;
-
-//     for i in (j..=msb_pos).step_by(2) {
-//         let bit = (p >> i) & 1;
-
-//         if bit != val {
-//             invariant = false;
-//             break; // Short-circuiting to the next operand
-//         }
-//     }
-
-//     if invariant {
-//         println!("Operand {} is invariant.", j);
-//     } else {
-//         println!("Operand {} is not invariant.", j);
-//     }
-// }
+/// Removes last operand from LUT. Assumes LUT is invariant to last operand.
+pub fn remove_last_var_from_lut(p: &u64) -> u64 {
+    let mut mod_program: u64 = 0;
+    for i in (0..=64).rev() {
+        if i % 2 == 0 {
+            let bit = (p >> i) & 1;
+            mod_program = (mod_program << 1) | bit;
+        }
+    }
+    return mod_program;
+}
 
 /// Return a partially-evaluated LUT program with the `msb` input tied to the constant `v`
 pub fn eval_lut_const_input(p: &u64, msb: usize, v: bool) -> u64 {

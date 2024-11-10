@@ -103,67 +103,28 @@ impl Analysis<lut::LutLang> for LutAnalysis {
         }
     }
     fn modify(egraph: &mut egg::EGraph<lut::LutLang, Self>, id: egg::Id) {
-        // Evaluate constant input at the msb
         let nodes = egraph[id].nodes.clone();
         for node in nodes {
             if let lut::LutLang::Lut(_) = node {
-                // Get operands and program
                 let operands = node.get_operand_classes(egraph).expect("Expected operands");
+                let msb_const = egraph[operands[0]].data.get_as_const();
                 let program = node
                     .get_program_in_egraph(egraph)
                     .expect("Expected program");
 
-                if operands.len() > 1 {
-                    if program == 204 {
-                        let mut invariant = false;
-                        let msb_pos = (63 - program.leading_zeros()) as usize;
-                        invariant = true; // Assume true initially, but disprove if any mismatch
-                        for j in (0..=msb_pos).step_by(2) {
-                            let bit = (program >> j) & 1;
-                            let val = (program >> j + 1) & 1;
-                            if bit != val {
-                                invariant = false;
-                                break; // No need to check further, invariant is already false
-                            }
-                        }
-
-                        if invariant == true {
-                            println!("SECONDDD invariant: {}", invariant);
-                            let mut mod_program: u64 = 0;
-                            let msb_pos = (63 - program.leading_zeros()) as usize;
-                            for i in (0..=msb_pos).rev() {
-                                // Iterate from most significant bit to least significant bit
-                                if i % 2 == 0 {
-                                    println!("i: {}", i);
-                                    // Skip every second bit
-                                    let bit = (program >> i) & 1;
-                                    println!("bit: {}", bit);
-                                    mod_program = (mod_program << 1) | bit;
-                                }
-                            }
-
-                            if program == 204 {
-                                println!("mod_program: {}", mod_program);
-                            }
-
-                            // add to egraph
-                            let mut c = operands.clone();
-                            let pi = egraph.add(lut::LutLang::Program(mod_program));
-                            c.pop();
-                            c.insert(0, pi);
-                            let repl = egraph.add(lut::LutLang::Lut(c.into()));
-                            egraph.union(id, repl);
-                        }
-                    }
+                // Invariance transformation
+                if lut::lut_invariant_to_last_operand(&program) {
+                    let mod_program = lut::remove_last_var_from_lut(&program);
+                    let mut c = operands.clone();
+                    let pi = egraph.add(lut::LutLang::Program(mod_program));
+                    c.pop();
+                    c.insert(0, pi);
+                    let repl = egraph.add(lut::LutLang::Lut(c.into()));
+                    egraph.union(id, repl);
                 }
-            }
-            if let lut::LutLang::Lut(_) = node {
-                let operands = node.get_operand_classes(egraph).expect("Expected operands");
-                let msb_const = egraph[operands[0]].data.get_as_const();
+
+                // Evaluate constant input at the msb
                 if msb_const.is_ok() {
-                    let program = node
-                        .get_program_in_egraph(egraph)
-                        .expect("Expected program");
                     if operands.len() > 1 {
                         let mod_program = lut::eval_lut_const_input(
                             &program,
