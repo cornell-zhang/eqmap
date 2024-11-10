@@ -432,6 +432,29 @@ pub fn eval_lut_bv(p: u64, inputs: &BitVec) -> bool {
     (p >> index) & 1 == 1
 }
 
+// // Calculate the position of the MSB and convert to usize
+// let msb_pos = (63 - p.leading_zeros()) as usize;
+
+// for j in 0..num_operands {
+//     let val = (p >> j) & 1;
+//     let mut invariant = true;
+
+//     for i in (j..=msb_pos).step_by(2) {
+//         let bit = (p >> i) & 1;
+
+//         if bit != val {
+//             invariant = false;
+//             break; // Short-circuiting to the next operand
+//         }
+//     }
+
+//     if invariant {
+//         println!("Operand {} is invariant.", j);
+//     } else {
+//         println!("Operand {} is not invariant.", j);
+//     }
+// }
+
 /// Return a partially-evaluated LUT program with the `msb` input tied to the constant `v`
 pub fn eval_lut_const_input(p: &u64, msb: usize, v: bool) -> u64 {
     assert!(msb <= 5);
