@@ -135,7 +135,12 @@ where
 
     let stop_reason = runner.stop_reason.unwrap();
     if req.assert_sat && !matches!(stop_reason, egg::StopReason::Saturated) {
-        return Err(format!("Expression {} failed to saturate", req.expr));
+        return Err(format!(
+            "Expression {} failed to saturate. Grown to {} nodes with reason {:?}",
+            req.expr,
+            runner.egraph.total_number_of_nodes(),
+            stop_reason
+        ));
     } else {
         eprintln!(
             "INFO: Grown to {} nodes with reason {:?}",
@@ -261,7 +266,7 @@ struct Args {
     input: Option<PathBuf>,
 
     /// Return an error if the graph does not reach saturation
-    #[arg(short = 's', long, default_value_t = false)]
+    #[arg(short = 'a', long, default_value_t = false)]
     assert_sat: bool,
 
     /// Don't verify functionality of the output
