@@ -435,9 +435,9 @@ pub fn eval_lut_bv(p: u64, inputs: &BitVec) -> bool {
 /// Returns true if LUT is invariant to the last operand
 pub fn lut_invariant_to_last_operand(p: &u64) -> bool {
     for j in (0..=64).step_by(2) {
-        let bit = (p >> j) & 1;
-        let val = (p >> j + 1) & 1;
-        if bit != val {
+        let bit1 = (p >> j) & 1;
+        let bit2 = (p >> j + 1) & 1;
+        if bit1 != bit2 {
             return false;
         }
     }
