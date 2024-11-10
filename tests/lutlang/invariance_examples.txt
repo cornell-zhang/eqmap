@@ -1,3 +1,5 @@
+// RUN: cargo run --release %s -k 5 2>>/dev/null | FileCheck %s
+
 // LUT invariant to f
 (LUT 12 a f)
 // CHECK: a

@@ -111,12 +111,12 @@ impl Analysis<lut::LutLang> for LutAnalysis {
                 let program = node
                     .get_program_in_egraph(egraph)
                     .expect("Expected program");
+                let k = operands.len();
 
-                // Invariance transformation
-                if lut::lut_invariant_to_last_operand(&program) {
-                    let mod_program = lut::remove_last_var_from_lut(&program);
+                // Refactor LUT invariant to input at lsb
+                if let Some(np) = lut::remove_lsb_var(program, k) {
                     let mut c = operands.clone();
-                    let pi = egraph.add(lut::LutLang::Program(mod_program));
+                    let pi = egraph.add(lut::LutLang::Program(np));
                     c.pop();
                     c.insert(0, pi);
                     let repl = egraph.add(lut::LutLang::Lut(c.into()));

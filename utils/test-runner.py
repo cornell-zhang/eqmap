@@ -46,9 +46,9 @@ if __name__ == "__main__":
         processes = list()
         for root, file, cmd in job:
             p = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
-            processes.append((root, file, p))
+            processes.append((root, file, p, cmd))
         local = list()
-        for root, file, p in processes:
+        for root, file, p, cmd in processes:
             p.wait()
             if p.returncode == 0:
                 passes.append((root, file))

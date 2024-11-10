@@ -37,6 +37,9 @@ struct SimplifyRequest<'a, A> {
     /// The greatest fan-in on any LUT in an expression.
     k: usize,
 
+    /// If true, an error is returned if saturation is not met.
+    assert_sat: bool,
+
     /// If true, a proof of the simplification should be generation. If false, no proof will be
     /// generated.
     gen_proof: bool,
@@ -57,7 +60,7 @@ struct SimplifyRequest<'a, A> {
 /// simplify `expr` using egg with at most `k` fan-in on LUTs
 fn simplify_expr<A>(
     req: &SimplifyRequest<A>,
-) -> (RecExpr<lut::LutLang>, Option<Explanation<lut::LutLang>>)
+) -> Result<(RecExpr<lut::LutLang>, Option<Explanation<lut::LutLang>>), String>
 where
     A: Analysis<lut::LutLang> + std::default::Default,
 {
@@ -129,14 +132,18 @@ where
     } else {
         None
     };
-    eprintln!(
-        "INFO: Grown to {} nodes with reason {:?}",
-        runner.egraph.total_number_of_nodes(),
-        runner
-            .stop_reason
-            .unwrap_or(egg::StopReason::Other("Unknown".to_string()))
-    );
-    (best, expl)
+
+    let stop_reason = runner.stop_reason.unwrap();
+    if req.assert_sat && !matches!(stop_reason, egg::StopReason::Saturated) {
+        return Err(format!("Expression {} failed to saturate", req.expr));
+    } else {
+        eprintln!(
+            "INFO: Grown to {} nodes with reason {:?}",
+            runner.egraph.total_number_of_nodes(),
+            stop_reason
+        );
+    }
+    Ok((best, expl))
 }
 
 #[allow(dead_code)]
@@ -151,6 +158,7 @@ fn simplify(s: &str) -> String {
         expr: &expr,
         rules: &rules,
         k: 4,
+        assert_sat: true,
         gen_proof: false,
         prog_bar: false,
         timeout: 20,
@@ -158,7 +166,7 @@ fn simplify(s: &str) -> String {
         iter_limit: 30,
     };
 
-    simplify_expr(&req).0.to_string()
+    simplify_expr(&req).unwrap().0.to_string()
 }
 
 #[allow(dead_code)]
@@ -173,6 +181,7 @@ fn simplify_w_proof(s: &str) -> String {
         expr: &expr,
         rules: &rules,
         k: 4,
+        assert_sat: true,
         gen_proof: true,
         prog_bar: false,
         timeout: 20,
@@ -180,13 +189,13 @@ fn simplify_w_proof(s: &str) -> String {
         iter_limit: 30,
     };
 
-    simplify_expr(&req).0.to_string()
+    simplify_expr(&req).unwrap().0.to_string()
 }
 
 #[test]
 fn simple_tests() {
     assert_eq!(simplify("(LUT 2 a b)"), "(LUT 2 a b)");
-    assert_eq!(simplify("(LUT 3 a b c)"), "(LUT 3 a b c)");
+    assert_eq!(simplify("(LUT 3 a b c)"), "(LUT 1 a b)");
 
     assert_eq!(simplify("(LUT 0 a)"), "false");
     assert_eq!(simplify("(LUT 3 b)"), "true");
@@ -250,6 +259,10 @@ fn test_const_input() {
 struct Args {
     /// Path to input file. If not provided, reads from stdin
     input: Option<PathBuf>,
+
+    /// Return an error if the graph does not reach saturation
+    #[arg(short = 's', long, default_value_t = false)]
+    assert_sat: bool,
 
     /// Don't verify functionality of the output
     #[arg(short = 'f', long, default_value_t = false)]
@@ -359,6 +372,7 @@ fn main() -> std::io::Result<()> {
             expr: &expr,
             rules: &rules,
             k: args.k,
+            assert_sat: args.assert_sat,
             gen_proof: args.verbose,
             prog_bar: true,
             timeout: args.timeout,
@@ -366,7 +380,8 @@ fn main() -> std::io::Result<()> {
             iter_limit: args.iter_limit,
         };
 
-        let (simplified, expl) = simplify_expr(&req);
+        let (simplified, expl) =
+            simplify_expr(&req).map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
         let expl: Option<String> = match expl {
             Some(mut e) => {
                 let proof = e.get_flat_string();
