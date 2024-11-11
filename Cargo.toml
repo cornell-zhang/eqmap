@@ -13,3 +13,10 @@ sv-parser = "0.13.3"
 
 [lints.clippy]
 manual_range_contains = "allow"
+
+[features]
+default = []
+# We probably don't want the compiler to apply folding on LUTs.
+# It is too expensive
+# default = ["egraph_fold"]
+egraph_fold = []

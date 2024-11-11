@@ -628,6 +628,10 @@ impl<'a> LutExprInfo<'a> {
     pub fn is_reduntant(&self) -> bool {
         let slice = self.expr.as_ref();
 
+        if slice.len() < 2 {
+            return false;
+        }
+
         for i in 0..slice.len() {
             let n = &slice[i];
 
@@ -667,4 +671,11 @@ impl<'a> LutExprInfo<'a> {
     pub fn is_canonical(&self) -> bool {
         !(self.is_reduntant() || self.contains_gates())
     }
+}
+
+/// Simplify expressions by greedily folding LUTs based on invariant programs and constant inputs.
+/// This function should also produce expressions that are not redundant.
+pub fn fold_expr_greedily(expr: RecExpr<LutLang>) -> RecExpr<LutLang> {
+    // TODO(matth2k): Implement greedy expression folding
+    expr
 }

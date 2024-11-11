@@ -3,7 +3,7 @@ use egg::*;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use lut_synth::{
     cost::KLUTCostFn,
-    lut::{self, LutExprInfo},
+    lut::{self, fold_expr_greedily, LutExprInfo},
     rewrite::{all_rules_minus_dsd, known_decompositions, register_retiming},
 };
 use std::{
@@ -36,6 +36,9 @@ struct SimplifyRequest<'a, A> {
 
     /// The greatest fan-in on any LUT in an expression.
     k: usize,
+
+    /// If true, do not canonicalize the input expression.
+    no_canonicalize: bool,
 
     /// If true, an error is returned if saturation is not met.
     assert_sat: bool,
@@ -104,7 +107,13 @@ where
         runner
     };
 
-    let mut runner = runner.with_expr(req.expr).run(req.rules);
+    let expr = if req.no_canonicalize {
+        req.expr.clone()
+    } else {
+        fold_expr_greedily(req.expr.clone())
+    };
+
+    let mut runner = runner.with_expr(&expr).run(req.rules);
 
     // Clear the progress bar
     mp.clear().unwrap();
@@ -128,7 +137,7 @@ where
         );
     }
     let expl = if req.gen_proof {
-        runner.explain_equivalence(req.expr, &best).into()
+        runner.explain_equivalence(&expr, &best).into()
     } else {
         None
     };
@@ -163,6 +172,7 @@ fn simplify(s: &str) -> String {
         expr: &expr,
         rules: &rules,
         k: 4,
+        no_canonicalize: false,
         assert_sat: true,
         gen_proof: false,
         prog_bar: false,
@@ -186,6 +196,7 @@ fn simplify_w_proof(s: &str) -> String {
         expr: &expr,
         rules: &rules,
         k: 4,
+        no_canonicalize: false,
         assert_sat: true,
         gen_proof: true,
         prog_bar: false,
@@ -200,8 +211,6 @@ fn simplify_w_proof(s: &str) -> String {
 #[test]
 fn simple_tests() {
     assert_eq!(simplify("(LUT 2 a b)"), "(LUT 2 a b)");
-    assert_eq!(simplify("(LUT 3 a b c)"), "(LUT 1 a b)");
-
     assert_eq!(simplify("(LUT 0 a)"), "false");
     assert_eq!(simplify("(LUT 3 b)"), "true");
     assert_eq!(simplify("(LUT 1 true)"), "false");
@@ -251,11 +260,13 @@ fn test_incorrect_dsd() {
 }
 
 #[test]
-fn test_const_input() {
+#[cfg(feature = "egraph_fold")]
+fn test_greedy_folds() {
     // TODO(matth2k): Don't yet have a general method to show that an LUT is invariant to an input.
     assert_eq!(simplify("(LUT 202 true a b)"), "a");
     assert_eq!(simplify("(LUT 0 a)"), "false");
     assert_eq!(simplify("(LUT 3 a)"), "true");
+    assert_eq!(simplify("(LUT 3 a b c)"), "(LUT 1 a b)");
 }
 
 /// LUT Network Synthesis with E-Graphs
@@ -273,8 +284,12 @@ struct Args {
     #[arg(short = 'f', long, default_value_t = false)]
     no_verify: bool,
 
+    /// Don't canonicalize the input expression
+    #[arg(short = 'c', long, default_value_t = false)]
+    no_canonicalize: bool,
+
     /// Opt a specific LUT expr instead of from file
-    #[arg(short = 'c', long)]
+    #[arg(long)]
     command: Option<String>,
 
     /// Don't use disjoint set decompositions
@@ -377,6 +392,7 @@ fn main() -> std::io::Result<()> {
             expr: &expr,
             rules: &rules,
             k: args.k,
+            no_canonicalize: args.no_canonicalize,
             assert_sat: args.assert_sat,
             gen_proof: args.verbose,
             prog_bar: true,

@@ -102,6 +102,7 @@ impl Analysis<lut::LutLang> for LutAnalysis {
             _ => LutAnalysisData::default(),
         }
     }
+    #[cfg(feature = "egraph_fold")]
     fn modify(egraph: &mut egg::EGraph<lut::LutLang, Self>, id: egg::Id) {
         let nodes = egraph[id].nodes.clone();
         for node in nodes {
