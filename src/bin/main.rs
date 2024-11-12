@@ -3,7 +3,7 @@ use egg::*;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use lut_synth::{
     cost::KLUTCostFn,
-    lut::{self, fold_expr_greedily, LutExprInfo},
+    lut::{self, canonicalize_expr, LutExprInfo},
     rewrite::{all_rules_minus_dsd, known_decompositions, register_retiming},
 };
 use std::{
@@ -110,7 +110,7 @@ where
     let expr = if req.no_canonicalize {
         req.expr.clone()
     } else {
-        fold_expr_greedily(req.expr.clone())
+        canonicalize_expr(req.expr.clone())
     };
 
     if req.gen_proof {
@@ -278,7 +278,7 @@ fn test_greedy_folds() {
     assert_eq!(simplify("(LUT 3 a)"), "true");
     assert_eq!(simplify("(LUT 3 a b c)"), "(LUT 1 a b)");
     assert_eq!(
-        fold_expr_greedily(
+        lut::fold_expr_greedily(
             "(LUT 6 true (LUT 6 false (LUT 6 true false)))"
                 .parse()
                 .unwrap()

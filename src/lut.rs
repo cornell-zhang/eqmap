@@ -352,11 +352,11 @@ impl LutLang {
                 3 => LutLang::Const(true),
                 2 => return (expr[l[1]].clone(), expr.clone()),
                 1 => {
-                    let (fold, fexpr) = expr[l[1]].clone().fold_lut_rec(expr, dest);
+                    let (fold, _fexpr) = expr[l[1]].clone().fold_lut_rec(expr, dest);
                     if let LutLang::Const(b) = fold {
                         LutLang::Const(!b)
                     } else {
-                        return (fold, fexpr);
+                        self
                     }
                 }
                 _ => unreachable!(),
@@ -843,4 +843,61 @@ pub fn fold_expr_greedily(expr: RecExpr<LutLang>) -> RecExpr<LutLang> {
     }
 
     moved
+}
+
+/// Canonicalize expressions by naively mapping gates to LUTs.
+/// Then, greedily fold the LUTs based on invariant programs and constant inputs.
+/// This function should also produce expressions that are not redundant in any nodes.
+pub fn canonicalize_expr(expr: RecExpr<LutLang>) -> RecExpr<LutLang> {
+    let moved = expr.as_ref().to_vec();
+    let mut mapping: HashMap<Id, Id> = HashMap::new();
+    let mut rewritten: RecExpr<LutLang> = RecExpr::default();
+    let mut offset = 0;
+
+    let remap_to_lut = |n: LutLang,
+                        id: Id,
+                        p: u64,
+                        rewritten: &mut RecExpr<LutLang>,
+                        mapping: &mut HashMap<Id, Id>| {
+        let remapped = n.map_children(|c| mapping[&c]);
+        let p = rewritten.add(LutLang::Program(p));
+        let mut children = remapped.children().to_vec();
+        children.insert(0, p);
+        mapping.insert(id, rewritten.add(LutLang::Lut(children.into())));
+    };
+
+    for n in moved {
+        let id = Id::from(offset);
+        match n {
+            LutLang::Mux(_) => {
+                remap_to_lut(n, id, 202, &mut rewritten, &mut mapping);
+            }
+            LutLang::And(_) => {
+                remap_to_lut(n, id, 8, &mut rewritten, &mut mapping);
+            }
+            LutLang::Nor(_) | LutLang::Not(_) => {
+                remap_to_lut(n, id, 1, &mut rewritten, &mut mapping);
+            }
+            LutLang::Xor(_) => {
+                remap_to_lut(n, id, 6, &mut rewritten, &mut mapping);
+            }
+            _ => {
+                mapping.insert(id, rewritten.add(n.map_children(|c| mapping[&c])));
+            }
+        }
+        offset += 1;
+    }
+
+    if cfg!(debug_assertions) {
+        let info = LutExprInfo::new(&expr);
+        assert!(!info.check(&rewritten).is_not_equiv());
+    }
+
+    let result = fold_expr_greedily(rewritten);
+    if cfg!(debug_assertions) {
+        let info = LutExprInfo::new(&result);
+        assert!(info.is_canonical());
+    }
+
+    result
 }
