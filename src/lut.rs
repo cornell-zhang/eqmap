@@ -352,10 +352,11 @@ impl LutLang {
                 3 => LutLang::Const(true),
                 2 => return (expr[l[1]].clone(), expr.clone()),
                 1 => {
-                    if let LutLang::Const(b) = expr[l[1]] {
+                    let (fold, fexpr) = expr[l[1]].clone().fold_lut_rec(expr, dest);
+                    if let LutLang::Const(b) = fold {
                         LutLang::Const(!b)
                     } else {
-                        self
+                        return (fold, fexpr);
                     }
                 }
                 _ => unreachable!(),
