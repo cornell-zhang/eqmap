@@ -116,7 +116,10 @@ where
     if req.gen_proof {
         let info = LutExprInfo::new(req.expr);
         if info.check(&expr).is_not_equiv() {
-            return Err("Folding the initial expression had an error".to_string());
+            return Err(format!(
+                "Folding the initial expression had an error: {}",
+                expr
+            ));
         }
     }
 
@@ -274,6 +277,15 @@ fn test_greedy_folds() {
     assert_eq!(simplify("(LUT 0 a)"), "false");
     assert_eq!(simplify("(LUT 3 a)"), "true");
     assert_eq!(simplify("(LUT 3 a b c)"), "(LUT 1 a b)");
+    assert_eq!(
+        fold_expr_greedily(
+            "(LUT 6 true (LUT 6 false (LUT 6 true false)))"
+                .parse()
+                .unwrap()
+        )
+        .to_string(),
+        "false"
+    );
 }
 
 #[test]

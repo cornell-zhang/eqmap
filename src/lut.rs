@@ -336,20 +336,21 @@ impl LutLang {
         expr: &RecExpr<Self>,
         pexpr: &RecExpr<Self>,
         dest: &mut RecExpr<Self>,
-    ) -> Self {
+    ) -> (Self, RecExpr<Self>) {
         let l = self.children();
         // We might have settled on a constant/leaf
-        if l.is_empty() {
-            return self;
+        if !matches!(self, LutLang::Lut(_)) {
+            return (self, pexpr.clone());
         }
+        assert!(l.len() > 1);
         let k = l.len() - 1;
         let program = self.get_program(pexpr).unwrap();
 
         if k == 1 {
-            match program & 3 {
+            let n = match program & 3 {
                 0 => LutLang::Const(false),
                 3 => LutLang::Const(true),
-                2 => expr[l[1]].clone(),
+                2 => return (expr[l[1]].clone(), expr.clone()),
                 1 => {
                     if let LutLang::Const(b) = expr[l[1]] {
                         LutLang::Const(!b)
@@ -358,7 +359,8 @@ impl LutLang {
                     }
                 }
                 _ => unreachable!(),
-            }
+            };
+            (n, pexpr.clone())
         } else {
             // Evaluate constant inputs
             for (pos, c) in l[1..].iter().enumerate() {
@@ -375,7 +377,7 @@ impl LutLang {
                     let mut c = l.to_vec();
                     c[0] = np;
                     c.remove(pos + 1);
-                    return LutLang::Lut(c.into());
+                    return (LutLang::Lut(c.into()), dest.clone());
                 }
             }
 
@@ -400,25 +402,29 @@ impl LutLang {
                     let mut c = l.to_vec();
                     c[0] = np;
                     c.remove(pos + 1);
-                    return LutLang::Lut(c.into());
+                    return (LutLang::Lut(c.into()), dest.clone());
                 } else {
                     continue;
                 }
             }
-            self
+            (self, pexpr.clone())
         }
     }
 
     /// Continuously folds the lut with children contained in `expr` into a new expression in `dest`
     /// This method does not insert the node itself into `dest`. It only inserts the new program node.
-    pub fn fold_lut_rec(self, expr: &RecExpr<Self>, dest: &mut RecExpr<Self>) -> Self {
+    pub fn fold_lut_rec(
+        self,
+        expr: &RecExpr<Self>,
+        dest: &mut RecExpr<Self>,
+    ) -> (Self, RecExpr<Self>) {
         let mut init = self.clone();
-        let mut folded = self.fold_lut(expr, expr, dest);
+        let (mut folded, mut pexpr) = self.fold_lut(expr, expr, dest);
         while init != folded {
             init = folded.clone();
-            folded = folded.fold_lut(expr, &dest.clone(), dest);
+            (folded, pexpr) = folded.fold_lut(expr, &pexpr, dest);
         }
-        folded
+        (folded, pexpr)
     }
 
     /// Given two expressions and a set of input values,
@@ -782,9 +788,9 @@ fn fold_node_into(
     mapping: &mut HashMap<Id, Id>,
 ) -> Id {
     let node = &expr[id];
-    let mut folded = match node {
+    let (mut folded, pexpr) = match node {
         LutLang::Lut(_) => node.clone().fold_lut_rec(expr, dest),
-        _ => node.clone(),
+        _ => (node.clone(), expr.clone()),
     };
 
     let preceding = &expr.as_ref()[0..id.into()];
@@ -803,14 +809,11 @@ fn fold_node_into(
     let remapped = match folded {
         LutLang::Lut(ref mut l) => {
             // If nothing changed, we can just remap the node as normal
-            if node.children() == l.as_ref() {
-                folded.map_children(|c| fold_node_into(expr, c, dest, mapping))
-            } else {
-                for c in l[1..].iter_mut() {
-                    *c = fold_node_into(expr, *c, dest, mapping);
-                }
-                folded
+            l[0] = fold_node_into(&pexpr, l[0], dest, mapping);
+            for c in l[1..].iter_mut() {
+                *c = fold_node_into(expr, *c, dest, mapping);
             }
+            folded
         }
         _ => folded.map_children(|c| fold_node_into(expr, c, dest, mapping)),
     };
