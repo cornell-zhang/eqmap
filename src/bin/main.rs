@@ -113,6 +113,13 @@ where
         fold_expr_greedily(req.expr.clone())
     };
 
+    if req.gen_proof {
+        let info = LutExprInfo::new(req.expr);
+        if info.check(&expr).is_not_equiv() {
+            return Err("Folding the initial expression had an error".to_string());
+        }
+    }
+
     let mut runner = runner.with_expr(&expr).run(req.rules);
 
     // Clear the progress bar
@@ -260,7 +267,6 @@ fn test_incorrect_dsd() {
 }
 
 #[test]
-#[cfg(feature = "egraph_fold")]
 fn test_greedy_folds() {
     // TODO(matth2k): Don't yet have a general method to show that an LUT is invariant to an input.
     assert_eq!(simplify("(LUT 202 true a b)"), "a");
@@ -320,11 +326,11 @@ struct Args {
     timeout: u64,
 
     /// Maximum number of nodes in graph
-    #[arg(short = 's', long, default_value_t = 18_000)]
+    #[arg(short = 's', long, default_value_t = 24_000)]
     node_limit: usize,
 
     /// Maximum number of rewrite iterations
-    #[arg(short = 'n', long, default_value_t = 24)]
+    #[arg(short = 'n', long, default_value_t = 32)]
     iter_limit: usize,
 }
 
