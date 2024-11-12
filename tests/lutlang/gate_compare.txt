@@ -1,5 +1,9 @@
+// RUN: cargo run --release -- %s -k 4 | FileCheck %s
+
 // 4-bit
 (NOT (NOR (NOT (NOR (XOR a0 b0) (XOR a1 b1))) (NOT (NOR (XOR a2 b2) (XOR a3 b3)))))
+// CHECK: (LUT 13 (LUT 28662 a2 b2 a3 b3) (LUT 36873 a0 b0 a1 b1))
 
 // 8-bit comparator: https://dl.acm.org/doi/pdf/10.1145/3543622.3573048
 (NOT (NOR (NOT (NOR (NOT (NOR (XOR a0 b0) (XOR a1 b1))) (NOT (NOR (XOR a2 b2) (XOR a3 b3))))) (NOT (NOR (NOT (NOR (XOR a4 b4) (XOR a5 b5))) (NOT (NOR (XOR a6 b6) (XOR a7 b7)))))))
+// CHECK: (LUT 65503 (LUT 28662 a2 b2 a3 b3) (LUT 36873 a0 b0 a1 b1) (LUT 28662 a6 b6 a7 b7) (LUT 36873 a4 b4 a5 b5))

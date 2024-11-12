@@ -852,7 +852,6 @@ pub fn canonicalize_expr(expr: RecExpr<LutLang>) -> RecExpr<LutLang> {
     let moved = expr.as_ref().to_vec();
     let mut mapping: HashMap<Id, Id> = HashMap::new();
     let mut rewritten: RecExpr<LutLang> = RecExpr::default();
-    let mut offset = 0;
 
     let remap_to_lut = |n: LutLang,
                         id: Id,
@@ -866,7 +865,7 @@ pub fn canonicalize_expr(expr: RecExpr<LutLang>) -> RecExpr<LutLang> {
         mapping.insert(id, rewritten.add(LutLang::Lut(children.into())));
     };
 
-    for n in moved {
+    for (offset, n) in moved.into_iter().enumerate() {
         let id = Id::from(offset);
         match n {
             LutLang::Mux(_) => {
@@ -885,7 +884,6 @@ pub fn canonicalize_expr(expr: RecExpr<LutLang>) -> RecExpr<LutLang> {
                 mapping.insert(id, rewritten.add(n.map_children(|c| mapping[&c])));
             }
         }
-        offset += 1;
     }
 
     if cfg!(debug_assertions) {
