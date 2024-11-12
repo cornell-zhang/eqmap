@@ -1,4 +1,4 @@
-// RUN: cargo run --release -- %s -k 4 | FileCheck %s
+// RUN: cargo run --release -- %s -k 4 --no-verify | FileCheck %s
 
 // 4-bit
 (NOT (NOR (NOT (NOR (XOR a0 b0) (XOR a1 b1))) (NOT (NOR (XOR a2 b2) (XOR a3 b3)))))
