@@ -174,6 +174,7 @@ fn simplify(s: &str) -> String {
     let expr: RecExpr<lut::LutLang> = s.parse().unwrap();
     let mut rules = all_rules_minus_dsd();
     rules.append(&mut known_decompositions());
+    rules.append(&mut register_retiming());
 
     let req = SimplifyRequest {
         expr: &expr,
@@ -198,6 +199,7 @@ fn simplify_w_proof(s: &str) -> String {
     let expr: RecExpr<lut::LutLang> = s.parse().unwrap();
     let mut rules = all_rules_minus_dsd();
     rules.append(&mut known_decompositions());
+    rules.append(&mut register_retiming());
 
     let req = SimplifyRequest {
         expr: &expr,
@@ -268,11 +270,17 @@ fn test_incorrect_dsd() {
 
 #[test]
 fn test_greedy_folds() {
-    // TODO(matth2k): Don't yet have a general method to show that an LUT is invariant to an input.
     assert_eq!(simplify("(LUT 202 true a b)"), "a");
     assert_eq!(simplify("(LUT 0 a)"), "false");
     assert_eq!(simplify("(LUT 3 a)"), "true");
     assert_eq!(simplify("(LUT 3 a b c)"), "(LUT 1 a b)");
+}
+
+#[test]
+fn test_exploration() {
+    // Since we have greedy folding now,
+    // we need different kinds of inputs that don't optimize as well
+    assert_eq!(simplify("(LUT 6 (LUT 6 c d) b)"), "(LUT 150 c d b)")
 }
 
 /// LUT Network Synthesis with E-Graphs
