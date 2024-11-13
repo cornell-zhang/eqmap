@@ -1,6 +1,7 @@
 import argparse
 import networkx as nx
 import itertools
+import matplotlib.pyplot as plt
 
 
 # Get the longest shortest path for every element in Sn with tranposition generators
@@ -75,6 +76,26 @@ def get_transpositions(nodes):
     return transpositions
 
 
+# l1 containts l2
+def contains(l1, l2):
+    if len(l2) == 0:
+        return True
+    for i in range(len(l1) - len(l2)):
+        if l1[i] == l2[0]:
+            if l1[i : i + len(l2)] == l2:
+                return True
+    return False
+
+
+def make_lattice(elements):
+    G = nx.DiGraph()
+    for i, (l1, e1) in enumerate(elements):
+        for j, (l2, e2) in enumerate(elements):
+            if e1 != e2:
+                if contains(l1, l2):
+                    G.add_edge(j, i)
+
+
 # cargo llvm-cov --all-features --workspace --json
 if __name__ == "__main__":
 
@@ -89,12 +110,15 @@ if __name__ == "__main__":
 
     print(G)
 
+    descending = []
     while G.number_of_nodes() > 0:
         longest_path = find_longest_path(G)
         nodes = [group[i] for i in longest_path]
+        transpositions = get_transpositions(nodes)
         if len(longest_path) > 0:
+            descending.append((transpositions, group[longest_path[-1]]))
             print(
-                f"{group[longest_path[-1]]} reduces to {get_transpositions(nodes)} (len {len(longest_path) - 1})"
+                f"{group[longest_path[-1]]} reduces to {transpositions} (len {len(longest_path) - 1})"
             )
         if len(longest_path) >= 2:
             G.remove_nodes_from([longest_path[-1]])
