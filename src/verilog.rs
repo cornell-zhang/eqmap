@@ -478,6 +478,119 @@ impl SVModule {
         Ok(modules.pop().unwrap())
     }
 
+    /// Constructs a verilog module out of a [LutLang] expression.
+    /// The module will be named `mod_name` and the outputs will be named from right to left with `outputs`.
+    /// The default names for the outputs are `y0`, `y1`, etc. `outputs[0]` names the rightmost signal in a bus.
+    pub fn from_expr(
+        expr: RecExpr<LutLang>,
+        mod_name: String,
+        outputs: Vec<String>,
+    ) -> Result<Self, String> {
+        let mut module = SVModule::new(mod_name);
+
+        let expr = LutExprInfo::new(&expr).get_canonicalization();
+
+        let mut mapping: HashMap<Id, String> = HashMap::new();
+        let mut programs: HashMap<Id, u64> = HashMap::new();
+        let mut prim_count: usize = 0;
+
+        let mut fresh_prim = || {
+            prim_count += 1;
+            format!("__{}__", prim_count - 1)
+        };
+
+        let size = expr.as_ref().len();
+
+        // Add output mappings
+        let output_n = expr.as_ref().last().unwrap();
+        let last_id: Id = (size - 1).into();
+        match output_n {
+            LutLang::Bus(l) => {
+                for (i, t) in l.iter().rev().enumerate() {
+                    let defname = format!("y{}", i);
+                    mapping.insert(*t, outputs.first().unwrap_or(&defname).to_string());
+                    module.outputs.push(SVSignal::new(1, mapping[t].clone()));
+                }
+            }
+            _ => {
+                mapping.insert(
+                    last_id,
+                    outputs.first().unwrap_or(&"y".to_string()).to_string(),
+                );
+                module
+                    .outputs
+                    .push(SVSignal::new(1, mapping[&last_id].clone()));
+            }
+        }
+
+        let fresh_wire = |id: Id, mapping: &mut HashMap<Id, String>| {
+            if !mapping.contains_key(&id) {
+                let s = mapping.len();
+                mapping.insert(id, format!("tmp{}", s));
+            }
+            mapping[&id].clone()
+        };
+
+        for (id, node) in expr.as_ref().iter().enumerate() {
+            match node {
+                LutLang::Var(s) => {
+                    let sname = s.to_string();
+                    if sname.contains("tmp") {
+                        return Err("'tmp' is a reserved keyword".to_string());
+                    }
+                    if sname.contains("clk") {
+                        return Err("'clk' is a reserved keyword".to_string());
+                    }
+                    if sname.contains("input") {
+                        return Err("'input' is a reserved keyword".to_string());
+                    }
+                    let signal = SVSignal::new(1, sname.clone());
+                    module.signals.push(signal.clone());
+                    module.inputs.push(signal);
+                    mapping.insert(id.into(), sname);
+                }
+                LutLang::Program(p) => {
+                    programs.insert(id.into(), *p);
+                }
+                LutLang::Reg([d]) => {
+                    let sname = fresh_wire(id.into(), &mut mapping);
+                    let pname = fresh_prim();
+                    let mut inst = SVPrimitive::new_reg(pname);
+                    inst.add_input("D".to_string(), mapping[d].clone())?;
+                    inst.add_output("Q".to_string(), sname.clone())?;
+                    module.signals.push(SVSignal::new(1, sname.clone()));
+                    module
+                        .driving_module
+                        .insert(sname.clone(), module.instances.len());
+                    module.instances.push(inst);
+                }
+                LutLang::Lut(l) => {
+                    let sname = fresh_wire(id.into(), &mut mapping);
+                    let pname = fresh_prim();
+                    let mut inst = SVPrimitive::new_lut(l.len() - 1, pname, programs[&l[0]]);
+                    for (i, c) in l[1..].iter().rev().enumerate() {
+                        inst.add_input(format!("I{}", i), mapping[c].clone())?;
+                    }
+                    inst.add_output("O".to_string(), sname.clone())?;
+                    module.signals.push(SVSignal::new(1, sname.clone()));
+                    module
+                        .driving_module
+                        .insert(sname.clone(), module.instances.len());
+                    module.instances.push(inst);
+                }
+                LutLang::Bus(_) => {
+                    let last = id == size - 1;
+                    if !last {
+                        return Err("Busses shold be the root of the expression".to_string());
+                    }
+                }
+                _ => (),
+            }
+        }
+
+        Ok(module)
+    }
+
     fn get_expr<'a>(
         &'a self,
         signal: &'a str,

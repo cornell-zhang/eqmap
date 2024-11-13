@@ -1,0 +1,227 @@
+// RUN: emit-verilog %s | FileCheck %s
+
+// 8-bit comparator: https://dl.acm.org/doi/pdf/10.1145/3543622.3573048
+(NOT (NOR (NOT (NOR (NOT (NOR (XOR a0 b0) (XOR a1 b1))) (NOT (NOR (XOR a2 b2) (XOR a3 b3))))) (NOT (NOR (NOT (NOR (XOR a4 b4) (XOR a5 b5))) (NOT (NOR (XOR a6 b6) (XOR a7 b7)))))))
+
+// CHECK: module comparator (
+// CHECK:     a0,
+// CHECK:     b0,
+// CHECK:     a1,
+// CHECK:     b1,
+// CHECK:     a2,
+// CHECK:     b2,
+// CHECK:     a3,
+// CHECK:     b3,
+// CHECK:     a4,
+// CHECK:     b4,
+// CHECK:     a5,
+// CHECK:     b5,
+// CHECK:     a6,
+// CHECK:     b6,
+// CHECK:     a7,
+// CHECK:     b7,
+// CHECK:     y
+// CHECK: );
+// CHECK:   input a0;
+// CHECK:   wire a0;
+// CHECK:   input b0;
+// CHECK:   wire b0;
+// CHECK:   input a1;
+// CHECK:   wire a1;
+// CHECK:   input b1;
+// CHECK:   wire b1;
+// CHECK:   input a2;
+// CHECK:   wire a2;
+// CHECK:   input b2;
+// CHECK:   wire b2;
+// CHECK:   input a3;
+// CHECK:   wire a3;
+// CHECK:   input b3;
+// CHECK:   wire b3;
+// CHECK:   input a4;
+// CHECK:   wire a4;
+// CHECK:   input b4;
+// CHECK:   wire b4;
+// CHECK:   input a5;
+// CHECK:   wire a5;
+// CHECK:   input b5;
+// CHECK:   wire b5;
+// CHECK:   input a6;
+// CHECK:   wire a6;
+// CHECK:   input b6;
+// CHECK:   wire b6;
+// CHECK:   input a7;
+// CHECK:   wire a7;
+// CHECK:   input b7;
+// CHECK:   wire b7;
+// CHECK:   output y;
+// CHECK:   wire y;
+// CHECK:   wire tmp3;
+// CHECK:   wire tmp6;
+// CHECK:   wire tmp7;
+// CHECK:   wire tmp8;
+// CHECK:   wire tmp11;
+// CHECK:   wire tmp14;
+// CHECK:   wire tmp15;
+// CHECK:   wire tmp16;
+// CHECK:   wire tmp17;
+// CHECK:   wire tmp18;
+// CHECK:   wire tmp21;
+// CHECK:   wire tmp24;
+// CHECK:   wire tmp25;
+// CHECK:   wire tmp26;
+// CHECK:   wire tmp29;
+// CHECK:   wire tmp32;
+// CHECK:   wire tmp33;
+// CHECK:   wire tmp34;
+// CHECK:   wire tmp35;
+// CHECK:   wire tmp36;
+// CHECK:   wire tmp37;
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:   ) __0__ (
+// CHECK:       .I0(b0),
+// CHECK:       .I1(a0),
+// CHECK:       .O(tmp3)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:   ) __1__ (
+// CHECK:       .I0(b1),
+// CHECK:       .I1(a1),
+// CHECK:       .O(tmp6)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000001)
+// CHECK:   ) __2__ (
+// CHECK:       .I0(tmp6),
+// CHECK:       .I1(tmp3),
+// CHECK:       .O(tmp7)
+// CHECK:   );
+// CHECK:   LUT1 #(
+// CHECK:       .INIT(64'h0000000000000001)
+// CHECK:   ) __3__ (
+// CHECK:       .I0(tmp7),
+// CHECK:       .O(tmp8)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:   ) __4__ (
+// CHECK:       .I0(b2),
+// CHECK:       .I1(a2),
+// CHECK:       .O(tmp11)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:   ) __5__ (
+// CHECK:       .I0(b3),
+// CHECK:       .I1(a3),
+// CHECK:       .O(tmp14)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000001)
+// CHECK:   ) __6__ (
+// CHECK:       .I0(tmp14),
+// CHECK:       .I1(tmp11),
+// CHECK:       .O(tmp15)
+// CHECK:   );
+// CHECK:   LUT1 #(
+// CHECK:       .INIT(64'h0000000000000001)
+// CHECK:   ) __7__ (
+// CHECK:       .I0(tmp15),
+// CHECK:       .O(tmp16)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000001)
+// CHECK:   ) __8__ (
+// CHECK:       .I0(tmp16),
+// CHECK:       .I1(tmp8),
+// CHECK:       .O(tmp17)
+// CHECK:   );
+// CHECK:   LUT1 #(
+// CHECK:       .INIT(64'h0000000000000001)
+// CHECK:   ) __9__ (
+// CHECK:       .I0(tmp17),
+// CHECK:       .O(tmp18)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:   ) __10__ (
+// CHECK:       .I0(b4),
+// CHECK:       .I1(a4),
+// CHECK:       .O(tmp21)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:   ) __11__ (
+// CHECK:       .I0(b5),
+// CHECK:       .I1(a5),
+// CHECK:       .O(tmp24)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000001)
+// CHECK:   ) __12__ (
+// CHECK:       .I0(tmp24),
+// CHECK:       .I1(tmp21),
+// CHECK:       .O(tmp25)
+// CHECK:   );
+// CHECK:   LUT1 #(
+// CHECK:       .INIT(64'h0000000000000001)
+// CHECK:   ) __13__ (
+// CHECK:       .I0(tmp25),
+// CHECK:       .O(tmp26)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:   ) __14__ (
+// CHECK:       .I0(b6),
+// CHECK:       .I1(a6),
+// CHECK:       .O(tmp29)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:   ) __15__ (
+// CHECK:       .I0(b7),
+// CHECK:       .I1(a7),
+// CHECK:       .O(tmp32)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000001)
+// CHECK:   ) __16__ (
+// CHECK:       .I0(tmp32),
+// CHECK:       .I1(tmp29),
+// CHECK:       .O(tmp33)
+// CHECK:   );
+// CHECK:   LUT1 #(
+// CHECK:       .INIT(64'h0000000000000001)
+// CHECK:   ) __17__ (
+// CHECK:       .I0(tmp33),
+// CHECK:       .O(tmp34)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000001)
+// CHECK:   ) __18__ (
+// CHECK:       .I0(tmp34),
+// CHECK:       .I1(tmp26),
+// CHECK:       .O(tmp35)
+// CHECK:   );
+// CHECK:   LUT1 #(
+// CHECK:       .INIT(64'h0000000000000001)
+// CHECK:   ) __19__ (
+// CHECK:       .I0(tmp35),
+// CHECK:       .O(tmp36)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000001)
+// CHECK:   ) __20__ (
+// CHECK:       .I0(tmp36),
+// CHECK:       .I1(tmp18),
+// CHECK:       .O(tmp37)
+// CHECK:   );
+// CHECK:   LUT1 #(
+// CHECK:       .INIT(64'h0000000000000001)
+// CHECK:   ) __21__ (
+// CHECK:       .I0(tmp37),
+// CHECK:       .O(y)
+// CHECK:   );
+// CHECK: endmodule

@@ -670,6 +670,15 @@ impl<'a> LutExprInfo<'a> {
         self.expr.clone()
     }
 
+    /// Return a canonicalization of the expression.
+    pub fn get_canonicalization(&self) -> RecExpr<LutLang> {
+        if self.is_canonical() {
+            self.expr.clone()
+        } else {
+            canonicalize_expr(self.expr.clone())
+        }
+    }
+
     /// Return the root Id
     pub fn get_root(&self) -> Id {
         self.root

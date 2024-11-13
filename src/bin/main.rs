@@ -403,7 +403,9 @@ fn main() -> std::io::Result<()> {
             continue;
         }
         let expr = line.split("//").next().unwrap();
-        let expr: RecExpr<lut::LutLang> = expr.parse().unwrap();
+        let expr: RecExpr<lut::LutLang> = expr
+            .parse()
+            .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
         if !args.no_verify {
             lut::verify_expr(&expr)

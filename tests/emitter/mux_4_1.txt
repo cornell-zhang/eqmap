@@ -1,0 +1,55 @@
+// RUN: emit-verilog %s | FileCheck %s
+
+// 4:1 mux
+(MUX s1 (MUX s0 a b) (MUX s0 c d))
+
+// CHECK: module mux_4_1 (
+// CHECK:     s1,
+// CHECK:     s0,
+// CHECK:     a,
+// CHECK:     b,
+// CHECK:     c,
+// CHECK:     d,
+// CHECK:     y
+// CHECK: );
+// CHECK:   input s1;
+// CHECK:   wire s1;
+// CHECK:   input s0;
+// CHECK:   wire s0;
+// CHECK:   input a;
+// CHECK:   wire a;
+// CHECK:   input b;
+// CHECK:   wire b;
+// CHECK:   input c;
+// CHECK:   wire c;
+// CHECK:   input d;
+// CHECK:   wire d;
+// CHECK:   output y;
+// CHECK:   wire y;
+// CHECK:   wire tmp5;
+// CHECK:   wire tmp8;
+// CHECK:   LUT3 #(
+// CHECK:       .INIT(64'h00000000000000ca)
+// CHECK:   ) __0__ (
+// CHECK:       .I0(b),
+// CHECK:       .I1(a),
+// CHECK:       .I2(s0),
+// CHECK:       .O(tmp5)
+// CHECK:   );
+// CHECK:   LUT3 #(
+// CHECK:       .INIT(64'h00000000000000ca)
+// CHECK:   ) __1__ (
+// CHECK:       .I0(d),
+// CHECK:       .I1(c),
+// CHECK:       .I2(s0),
+// CHECK:       .O(tmp8)
+// CHECK:   );
+// CHECK:   LUT3 #(
+// CHECK:       .INIT(64'h00000000000000ca)
+// CHECK:   ) __2__ (
+// CHECK:       .I0(tmp8),
+// CHECK:       .I1(tmp5),
+// CHECK:       .I2(s1),
+// CHECK:       .O(y)
+// CHECK:   );
+// CHECK: endmodule
