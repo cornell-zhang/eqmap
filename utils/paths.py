@@ -9,8 +9,7 @@ def find_longest_path(graph):
     dest = 0
     for node in graph.nodes:
         shortest_path = [None for _ in graph.nodes]
-        # print(f"Node: {node}")
-        for path in nx.all_simple_paths(graph, dest, node):
+        for path in nx.all_shortest_paths(graph, dest, node):
             if len(path) <= len(shortest_path):
                 shortest_path = path
         if shortest_path[0] != None and len(shortest_path) > len(longest_path):
