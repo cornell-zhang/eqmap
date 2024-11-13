@@ -51,7 +51,7 @@ fn main() -> std::io::Result<()> {
             }
         } else {
             let expr = f
-                .as_single_expr()
+                .to_single_expr()
                 .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
             eprintln!("{:?}", f.get_outputs());
             println!("{}", expr);

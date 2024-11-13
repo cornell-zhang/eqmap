@@ -654,7 +654,7 @@ impl SVModule {
     }
 
     /// Get a single [LutLang] expression for the module as a bus
-    pub fn as_single_expr(&self) -> Result<RecExpr<LutLang>, String> {
+    pub fn to_single_expr(&self) -> Result<RecExpr<LutLang>, String> {
         let mut expr: RecExpr<LutLang> = RecExpr::default();
         let mut map = HashMap::new();
         let mut outputs: Vec<Id> = vec![];
@@ -673,7 +673,7 @@ impl SVModule {
     }
 
     /// Convert the module to a [LutLang] expression
-    pub fn as_expr(&self) -> Result<RecExpr<LutLang>, String> {
+    pub fn to_expr(&self) -> Result<RecExpr<LutLang>, String> {
         if self.outputs.len() != 1 {
             return Err(format!(
                 "{}: Expected exactly one output in module {}.",
