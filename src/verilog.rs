@@ -65,6 +65,10 @@ pub fn get_identifier(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<Stri
     }
 }
 
+const CLK: &str = "clk";
+const REG_NAME: &str = "FDRE";
+const LUT_ROOT: &str = "LUT";
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Represents a signal declaration in the verilog
 pub struct SVSignal {
@@ -110,7 +114,7 @@ impl SVPrimitive {
         let mut attributes = BTreeMap::new();
         attributes.insert("INIT".to_string(), format!("64'h{:016x}", program));
         SVPrimitive {
-            prim: format!("LUT{}", k),
+            prim: format!("{}{}", LUT_ROOT, k),
             name,
             inputs: BTreeMap::new(),
             outputs: BTreeMap::new(),
@@ -123,7 +127,7 @@ impl SVPrimitive {
         let mut attributes = BTreeMap::new();
         attributes.insert("INIT".to_string(), "1'hx".to_string());
         SVPrimitive {
-            prim: "FDRE".to_string(),
+            prim: REG_NAME.to_string(),
             name,
             inputs: BTreeMap::new(),
             outputs: BTreeMap::new(),
@@ -159,7 +163,7 @@ impl SVPrimitive {
             "I0" | "I1" | "I2" | "I3" | "I4" | "I5" | "D" => self.add_input(port, signal),
             "O" | "Y" | "Q" => self.add_output(port, signal),
             "C" | "CE" | "R" => Ok(()),
-            _ => Err("Unknown port name".to_string()),
+            _ => Err(format!("Unknown port name {}", port)),
         }
     }
 }
@@ -179,16 +183,16 @@ impl fmt::Display for SVPrimitive {
             }
         }
         writeln!(f, "{}) {} (", indent, self.name)?;
-        if self.prim.as_str() == "FDRE" {
+        if self.prim.as_str() == REG_NAME {
             let indent = " ".repeat(level + 4);
-            writeln!(f, "{}.C(clk),", indent)?;
+            writeln!(f, "{}.C({}),", indent, CLK)?;
             writeln!(f, "{}.CE(1'h1),", indent)?;
         }
         for (input, value) in self.inputs.iter() {
             let indent = " ".repeat(level + 4);
             writeln!(f, "{}.{}({}),", indent, input, value)?;
         }
-        if self.prim.as_str() == "FDRE" {
+        if self.prim.as_str() == REG_NAME {
             let indent = " ".repeat(level + 4);
             writeln!(f, "{}.R(1'h0),", indent)?;
         }
@@ -222,6 +226,8 @@ pub struct SVModule {
     pub outputs: Vec<SVSignal>,
     /// Returns the index of the primitive instance that drives a particular net
     pub driving_module: HashMap<String, usize>,
+    /// Sequential and hence needs a clk
+    pub clk: bool,
 }
 
 impl SVModule {
@@ -235,6 +241,7 @@ impl SVModule {
             inputs: vec![],
             outputs: vec![],
             driving_module: HashMap::new(),
+            clk: false,
         }
     }
 
@@ -291,7 +298,7 @@ impl SVModule {
     }
 
     fn is_lut_prim(name: &str) -> Option<usize> {
-        match name.strip_prefix("LUT") {
+        match name.strip_prefix(LUT_ROOT) {
             Some(x) => match x.parse::<usize>() {
                 Ok(x) => {
                     if x > 6 {
@@ -306,8 +313,15 @@ impl SVModule {
         }
     }
 
+    fn add_clk(&mut self) {
+        if !self.clk {
+            self.clk = true;
+            self.append_inputs(&mut vec![SVSignal::new(1, CLK.to_string())]);
+        }
+    }
+
     fn is_reg_prim(name: &str) -> bool {
-        name == "FDRE"
+        name == REG_NAME
     }
 
     /// From a parsed verilog ast, create a new module and fill it with its primitives and connections.
@@ -381,8 +395,8 @@ impl SVModule {
                                 }
                             } else {
                                 return Err(format!(
-                                    "LUT {} should have INIT value written in hexadecimal",
-                                    mod_name
+                                    "{} {} should have INIT value written in hexadecimal",
+                                    LUT_ROOT, mod_name
                                 ));
                             };
                         cur_insts.push(SVPrimitive::new_lut(k, inst_name, program));
@@ -395,8 +409,8 @@ impl SVModule {
                     }
 
                     return Err(format!(
-                        "Expected a LUT or FDRE primitive. Found primitive {} {:?}",
-                        mod_name, inst
+                        "Expected a {} or {} primitive. Found primitive {} {:?}",
+                        LUT_ROOT, REG_NAME, mod_name, inst
                     ));
                 }
                 NodeEvent::Leave(RefNode::ModuleInstantiation(_inst)) => (),
@@ -538,8 +552,8 @@ impl SVModule {
                     if sname.contains("tmp") {
                         return Err("'tmp' is a reserved keyword".to_string());
                     }
-                    if sname.contains("clk") {
-                        return Err("'clk' is a reserved keyword".to_string());
+                    if sname.contains(CLK) {
+                        return Err(format!("'{}' is a reserved keyword", CLK));
                     }
                     if sname.contains("input") {
                         return Err("'input' is a reserved keyword".to_string());
@@ -563,6 +577,7 @@ impl SVModule {
                         .driving_module
                         .insert(sname.clone(), module.instances.len());
                     module.instances.push(inst);
+                    module.add_clk();
                 }
                 LutLang::Lut(l) => {
                     let sname = fresh_wire(id.into(), &mut mapping);
@@ -603,12 +618,12 @@ impl SVModule {
 
         let id = match self.get_driving_primitive(signal) {
             Ok(primitive) => {
-                let program = primitive
-                    .attributes
-                    .get("INIT")
-                    .expect("Only LUT and FDRE primitives are supported");
+                let program = primitive.attributes.get("INIT").ok_or(format!(
+                    "Only {} and {} primitives are supported. INIT not found.",
+                    LUT_ROOT, REG_NAME
+                ))?;
 
-                if Self::is_reg_prim(primitive.prim.as_str()) {
+                if primitive.prim.as_str() == REG_NAME {
                     let d = primitive.inputs.first_key_value().unwrap().1;
                     let d = self.get_expr(d, expr, map)?;
                     Ok(expr.add(LutLang::Reg([d])))
@@ -623,7 +638,7 @@ impl SVModule {
                         let driver = primitive
                             .inputs
                             .get(&input)
-                            .expect("Expect LUT to have input driven");
+                            .ok_or(format!("Expected {} on {} to be driven.", input, LUT_ROOT))?;
                         subexpr.push(self.get_expr(driver, expr, map)?);
                     }
                     Ok(expr.add(LutLang::Lut(subexpr.into())))

@@ -5,6 +5,7 @@
 // CHECK: module parity_checker (
 // CHECK:     a0,
 // CHECK:     a1,
+// CHECK:     clk,
 // CHECK:     a2,
 // CHECK:     a3,
 // CHECK:     a4,
@@ -17,6 +18,8 @@
 // CHECK:   wire a0;
 // CHECK:   input a1;
 // CHECK:   wire a1;
+// CHECK:   input clk;
+// CHECK:   wire clk;
 // CHECK:   input a2;
 // CHECK:   wire a2;
 // CHECK:   input a3;
