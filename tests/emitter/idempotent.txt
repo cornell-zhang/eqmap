@@ -1,0 +1,6 @@
+// RUN: emit-verilog %s | parse-verilog | emit-verilog | parse-verilog | FileCheck %s
+
+// 8-bit comparator: https://dl.acm.org/doi/pdf/10.1145/3543622.3573048
+(LUT 1 (LUT 1 (LUT 1 (LUT 1 (LUT 1 (LUT 1 (LUT 6 a0 b0) (LUT 6 a1 b1))) (LUT 1 (LUT 1 (LUT 6 a2 b2) (LUT 6 a3 b3))))) (LUT 1 (LUT 1 (LUT 1 (LUT 1 (LUT 6 a4 b4) (LUT 6 a5 b5))) (LUT 1 (LUT 1 (LUT 6 a6 b6) (LUT 6 a7 b7)))))))
+
+// CHECK: (LUT 1 (LUT 1 (LUT 1 (LUT 1 (LUT 1 (LUT 1 (LUT 6 a0 b0) (LUT 6 a1 b1))) (LUT 1 (LUT 1 (LUT 6 a2 b2) (LUT 6 a3 b3))))) (LUT 1 (LUT 1 (LUT 1 (LUT 1 (LUT 6 a4 b4) (LUT 6 a5 b5))) (LUT 1 (LUT 1 (LUT 6 a6 b6) (LUT 6 a7 b7)))))))
