@@ -332,6 +332,66 @@ endmodule"
     }
 
     #[test]
+    fn test_verlog_emitter() {
+        let mux: RecExpr<LutLang> = "(MUX s1 (MUX s0 a b) (MUX s0 c d))".parse().unwrap();
+        let module = SVModule::from_expr(mux, "mux_4_1".to_string(), Vec::new());
+        assert!(module.is_ok());
+        let module = module.unwrap();
+        let golden = "module mux_4_1 (
+    s1,
+    s0,
+    a,
+    b,
+    c,
+    d,
+    y
+);
+  input s1;
+  wire s1;
+  input s0;
+  wire s0;
+  input a;
+  wire a;
+  input b;
+  wire b;
+  input c;
+  wire c;
+  input d;
+  wire d;
+  output y;
+  wire y;
+  wire tmp5;
+  wire tmp8;
+  LUT3 #(
+      .INIT(64'h00000000000000ca)
+  ) __0__ (
+      .I0(b),
+      .I1(a),
+      .I2(s0),
+      .O(tmp5)
+  );
+  LUT3 #(
+      .INIT(64'h00000000000000ca)
+  ) __1__ (
+      .I0(d),
+      .I1(c),
+      .I2(s0),
+      .O(tmp8)
+  );
+  LUT3 #(
+      .INIT(64'h00000000000000ca)
+  ) __2__ (
+      .I0(tmp8),
+      .I1(tmp5),
+      .I2(s1),
+      .O(y)
+  );
+endmodule"
+            .to_string();
+        assert_eq!(module.to_string(), golden);
+    }
+
+    #[test]
     fn test_primitive_connections() {
         let mut prim = SVPrimitive::new_lut(4, "_0_".to_string(), 1);
         assert!(prim.add_signal("I8".to_string(), "a".to_string()).is_err());

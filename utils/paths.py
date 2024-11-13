@@ -49,7 +49,7 @@ def get_transposition(u, v):
     if neq != 2:
         return None
 
-    return (prev_index, index)
+    return (prev_index + 1, index + 1)
 
 
 def gen_group(n):
