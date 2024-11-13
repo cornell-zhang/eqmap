@@ -1,0 +1,159 @@
+// RUN: emit-verilog %s | FileCheck %s
+
+(REG (XOR (REG (XOR (REG (XOR a0 a1)) (REG (XOR a2 a3)))) (REG (XOR (REG (XOR a4 a5)) (REG (XOR a6 a7))))))
+
+// CHECK: module parity_checker (
+// CHECK:     a0,
+// CHECK:     a1,
+// CHECK:     a2,
+// CHECK:     a3,
+// CHECK:     a4,
+// CHECK:     a5,
+// CHECK:     a6,
+// CHECK:     a7,
+// CHECK:     y
+// CHECK: );
+// CHECK:   input a0;
+// CHECK:   wire a0;
+// CHECK:   input a1;
+// CHECK:   wire a1;
+// CHECK:   input a2;
+// CHECK:   wire a2;
+// CHECK:   input a3;
+// CHECK:   wire a3;
+// CHECK:   input a4;
+// CHECK:   wire a4;
+// CHECK:   input a5;
+// CHECK:   wire a5;
+// CHECK:   input a6;
+// CHECK:   wire a6;
+// CHECK:   input a7;
+// CHECK:   wire a7;
+// CHECK:   output y;
+// CHECK:   wire y;
+// CHECK:   wire tmp3;
+// CHECK:   wire tmp4;
+// CHECK:   wire tmp7;
+// CHECK:   wire tmp8;
+// CHECK:   wire tmp9;
+// CHECK:   wire tmp10;
+// CHECK:   wire tmp13;
+// CHECK:   wire tmp14;
+// CHECK:   wire tmp17;
+// CHECK:   wire tmp18;
+// CHECK:   wire tmp19;
+// CHECK:   wire tmp20;
+// CHECK:   wire tmp21;
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:   ) __0__ (
+// CHECK:       .I0(a1),
+// CHECK:       .I1(a0),
+// CHECK:       .O(tmp3)
+// CHECK:   );
+// CHECK:   FDRE #(
+// CHECK:       .INIT(1'hx)
+// CHECK:   ) __1__ (
+// CHECK:       .C(clk),
+// CHECK:       .CE(1'h1),
+// CHECK:       .D(tmp3),
+// CHECK:       .R(1'h0),
+// CHECK:       .Q(tmp4)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:   ) __2__ (
+// CHECK:       .I0(a3),
+// CHECK:       .I1(a2),
+// CHECK:       .O(tmp7)
+// CHECK:   );
+// CHECK:   FDRE #(
+// CHECK:       .INIT(1'hx)
+// CHECK:   ) __3__ (
+// CHECK:       .C(clk),
+// CHECK:       .CE(1'h1),
+// CHECK:       .D(tmp7),
+// CHECK:       .R(1'h0),
+// CHECK:       .Q(tmp8)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:   ) __4__ (
+// CHECK:       .I0(tmp8),
+// CHECK:       .I1(tmp4),
+// CHECK:       .O(tmp9)
+// CHECK:   );
+// CHECK:   FDRE #(
+// CHECK:       .INIT(1'hx)
+// CHECK:   ) __5__ (
+// CHECK:       .C(clk),
+// CHECK:       .CE(1'h1),
+// CHECK:       .D(tmp9),
+// CHECK:       .R(1'h0),
+// CHECK:       .Q(tmp10)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:   ) __6__ (
+// CHECK:       .I0(a5),
+// CHECK:       .I1(a4),
+// CHECK:       .O(tmp13)
+// CHECK:   );
+// CHECK:   FDRE #(
+// CHECK:       .INIT(1'hx)
+// CHECK:   ) __7__ (
+// CHECK:       .C(clk),
+// CHECK:       .CE(1'h1),
+// CHECK:       .D(tmp13),
+// CHECK:       .R(1'h0),
+// CHECK:       .Q(tmp14)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:   ) __8__ (
+// CHECK:       .I0(a7),
+// CHECK:       .I1(a6),
+// CHECK:       .O(tmp17)
+// CHECK:   );
+// CHECK:   FDRE #(
+// CHECK:       .INIT(1'hx)
+// CHECK:   ) __9__ (
+// CHECK:       .C(clk),
+// CHECK:       .CE(1'h1),
+// CHECK:       .D(tmp17),
+// CHECK:       .R(1'h0),
+// CHECK:       .Q(tmp18)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:   ) __10__ (
+// CHECK:       .I0(tmp18),
+// CHECK:       .I1(tmp14),
+// CHECK:       .O(tmp19)
+// CHECK:   );
+// CHECK:   FDRE #(
+// CHECK:       .INIT(1'hx)
+// CHECK:   ) __11__ (
+// CHECK:       .C(clk),
+// CHECK:       .CE(1'h1),
+// CHECK:       .D(tmp19),
+// CHECK:       .R(1'h0),
+// CHECK:       .Q(tmp20)
+// CHECK:   );
+// CHECK:   LUT2 #(
+// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:   ) __12__ (
+// CHECK:       .I0(tmp20),
+// CHECK:       .I1(tmp10),
+// CHECK:       .O(tmp21)
+// CHECK:   );
+// CHECK:   FDRE #(
+// CHECK:       .INIT(1'hx)
+// CHECK:   ) __13__ (
+// CHECK:       .C(clk),
+// CHECK:       .CE(1'h1),
+// CHECK:       .D(tmp21),
+// CHECK:       .R(1'h0),
+// CHECK:       .Q(y)
+// CHECK:   );
+// CHECK: endmodule
