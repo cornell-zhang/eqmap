@@ -48,7 +48,7 @@
 // CHECK:   wire tmp20;
 // CHECK:   wire tmp21;
 // CHECK:   LUT2 #(
-// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:       .INIT(4'h6)
 // CHECK:   ) __0__ (
 // CHECK:       .I0(a1),
 // CHECK:       .I1(a0),
@@ -64,7 +64,7 @@
 // CHECK:       .Q(tmp4)
 // CHECK:   );
 // CHECK:   LUT2 #(
-// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:       .INIT(4'h6)
 // CHECK:   ) __2__ (
 // CHECK:       .I0(a3),
 // CHECK:       .I1(a2),
@@ -80,7 +80,7 @@
 // CHECK:       .Q(tmp8)
 // CHECK:   );
 // CHECK:   LUT2 #(
-// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:       .INIT(4'h6)
 // CHECK:   ) __4__ (
 // CHECK:       .I0(tmp8),
 // CHECK:       .I1(tmp4),
@@ -96,7 +96,7 @@
 // CHECK:       .Q(tmp10)
 // CHECK:   );
 // CHECK:   LUT2 #(
-// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:       .INIT(4'h6)
 // CHECK:   ) __6__ (
 // CHECK:       .I0(a5),
 // CHECK:       .I1(a4),
@@ -112,7 +112,7 @@
 // CHECK:       .Q(tmp14)
 // CHECK:   );
 // CHECK:   LUT2 #(
-// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:       .INIT(4'h6)
 // CHECK:   ) __8__ (
 // CHECK:       .I0(a7),
 // CHECK:       .I1(a6),
@@ -128,7 +128,7 @@
 // CHECK:       .Q(tmp18)
 // CHECK:   );
 // CHECK:   LUT2 #(
-// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:       .INIT(4'h6)
 // CHECK:   ) __10__ (
 // CHECK:       .I0(tmp18),
 // CHECK:       .I1(tmp14),
@@ -144,7 +144,7 @@
 // CHECK:       .Q(tmp20)
 // CHECK:   );
 // CHECK:   LUT2 #(
-// CHECK:       .INIT(64'h0000000000000006)
+// CHECK:       .INIT(4'h6)
 // CHECK:   ) __12__ (
 // CHECK:       .I0(tmp20),
 // CHECK:       .I1(tmp10),

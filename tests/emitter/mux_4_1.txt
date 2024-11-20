@@ -29,7 +29,7 @@
 // CHECK:   wire tmp5;
 // CHECK:   wire tmp8;
 // CHECK:   LUT3 #(
-// CHECK:       .INIT(64'h00000000000000ca)
+// CHECK:       .INIT(8'hca)
 // CHECK:   ) __0__ (
 // CHECK:       .I0(b),
 // CHECK:       .I1(a),
@@ -37,7 +37,7 @@
 // CHECK:       .O(tmp5)
 // CHECK:   );
 // CHECK:   LUT3 #(
-// CHECK:       .INIT(64'h00000000000000ca)
+// CHECK:       .INIT(8'hca)
 // CHECK:   ) __1__ (
 // CHECK:       .I0(d),
 // CHECK:       .I1(c),
@@ -45,7 +45,7 @@
 // CHECK:       .O(tmp8)
 // CHECK:   );
 // CHECK:   LUT3 #(
-// CHECK:       .INIT(64'h00000000000000ca)
+// CHECK:       .INIT(8'hca)
 // CHECK:   ) __2__ (
 // CHECK:       .I0(tmp8),
 // CHECK:       .I1(tmp5),
