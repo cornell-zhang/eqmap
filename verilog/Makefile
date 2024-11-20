@@ -13,15 +13,17 @@ all: mux_4_1_synth.v
 clean:
 	rm -f *_$(FSTEM).v *.ys *.dot *.png
 
-%_$(FSTEM).v: %_$(FSTEM).ys
+%.v: %.ys
 	+$(YOSYS) -s $<
-	# Script must have made a dot file
-	dot -Tpng $*_$(FSTEM).dot > $*_$(FSTEM).png
 
-%_$(FSTEM).ys: %.v
+%_xil.ys: %.v
 	@echo "read_verilog $<" > $@
 	@echo "synth_xilinx -top $* -family $(FAMILY) $(SYNTH_OPT)" >> $@
 	@echo "clean -purge" >> $@
-	@echo "write_verilog $*_$(FSTEM).v" >> $@
-	# Make graph as bonus
-	@echo "show -viewer none -prefix $*_$(FSTEM)" >> $@
+	@echo "write_verilog $*_xil.v" >> $@
+
+%_synth.ys: %.v
+	@echo "read_verilog $<" > $@
+	@echo "techmap -map lutlang.v" >> $@
+	@echo "clean -purge" >> $@
+	@echo "write_verilog $*_synth.v" >> $@
