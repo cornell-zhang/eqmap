@@ -68,13 +68,13 @@ jobs:
       - name: Build (release)
         run: cargo build --release --verbose
       - name: Run integration tests (release, )
-        run: time cargo run --release -- tests/lutlang/hard_examples.txt
+        run: echo "integration tests (release, )" >> $GITHUB_STEP_SUMMARY; (time cargo run --release -- tests/lutlang/hard_examples.txt 2>>/dev/null) 2>> $GITHUB_STEP_SUMMARY
       - name: Run integration tests (release, proof gen)
-        run: time cargo run --release -- tests/lutlang/hard_examples.txt --verbose
+        run: echo "integration tests (release, proof gen)" >> $GITHUB_STEP_SUMMARY; (time cargo run --release -- tests/lutlang/hard_examples.txt --verbose 2>>/dev/null) 2>> $GITHUB_STEP_SUMMARY
       - name: Run comparator (release, proof gen)
-        run: time cargo run --release -- tests/lutlang/gate_compare.txt --verbose
+        run: echo "comparator (release, proof gen)" >> $GITHUB_STEP_SUMMARY; (time cargo run --release -- tests/lutlang/gate_compare.txt --verbose 2>>/dev/null) 2>> $GITHUB_STEP_SUMMARY
       - name: Run comparator (release,)
-        run: time cargo run --release -- tests/lutlang/gate_compare.txt
+        run: echo "comparator (release,)" >> $GITHUB_STEP_SUMMARY; (time cargo run --release -- tests/lutlang/gate_compare.txt 2>>/dev/null) 2>> $GITHUB_STEP_SUMMARY
 
   coverage:
     name: Code Coverage
