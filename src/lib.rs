@@ -363,7 +363,7 @@ endmodule"
   wire tmp5;
   wire tmp8;
   LUT3 #(
-      .INIT(64'h00000000000000ca)
+      .INIT(8'hca)
   ) __0__ (
       .I0(b),
       .I1(a),
@@ -371,7 +371,7 @@ endmodule"
       .O(tmp5)
   );
   LUT3 #(
-      .INIT(64'h00000000000000ca)
+      .INIT(8'hca)
   ) __1__ (
       .I0(d),
       .I1(c),
@@ -379,7 +379,7 @@ endmodule"
       .O(tmp8)
   );
   LUT3 #(
-      .INIT(64'h00000000000000ca)
+      .INIT(8'hca)
   ) __2__ (
       .I0(tmp8),
       .I1(tmp5),
