@@ -408,8 +408,8 @@ impl SVModule {
 
                     if let Some(k) = Self::is_lut_prim(&mod_name) {
                         let id = unwrap_node!(inst, NamedParameterAssignment).unwrap();
-                        let program: u64 =
-                            if let RefNode::HexValue(v) = unwrap_node!(id, HexValue).unwrap() {
+                        let program: u64 = match unwrap_node!(id, HexValue, UnsignedNumber) {
+                            Some(RefNode::HexValue(v)) => {
                                 let loc = v.nodes.0;
                                 let loc = ast.get_str(&loc).unwrap();
                                 match u64::from_str_radix(loc, 16) {
@@ -421,12 +421,27 @@ impl SVModule {
                                         ))
                                     }
                                 }
-                            } else {
+                            }
+                            Some(RefNode::UnsignedNumber(v)) => {
+                                let loc = v.nodes.0;
+                                let loc = ast.get_str(&loc).unwrap();
+                                match loc.parse::<u64>() {
+                                    Ok(x) => x,
+                                    Err(_) => {
+                                        return Err(format!(
+                                            "Could not parse decimal value from INIT string {}",
+                                            loc
+                                        ))
+                                    }
+                                }
+                            }
+                            _ => {
                                 return Err(format!(
                                     "{} {} should have INIT value written in hexadecimal",
                                     LUT_ROOT, mod_name
                                 ));
-                            };
+                            }
+                        };
                         cur_insts.push(SVPrimitive::new_lut(k, inst_name, program));
                         continue;
                     }
