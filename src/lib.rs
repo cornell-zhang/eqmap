@@ -392,6 +392,37 @@ endmodule"
     }
 
     #[test]
+    fn test_emit_reg() {
+        let reg: RecExpr<LutLang> = "(REG a)".parse().unwrap();
+        let module = SVModule::from_expr(reg, "my_reg".to_string(), Vec::new());
+        assert!(module.is_ok());
+        let module = module.unwrap();
+        let golden = "module my_reg (
+    a,
+    clk,
+    y
+);
+  input a;
+  wire a;
+  input clk;
+  wire clk;
+  output y;
+  wire y;
+  FDRE #(
+      .INIT(1'hx)
+  ) __0__ (
+      .C(clk),
+      .CE(1'h1),
+      .D(a),
+      .R(1'h0),
+      .Q(y)
+  );
+endmodule"
+            .to_string();
+        assert_eq!(module.to_string(), golden);
+    }
+
+    #[test]
     fn test_primitive_connections() {
         let mut prim = SVPrimitive::new_lut(4, "_0_".to_string(), 1);
         assert!(prim.add_signal("I8".to_string(), "a".to_string()).is_err());

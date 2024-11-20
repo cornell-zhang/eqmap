@@ -93,6 +93,18 @@ fn init_parser(v: &str) -> Result<u64, String> {
     }
 }
 
+#[test]
+fn test_verilog_literals() {
+    assert_eq!(init_parser("8'hff").unwrap(), 0xff);
+    assert_eq!(init_parser("8'h00").unwrap(), 0x00);
+    assert_eq!(init_parser("8'h0f").unwrap(), 0x0f);
+    assert_eq!(init_parser("8'd255").unwrap(), 255);
+    assert_eq!(init_format(1, 1), Ok("2'h1".to_string()));
+    assert_eq!(init_format(1, 5), Ok("32'h00000001".to_string()));
+    assert!(init_parser("1'hx").is_err());
+    assert!(init_parser("1'hz").is_err());
+}
+
 const CLK: &str = "clk";
 const REG_NAME: &str = "FDRE";
 const LUT_ROOT: &str = "LUT";
