@@ -84,7 +84,7 @@ where
 
     // Use back-off scheduling on runner to avoid transpositions taking too much time
     let bos = BackoffScheduler::default()
-        .with_ban_length(2)
+        .with_ban_length(1)
         .with_initial_match_limit(960);
 
     let runner = runner

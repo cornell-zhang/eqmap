@@ -16,12 +16,14 @@ clean:
 %.v: %.ys
 	+$(YOSYS) -s $<
 
+# This script synthesizes to LUTs
 %_xil.ys: %.v
 	@echo "read_verilog $<" > $@
 	@echo "synth_xilinx -top $* -family $(FAMILY) $(SYNTH_OPT)" >> $@
 	@echo "clean -purge" >> $@
 	@echo "write_verilog $*_xil.v" >> $@
 
+# This script synthesizes to AND, NOR, XOR, INV, MUXes
 %_synth.ys: %.v
 	@echo "read_verilog $<" > $@
 	@echo "techmap -map lutlang.v" >> $@
