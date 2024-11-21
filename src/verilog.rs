@@ -626,6 +626,11 @@ impl SVModule {
             match node {
                 LutLang::Var(s) => {
                     let sname = s.to_string();
+                    if sname.contains("\n") || sname.contains(",") || sname.contains(";") {
+                        return Err(
+                            "Input cannot span multiple lines or contain delimiters".to_string()
+                        );
+                    }
                     if sname.contains("tmp") {
                         return Err("'tmp' is a reserved keyword".to_string());
                     }
