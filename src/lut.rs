@@ -902,6 +902,7 @@ pub fn canonicalize_expr(expr: RecExpr<LutLang>) -> RecExpr<LutLang> {
         assert!(verify_expr(&rewritten).is_ok());
         let info = LutExprInfo::new(&expr);
         assert!(!info.check(&rewritten).is_not_equiv());
+        assert!(!info.is_reduntant());
     }
 
     let result = fold_expr_greedily(rewritten);
