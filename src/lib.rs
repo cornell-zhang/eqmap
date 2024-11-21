@@ -332,6 +332,36 @@ endmodule"
     }
 
     #[test]
+    fn test_gate_parse() {
+        let module = "module my_gate (
+            a,
+            b,
+            y
+        );
+          input a;
+          wire a;
+          input b;
+          wire b;
+          output y;
+          wire y;
+          AND2 _0_ (
+              .A(a),
+              .B(b),
+              .Y(y)
+          );
+        endmodule"
+            .to_string();
+        let ast = sv_parse_wrapper(&module, None).unwrap();
+        let module = SVModule::from_ast(&ast);
+        assert!(module.is_ok());
+        let module = module.unwrap();
+        assert_eq!(
+            module.to_single_expr().unwrap().to_string(),
+            "(AND a b)".to_string()
+        );
+    }
+
+    #[test]
     fn test_verilog_emitter() {
         let mux: RecExpr<LutLang> = "(MUX s1 (MUX s0 a b) (MUX s0 c d))".parse().unwrap();
         let module = SVModule::from_expr(mux, "mux_4_1".to_string(), Vec::new());
