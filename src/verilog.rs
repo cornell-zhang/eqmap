@@ -175,6 +175,17 @@ impl SVPrimitive {
         }
     }
 
+    /// Create a new unconnected gate primitive with instance name `name`
+    pub fn new_gate(gate: String, name: String) -> Self {
+        SVPrimitive {
+            prim: gate,
+            name,
+            inputs: BTreeMap::new(),
+            outputs: BTreeMap::new(),
+            attributes: BTreeMap::new(),
+        }
+    }
+
     /// Add an input connection
     fn add_input(&mut self, port: String, signal: String) -> Result<(), String> {
         match self.inputs.insert(port.clone(), signal) {
@@ -200,7 +211,9 @@ impl SVPrimitive {
     /// Create an IO connection to the primitive based on port name. This is based on the Xilinx port naming conventions.
     pub fn add_signal(&mut self, port: String, signal: String) -> Result<(), String> {
         match port.as_str() {
-            "I0" | "I1" | "I2" | "I3" | "I4" | "I5" | "D" => self.add_input(port, signal),
+            "I0" | "I1" | "I2" | "I3" | "I4" | "I5" | "D" | "A" | "B" | "S" => {
+                self.add_input(port, signal)
+            }
             "O" | "Y" | "Q" => self.add_output(port, signal),
             "C" | "CE" | "R" => Ok(()),
             _ => Err(format!("Unknown port name {}", port)),
@@ -364,6 +377,10 @@ impl SVModule {
         name == REG_NAME
     }
 
+    fn is_gate_prim(name: &str) -> bool {
+        matches!(name, "AND2" | "NOR2" | "XOR2" | "NOT" | "MUX")
+    }
+
     /// From a parsed verilog ast, create a new module and fill it with its primitives and connections.
     /// This method only works on structural verilog.
     pub fn from_ast(ast: &sv_parser::SyntaxTree) -> Result<Self, String> {
@@ -460,6 +477,11 @@ impl SVModule {
 
                     if Self::is_reg_prim(&mod_name) {
                         cur_insts.push(SVPrimitive::new_reg(inst_name));
+                        continue;
+                    }
+
+                    if Self::is_gate_prim(&mod_name) {
+                        cur_insts.push(SVPrimitive::new_gate(mod_name, inst_name));
                         continue;
                     }
 
@@ -673,17 +695,32 @@ impl SVModule {
 
         let id = match self.get_driving_primitive(signal) {
             Ok(primitive) => {
-                let program = primitive.attributes.get("INIT").ok_or(format!(
-                    "Only {} and {} primitives are supported. INIT not found.",
-                    LUT_ROOT, REG_NAME
-                ))?;
-
-                if primitive.prim.as_str() == REG_NAME {
+                if Self::is_gate_prim(primitive.prim.as_str()) {
+                    // Update the mapping
+                    let mut subexpr: HashMap<&'a str, Id> = HashMap::new();
+                    for (port, signal) in primitive.inputs.iter() {
+                        subexpr.insert(port, self.get_expr(signal, expr, map)?);
+                    }
+                    match primitive.prim.as_str() {
+                        "AND2" => Ok(expr.add(LutLang::And([subexpr["A"], subexpr["B"]]))),
+                        "NOR2" => Ok(expr.add(LutLang::Nor([subexpr["A"], subexpr["B"]]))),
+                        "XOR2" => Ok(expr.add(LutLang::Xor([subexpr["A"], subexpr["B"]]))),
+                        "MUX" => {
+                            Ok(expr.add(LutLang::Mux([subexpr["S"], subexpr["A"], subexpr["B"]])))
+                        }
+                        "NOT" => Ok(expr.add(LutLang::Not([subexpr["A"]]))),
+                        _ => Err(format!("Unsupported gate primitive {}", primitive.prim)),
+                    }
+                } else if Self::is_reg_prim(primitive.prim.as_str()) {
                     let d = primitive.inputs.first_key_value().unwrap().1;
                     let d = self.get_expr(d, expr, map)?;
                     Ok(expr.add(LutLang::Reg([d])))
                 } else {
                     let mut subexpr: Vec<Id> = vec![];
+                    let program = primitive.attributes.get("INIT").ok_or(format!(
+                        "Only {} and {} primitives are supported. INIT not found.",
+                        LUT_ROOT, REG_NAME
+                    ))?;
                     let program: u64 = init_parser(program)?;
                     subexpr.push(expr.add(LutLang::Program(program)));
                     for input in (0..primitive.inputs.len()).rev().map(|x| format!("I{}", x)) {
@@ -731,12 +768,8 @@ impl SVModule {
         if outputs.len() > 1 {
             expr.add(LutLang::Bus(outputs.into()));
         }
-        let canonical = LutExprInfo::new(&expr).is_canonical();
-        if !canonical {
-            Err("Outputted expression is not canonical".to_string())
-        } else {
-            Ok(expr)
-        }
+        // TODO(matth2k): Add an option to run subexpression elimination here
+        Ok(expr)
     }
 
     /// Convert the module to a [LutLang] expression
