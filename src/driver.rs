@@ -17,6 +17,43 @@ use std::{
 
 const MAX_CANON_SIZE: usize = 30000;
 
+/// The output of a [SynthRequest] run.
+pub struct SynthOutput {
+    expr: RecExpr<LutLang>,
+    expl: Option<Explanation<LutLang>>,
+}
+
+impl SynthOutput {
+    /// Get the expression of the output.
+    pub fn get_expr(&self) -> &RecExpr<LutLang> {
+        &self.expr
+    }
+
+    /// Get the explanation of the output.
+    pub fn get_expl(&self) -> &Option<Explanation<LutLang>> {
+        &self.expl
+    }
+
+    /// Get the proof of the output.
+    pub fn get_proof(&mut self) -> String {
+        if self.has_explanation() {
+            self.expl.as_mut().unwrap().get_flat_string()
+        } else {
+            String::new()
+        }
+    }
+
+    /// Get the analysis for an output expression.
+    pub fn get_analysis(&self) -> LutExprInfo {
+        LutExprInfo::new(&self.expr)
+    }
+
+    /// Check if the output has an explanation.
+    pub fn has_explanation(&self) -> bool {
+        self.expl.is_some()
+    }
+}
+
 /// Update a progress bar with the current state of the runner.
 fn report_progress<L, A>(
     runner: &Runner<L, A>,
@@ -271,9 +308,7 @@ where
     }
 
     /// simplify `expr` using egg with at most `k` fan-in on LUTs
-    pub fn simplify_expr(
-        &mut self,
-    ) -> Result<(RecExpr<LutLang>, Option<Explanation<LutLang>>), String>
+    pub fn simplify_expr(&mut self) -> Result<SynthOutput, String>
     where
         A: Analysis<LutLang> + std::default::Default,
     {
@@ -321,7 +356,7 @@ where
                 stop_reason
             );
         }
-        Ok((best, expl))
+        Ok(SynthOutput { expr: best, expl })
     }
 }
 
