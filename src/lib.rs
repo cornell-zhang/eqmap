@@ -11,6 +11,7 @@ TODO: overview, tutorial, testing, research papers
 pub mod analysis;
 pub mod check;
 pub mod cost;
+pub mod driver;
 pub mod lut;
 pub mod rewrite;
 pub mod verilog;

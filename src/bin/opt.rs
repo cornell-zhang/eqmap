@@ -1,231 +1,213 @@
 use clap::Parser;
 use egg::*;
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use lut_synth::{
-    cost::KLUTCostFn,
-    lut::{self, canonicalize_expr, LutExprInfo},
+    analysis::LutAnalysis,
+    driver::{simple_reader, SynthRequest},
+    lut::{self, LutExprInfo},
     rewrite::{all_rules_minus_dsd, known_decompositions, register_retiming},
 };
-use std::{
-    io::{IsTerminal, Read, Write},
-    path::PathBuf,
-    time::{Duration, Instant},
-};
+use std::path::PathBuf;
 
-const MAX_CANON_SIZE: usize = 30000;
+fn get_main_runner(s: &str) -> Result<SynthRequest<LutAnalysis>, RecExprParseError<FromOpError>> {
+    let expr: RecExpr<lut::LutLang> = s.parse()?;
+    let mut rules = all_rules_minus_dsd();
+    rules.append(&mut known_decompositions());
+    rules.append(&mut register_retiming());
 
-fn report_progress<A>(
-    runner: &Runner<lut::LutLang, A>,
-    iter_bar: &mut ProgressBar,
-    node_bar: &mut ProgressBar,
-) -> Result<(), String>
-where
-    A: Analysis<lut::LutLang> + std::default::Default,
-{
-    iter_bar.inc(1);
-    let nodes = runner.egraph.total_number_of_nodes();
-    node_bar.set_position(nodes as u64);
-    Ok(())
-}
-
-/// A request to simplify an expression.
-struct SimplifyRequest<'a, A> {
-    /// The expression to simplify.
-    expr: &'a RecExpr<lut::LutLang>,
-
-    /// The rewrite rules used to simplify the expression.
-    rules: &'a Vec<Rewrite<lut::LutLang, A>>,
-
-    /// The greatest fan-in on any LUT in an expression.
-    k: usize,
-
-    /// If true, do not canonicalize the input expression.
-    no_canonicalize: bool,
-
-    /// If true, an error is returned if saturation is not met.
-    assert_sat: bool,
-
-    /// If true, a proof of the simplification should be generation. If false, no proof will be
-    /// generated.
-    gen_proof: bool,
-
-    /// If true, a progress bar will be displayed, else no progress bar will be displayed.
-    prog_bar: bool,
-
-    /// The timelimit, in seconds, given to the search.
-    timeout: u64,
-
-    /// The maximum number of enodes in a searched egraph.
-    node_limit: usize,
-
-    /// The maximum number of iterations of rewrites applied to the egraph.
-    iter_limit: usize,
-}
-
-/// simplify `expr` using egg with at most `k` fan-in on LUTs
-fn simplify_expr<A>(
-    req: &SimplifyRequest<A>,
-) -> Result<(RecExpr<lut::LutLang>, Option<Explanation<lut::LutLang>>), String>
-where
-    A: Analysis<lut::LutLang> + std::default::Default,
-{
-    // simplify the expression using a Runner, which creates an e-graph with
-    // the given expression and runs the given rules over it
-
-    let runner = if req.gen_proof {
-        eprintln!("WARNING: Proof generation is on (slow)");
-        Runner::default().with_explanations_enabled()
-    } else {
-        Runner::default().with_explanations_disabled()
-    };
-
-    // Print a progress bar to get a sense of growth
-    let mp = MultiProgress::new();
-
-    // Use back-off scheduling on runner to avoid transpositions taking too much time
-    let bos = BackoffScheduler::default()
-        .with_ban_length(1)
-        .with_initial_match_limit(960);
-
-    let runner = runner
-        .with_scheduler(bos)
-        .with_time_limit(Duration::from_secs(req.timeout))
-        .with_node_limit(req.node_limit)
-        .with_iter_limit(req.iter_limit);
-
-    let runner = if req.prog_bar {
-        let (mut iter_bar, mut node_bar) = (
-            mp.add(ProgressBar::new(req.iter_limit as u64).with_message("iterations")),
-            mp.add(ProgressBar::new(req.node_limit as u64)),
-        );
-        iter_bar.set_style(
-            ProgressStyle::with_template("[{bar:60.cyan/blue}] {pos}/{len} iterations").unwrap(),
-        );
-        node_bar.set_style(
-            ProgressStyle::with_template("[{bar:60.magenta}] {pos}/{len} nodes").unwrap(),
-        );
-        runner.with_hook(move |r| report_progress(r, &mut iter_bar, &mut node_bar))
-    } else {
-        runner
-    };
-
-    let expr = if req.no_canonicalize {
-        req.expr.clone()
-    } else if req.expr.as_ref().len() > MAX_CANON_SIZE {
-        eprintln!(
-            "WARNING: Input is too large to canonicalize ({} nodes)",
-            req.expr.as_ref().len()
-        );
-        req.expr.clone()
-    } else {
-        canonicalize_expr(req.expr.clone())
-    };
-
-    if req.gen_proof {
-        let info = LutExprInfo::new(req.expr);
-        if info.check(&expr).is_not_equiv() {
-            return Err(format!(
-                "Folding the initial expression had an error: {}",
-                expr
-            ));
-        }
-    }
-
-    let mut runner = runner.with_expr(&expr).run(req.rules);
-
-    // Clear the progress bar
-    mp.clear().unwrap();
-
-    // the Runner knows which e-class the expression given with `with_expr` is in
-    let root = runner.roots[0];
-    if req.gen_proof {
-        let report = runner.report();
-        eprintln!("INFO: {}", report.to_string().replace('\n', "\nINFO: "));
-    }
-
-    // use an Extractor to pick the best element of the root eclass
-    let extraction_start = Instant::now();
-    let extractor = Extractor::new(&runner.egraph, KLUTCostFn::new(req.k));
-    let (_best_cost, best) = extractor.find_best(root);
-    let extraction_time = extraction_start.elapsed();
-    if req.gen_proof {
-        eprintln!(
-            "INFO: Extraction time: {} seconds",
-            extraction_time.as_secs_f64()
-        );
-    }
-    let expl = if req.gen_proof {
-        runner.explain_equivalence(&expr, &best).into()
-    } else {
-        None
-    };
-
-    let stop_reason = runner.stop_reason.unwrap();
-    if req.assert_sat && !matches!(stop_reason, egg::StopReason::Saturated) {
-        return Err(format!(
-            "Expression {} failed to saturate. Grown to {} nodes with reason {:?}",
-            req.expr,
-            runner.egraph.total_number_of_nodes(),
-            stop_reason
-        ));
-    } else {
-        eprintln!(
-            "INFO: Grown to {} nodes with reason {:?}",
-            runner.egraph.total_number_of_nodes(),
-            stop_reason
-        );
-    }
-    Ok((best, expl))
+    Ok(SynthRequest::default()
+        .with_expr(expr)
+        .with_rules(rules)
+        .with_k(4)
+        .with_asserts()
+        .without_progress_bar()
+        .with_timeout(20)
+        .with_node_limit(20_000)
+        .with_iter_limit(30))
 }
 
 #[allow(dead_code)]
 /// parse an expression, simplify it with DSD and at most 4 fan-in, and pretty print it back out
 fn simplify(s: &str) -> String {
-    // parse the expression, the type annotation tells it which Language to use
-    let expr: RecExpr<lut::LutLang> = s.parse().unwrap();
-    let mut rules = all_rules_minus_dsd();
-    rules.append(&mut known_decompositions());
-    rules.append(&mut register_retiming());
-
-    let req = SimplifyRequest {
-        expr: &expr,
-        rules: &rules,
-        k: 4,
-        no_canonicalize: false,
-        assert_sat: true,
-        gen_proof: false,
-        prog_bar: false,
-        timeout: 20,
-        node_limit: 20_000,
-        iter_limit: 30,
-    };
-
-    simplify_expr(&req).unwrap().0.to_string()
+    let mut req = get_main_runner(s).unwrap();
+    req.simplify_expr().unwrap().0.to_string()
 }
 
 #[allow(dead_code)]
 /// parse an expression, simplify it with DSD and at most 4 fan-in, and pretty print it back out
 fn simplify_w_proof(s: &str) -> String {
-    // parse the expression, the type annotation tells it which Language to use
-    let expr: RecExpr<lut::LutLang> = s.parse().unwrap();
-    let mut rules = all_rules_minus_dsd();
-    rules.append(&mut known_decompositions());
-    rules.append(&mut register_retiming());
+    let mut req = get_main_runner(s).unwrap().with_proof();
+    req.simplify_expr().unwrap().0.to_string()
+}
 
-    let req = SimplifyRequest {
-        expr: &expr,
-        rules: &rules,
-        k: 4,
-        no_canonicalize: false,
-        assert_sat: true,
-        gen_proof: true,
-        prog_bar: false,
-        timeout: 20,
-        node_limit: 20_000,
-        iter_limit: 30,
+/// LUT Network Synthesis with E-Graphs
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Path to input file. If not provided, reads from stdin
+    input: Option<PathBuf>,
+
+    /// Return an error if the graph does not reach saturation
+    #[arg(short = 'a', long, default_value_t = false)]
+    assert_sat: bool,
+
+    /// Don't verify functionality of the output
+    #[arg(short = 'f', long, default_value_t = false)]
+    no_verify: bool,
+
+    /// Don't canonicalize the input expression
+    #[arg(short = 'c', long, default_value_t = false)]
+    no_canonicalize: bool,
+
+    /// Opt a specific LUT expr instead of from file
+    #[arg(long)]
+    command: Option<String>,
+
+    /// Don't use disjoint set decompositions
+    #[arg(short = 'd', long, default_value_t = false)]
+    no_dsd: bool,
+
+    /// Don't use register retiming
+    #[arg(short = 'r', long, default_value_t = false)]
+    no_retime: bool,
+
+    /// Print explanations (this generates a proof and runs longer)
+    #[arg(short = 'v', long, default_value_t = false)]
+    verbose: bool,
+
+    /// Max fan in size for LUTs
+    #[arg(short = 'k', long, default_value_t = 4)]
+    k: usize,
+
+    /// Timeout in seconds for each expression
+    #[arg(short = 't', long,
+        default_value_t =
+        if cfg!(debug_assertions) {
+            27
+        } else {
+            9
+        })
+    ]
+    timeout: u64,
+
+    /// Maximum number of nodes in graph
+    #[arg(short = 's', long, default_value_t = 24_000)]
+    node_limit: usize,
+
+    /// Maximum number of rewrite iterations
+    #[arg(short = 'n', long, default_value_t = 32)]
+    iter_limit: usize,
+}
+
+fn main() -> std::io::Result<()> {
+    let args = Args::parse();
+
+    if cfg!(debug_assertions) {
+        eprintln!("WARNING: Debug assertions are enabled");
+    }
+
+    let buf = simple_reader(args.command, args.input)?;
+
+    let mut rules = all_rules_minus_dsd();
+    if !args.no_dsd {
+        rules.append(&mut known_decompositions());
+    }
+
+    if !args.no_retime {
+        rules.append(&mut register_retiming());
+    }
+
+    if args.verbose {
+        eprintln!("INFO: Running with {} rewrite rules", rules.len());
+        eprintln!(
+            "INFO: DSD rewrites {}",
+            if args.no_dsd { "OFF" } else { "ON" }
+        );
+    }
+
+    let req = SynthRequest::default()
+        .with_rules(rules)
+        .with_k(args.k)
+        .with_timeout(args.timeout)
+        .with_node_limit(args.node_limit)
+        .with_iter_limit(args.iter_limit);
+
+    let req = if args.assert_sat {
+        req.with_asserts()
+    } else {
+        req
     };
 
-    simplify_expr(&req).unwrap().0.to_string()
+    let req = if args.no_canonicalize {
+        req.without_canonicalization()
+    } else {
+        req
+    };
+
+    let req = if args.verbose { req.with_proof() } else { req };
+
+    for line in buf.lines() {
+        let line = line.trim();
+        if line.starts_with("//") || line.is_empty() {
+            continue;
+        }
+        let expr = line.split("//").next().unwrap();
+        let expr: RecExpr<lut::LutLang> = expr
+            .parse()
+            .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+
+        if !args.no_verify {
+            lut::verify_expr(&expr)
+                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+        }
+
+        if cfg!(debug_assertions) {
+            eprintln!("WARNING: Running with debug assertions is slow");
+        }
+
+        let mut req = req.clone().with_expr(expr.clone());
+
+        let (simplified, expl) = req
+            .simplify_expr()
+            .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+        let expl: Option<String> = match expl {
+            Some(mut e) => {
+                let proof = e.get_flat_string();
+                let linecount = proof.lines().count();
+                format!("{}\n Approx. {} lines in proof tree", proof, linecount).into()
+            }
+            None => None,
+        };
+
+        if args.verbose {
+            eprintln!("INFO: {}", expl.as_ref().unwrap().replace('\n', "\nINFO: "));
+            eprintln!("INFO: ============================================================");
+        } else {
+            eprintln!("{} => ", expr);
+        }
+
+        println!("{}", simplified);
+
+        // Verify functionality
+        if args.no_verify {
+            eprintln!("INFO: Skipping functionality tests...");
+        } else {
+            let result = LutExprInfo::new(&expr).check(&simplified);
+            if result.is_inconclusive() && args.verbose {
+                eprintln!("WARNING: Functionality verification inconclusive");
+            }
+            if result.is_not_equiv() {
+                match expl.as_ref() {
+                    Some(e) => eprintln!("ERROR: Failed for explanation {}", e),
+                    None => eprintln!("ERROR: Failed for unknown reason. Try running with --verbose for an attempted proof"),
+                }
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "Functionality verification failed",
+                ));
+            }
+        }
+    }
+    Ok(())
 }
 
 #[test]
@@ -301,181 +283,4 @@ fn test_exploration() {
     // Since we have greedy folding now,
     // we need different kinds of inputs that don't optimize as well
     assert_eq!(simplify("(LUT 6 (LUT 6 c d) b)"), "(LUT 150 c d b)")
-}
-
-/// LUT Network Synthesis with E-Graphs
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Args {
-    /// Path to input file. If not provided, reads from stdin
-    input: Option<PathBuf>,
-
-    /// Return an error if the graph does not reach saturation
-    #[arg(short = 'a', long, default_value_t = false)]
-    assert_sat: bool,
-
-    /// Don't verify functionality of the output
-    #[arg(short = 'f', long, default_value_t = false)]
-    no_verify: bool,
-
-    /// Don't canonicalize the input expression
-    #[arg(short = 'c', long, default_value_t = false)]
-    no_canonicalize: bool,
-
-    /// Opt a specific LUT expr instead of from file
-    #[arg(long)]
-    command: Option<String>,
-
-    /// Don't use disjoint set decompositions
-    #[arg(short = 'd', long, default_value_t = false)]
-    no_dsd: bool,
-
-    /// Don't use register retiming
-    #[arg(short = 'r', long, default_value_t = false)]
-    no_retime: bool,
-
-    /// Print explanations (this generates a proof and runs longer)
-    #[arg(short = 'v', long, default_value_t = false)]
-    verbose: bool,
-
-    /// Max fan in size for LUTs
-    #[arg(short = 'k', long, default_value_t = 4)]
-    k: usize,
-
-    /// Timeout in seconds for each expression
-    #[arg(short = 't', long,
-        default_value_t =
-        if cfg!(debug_assertions) {
-            27
-        } else {
-            9
-        })
-    ]
-    timeout: u64,
-
-    /// Maximum number of nodes in graph
-    #[arg(short = 's', long, default_value_t = 24_000)]
-    node_limit: usize,
-
-    /// Maximum number of rewrite iterations
-    #[arg(short = 'n', long, default_value_t = 32)]
-    iter_limit: usize,
-}
-
-fn main() -> std::io::Result<()> {
-    let args = Args::parse();
-    let mut buf = String::new();
-
-    if cfg!(debug_assertions) {
-        eprintln!("WARNING: Debug assertions are enabled");
-    }
-
-    if args.command.is_some() {
-        buf = args.command.unwrap();
-    } else if args.input.is_some() {
-        std::fs::File::open(args.input.unwrap())?.read_to_string(&mut buf)?;
-    } else {
-        let mut stdin = std::io::stdin();
-        if stdin.is_terminal() {
-            print!("> ");
-            std::io::stdout().flush()?;
-            while stdin.read_line(&mut buf)? <= 2 {
-                print!("> ");
-                std::io::stdout().flush()?;
-            }
-        } else {
-            stdin.read_to_string(&mut buf)?;
-        }
-    }
-
-    let mut rules = all_rules_minus_dsd();
-    if !args.no_dsd {
-        rules.append(&mut known_decompositions());
-    }
-
-    if !args.no_retime {
-        rules.append(&mut register_retiming());
-    }
-
-    if args.verbose {
-        eprintln!("INFO: Running with {} rewrite rules", rules.len());
-        eprintln!(
-            "INFO: DSD rewrites {}",
-            if args.no_dsd { "OFF" } else { "ON" }
-        );
-    }
-
-    for line in buf.lines() {
-        let line = line.trim();
-        if line.starts_with("//") || line.is_empty() {
-            continue;
-        }
-        let expr = line.split("//").next().unwrap();
-        let expr: RecExpr<lut::LutLang> = expr
-            .parse()
-            .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
-
-        if !args.no_verify {
-            lut::verify_expr(&expr)
-                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
-        }
-
-        if cfg!(debug_assertions) {
-            eprintln!("WARNING: Running with debug assertions is slow");
-        }
-
-        let req = SimplifyRequest {
-            expr: &expr,
-            rules: &rules,
-            k: args.k,
-            no_canonicalize: args.no_canonicalize,
-            assert_sat: args.assert_sat,
-            gen_proof: args.verbose,
-            prog_bar: true,
-            timeout: args.timeout,
-            node_limit: args.node_limit,
-            iter_limit: args.iter_limit,
-        };
-
-        let (simplified, expl) =
-            simplify_expr(&req).map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
-        let expl: Option<String> = match expl {
-            Some(mut e) => {
-                let proof = e.get_flat_string();
-                let linecount = proof.lines().count();
-                format!("{}\n Approx. {} lines in proof tree", proof, linecount).into()
-            }
-            None => None,
-        };
-
-        if args.verbose {
-            eprintln!("INFO: {}", expl.as_ref().unwrap().replace('\n', "\nINFO: "));
-            eprintln!("INFO: ============================================================");
-        } else {
-            eprintln!("{} => ", expr);
-        }
-
-        println!("{}", simplified);
-
-        // Verify functionality
-        if args.no_verify {
-            eprintln!("INFO: Skipping functionality tests...");
-        } else {
-            let result = LutExprInfo::new(&expr).check(&simplified);
-            if result.is_inconclusive() && args.verbose {
-                eprintln!("WARNING: Functionality verification inconclusive");
-            }
-            if result.is_not_equiv() {
-                match expl.as_ref() {
-                    Some(e) => eprintln!("ERROR: Failed for explanation {}", e),
-                    None => eprintln!("ERROR: Failed for unknown reason. Try running with --verbose for an attempted proof"),
-                }
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Functionality verification failed",
-                ));
-            }
-        }
-    }
-    Ok(())
 }

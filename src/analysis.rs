@@ -66,7 +66,7 @@ impl LutAnalysisData {
 
 /// The analysis struct allows for discovering when signals are equivalent to constants or leaf inputs.
 /// Additonally, the struct assists in folding constant inputs to smaller LUTs.
-#[derive(Default)]
+#[derive(Default, Debug, Clone)]
 pub struct LutAnalysis;
 impl Analysis<lut::LutLang> for LutAnalysis {
     type Data = LutAnalysisData;
