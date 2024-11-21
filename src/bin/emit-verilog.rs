@@ -4,8 +4,7 @@ use std::{
 };
 
 use clap::Parser;
-use egg::RecExpr;
-use lut_synth::{lut::LutLang, verilog::SVModule};
+use lut_synth::{driver::SynthOutput, verilog::SVModule};
 /// Parse structural verilog into a LutLang Expression
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -24,6 +23,10 @@ struct Args {
     /// Emit a specific LUT expr instead of from file
     #[arg(long)]
     command: Option<String>,
+
+    /// Canonicalize the input expression
+    #[arg(short = 'c', long, default_value_t = false)]
+    canonicalize: bool,
 }
 
 fn main() -> std::io::Result<()> {
@@ -63,9 +66,14 @@ fn main() -> std::io::Result<()> {
             continue;
         }
         let expr = line.split("//").next().unwrap();
-        let expr: RecExpr<LutLang> = expr
-            .parse()
+        let obj = SynthOutput::new(expr)
             .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+
+        let expr = if args.canonicalize {
+            obj.get_analysis().get_canonicalization()
+        } else {
+            obj.get_expr().clone()
+        };
 
         let module = SVModule::from_expr(expr, mod_name.clone(), args.output_names.clone())
             .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;

@@ -7,7 +7,10 @@ use std::time::{Duration, Instant};
 
 use super::cost::KLUTCostFn;
 use super::lut::{canonicalize_expr, verify_expr, LutExprInfo, LutLang};
-use egg::{Analysis, BackoffScheduler, Explanation, Extractor, Language, RecExpr, Rewrite, Runner};
+use egg::{
+    Analysis, BackoffScheduler, Explanation, Extractor, FromOpError, Language, RecExpr,
+    RecExprParseError, Rewrite, Runner,
+};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
 use std::{
@@ -24,6 +27,12 @@ pub struct SynthOutput {
 }
 
 impl SynthOutput {
+    /// Create a new [SynthOutput] from a string.
+    pub fn new(s: &str) -> Result<Self, RecExprParseError<FromOpError>> {
+        let expr: RecExpr<LutLang> = s.parse()?;
+        Ok(Self { expr, expl: None })
+    }
+
     /// Get the expression of the output.
     pub fn get_expr(&self) -> &RecExpr<LutLang> {
         &self.expr

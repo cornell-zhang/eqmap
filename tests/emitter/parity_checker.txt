@@ -1,4 +1,4 @@
-// RUN: emit-verilog %s | FileCheck %s
+// RUN: emit-verilog --canonicalize %s | FileCheck %s
 
 (REG (XOR (REG (XOR (REG (XOR a0 a1)) (REG (XOR a2 a3)))) (REG (XOR (REG (XOR a4 a5)) (REG (XOR a6 a7))))))
 

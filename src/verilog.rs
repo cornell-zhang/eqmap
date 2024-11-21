@@ -579,7 +579,7 @@ impl SVModule {
     ) -> Result<Self, String> {
         let mut module = SVModule::new(mod_name);
 
-        let expr = LutExprInfo::new(&expr).get_canonicalization();
+        let expr = LutExprInfo::new(&expr).get_cse();
 
         let mut mapping: HashMap<Id, String> = HashMap::new();
         let mut programs: HashMap<Id, u64> = HashMap::new();
@@ -681,7 +681,46 @@ impl SVModule {
                         return Err("Busses shold be the root of the expression".to_string());
                     }
                 }
-                _ => (),
+                LutLang::And([a, b]) | LutLang::Xor([a, b]) | LutLang::Nor([a, b]) => {
+                    let sname = fresh_wire(id.into(), &mut mapping);
+                    let pname = fresh_prim();
+                    let mut inst = SVPrimitive::new_gate(node.get_prim_name().unwrap(), pname);
+                    inst.add_input("A".to_string(), mapping[a].clone())?;
+                    inst.add_input("B".to_string(), mapping[b].clone())?;
+                    inst.add_output("Y".to_string(), sname.clone())?;
+                    module.signals.push(SVSignal::new(1, sname.clone()));
+                    module
+                        .driving_module
+                        .insert(sname.clone(), module.instances.len());
+                    module.instances.push(inst);
+                }
+                LutLang::Not([a]) => {
+                    let sname = fresh_wire(id.into(), &mut mapping);
+                    let pname = fresh_prim();
+                    let mut inst = SVPrimitive::new_gate(node.get_prim_name().unwrap(), pname);
+                    inst.add_input("A".to_string(), mapping[a].clone())?;
+                    inst.add_output("Y".to_string(), sname.clone())?;
+                    module.signals.push(SVSignal::new(1, sname.clone()));
+                    module
+                        .driving_module
+                        .insert(sname.clone(), module.instances.len());
+                    module.instances.push(inst);
+                }
+                LutLang::Mux([s, a, b]) => {
+                    let sname = fresh_wire(id.into(), &mut mapping);
+                    let pname = fresh_prim();
+                    let mut inst = SVPrimitive::new_gate(node.get_prim_name().unwrap(), pname);
+                    inst.add_input("A".to_string(), mapping[a].clone())?;
+                    inst.add_input("B".to_string(), mapping[b].clone())?;
+                    inst.add_input("S".to_string(), mapping[s].clone())?;
+                    inst.add_output("Y".to_string(), sname.clone())?;
+                    module.signals.push(SVSignal::new(1, sname.clone()));
+                    module
+                        .driving_module
+                        .insert(sname.clone(), module.instances.len());
+                    module.instances.push(inst);
+                }
+                _ => return Err(format!("Unsupported node type: {:?}", node)),
             }
         }
 

@@ -215,7 +215,8 @@ fn test_greedy_folds() {
         lut::fold_expr_greedily(
             "(LUT 6 true (LUT 6 false (LUT 6 true false)))"
                 .parse()
-                .unwrap()
+                .unwrap(),
+            |e, i| e[i].clone()
         )
         .to_string(),
         "false"

@@ -364,7 +364,9 @@ endmodule"
 
     #[test]
     fn test_verilog_emitter() {
-        let mux: RecExpr<LutLang> = "(MUX s1 (MUX s0 a b) (MUX s0 c d))".parse().unwrap();
+        let mux: RecExpr<LutLang> = "(LUT 202 s1 (LUT 202 s0 a b) (LUT 202 s0 c d))"
+            .parse()
+            .unwrap();
         let module = SVModule::from_expr(mux, "mux_4_1".to_string(), Vec::new());
         assert!(module.is_ok());
         let module = module.unwrap();
