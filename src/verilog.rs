@@ -186,6 +186,25 @@ impl SVPrimitive {
         }
     }
 
+    /// Create a new constant with name `name`
+    pub fn new_const(val: bool, signal: String, name: String) -> Self {
+        let mut output: BTreeMap<String, String> = BTreeMap::new();
+        output.insert(signal, "Y".to_string());
+        let mut attributes: BTreeMap<String, String> = BTreeMap::new();
+        if val {
+            attributes.insert("VAL".to_string(), "1'b1".to_string());
+        } else {
+            attributes.insert("VAL".to_string(), "1'b0".to_string());
+        }
+        SVPrimitive {
+            prim: "CONST".to_string(),
+            name,
+            inputs: BTreeMap::new(),
+            outputs: output,
+            attributes,
+        }
+    }
+
     /// Add an input connection
     fn add_input(&mut self, port: String, signal: String) -> Result<(), String> {
         match self.inputs.insert(port.clone(), signal) {
@@ -225,6 +244,16 @@ impl fmt::Display for SVPrimitive {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let level = 2;
         let indent = " ".repeat(2);
+
+        if self.prim == "CONST" {
+            return write!(
+                f,
+                "assign {} = {};",
+                self.outputs.keys().next().unwrap(),
+                self.attributes["VAL"]
+            );
+        }
+
         writeln!(f, "{}{} #(", indent, self.prim)?;
         for (i, (key, value)) in self.attributes.iter().enumerate() {
             let indent = " ".repeat(level + 4);
@@ -714,6 +743,16 @@ impl SVModule {
                     inst.add_input("B".to_string(), mapping[b].clone())?;
                     inst.add_input("S".to_string(), mapping[s].clone())?;
                     inst.add_output("Y".to_string(), sname.clone())?;
+                    module.signals.push(SVSignal::new(1, sname.clone()));
+                    module
+                        .driving_module
+                        .insert(sname.clone(), module.instances.len());
+                    module.instances.push(inst);
+                }
+                LutLang::Const(b) => {
+                    let sname = fresh_wire(id.into(), &mut mapping);
+                    let pname = fresh_prim();
+                    let inst = SVPrimitive::new_const(*b, sname.clone(), pname);
                     module.signals.push(SVSignal::new(1, sname.clone()));
                     module
                         .driving_module
