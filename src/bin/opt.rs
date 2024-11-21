@@ -2,8 +2,8 @@ use clap::Parser;
 use egg::*;
 use lut_synth::{
     analysis::LutAnalysis,
-    driver::{simple_reader, SynthRequest},
-    lut::{self, LutExprInfo},
+    driver::{process_expression, simple_reader, SynthRequest},
+    lut::{self},
     rewrite::{all_rules_minus_dsd, known_decompositions, register_retiming},
 };
 use std::path::PathBuf;
@@ -146,64 +146,9 @@ fn main() -> std::io::Result<()> {
     let req = if args.verbose { req.with_proof() } else { req };
 
     for line in buf.lines() {
-        let line = line.trim();
-        if line.starts_with("//") || line.is_empty() {
-            continue;
-        }
-        let expr = line.split("//").next().unwrap();
-        let expr: RecExpr<lut::LutLang> = expr
-            .parse()
-            .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
-
-        if !args.no_verify {
-            lut::verify_expr(&expr)
-                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
-        }
-
-        if cfg!(debug_assertions) {
-            eprintln!("WARNING: Running with debug assertions is slow");
-        }
-
-        let mut req = req.clone().with_expr(expr.clone());
-
-        let mut result = req
-            .simplify_expr()
-            .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
-
-        if args.verbose && result.has_explanation() {
-            let proof = result.get_proof();
-            let mut linecount = 0;
-            for line in proof.lines() {
-                eprintln!("INFO: {}", line);
-                linecount += 1;
-            }
-            eprintln!("INFO: Approx. {} lines in proof tree", linecount);
-            eprintln!("INFO: ============================================================");
-        } else {
-            eprintln!("{} => ", expr);
-        }
-
-        let simplified = result.get_expr();
-        println!("{}", simplified);
-
-        // Verify functionality
-        if args.no_verify {
-            eprintln!("INFO: Skipping functionality tests...");
-        } else {
-            let check = LutExprInfo::new(&expr).check(simplified);
-            if check.is_inconclusive() && args.verbose {
-                eprintln!("WARNING: Functionality verification inconclusive");
-            }
-            if check.is_not_equiv() {
-                match result.get_expl() {
-                    Some(e) => eprintln!("ERROR: Failed for explanation {}", e),
-                    None => eprintln!("ERROR: Failed for unknown reason. Try running with --verbose for an attempted proof"),
-                }
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Functionality verification failed",
-                ));
-            }
+        let result = process_expression(line, req.clone(), args.no_verify, args.verbose)?;
+        if !result.is_empty() {
+            println!("{}", result);
         }
     }
     Ok(())
