@@ -846,6 +846,7 @@ pub fn fold_expr_greedily(expr: RecExpr<LutLang>) -> RecExpr<LutLang> {
     );
 
     if cfg!(debug_assertions) {
+        assert!(verify_expr(&moved).is_ok());
         let info = LutExprInfo::new(&moved);
         assert!(!info.is_reduntant());
         assert!(!info.check(&expr).is_not_equiv());
@@ -896,6 +897,7 @@ pub fn canonicalize_expr(expr: RecExpr<LutLang>) -> RecExpr<LutLang> {
     }
 
     if cfg!(debug_assertions) {
+        assert!(verify_expr(&rewritten).is_ok());
         let info = LutExprInfo::new(&expr);
         assert!(!info.check(&rewritten).is_not_equiv());
     }

@@ -12,6 +12,8 @@ use std::{
     time::{Duration, Instant},
 };
 
+const MAX_CANON_SIZE: usize = 30000;
+
 fn report_progress<A>(
     runner: &Runner<lut::LutLang, A>,
     iter_bar: &mut ProgressBar,
@@ -108,6 +110,12 @@ where
     };
 
     let expr = if req.no_canonicalize {
+        req.expr.clone()
+    } else if req.expr.as_ref().len() > MAX_CANON_SIZE {
+        eprintln!(
+            "WARNING: Input is too large to canonicalize ({} nodes)",
+            req.expr.as_ref().len()
+        );
         req.expr.clone()
     } else {
         canonicalize_expr(req.expr.clone())
