@@ -2,7 +2,7 @@
 name = "lut-synth"
 version = "0.1.0"
 edition = "2021"
-default-run = "main"
+default-run = "opt"
 
 [dependencies]
 bitvec = "1.0.1"
