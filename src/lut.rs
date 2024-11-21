@@ -846,7 +846,9 @@ pub fn fold_expr_greedily(expr: RecExpr<LutLang>) -> RecExpr<LutLang> {
     );
 
     if cfg!(debug_assertions) {
-        assert!(verify_expr(&moved).is_ok());
+        if let Err(e) = verify_expr(&moved) {
+            panic!("Folding failed: {}", e);
+        }
         let info = LutExprInfo::new(&moved);
         assert!(!info.is_reduntant());
         assert!(!info.check(&expr).is_not_equiv());
