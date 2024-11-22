@@ -20,11 +20,17 @@ An early experiment on representing LUT networks within E-Graphs for logic synth
 - [Verible](https://github.com/chipsalliance/verible)
 - [Yosys](https://github.com/YosysHQ/yosys)
 
-### Installing
+### Installing & Getting Started
 
 `cargo build`
 
 `cargo run --release -- tests/verilog/mux_reg.v # Run the synthesizer on a very simple 4:1 pipelined mux`
+
+You can also try to synthesize your own verilog `my_file.v`:
+
+`source utils/setup.sh # Add tools to path`
+
+`lvv my_file.v`
 
 ### Docs
 
