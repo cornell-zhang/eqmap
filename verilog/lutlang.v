@@ -237,3 +237,92 @@ module \$xnor (
   endgenerate
 
 endmodule
+
+module \$sdffe (
+    CLK,
+    SRST,
+    EN,
+    D,
+    Q
+);
+
+  parameter WIDTH = 0;
+  parameter CLK_POLARITY = 1'b1;
+  parameter EN_POLARITY = 1'b1;
+  parameter SRST_POLARITY = 1'b1;
+  parameter SRST_VALUE = 0;
+
+  input CLK, SRST, EN;
+  input [WIDTH-1:0] D;
+  output [WIDTH-1:0] Q;
+
+  generate
+    if (!SRST_POLARITY || !CLK_POLARITY || !EN_POLARITY || WIDTH > 1) begin : BLOCK1
+      FDRE #(
+          .SRST_POLARITY(SRST_POLARITY),
+          .CLK_POLARITY(CLK_POLARITY),
+          .EN_POLARITY(EN_POLARITY),
+          .WIDTH(WIDTH),
+          .INIT(SRST_VALUE)
+      ) _TECHMAP_REPLACE_ (
+          .C (CLK),
+          .CE(EN),
+          .D (D),
+          .Q (Q),
+          .R (SRST)
+      );
+    end else begin : BLOCK2
+      FDRE #(
+          .INIT(SRST_VALUE)
+      ) _TECHMAP_REPLACE_ (
+          .C (CLK),
+          .CE(EN),
+          .D (D),
+          .Q (Q),
+          .R (SRST)
+      );
+    end
+  endgenerate
+
+endmodule
+
+module \$dff (
+    CLK,
+    D,
+    Q
+);
+
+  parameter WIDTH = 0;
+  parameter CLK_POLARITY = 1'b1;
+
+  input CLK;
+  input [WIDTH-1:0] D;
+  output [WIDTH-1:0] Q;
+
+
+  generate
+    if (!CLK_POLARITY || WIDTH > 1) begin : BLOCK1
+      FDRE #(
+          .WIDTH(WIDTH),
+          .INIT (1'hx)
+      ) _TECHMAP_REPLACE_ (
+          .C (CLK),
+          .CE(1'b1),
+          .D (D),
+          .Q (Q),
+          .R (1'b0)
+      );
+    end else begin : BLOCK2
+      FDRE #(
+          .INIT(1'hx)
+      ) _TECHMAP_REPLACE_ (
+          .C (CLK),
+          .CE(1'b1),
+          .D (D),
+          .Q (Q),
+          .R (1'b0)
+      );
+    end
+  endgenerate
+
+endmodule
