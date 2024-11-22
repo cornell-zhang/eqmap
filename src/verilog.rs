@@ -248,7 +248,8 @@ impl fmt::Display for SVPrimitive {
         if self.prim == "CONST" {
             return write!(
                 f,
-                "assign {} = {};",
+                "{}assign {} = {};",
+                indent,
                 self.outputs.keys().next().unwrap(),
                 self.attributes["VAL"]
             );

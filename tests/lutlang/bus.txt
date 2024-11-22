@@ -1,4 +1,4 @@
-// RUN: cargo run --release %s -k 4 -n 24 2>>/dev/null | FileCheck %s
+// RUN: opt %s -k 4 -n 24 2>>/dev/null | FileCheck %s
 
 // MUX with exact inputs
 (BUS (MUX s1 (MUX s0 a b) (MUX s0 c d)) (MUX s1 (MUX s0 a b) (MUX s0 a b)))

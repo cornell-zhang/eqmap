@@ -24,7 +24,7 @@ An early experiment on representing LUT networks within E-Graphs for logic synth
 
 `cargo build`
 
-`cargo run < tests/lutlang/examples.txt # Run the synthesizer on a few examples`
+`cargo run --release -- tests/verilog/mux_reg.v # Run the synthesizer on a very simple 4:1 pipelined mux`
 
 ### Docs
 

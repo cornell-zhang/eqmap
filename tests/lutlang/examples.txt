@@ -1,4 +1,4 @@
-// RUN: cargo run --release %s -k 4 --no-verify 2>>/dev/null | FileCheck %s
+// RUN: opt %s -k 4 --no-verify 2>>/dev/null | FileCheck %s
 
 // MUX with exact inputs
 (MUX s1 (MUX s0 a b) (MUX s0 a b))
