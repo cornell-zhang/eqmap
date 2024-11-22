@@ -488,7 +488,7 @@ endmodule"
   wire tmp8;
   wire tmp9;
   wire tmp10;
-assign tmp6 = 1'b0;
+  assign tmp6 = 1'b0;
   MUX #(
   ) __1__ (
       .A(t),
