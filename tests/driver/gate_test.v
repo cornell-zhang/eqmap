@@ -1,4 +1,4 @@
-// RUN: fam %s --assert-sat -n 40 -t 20 | FileCheck %s
+// RUN: fam %s --assert-sat -n 40 | FileCheck %s
 
 module gate_test (
     a,
@@ -8,8 +8,6 @@ module gate_test (
     e,
     f,
     g,
-    s0,
-    s1,
     y
 );
   wire _00_;
@@ -36,7 +34,6 @@ module gate_test (
   input s1;
   wire s1;
   wire tmp0;
-  wire tmp1;
   output y;
   wire y;
   AND2 _05_ (
@@ -58,97 +55,74 @@ module gate_test (
       .Y(_02_)
   );
   MUX _09_ (
-      .A(_03_),
+      .A(_00_),
       .B(_01_),
-      .S(s0),
+      .S(_03_),
       .Y(tmp0)
-  );
-  MUX _10_ (
-      .A(_04_),
-      .B(_00_),
-      .S(s0),
-      .Y(tmp1)
-  );
-  MUX _11_ (
-      .A(tmp1),
-      .B(tmp0),
-      .S(s1),
-      .Y(y)
   );
   XOR2 _12_ (
       .A(c),
       .B(f),
       .Y(_04_)
   );
+  XOR2 _12_ (
+      .A(_04_),
+      .B(tmp0),
+      .Y(y)
+  );
 
 endmodule
 
 // CHECK: module gate_test (
 // CHECK:     b,
-// CHECK:     g,
-// CHECK:     a,
-// CHECK:     s0,
 // CHECK:     e,
 // CHECK:     d,
+// CHECK:     g,
+// CHECK:     a,
 // CHECK:     f,
 // CHECK:     c,
-// CHECK:     s1,
 // CHECK:     y
 // CHECK: );
 // CHECK:   input b;
 // CHECK:   wire b;
-// CHECK:   input g;
-// CHECK:   wire g;
-// CHECK:   input a;
-// CHECK:   wire a;
-// CHECK:   input s0;
-// CHECK:   wire s0;
 // CHECK:   input e;
 // CHECK:   wire e;
 // CHECK:   input d;
 // CHECK:   wire d;
+// CHECK:   input g;
+// CHECK:   wire g;
+// CHECK:   input a;
+// CHECK:   wire a;
 // CHECK:   input f;
 // CHECK:   wire f;
 // CHECK:   input c;
 // CHECK:   wire c;
-// CHECK:   input s1;
-// CHECK:   wire s1;
 // CHECK:   output y;
 // CHECK:   wire y;
-// CHECK:   wire tmp5;
-// CHECK:   wire tmp8;
-// CHECK:   wire tmp11;
-// CHECK:   LUT4 #(
-// CHECK:       .INIT(16'hfc55)
-// CHECK:   ) __0__ (
-// CHECK:       .I0(b),
-// CHECK:       .I1(g),
-// CHECK:       .I2(a),
-// CHECK:       .I3(s0),
-// CHECK:       .O(tmp5)
-// CHECK:   );
+// CHECK:   wire tmp6;
+// CHECK:   wire tmp7;
 // CHECK:   LUT2 #(
-// CHECK:       .INIT(4'h8)
-// CHECK:   ) __1__ (
-// CHECK:       .I0(e),
-// CHECK:       .I1(d),
-// CHECK:       .O(tmp8)
+// CHECK:       .INIT(4'h1)
+// CHECK:   ) __0__ (
+// CHECK:       .I0(g),
+// CHECK:       .I1(a),
+// CHECK:       .O(tmp6)
 // CHECK:   );
 // CHECK:   LUT4 #(
-// CHECK:       .INIT(16'h3caa)
-// CHECK:   ) __2__ (
-// CHECK:       .I0(tmp8),
-// CHECK:       .I1(f),
-// CHECK:       .I2(c),
-// CHECK:       .I3(s0),
-// CHECK:       .O(tmp11)
+// CHECK:       .INIT(16'h55c0)
+// CHECK:   ) __1__ (
+// CHECK:       .I0(b),
+// CHECK:       .I1(e),
+// CHECK:       .I2(d),
+// CHECK:       .I3(tmp6),
+// CHECK:       .O(tmp7)
 // CHECK:   );
 // CHECK:   LUT3 #(
-// CHECK:       .INIT(8'hca)
-// CHECK:   ) __3__ (
-// CHECK:       .I0(tmp5),
-// CHECK:       .I1(tmp11),
-// CHECK:       .I2(s1),
+// CHECK:       .INIT(8'h96)
+// CHECK:   ) __2__ (
+// CHECK:       .I0(tmp7),
+// CHECK:       .I1(f),
+// CHECK:       .I2(c),
 // CHECK:       .O(y)
 // CHECK:   );
 // CHECK: endmodule
