@@ -407,10 +407,10 @@ pub fn simple_reader(cmd: Option<String>, input_file: Option<PathBuf>) -> std::i
     Ok(buf)
 }
 
-/// Compile a [LutLang] expression from a line of text using a baseline request `req`.
-/// Only the output expression is printed to stdout. Everything else goes to stderr.
+/// Compile a [LutLang] expression using a baseline request `req`.
+/// The output expression is returned as a [SynthOutput]. Everything else goes to stderr.
 pub fn process_expression<A>(
-    line: &str,
+    expr: RecExpr<LutLang>,
     req: SynthRequest<A>,
     no_verify: bool,
     verbose: bool,
@@ -418,18 +418,6 @@ pub fn process_expression<A>(
 where
     A: Analysis<LutLang> + Clone + Default,
 {
-    let line = line.trim();
-    if line.starts_with("//") || line.is_empty() {
-        return Ok(SynthOutput {
-            expr: RecExpr::default(),
-            expl: None,
-        });
-    }
-    let expr = line.split("//").next().unwrap();
-    let expr: RecExpr<LutLang> = expr
-        .parse()
-        .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
-
     if no_verify {
         verify_expr(&expr).map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
     }
@@ -453,7 +441,7 @@ where
         }
         eprintln!("INFO: Approx. {} lines in proof tree", linecount);
         eprintln!("INFO: ============================================================");
-    } else if req.expr.as_ref().len() < req.max_canon_size {
+    } else if req.expr.as_ref().len() < 1000 {
         eprintln!("{} => ", expr);
     }
 
@@ -479,4 +467,30 @@ where
         }
     }
     Ok(result)
+}
+
+/// Compile a [LutLang] expression from a line of text using a baseline request `req`.
+/// The output expression is returned as a [SynthOutput]. Everything else goes to stderr.
+pub fn process_string_expression<A>(
+    line: &str,
+    req: SynthRequest<A>,
+    no_verify: bool,
+    verbose: bool,
+) -> std::io::Result<SynthOutput>
+where
+    A: Analysis<LutLang> + Clone + Default,
+{
+    let line = line.trim();
+    if line.starts_with("//") || line.is_empty() {
+        return Ok(SynthOutput {
+            expr: RecExpr::default(),
+            expl: None,
+        });
+    }
+    let expr = line.split("//").next().unwrap();
+    let expr: RecExpr<LutLang> = expr
+        .parse()
+        .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+
+    process_expression(expr, req, no_verify, verbose)
 }

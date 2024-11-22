@@ -5,7 +5,7 @@ use std::{
 
 use clap::Parser;
 use lut_synth::{driver::SynthOutput, verilog::SVModule};
-/// Parse structural verilog into a LutLang Expression
+/// Emit a LutLang Expression as a Verilog Netlist
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {

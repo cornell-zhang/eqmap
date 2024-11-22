@@ -335,6 +335,11 @@ impl SVModule {
         }
     }
 
+    /// Get the name of the module
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+
     /// Append a list of primitive instances to the module
     pub fn append_insts(&mut self, insts: &mut Vec<SVPrimitive>) {
         let new_index = self.instances.len();
@@ -628,7 +633,7 @@ impl SVModule {
             LutLang::Bus(l) => {
                 for (i, t) in l.iter().rev().enumerate() {
                     let defname = format!("y{}", i);
-                    mapping.insert(*t, outputs.first().unwrap_or(&defname).to_string());
+                    mapping.insert(*t, outputs.get(i).unwrap_or(&defname).to_string());
                     module.outputs.push(SVSignal::new(1, mapping[t].clone()));
                 }
             }

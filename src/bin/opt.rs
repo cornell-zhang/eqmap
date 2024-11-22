@@ -2,7 +2,7 @@ use clap::Parser;
 use egg::*;
 use lut_synth::{
     analysis::LutAnalysis,
-    driver::{process_expression, simple_reader, SynthRequest},
+    driver::{process_string_expression, simple_reader, SynthRequest},
     lut,
     rewrite::{all_rules_minus_dsd, known_decompositions, register_retiming},
 };
@@ -146,7 +146,7 @@ fn main() -> std::io::Result<()> {
     let req = if args.verbose { req.with_proof() } else { req };
 
     for line in buf.lines() {
-        let result = process_expression(line, req.clone(), args.no_verify, args.verbose)?;
+        let result = process_string_expression(line, req.clone(), args.no_verify, args.verbose)?;
         if !result.is_empty() {
             println!("{}", result);
         }
