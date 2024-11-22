@@ -456,6 +456,74 @@ endmodule"
     }
 
     #[test]
+    fn test_emit_gates() {
+        let expr: RecExpr<LutLang> = "(AND a (XOR b (NOR c (NOT (MUX s t u)))))".parse().unwrap();
+        let module = SVModule::from_expr(expr, "gate_list".to_string(), Vec::new());
+        assert!(module.is_ok());
+        let module = module.unwrap();
+        let golden = "module gate_list (
+    a,
+    b,
+    c,
+    s,
+    t,
+    u,
+    y
+);
+  input a;
+  wire a;
+  input b;
+  wire b;
+  input c;
+  wire c;
+  input s;
+  wire s;
+  input t;
+  wire t;
+  input u;
+  wire u;
+  output y;
+  wire y;
+  wire tmp7;
+  wire tmp8;
+  wire tmp9;
+  wire tmp10;
+  MUX #(
+  ) __0__ (
+      .A(t),
+      .B(u),
+      .S(s),
+      .Y(tmp7)
+  );
+  NOT #(
+  ) __1__ (
+      .A(tmp7),
+      .Y(tmp8)
+  );
+  NOR2 #(
+  ) __2__ (
+      .A(c),
+      .B(tmp8),
+      .Y(tmp9)
+  );
+  XOR2 #(
+  ) __3__ (
+      .A(b),
+      .B(tmp9),
+      .Y(tmp10)
+  );
+  AND2 #(
+  ) __4__ (
+      .A(a),
+      .B(tmp10),
+      .Y(y)
+  );
+endmodule"
+            .to_string();
+        assert_eq!(module.to_string(), golden);
+    }
+
+    #[test]
     fn test_primitive_connections() {
         let mut prim = SVPrimitive::new_lut(4, "_0_".to_string(), 1);
         assert!(prim.add_signal("I8".to_string(), "a".to_string()).is_err());
