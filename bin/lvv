@@ -1,8 +1,43 @@
 #!/usr/bin/bash
 set -eo pipefail
-cargo build --release 2>>/dev/null
-if [ "$1" == "--help" ] || [ "$2" == "--help" ] || [ "$3" == "--help" ]; then
-   cargo run --quiet --release -- --help
-else
-  parse-verilog -- $1 | cargo run --quiet --release -- $2 $3 $4 $5 $6 $7 $8 $9 | emit-verilog
-fi
+
+cargo build --release
+which yosys > /dev/null || { echo "yosys not found in PATH"; exit 1; }
+which fam > /dev/null || { echo "fam not found in PATH"; exit 1; }
+
+echo "SRCS=\$(wildcard *.v)" > Makefile
+echo "FAMILY=xcup" >> Makefile
+echo "# flatten design before synthesis, no clock buffers, no IO buffers, no carry logic, no MUXes" >> Makefile
+echo "SYNTH_OPT=-flatten -noclkbuf -noiopad -nocarry -nowidelut -ise" >> Makefile
+echo "YOSYS=yosys # Yosys 0.33 (git sha1 2584903a060)" >> Makefile
+echo "" >> Makefile
+echo ".PHONY: all clean" >> Makefile
+echo "" >> Makefile
+echo "all: mux_4_1_synth.v" >> Makefile
+echo "" >> Makefile
+echo "clean:" >> Makefile
+echo "	rm -f *.xil *.synth *.ys *.dot *.png" >> Makefile
+echo "" >> Makefile
+echo "%.v.synth: %_synth.ys" >> Makefile
+echo "	+\$(YOSYS) -s \$<" >> Makefile
+echo "" >> Makefile
+echo "%.v.xil: %_xil.ys" >> Makefile
+echo "	+\$(YOSYS) -s \$<" >> Makefile
+echo "" >> Makefile
+echo "# This script synthesizes to LUTs" >> Makefile
+echo "%_xil.ys: %.v" >> Makefile
+echo "	@echo \"read_verilog \$<\" > \$@" >> Makefile
+echo "	@echo \"synth_xilinx -top \$* -family \$(FAMILY) \$(SYNTH_OPT)\" >> \$@" >> Makefile
+echo "	@echo \"clean -purge\" >> \$@" >> Makefile
+echo "	@echo \"write_verilog \$<.xil\" >> \$@" >> Makefile
+echo "" >> Makefile
+echo "# This script synthesizes to AND, NOR, XOR, INV, MUXes" >> Makefile
+echo "%_synth.ys: %.v" >> Makefile
+echo "	@echo \"read_verilog \$<\" > \$@" >> Makefile
+echo "	@echo \"techmap -map lutlang.v\" >> \$@" >> Makefile
+echo "	@echo \"clean -purge\" >> \$@" >> Makefile
+echo "	@echo \"write_verilog \$<.xil\" >> \$@" >> Makefile
+
+make $1.xil
+fam $1.xil $1.fam $2 $3 $4 $5 $6 $7 $8 $9
+rm -f $1.xil

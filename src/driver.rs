@@ -442,7 +442,7 @@ where
         eprintln!("INFO: Approx. {} lines in proof tree", linecount);
         eprintln!("INFO: ============================================================");
     } else if req.expr.as_ref().len() < 240 {
-        eprintln!("INFO: {} => ", expr);
+        eprintln!("INFO: {}... => ", &expr.to_string()[0..240]);
     }
 
     let simplified = result.get_expr();
