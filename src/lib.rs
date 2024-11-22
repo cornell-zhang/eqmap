@@ -457,7 +457,9 @@ endmodule"
 
     #[test]
     fn test_emit_gates() {
-        let expr: RecExpr<LutLang> = "(AND a (XOR b (NOR c (NOT (MUX s t u)))))".parse().unwrap();
+        let expr: RecExpr<LutLang> = "(AND a (XOR b (NOR c (NOT (MUX s t false)))))"
+            .parse()
+            .unwrap();
         let module = SVModule::from_expr(expr, "gate_list".to_string(), Vec::new());
         assert!(module.is_ok());
         let module = module.unwrap();
@@ -467,7 +469,6 @@ endmodule"
     c,
     s,
     t,
-    u,
     y
 );
   input a;
@@ -480,40 +481,40 @@ endmodule"
   wire s;
   input t;
   wire t;
-  input u;
-  wire u;
   output y;
   wire y;
+  wire tmp6;
   wire tmp7;
   wire tmp8;
   wire tmp9;
   wire tmp10;
+assign tmp6 = 1'b0;
   MUX #(
-  ) __0__ (
+  ) __1__ (
       .A(t),
-      .B(u),
+      .B(tmp6),
       .S(s),
       .Y(tmp7)
   );
   NOT #(
-  ) __1__ (
+  ) __2__ (
       .A(tmp7),
       .Y(tmp8)
   );
   NOR2 #(
-  ) __2__ (
+  ) __3__ (
       .A(c),
       .B(tmp8),
       .Y(tmp9)
   );
   XOR2 #(
-  ) __3__ (
+  ) __4__ (
       .A(b),
       .B(tmp9),
       .Y(tmp10)
   );
   AND2 #(
-  ) __4__ (
+  ) __5__ (
       .A(a),
       .B(tmp10),
       .Y(y)
