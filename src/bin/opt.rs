@@ -3,7 +3,7 @@ use egg::*;
 use lut_synth::{
     analysis::LutAnalysis,
     driver::{process_expression, simple_reader, SynthRequest},
-    lut::{self},
+    lut,
     rewrite::{all_rules_minus_dsd, known_decompositions, register_retiming},
 };
 use std::path::PathBuf;
@@ -212,11 +212,10 @@ fn test_greedy_folds() {
     assert_eq!(simplify("(LUT 3 a)"), "true");
     assert_eq!(simplify("(LUT 3 a b c)"), "(LUT 1 a b)");
     assert_eq!(
-        lut::fold_expr_greedily(
+        lut::canonicalize_expr(
             "(LUT 6 true (LUT 6 false (LUT 6 true false)))"
                 .parse()
-                .unwrap(),
-            |e, i| e[i].clone()
+                .unwrap()
         )
         .to_string(),
         "false"

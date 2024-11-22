@@ -453,7 +453,7 @@ where
         }
         eprintln!("INFO: Approx. {} lines in proof tree", linecount);
         eprintln!("INFO: ============================================================");
-    } else {
+    } else if req.expr.as_ref().len() < req.max_canon_size {
         eprintln!("{} => ", expr);
     }
 
