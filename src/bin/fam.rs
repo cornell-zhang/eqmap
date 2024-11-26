@@ -155,7 +155,7 @@ fn main() -> std::io::Result<()> {
         req
     };
 
-    eprintln!("INFO: Building initial graph...");
+    eprintln!("INFO: Compiling Verilog...");
     let expr = f
         .to_single_expr()
         .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
