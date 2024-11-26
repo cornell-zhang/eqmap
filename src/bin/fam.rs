@@ -19,6 +19,10 @@ struct Args {
     /// Path to output verilog file. If not provided, emits to stdout
     output: Option<PathBuf>,
 
+    /// Path to output report JSON file. If not provided, does not emit a report
+    #[arg(long)]
+    rpt: Option<PathBuf>,
+
     /// Return an error if the graph does not reach saturation
     #[arg(short = 'a', long, default_value_t = false)]
     assert_sat: bool,
@@ -129,8 +133,7 @@ fn main() -> std::io::Result<()> {
         .with_k(args.k)
         .with_timeout(args.timeout)
         .with_node_limit(args.node_limit)
-        .with_iter_limit(args.iter_limit)
-        .with_report();
+        .with_iter_limit(args.iter_limit);
 
     let req = if args.assert_sat {
         req.with_asserts()
@@ -145,6 +148,12 @@ fn main() -> std::io::Result<()> {
     };
 
     let req = if args.verbose { req.with_proof() } else { req };
+
+    let req = if args.rpt.is_some() {
+        req.with_report()
+    } else {
+        req
+    };
 
     eprintln!("INFO: Building initial graph...");
     let expr = f

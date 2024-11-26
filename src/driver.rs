@@ -425,18 +425,21 @@ where
         }
 
         // TODO(matth2k): Produce a wider report and print it to file or stderr
-        let rpt = SynthReport {
-            extract_time: extraction_time.as_secs_f64(),
-        };
-        if self.produce_rpt {
+        let rpt = if self.produce_rpt {
+            let rpt = SynthReport {
+                extract_time: extraction_time.as_secs_f64(),
+            };
             eprintln!("INFO: Report produced");
             eprintln!("INFO: {}", serde_json::to_string_pretty(&rpt).unwrap());
-        }
+            Some(rpt)
+        } else {
+            None
+        };
 
         Ok(SynthOutput {
             expr: best,
             expl,
-            rpt: Some(rpt),
+            rpt,
         })
     }
 
