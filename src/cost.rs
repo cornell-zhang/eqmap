@@ -54,3 +54,26 @@ impl CostFunction<LutLang> for KLUTCostFn {
         })
     }
 }
+
+/// A cost function that extracts a circuit with the least depth
+pub struct DepthCostFn;
+
+impl CostFunction<LutLang> for DepthCostFn {
+    type Cost = u64;
+    fn cost<C>(&mut self, enode: &LutLang, mut costs: C) -> Self::Cost
+    where
+        C: FnMut(Id) -> Self::Cost,
+    {
+        let op_cost = match enode {
+            LutLang::Lut(_)
+            | LutLang::And(_)
+            | LutLang::Mux(_)
+            | LutLang::Nor(_)
+            | LutLang::Not(_)
+            | LutLang::Xor(_) => 1,
+            _ => 0,
+        };
+        let rt = enode.fold(0, |l, id| l.max(costs(id)));
+        rt + op_cost
+    }
+}

@@ -129,7 +129,8 @@ fn main() -> std::io::Result<()> {
         .with_k(args.k)
         .with_timeout(args.timeout)
         .with_node_limit(args.node_limit)
-        .with_iter_limit(args.iter_limit);
+        .with_iter_limit(args.iter_limit)
+        .with_report();
 
     let req = if args.assert_sat {
         req.with_asserts()
