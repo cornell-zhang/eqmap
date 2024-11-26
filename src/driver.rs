@@ -78,6 +78,14 @@ impl SynthOutput {
     pub fn is_empty(&self) -> bool {
         self.expr.as_ref().is_empty()
     }
+
+    /// Write the report of the output to a writer.
+    pub fn write_report(&self, w: &mut impl Write) -> std::io::Result<()> {
+        if let Some(rpt) = &self.rpt {
+            serde_json::to_writer_pretty(w, rpt)?;
+        }
+        Ok(())
+    }
 }
 
 impl std::fmt::Display for SynthOutput {
@@ -426,12 +434,9 @@ where
 
         // TODO(matth2k): Produce a wider report and print it to file or stderr
         let rpt = if self.produce_rpt {
-            let rpt = SynthReport {
+            Some(SynthReport {
                 extract_time: extraction_time.as_secs_f64(),
-            };
-            eprintln!("INFO: Report produced");
-            eprintln!("INFO: {}", serde_json::to_string_pretty(&rpt).unwrap());
-            Some(rpt)
+            })
         } else {
             None
         };

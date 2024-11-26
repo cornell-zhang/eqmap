@@ -163,6 +163,12 @@ fn main() -> std::io::Result<()> {
     eprintln!("INFO: Building e-graph...");
     let result = process_expression(expr, req, args.no_verify, args.verbose)?;
 
+    if let Some(p) = args.rpt {
+        eprintln!("INFO: Emitting report...");
+        let mut writer = std::fs::File::create(p)?;
+        result.write_report(&mut writer)?;
+    }
+
     eprintln!("INFO: Writing output to Verilog...");
     let output_names: Vec<String> = f.get_outputs().iter().map(|x| x.to_string()).collect();
     let module = SVModule::from_expr(
