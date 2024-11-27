@@ -640,4 +640,17 @@ endmodule"
             "AND (AND a b) (XOR (AND c (REG a)) d)".parse().unwrap();
         assert!(LutLang::func_equiv(&compicated_reg_expr, &simple_reg_expr).is_inconclusive());
     }
+
+    #[test]
+    fn test_interface_count() {
+        let expr: RecExpr<LutLang> = "(MUX s a b)".parse().unwrap();
+        let info = LutExprInfo::new(&expr);
+        assert_eq!(info.get_num_inputs(), 3);
+        assert_eq!(info.get_num_outputs(), 1);
+        let canon = info.get_canonicalization();
+        let info = LutExprInfo::new(&canon);
+        assert_eq!(info.get_num_inputs(), 3);
+        assert_eq!(info.get_num_outputs(), 1);
+        assert_eq!(canon.to_string(), "(LUT 202 s a b)".to_string());
+    }
 }

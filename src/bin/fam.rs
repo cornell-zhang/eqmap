@@ -21,7 +21,7 @@ struct Args {
 
     /// Path to output report JSON file. If not provided, does not emit a report
     #[arg(long)]
-    rpt: Option<PathBuf>,
+    report: Option<PathBuf>,
 
     /// Return an error if the graph does not reach saturation
     #[arg(short = 'a', long, default_value_t = false)]
@@ -153,7 +153,7 @@ fn main() -> std::io::Result<()> {
 
     let req = if args.verbose { req.with_proof() } else { req };
 
-    let req = if args.rpt.is_some() {
+    let req = if args.report.is_some() {
         req.with_report()
     } else {
         req
@@ -174,7 +174,7 @@ fn main() -> std::io::Result<()> {
     let result =
         process_expression(expr, req, args.no_verify, args.verbose)?.with_name(f.get_name());
 
-    if let Some(p) = args.rpt {
+    if let Some(p) = args.report {
         eprintln!("INFO: Emitting report...");
         let mut writer = std::fs::File::create(p)?;
         result.write_report(&mut writer)?;
