@@ -3,8 +3,6 @@
   The lut module defines the grammar used to represent LUTs, gates, and principal inputs.
 
 */
-use std::collections::HashMap;
-
 use super::analysis::LutAnalysis;
 use super::check::{equivalent, inconclusive, not_equivalent, Check};
 use super::cost::DepthCostFn;
@@ -16,6 +14,7 @@ use egg::Language;
 use egg::RecExpr;
 use egg::Symbol;
 use serde::Serialize;
+use std::collections::{BTreeMap, HashMap};
 
 define_language! {
     /// Definitions of e-node types. Programs are the only node type that is not a net/signal.
@@ -648,7 +647,7 @@ pub struct CircuitStats {
     /// The number of LUTs in the circuit
     pub lut_count: u64,
     /// The number of k-LUTs in the circuit
-    pub lut_distribution: HashMap<usize, u64>,
+    pub lut_distribution: BTreeMap<usize, u64>,
     /// The depth of the circuit
     pub depth: u64,
 }
@@ -768,7 +767,7 @@ impl<'a> LutExprInfo<'a> {
     /// Measure the various stats of the referenced circuit
     pub fn get_circuit_stats(&self) -> CircuitStats {
         let lut_count = self.get_lut_count();
-        let mut lut_distribution = HashMap::new();
+        let mut lut_distribution = BTreeMap::new();
         for i in 0..LutLang::MAX_LUT_SIZE {
             let k = i + 1;
             let count = self.get_lut_count_k(k);
