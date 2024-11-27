@@ -56,16 +56,16 @@ struct Args {
     max_depth: bool,
 
     /// Max fan in size for extracted LUTs
-    #[arg(short = 'k', long, default_value_t = 4)]
+    #[arg(short = 'k', long, default_value_t = 6)]
     k: usize,
 
     /// Timeout in seconds for each expression
     #[arg(short = 't', long,
         default_value_t =
         if cfg!(debug_assertions) {
-            27
+            30
         } else {
-            9
+            10
         })
     ]
     timeout: u64,

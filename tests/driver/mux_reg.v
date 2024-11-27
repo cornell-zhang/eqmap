@@ -1,4 +1,4 @@
-// RUN: fam %s --assert-sat | FileCheck %s
+// RUN: fam %s --assert-sat -k 4 | FileCheck %s
 
 module mux_reg (
     a,

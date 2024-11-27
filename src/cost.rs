@@ -108,3 +108,40 @@ where
         -self.c.cost(enode, costs)
     }
 }
+
+/// This takes the negative of the cost function and returns a new cost function
+pub struct ConjunctiveCostFn<A, B>
+where
+    A: CostFunction<LutLang>,
+    B: CostFunction<LutLang>,
+{
+    a: A,
+    b: B,
+}
+
+impl<A, B> ConjunctiveCostFn<A, B>
+where
+    A: CostFunction<LutLang>,
+    B: CostFunction<LutLang>,
+{
+    /// Returns a new cost function that takes the product of the two given cost functions.
+    pub fn new(a: A, b: B) -> Self {
+        Self { a, b }
+    }
+}
+
+impl<A, B> CostFunction<LutLang> for ConjunctiveCostFn<A, B>
+where
+    A: CostFunction<LutLang, Cost = i64>,
+    B: CostFunction<LutLang, Cost = i64>,
+{
+    type Cost = i64;
+    fn cost<C>(&mut self, enode: &LutLang, mut costs: C) -> Self::Cost
+    where
+        C: FnMut(Id) -> Self::Cost,
+    {
+        let a = self.a.cost(enode, &mut costs);
+        let b = self.b.cost(enode, &mut costs);
+        a * b
+    }
+}
