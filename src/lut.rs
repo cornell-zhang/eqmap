@@ -764,6 +764,26 @@ impl<'a> LutExprInfo<'a> {
         DepthCostFn.cost_rec(self.expr) as u64
     }
 
+    /// Get the (used) inputs of the expression
+    pub fn get_inputs(&self) -> Vec<String> {
+        let root = &self.expr[self.root];
+        root.get_input_set(self.expr)
+    }
+
+    /// Get the number of (used) inputs of the expression
+    pub fn get_num_inputs(&self) -> usize {
+        self.get_inputs().len()
+    }
+
+    /// Get the number of outputs of the expression
+    pub fn get_num_outputs(&self) -> usize {
+        let root = &self.expr[self.root];
+        match root {
+            LutLang::Bus(l) => l.len(),
+            _ => 1,
+        }
+    }
+
     /// Measure the various stats of the referenced circuit
     pub fn get_circuit_stats(&self) -> CircuitStats {
         let lut_count = self.get_lut_count();

@@ -35,8 +35,11 @@ pub struct SynthReport {
     extract_time: f64,
     build_time: f64,
     input_size: u64,
+    num_inputs: u64,
+    num_outputs: u64,
     num_classes: u64,
     num_nodes: u64,
+    num_iterations: u64,
     saturated: bool,
     circuit_stats: Comparison<CircuitStats>,
 }
@@ -46,27 +49,31 @@ impl SynthReport {
     pub fn new<A>(
         input: &RecExpr<LutLang>,
         extract_time: f64,
-        build_time: f64,
         runner: &Runner<LutLang, A>,
         output: &RecExpr<LutLang>,
     ) -> Self
     where
         A: Analysis<LutLang>,
     {
-        let info = LutExprInfo::new(output);
-        let output_circuit_stats = info.get_circuit_stats();
         let saturated = if let Some(reason) = &runner.stop_reason {
             matches!(reason, egg::StopReason::Saturated)
         } else {
             false
         };
-        let num_classes = runner.egraph.number_of_classes() as u64;
-        let num_nodes = runner.egraph.total_number_of_nodes() as u64;
+        let rpt = runner.report();
+        let num_classes = rpt.egraph_classes as u64;
+        let num_nodes = rpt.egraph_nodes as u64;
+        let build_time = rpt.total_time;
+        let num_iterations = runner.report().iterations as u64;
         let input_info = LutExprInfo::new(input);
         let input_size = input_info.get_cse().as_ref().len() as u64;
-        let input_circuit_sat = input_info.get_circuit_stats();
+        let num_inputs = input_info.get_num_inputs() as u64;
+        let num_outputs = input_info.get_num_outputs() as u64;
+        let input_circuit_stats = input_info.get_circuit_stats();
+        let output_info = LutExprInfo::new(output);
+        let output_circuit_stats = output_info.get_circuit_stats();
         let circuit_stats = Comparison {
-            before: input_circuit_sat,
+            before: input_circuit_stats,
             after: output_circuit_stats,
         };
         Self {
@@ -75,8 +82,11 @@ impl SynthReport {
             build_time,
             saturated,
             input_size,
+            num_inputs,
+            num_outputs,
             num_classes,
             num_nodes,
+            num_iterations,
             circuit_stats,
         }
     }
@@ -512,11 +522,9 @@ where
         }
 
         let rpt = if self.produce_rpt {
-            // TODO(matth2k): Get build time
             Some(SynthReport::new(
                 &self.expr,
                 extraction_time.as_secs_f64(),
-                1337.0,
                 runner,
                 &best,
             ))
