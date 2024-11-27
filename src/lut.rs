@@ -15,6 +15,7 @@ use egg::Id;
 use egg::Language;
 use egg::RecExpr;
 use egg::Symbol;
+use serde::Serialize;
 
 define_language! {
     /// Definitions of e-node types. Programs are the only node type that is not a net/signal.
@@ -641,6 +642,17 @@ impl CostFunction<LutLang> for NumKLUTsCostFn {
     }
 }
 
+/// A struct to categorize measurements that characterize the circuit.
+#[derive(Debug, Serialize)]
+pub struct CircuitStats {
+    /// The number of LUTs in the circuit
+    pub lut_count: u64,
+    /// The number of k-LUTs in the circuit
+    pub lut_distribution: HashMap<usize, u64>,
+    /// The depth of the circuit
+    pub depth: u64,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// A struct to facilitate certain analyses on LUT expressions.
 /// For example, finding common subexpressions, testing if a expression is canonical,
@@ -751,6 +763,25 @@ impl<'a> LutExprInfo<'a> {
     /// Get the depths of the circuit
     pub fn get_circuit_depth(&self) -> u64 {
         DepthCostFn.cost_rec(self.expr) as u64
+    }
+
+    /// Measure the various stats of the referenced circuit
+    pub fn get_circuit_stats(&self) -> CircuitStats {
+        let lut_count = self.get_lut_count();
+        let mut lut_distribution = HashMap::new();
+        for i in 0..LutLang::MAX_LUT_SIZE {
+            let k = i + 1;
+            let count = self.get_lut_count_k(k);
+            if count > 0 {
+                lut_distribution.insert(k, count);
+            }
+        }
+        let depth = self.get_circuit_depth();
+        CircuitStats {
+            lut_count,
+            lut_distribution,
+            depth,
+        }
     }
 
     /// Returns `true` is the expression has common subexpressions that need to be eliminated

@@ -171,7 +171,8 @@ fn main() -> std::io::Result<()> {
         .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
     eprintln!("INFO: Building e-graph...");
-    let result = process_expression(expr, req, args.no_verify, args.verbose)?;
+    let result =
+        process_expression(expr, req, args.no_verify, args.verbose)?.with_name(f.get_name());
 
     if let Some(p) = args.rpt {
         eprintln!("INFO: Emitting report...");
