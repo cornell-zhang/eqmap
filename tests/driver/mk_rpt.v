@@ -1,4 +1,4 @@
-// RUN: fam %s --rpt tmp.json >> /dev/null && cat tmp.json | FileCheck %s
+// RUN: fam %s --report tmp.json >> /dev/null && cat tmp.json | FileCheck %s
 
 module mux_4_1 (
     a,
@@ -34,5 +34,6 @@ module mux_4_1 (
       .I5(s0),
       .O (y)
   );
-  // CHECK: extract_time
+  // CHECK: "name": "mux_4_1",
+  // CHECK: "extract_time"
 endmodule
