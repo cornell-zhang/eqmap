@@ -100,6 +100,9 @@ pub fn shannon_expansion() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
 
     // Condense Shannon expansion
+    rules.push(rewrite!("mux-make-disjoint-c1"; "(LUT 202 ?s true ?a)" => "(NOT (NOR ?s ?a))"));
+    rules.push(rewrite!("mux-make-disjoint-c0"; "(LUT 202 ?s false ?a)" => "(AND (NOT ?s) ?a)"));
+    rules.push(rewrite!("mux-make-disjoint-xor"; "(LUT 202 ?s (NOT ?a) ?a)" => "(XOR ?s ?a)"));
     rules.push(rewrite!("lut2-shannon"; "(LUT 202 ?s (LUT ?p ?a ?b) (LUT ?q ?a ?b))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap()])}));
     rules.push(rewrite!("lut3-shannon"; "(LUT 202 ?s (LUT ?p ?a ?b ?c) (LUT ?q ?a ?b ?c))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
     rules.push(rewrite!("lut4-shannon"; "(LUT 202 ?s (LUT ?p ?a ?b ?c ?d) (LUT ?q ?a ?b ?c ?d))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()])}));
@@ -137,11 +140,34 @@ fn p_q_cut_fuse(p: usize, q: usize) -> Rewrite<lut::LutLang, LutAnalysis> {
 pub fn general_cut_fusion() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
     // LUT fuse inputs (exclusive or not, sometimes the opposite of DSD)
-
     for p in 0..6 {
         for q in 1..6 {
             rules.push(p_q_cut_fuse(p, q));
         }
+    }
+
+    rules
+}
+
+/// Returns a list of rules for evaluating constant LUTs
+pub fn constant_luts<A>() -> Vec<Rewrite<lut::LutLang, A>>
+where
+    A: Analysis<lut::LutLang>,
+{
+    let mut rules: Vec<Rewrite<lut::LutLang, A>> = Vec::new();
+    // LUT fuse inputs (exclusive or not, sometimes the opposite of DSD)
+    for k in 2..7 {
+        let mask = if k < 6 { (1 << (1 << k)) - 1 } else { u64::MAX };
+        let vars = (0..k).map(|i| format!("?v{}", i)).collect::<Vec<String>>();
+        let pattern_true: Pattern<lut::LutLang> = format!("(LUT {} {})", mask, vars.join(" "))
+            .parse()
+            .unwrap();
+        let pattern_false: Pattern<lut::LutLang> =
+            format!("(LUT 0 {})", vars.join(" ")).parse().unwrap();
+        let rname_true = format!("lut{}-const-true", k);
+        let rname_false = format!("lut{}-const-false", k);
+        rules.push(rewrite!(rname_true; pattern_true => "true"));
+        rules.push(rewrite!(rname_false; pattern_false => "false"));
     }
 
     rules
@@ -177,19 +203,15 @@ pub fn all_rules_minus_dsd() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     rules.append(&mut struct_lut_map());
 
     // Evaluate constant programs
-    rules.push(rewrite!("lut2-const"; "(LUT 0 ?a ?b)" => "false"));
-    rules.push(rewrite!("lut3-const"; "(LUT 0 ?a ?b ?c)" => "false"));
-    rules.push(rewrite!("lut4-const"; "(LUT 0 ?a ?b ?c ?d)" => "false"));
-    rules.push(rewrite!("lut5-const"; "(LUT 0 ?a ?b ?c ?d ?e)" => "false"));
-    rules.push(rewrite!("lut6-const"; "(LUT 0 ?a ?b ?c ?d ?e ?f)" => "false"));
+    rules.append(&mut constant_luts());
 
     // Evaluate constant inputs (impl as modify-analysis for multi-input cases)
-    rules.push(rewrite!("lut1-const-f"; "(LUT 0 ?a)" => "false"));
-    rules.push(rewrite!("lut1-const-t"; "(LUT 3 ?a)" => "true"));
+    rules.push(rewrite!("lut1-const-false"; "(LUT 0 ?a)" => "false"));
+    rules.push(rewrite!("lut1-const-true"; "(LUT 3 ?a)" => "true"));
     rules.push(rewrite!("lut1-const-id"; "(LUT 2 ?a)" => "?a"));
     rules.push(rewrite!("lut2-invariant"; "(LUT 12 ?a ?b)" => "(LUT 2 ?a)"));
-    rules.push(rewrite!("lut1-const-if"; "(LUT 1 false)" => "true"));
-    rules.push(rewrite!("lut1-const-it"; "(LUT 1 true)" => "false"));
+    rules.push(rewrite!("lut1-const-inv"; "(LUT 1 false)" => "true"));
+    rules.push(rewrite!("lut1-const-inv"; "(LUT 1 true)" => "false"));
 
     // Remove redundant inputs
     rules.append(&mut redundant_inputs());

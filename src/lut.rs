@@ -562,6 +562,16 @@ pub fn eval_lut_const_input(p: &u64, msb: usize, v: bool) -> u64 {
     }
 }
 
+/// Returns a pair of programs (r, q) s.t. msb * r + not(msb) * q = p
+pub fn cofactors_in_msb(p: &u64, k: usize) -> (u64, u64) {
+    assert!(k >= 2);
+    assert!(k <= 6);
+    let mask = (1 << (k - 1)) - 1;
+    let q = p & mask;
+    let r = p >> (1 << (k - 1));
+    (r, q)
+}
+
 /// Swap the truth table for input `pos` and input `pos + 1`, where `pos` is offset from the lsb.
 /// Together these generate the permutation group.
 pub fn swap_pos(bv: &u64, k: usize, pos: usize) -> u64 {
