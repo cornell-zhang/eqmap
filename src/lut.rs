@@ -587,60 +587,6 @@ pub fn swap_pos(bv: &u64, k: usize, pos: usize) -> u64 {
     from_bitvec(&nbv)
 }
 
-/// The size of a given LUT.
-enum LutSize {
-    /// A LUT of given size.
-    Size(usize),
-    /// A LUT of any size. A wildcard in a sense.
-    Any,
-}
-
-/// A cost function counting LUTs of a given size.
-struct NumKLUTsCostFn {
-    size: LutSize,
-}
-
-impl NumKLUTsCostFn {
-    /// Returns a new cost function counting LUTs of `size`.
-    pub fn new(size: LutSize) -> Self {
-        const TOO_LARGE: usize = LutLang::MAX_LUT_SIZE + 1;
-        match size {
-            LutSize::Size(0) | LutSize::Size(TOO_LARGE..) => {
-                panic!("k must be between 1 and {}", LutLang::MAX_LUT_SIZE)
-            }
-            size => Self { size },
-        }
-    }
-}
-
-impl CostFunction<LutLang> for NumKLUTsCostFn {
-    type Cost = u64;
-    fn cost<C>(&mut self, enode: &LutLang, mut costs: C) -> Self::Cost
-    where
-        C: FnMut(Id) -> Self::Cost,
-    {
-        let op_cost = match enode {
-            LutLang::Lut(l) => match self.size {
-                LutSize::Size(k) if l.len() == k + 1 => 1,
-                LutSize::Any => 1,
-                LutSize::Size(_) => 0,
-            },
-            LutLang::Program(_)
-            | LutLang::Const(_)
-            | LutLang::Var(_)
-            | LutLang::DC
-            | LutLang::Nor(_)
-            | LutLang::Mux(_)
-            | LutLang::And(_)
-            | LutLang::Xor(_)
-            | LutLang::Not(_)
-            | LutLang::Bus(_)
-            | LutLang::Reg(_) => 0,
-        };
-        enode.fold(op_cost, |sum, id| sum + costs(id))
-    }
-}
-
 /// A struct to categorize measurements that characterize the circuit.
 #[derive(Debug, Serialize)]
 pub struct CircuitStats {
@@ -750,13 +696,20 @@ impl<'a> LutExprInfo<'a> {
 
     /// Returns the number of luts in the given expr.
     pub fn get_lut_count(&self) -> u64 {
-        NumKLUTsCostFn::new(LutSize::Any).cost_rec(self.expr)
+        let cse = self.get_cse();
+        cse.as_ref()
+            .iter()
+            .filter(|n| n.get_lut_size().unwrap_or(0) > 0)
+            .count() as u64
     }
 
     /// Returns the number of k-luts in the given expr.
     pub fn get_lut_count_k(&self, k: usize) -> u64 {
-        let size = LutSize::Size(k);
-        NumKLUTsCostFn::new(size).cost_rec(self.expr)
+        let cse = self.get_cse();
+        cse.as_ref()
+            .iter()
+            .filter(|n| n.get_lut_size().unwrap_or(0) == k)
+            .count() as u64
     }
 
     /// Get the depths of the circuit
@@ -786,7 +739,7 @@ impl<'a> LutExprInfo<'a> {
 
     /// Measure the various stats of the referenced circuit
     pub fn get_circuit_stats(&self) -> CircuitStats {
-        let lut_count = self.get_lut_count();
+        let mut lut_count: u64 = 0;
         let mut lut_distribution = BTreeMap::new();
         for i in 0..LutLang::MAX_LUT_SIZE {
             let k = i + 1;
@@ -794,6 +747,7 @@ impl<'a> LutExprInfo<'a> {
             if count > 0 {
                 lut_distribution.insert(k, count);
             }
+            lut_count += count;
         }
         let depth = self.get_circuit_depth();
         CircuitStats {

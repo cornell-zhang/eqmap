@@ -45,6 +45,6 @@ else
     echo "	@echo \"write_verilog \$<.synth\" >> \$@" >> Makefile
 
     make $1.xil
-    fam $1.xil $2 $3 $4 $5 $6 $7 $8 $9
+    fam $1.xil $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14}
     rm -f $1.xil
 fi
