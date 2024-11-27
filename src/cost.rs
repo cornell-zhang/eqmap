@@ -34,7 +34,7 @@ impl CostFunction<LutLang> for KLUTCostFn {
                 if l.len() <= self.k + 1 {
                     2 * l.len() as u64
                 } else {
-                    u64::MAX
+                    2 * l.len() as u64 * l.len() as u64
                 }
             }
             LutLang::Program(_) => 0,
@@ -59,7 +59,7 @@ impl CostFunction<LutLang> for KLUTCostFn {
 pub struct DepthCostFn;
 
 impl CostFunction<LutLang> for DepthCostFn {
-    type Cost = u64;
+    type Cost = i64;
     fn cost<C>(&mut self, enode: &LutLang, mut costs: C) -> Self::Cost
     where
         C: FnMut(Id) -> Self::Cost,
@@ -75,5 +75,36 @@ impl CostFunction<LutLang> for DepthCostFn {
         };
         let rt = enode.fold(0, |l, id| l.max(costs(id)));
         rt + op_cost
+    }
+}
+
+/// This takes the negative of the cost function and returns a new cost function
+pub struct NegativeCostFn<C>
+where
+    C: CostFunction<LutLang>,
+{
+    c: C,
+}
+
+impl<C> NegativeCostFn<C>
+where
+    C: CostFunction<LutLang>,
+{
+    /// Returns a new cost function that takes the complement of the given cost function.
+    pub fn new(c: C) -> Self {
+        Self { c }
+    }
+}
+
+impl<M> CostFunction<LutLang> for NegativeCostFn<M>
+where
+    M: CostFunction<LutLang, Cost = i64>,
+{
+    type Cost = i64;
+    fn cost<C>(&mut self, enode: &LutLang, costs: C) -> Self::Cost
+    where
+        C: FnMut(Id) -> Self::Cost,
+    {
+        -self.c.cost(enode, costs)
     }
 }

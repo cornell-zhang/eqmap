@@ -7,6 +7,7 @@ use std::collections::HashMap;
 
 use super::analysis::LutAnalysis;
 use super::check::{equivalent, inconclusive, not_equivalent, Check};
+use super::cost::DepthCostFn;
 use bitvec::prelude::*;
 use egg::define_language;
 use egg::CostFunction;
@@ -745,6 +746,11 @@ impl<'a> LutExprInfo<'a> {
     pub fn get_lut_count_k(&self, k: usize) -> u64 {
         let size = LutSize::Size(k);
         NumKLUTsCostFn::new(size).cost_rec(self.expr)
+    }
+
+    /// Get the depths of the circuit
+    pub fn get_circuit_depth(&self) -> u64 {
+        DepthCostFn.cost_rec(self.expr) as u64
     }
 
     /// Returns `true` is the expression has common subexpressions that need to be eliminated

@@ -5,7 +5,7 @@
 */
 use std::time::{Duration, Instant};
 
-use super::cost::{DepthCostFn, KLUTCostFn};
+use super::cost::{DepthCostFn, KLUTCostFn, NegativeCostFn};
 use super::lut::{canonicalize_expr, verify_expr, LutExprInfo, LutLang};
 use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
@@ -115,7 +115,8 @@ where
 
 #[derive(Debug, Clone)]
 enum ExtractStrat {
-    Depth,
+    MaxDepth,
+    MinDepth,
     CountLUT(usize),
 }
 
@@ -217,10 +218,18 @@ where
         }
     }
 
-    /// Extract based on circuit depth.
-    pub fn with_depth(self) -> Self {
+    /// Extract based on minimum circuit depth.
+    pub fn with_min_depth(self) -> Self {
         Self {
-            extract_strat: ExtractStrat::Depth,
+            extract_strat: ExtractStrat::MinDepth,
+            ..self
+        }
+    }
+
+    /// Extract based on maximum circuit depth.
+    pub fn with_max_depth(self) -> Self {
+        Self {
+            extract_strat: ExtractStrat::MaxDepth,
             ..self
         }
     }
@@ -454,7 +463,8 @@ where
         A: Analysis<LutLang> + std::default::Default,
     {
         match self.extract_strat {
-            ExtractStrat::Depth => self.simplify_expr_with(DepthCostFn),
+            ExtractStrat::MinDepth => self.simplify_expr_with(DepthCostFn),
+            ExtractStrat::MaxDepth => self.simplify_expr_with(NegativeCostFn::new(DepthCostFn)),
             ExtractStrat::CountLUT(k) => self.simplify_expr_with(KLUTCostFn::new(k)),
         }
     }
