@@ -51,6 +51,10 @@ struct Args {
     #[arg(short = 'v', long, default_value_t = false)]
     verbose: bool,
 
+    /// Extract based on max circuit depth. This ovverides the k parameter
+    #[arg(long, default_value_t = false)]
+    max_depth: bool,
+
     /// Max fan in size for extracted LUTs
     #[arg(short = 'k', long, default_value_t = 4)]
     k: usize,
@@ -151,6 +155,12 @@ fn main() -> std::io::Result<()> {
 
     let req = if args.rpt.is_some() {
         req.with_report()
+    } else {
+        req
+    };
+
+    let req = if args.max_depth {
+        req.with_max_depth()
     } else {
         req
     };
