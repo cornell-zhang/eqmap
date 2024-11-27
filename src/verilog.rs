@@ -230,7 +230,7 @@ impl SVPrimitive {
     /// Create an IO connection to the primitive based on port name. This is based on the Xilinx port naming conventions.
     pub fn add_signal(&mut self, port: String, signal: String) -> Result<(), String> {
         match port.as_str() {
-            "I0" | "I1" | "I2" | "I3" | "I4" | "I5" | "D" | "A" | "B" | "S" => {
+            "I" | "I0" | "I1" | "I2" | "I3" | "I4" | "I5" | "D" | "A" | "B" | "S" => {
                 self.add_input(port, signal)
             }
             "O" | "Y" | "Q" => self.add_output(port, signal),
@@ -413,7 +413,7 @@ impl SVModule {
     }
 
     fn is_gate_prim(name: &str) -> bool {
-        matches!(name, "AND2" | "NOR2" | "XOR2" | "NOT" | "MUX")
+        matches!(name, "AND2" | "NOR2" | "XOR2" | "NOT" | "INV" | "MUX")
     }
 
     /// From a parsed verilog ast, create a new module and fill it with its primitives and connections.
@@ -798,6 +798,7 @@ impl SVModule {
                             Ok(expr.add(LutLang::Mux([subexpr["S"], subexpr["A"], subexpr["B"]])))
                         }
                         "NOT" => Ok(expr.add(LutLang::Not([subexpr["A"]]))),
+                        "INV" => Ok(expr.add(LutLang::Not([subexpr["I"]]))),
                         _ => Err(format!("Unsupported gate primitive {}", primitive.prim)),
                     }
                 } else if Self::is_reg_prim(primitive.prim.as_str()) {
