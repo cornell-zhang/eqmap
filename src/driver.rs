@@ -547,7 +547,10 @@ where
     {
         match self.extract_strat {
             ExtractStrat::MinDepth => self.simplify_expr_with(DepthCostFn),
-            ExtractStrat::MaxDepth => self.simplify_expr_with(NegativeCostFn::new(DepthCostFn)),
+            ExtractStrat::MaxDepth => {
+                eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");
+                self.simplify_expr_with(NegativeCostFn::new(DepthCostFn))
+            }
             ExtractStrat::CountLUT(k) => self.simplify_expr_with(KLUTCostFn::new(k)),
         }
     }
