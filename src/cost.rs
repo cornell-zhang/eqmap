@@ -79,6 +79,7 @@ impl CostFunction<LutLang> for DepthCostFn {
 }
 
 /// This takes the negative of the cost function and returns a new cost function
+/// This will cause a RAM bomb whenever there is a cycle in the e-graph (which is often)
 pub struct NegativeCostFn<C>
 where
     C: CostFunction<LutLang>,

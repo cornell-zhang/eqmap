@@ -20,8 +20,9 @@ clean:
 # This script synthesizes to LUTs
 %_xil.ys: %.v
 	@echo "read_verilog $<" > $@
-	@echo "synth_xilinx -top $* -family $(FAMILY) $(SYNTH_OPT)" >> $@
+	@echo "synth_xilinx -family $(FAMILY) $(SYNTH_OPT)" >> $@
 	@echo "clean -purge" >> $@
+	@echo "splitnets -format _" >> $@
 	@echo "write_verilog $<.xil" >> $@
 
 # This script synthesizes to AND, NOR, XOR, INV, MUXes
@@ -29,4 +30,5 @@ clean:
 	@echo "read_verilog $<" > $@
 	@echo "techmap -map lutlang.v" >> $@
 	@echo "clean -purge" >> $@
-	@echo "write_verilog $<.xil" >> $@
+	@echo "splitnets -format _" >> $@
+	@echo "write_verilog $<.synth" >> $@

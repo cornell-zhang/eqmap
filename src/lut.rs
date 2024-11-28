@@ -566,7 +566,7 @@ pub fn eval_lut_const_input(p: &u64, msb: usize, v: bool) -> u64 {
 pub fn cofactors_in_msb(p: &u64, k: usize) -> (u64, u64) {
     assert!(k >= 2);
     assert!(k <= 6);
-    let mask = (1 << (k - 1)) - 1;
+    let mask = (1 << (1 << (k - 1))) - 1;
     let q = p & mask;
     let r = p >> (1 << (k - 1));
     (r, q)
