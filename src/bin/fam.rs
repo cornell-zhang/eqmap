@@ -189,6 +189,8 @@ fn main() -> std::io::Result<()> {
     )
     .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
+    // Unused inputs from the original module are lost upon conversion to a LutLang expression so
+    // they must be readded to the module here.
     let mut new_inputs = f
         .inputs
         .clone()
