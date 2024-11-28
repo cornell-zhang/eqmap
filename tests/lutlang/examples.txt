@@ -15,3 +15,6 @@
 // We can create the circuit by hand too
 (NOT (NOR (AND s0 a) (AND (NOT s0) b)))
 // CHECK: (LUT 202 s0 a b)
+
+(LUT 202 s (NOT b) b)
+// CHECK: (LUT 6 s b)
