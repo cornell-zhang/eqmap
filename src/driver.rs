@@ -489,6 +489,7 @@ where
         }
 
         // use an Extractor to pick the best element of the root eclass
+        eprintln!("INFO: Extracting...");
         let extraction_start = Instant::now();
         let extractor = Extractor::new(&runner.egraph, c);
         let (_best_cost, best) = extractor.find_best(root);

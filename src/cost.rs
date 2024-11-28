@@ -65,12 +65,14 @@ impl CostFunction<LutLang> for DepthCostFn {
         C: FnMut(Id) -> Self::Cost,
     {
         let op_cost = match enode {
-            LutLang::Lut(_)
-            | LutLang::And(_)
-            | LutLang::Mux(_)
-            | LutLang::Nor(_)
-            | LutLang::Not(_)
-            | LutLang::Xor(_) => 1,
+            LutLang::Lut(l) => {
+                if l.len() <= 2 {
+                    0
+                } else {
+                    1
+                }
+            }
+            LutLang::And(_) | LutLang::Mux(_) | LutLang::Nor(_) | LutLang::Xor(_) => 1,
             _ => 0,
         };
         let rt = enode.fold(0, |l, id| l.max(costs(id)));
