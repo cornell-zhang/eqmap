@@ -26,9 +26,9 @@ where
     rules.push(rewrite!("nor2-conversion"; "(NOR ?a ?b)" => "(LUT 1 ?a ?b)"));
     rules.push(rewrite!("and2-conversion"; "(AND ?a ?b)" => "(LUT 8 ?a ?b)"));
     rules.push(rewrite!("xor2-conversion"; "(XOR ?a ?b)" => "(LUT 6 ?a ?b)"));
-    rules.push(rewrite!("inverter-conversion"; "(NOT ?a)" => "(LUT 1 ?a)"));
+    rules.append(&mut rewrite!("inverter-conversion"; "(NOT ?a)" <=> "(LUT 1 ?a)"));
     // s? a : b
-    rules.push(rewrite!("mux2-1-conversion"; "(MUX ?s ?a ?b)" => "(LUT 202 ?s ?a ?b)"));
+    rules.append(&mut rewrite!("mux2-1-conversion"; "(MUX ?s ?a ?b)" <=> "(LUT 202 ?s ?a ?b)"));
 
     rules
 }
@@ -100,9 +100,16 @@ pub fn shannon_expansion() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
 
     // Condense Shannon expansion
-    rules.push(rewrite!("mux-make-disjoint-c1"; "(LUT 202 ?s true ?a)" => "(NOT (NOR ?s ?a))"));
-    rules.push(rewrite!("mux-make-disjoint-c0"; "(LUT 202 ?s false ?a)" => "(AND (NOT ?s) ?a)"));
+    rules.push(rewrite!("mux-make-disjoint-or"; "(LUT 202 ?s true ?a)" => "(NOT (NOR ?s ?a))"));
+    rules.push(rewrite!("mux-make-disjoint-or-not"; "(LUT 202 ?s ?a true)" => "(NOT (NOR (AND ?s ?a) (NOT ?s)))"));
+    rules.push(rewrite!("mux-make-disjoint-and"; "(LUT 202 ?s ?a false)" => "(AND ?s ?a)"));
+    rules.push(
+        rewrite!("mux-make-disjoint-and-not"; "(LUT 202 ?s false ?a)" => "(AND (NOT ?s) ?a)"),
+    );
     rules.push(rewrite!("mux-make-disjoint-xor"; "(LUT 202 ?s (NOT ?a) ?a)" => "(XOR ?s ?a)"));
+    rules.push(
+        rewrite!("mux-make-disjoint-xnor"; "(LUT 202 ?s ?a (NOT ?a))" => "(NOT (XOR ?s ?a))"),
+    );
     rules.push(rewrite!("lut2-shannon"; "(LUT 202 ?s (LUT ?p ?a ?b) (LUT ?q ?a ?b))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap()])}));
     rules.push(rewrite!("lut3-shannon"; "(LUT 202 ?s (LUT ?p ?a ?b ?c) (LUT ?q ?a ?b ?c))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
     rules.push(rewrite!("lut4-shannon"; "(LUT 202 ?s (LUT ?p ?a ?b ?c ?d) (LUT ?q ?a ?b ?c ?d))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()])}));
@@ -212,6 +219,7 @@ pub fn all_rules_minus_dsd() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     rules.push(rewrite!("lut2-invariant"; "(LUT 12 ?a ?b)" => "(LUT 2 ?a)"));
     rules.push(rewrite!("lut1-const-true-inv"; "(LUT 1 false)" => "true"));
     rules.push(rewrite!("lut1-const-false-inv"; "(LUT 1 true)" => "false"));
+    rules.push(rewrite!("double-complement"; "(NOT (NOT ?a))" => "?a"));
 
     // Remove redundant inputs
     rules.append(&mut redundant_inputs());
