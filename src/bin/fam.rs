@@ -182,12 +182,22 @@ fn main() -> std::io::Result<()> {
 
     eprintln!("INFO: Writing output to Verilog...");
     let output_names: Vec<String> = f.get_outputs().iter().map(|x| x.to_string()).collect();
-    let module = SVModule::from_expr(
+    let mut module = SVModule::from_expr(
         result.get_expr().to_owned(),
         f.get_name().to_string(),
         output_names,
     )
     .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+
+    // Unused inputs from the original module are lost upon conversion to a LutLang expression so
+    // they must be readded to the module here.
+    let mut new_inputs = f
+        .inputs
+        .clone()
+        .into_iter()
+        .filter(|i| !module.inputs.contains(i))
+        .collect();
+    module.append_inputs(&mut new_inputs);
 
     if let Some(p) = args.output {
         std::fs::write(p, module.to_string())?;
