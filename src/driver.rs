@@ -591,7 +591,7 @@ pub fn process_expression<A>(
 where
     A: Analysis<LutLang> + Clone + Default,
 {
-    if no_verify {
+    if !no_verify {
         verify_expr(&expr).map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
     }
 
