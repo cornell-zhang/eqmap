@@ -14,6 +14,9 @@ struct Args {
     /// Convert from and to verilog
     #[arg(short = 'r', long, default_value_t = false)]
     round_trip: bool,
+    /// Dump ast
+    #[arg(short = 'a', long, default_value_t = false)]
+    dump_ast: bool,
     /// Get a separate expression for each output
     #[arg(short = 'm', long, default_value_t = false)]
     multiple_expr: bool,
@@ -36,6 +39,11 @@ fn main() -> std::io::Result<()> {
 
     let ast = sv_parse_wrapper(&buf, path)
         .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+
+    if args.dump_ast {
+        println!("{}", ast);
+        return Ok(());
+    }
 
     let f =
         SVModule::from_ast(&ast).map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;

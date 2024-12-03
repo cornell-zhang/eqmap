@@ -205,6 +205,21 @@ impl SVPrimitive {
         }
     }
 
+    /// Create a new wire assignment with name `name` driven by `driver`
+    pub fn new_wire(driver: String, signal: String, name: String) -> Self {
+        let mut output: BTreeMap<String, String> = BTreeMap::new();
+        output.insert(signal, "Y".to_string());
+        let mut attributes: BTreeMap<String, String> = BTreeMap::new();
+        attributes.insert("VAL".to_string(), driver);
+        SVPrimitive {
+            prim: "WIRE".to_string(),
+            name,
+            inputs: BTreeMap::new(),
+            outputs: output,
+            attributes,
+        }
+    }
+
     /// Add an input connection
     fn add_input(&mut self, port: String, signal: String) -> Result<(), String> {
         match self.inputs.insert(port.clone(), signal) {
@@ -245,7 +260,7 @@ impl fmt::Display for SVPrimitive {
         let level = 2;
         let indent = " ".repeat(2);
 
-        if self.prim == "CONST" {
+        if SVModule::is_assign_prim(&self.prim) {
             return write!(
                 f,
                 "{}assign {} = {};",
@@ -414,6 +429,10 @@ impl SVModule {
 
     fn is_gate_prim(name: &str) -> bool {
         matches!(name, "AND2" | "NOR2" | "XOR2" | "NOT" | "INV" | "MUX")
+    }
+
+    fn is_assign_prim(name: &str) -> bool {
+        matches!(name, "CONST" | "WIRE")
     }
 
     /// From a parsed verilog ast, create a new module and fill it with its primitives and connections.
