@@ -627,7 +627,7 @@ impl SVModule {
                             let loc = sym.nodes.0;
                             let eq = ast.get_str(&loc).unwrap();
                             if eq != "=" {
-                                return Err("Expected an assignment operator".to_string());
+                                return Err(format!("Expected an assignment operator, got {}", eq));
                             }
                         }
                         _ => {

@@ -34,7 +34,7 @@ else
     echo "	@echo \"synth_xilinx -family \$(FAMILY) \$(SYNTH_OPT)\" >> \$@" >> Makefile
     echo "	@echo \"clean -purge\" >> \$@" >> Makefile
     echo "	@echo \"splitnets -format _\" >> \$@" >> Makefile
-    echo "	@echo \"write_verilog \$<.xil\" >> \$@" >> Makefile
+    echo "	@echo \"write_verilog -simple-lhs \$<.xil\" >> \$@" >> Makefile
     echo "" >> Makefile
     echo "# This script synthesizes to AND, NOR, XOR, INV, MUXes" >> Makefile
     echo "%_synth.ys: %.v" >> Makefile
@@ -42,7 +42,7 @@ else
     echo "	@echo \"techmap -map lutlang.v\" >> \$@" >> Makefile
     echo "	@echo \"clean -purge\" >> \$@" >> Makefile
     echo "	@echo \"splitnets -format _\" >> \$@" >> Makefile
-    echo "	@echo \"write_verilog \$<.synth\" >> \$@" >> Makefile
+    echo "	@echo \"write_verilog -simple-lhs \$<.synth\" >> \$@" >> Makefile
 
     make $1.xil
     fam $1.xil $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} ${16}

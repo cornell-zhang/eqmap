@@ -23,7 +23,7 @@ clean:
 	@echo "synth_xilinx -family $(FAMILY) $(SYNTH_OPT)" >> $@
 	@echo "clean -purge" >> $@
 	@echo "splitnets -format _" >> $@
-	@echo "write_verilog $<.xil" >> $@
+	@echo "write_verilog -simple-lhs $<.xil" >> $@
 
 # This script synthesizes to AND, NOR, XOR, INV, MUXes
 %_synth.ys: %.v
@@ -31,4 +31,4 @@ clean:
 	@echo "techmap -map lutlang.v" >> $@
 	@echo "clean -purge" >> $@
 	@echo "splitnets -format _" >> $@
-	@echo "write_verilog $<.synth" >> $@
+	@echo "write_verilog -simple-lhs $<.synth" >> $@
