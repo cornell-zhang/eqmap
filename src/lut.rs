@@ -602,6 +602,8 @@ pub fn swap_pos(bv: &u64, k: usize, pos: usize) -> u64 {
 pub struct CircuitStats {
     /// The number of LUTs in the circuit
     pub lut_count: u64,
+    /// The number of flip-flops in the circuit
+    pub reg_count: u64,
     /// The number of k-LUTs in the circuit
     pub lut_distribution: BTreeMap<usize, u64>,
     /// The depth of the circuit
@@ -722,6 +724,15 @@ impl<'a> LutExprInfo<'a> {
             .count() as u64
     }
 
+    /// Returns the number of flip-flops in the given expr.
+    pub fn get_reg_count(&self) -> u64 {
+        let cse = self.get_cse();
+        cse.as_ref()
+            .iter()
+            .filter(|n| matches!(n, LutLang::Reg(_)))
+            .count() as u64
+    }
+
     /// Get the depths of the circuit
     pub fn get_circuit_depth(&self) -> u64 {
         DepthCostFn.cost_rec(self.expr) as u64
@@ -760,8 +771,10 @@ impl<'a> LutExprInfo<'a> {
             lut_count += count;
         }
         let depth = self.get_circuit_depth();
+        let reg_count = self.get_reg_count();
         CircuitStats {
             lut_count,
+            reg_count,
             lut_distribution,
             depth,
         }
