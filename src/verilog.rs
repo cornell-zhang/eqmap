@@ -383,7 +383,7 @@ impl SVModule {
     }
 
     /// Get the driving primitive for a signal
-    pub fn get_driving_primitive(&self, signal: &str) -> Result<&SVPrimitive, String> {
+    pub fn get_driving_primitive<'a>(&'a self, signal: &'a str) -> Result<&'a SVPrimitive, String> {
         match self.driving_module.get(signal) {
             Some(idx) => Ok(&self.instances[*idx]),
             None => Err(format!(
@@ -614,6 +614,7 @@ impl SVModule {
                 NodeEvent::Leave(RefNode::NetDeclAssignment(_net_decl)) => (),
 
                 // Handle wire assignment
+                // TODO(mrh259): Refactor this branch of logic and this function in general
                 NodeEvent::Enter(RefNode::NetAssignment(net_assign)) => {
                     let lhs = unwrap_node!(net_assign, NetLvalue).unwrap();
                     let lhs_id = unwrap_node!(lhs, SimpleIdentifier).unwrap();
@@ -638,9 +639,9 @@ impl SVModule {
                         RefNode::SimpleIdentifier(_) => {
                             let rhs_name = get_identifier(rhs_id, ast).unwrap();
                             cur_insts.push(SVPrimitive::new_wire(
-                                rhs_name,
+                                rhs_name.clone(),
                                 lhs_name.clone(),
-                                lhs_name + "_wire",
+                                lhs_name + "_wire_" + &rhs_name,
                             ));
                         }
                         RefNode::BinaryNumber(b) => {
@@ -659,7 +660,7 @@ impl SVModule {
                             cur_insts.push(SVPrimitive::new_const(
                                 val,
                                 lhs_name.clone(),
-                                lhs_name + "_const",
+                                lhs_name + "_const_binary",
                             ));
                         }
                         RefNode::HexNumber(b) => {
@@ -931,6 +932,13 @@ impl SVModule {
 
     /// Get a separate [LutLang] expression for every output in the module
     pub fn get_exprs(&self) -> Result<Vec<(String, RecExpr<LutLang>)>, String> {
+        if let Err(s) = self.contains_cycles() {
+            return Err(format!(
+                "Cannot convert module with feedback on signal {}",
+                s
+            ));
+        }
+
         let mut exprs = vec![];
         for output in self.outputs.iter() {
             let mut expr = RecExpr::default();
@@ -942,6 +950,13 @@ impl SVModule {
 
     /// Get a single [LutLang] expression for the module as a bus
     pub fn to_single_expr(&self) -> Result<RecExpr<LutLang>, String> {
+        if let Err(s) = self.contains_cycles() {
+            return Err(format!(
+                "Cannot convert module with feedback on signal {}",
+                s
+            ));
+        }
+
         let mut expr: RecExpr<LutLang> = RecExpr::default();
         let mut map = HashMap::new();
         let mut outputs: Vec<Id> = vec![];
@@ -957,6 +972,13 @@ impl SVModule {
 
     /// Convert the module to a [LutLang] expression
     pub fn to_expr(&self) -> Result<RecExpr<LutLang>, String> {
+        if let Err(s) = self.contains_cycles() {
+            return Err(format!(
+                "Cannot convert module with feedback on signal {}",
+                s
+            ));
+        }
+
         if self.outputs.len() != 1 {
             return Err(format!(
                 "{}: Expected exactly one output in module {}.",
@@ -971,6 +993,38 @@ impl SVModule {
     /// Get the name of the outputs of the module
     pub fn get_outputs(&self) -> Vec<&str> {
         self.outputs.iter().map(|x| x.get_name()).collect()
+    }
+
+    fn contains_cycles_rec<'a>(
+        &'a self,
+        signal: &'a str,
+        walk: &mut HashSet<&'a str>,
+    ) -> Result<(), &'a str> {
+        if walk.contains(signal) {
+            return Err(signal);
+        }
+        walk.insert(signal);
+        let driving = self.get_driving_primitive(signal);
+        if driving.is_err() {
+            walk.remove(signal);
+            return Ok(());
+        }
+        let driving = driving.unwrap();
+        for (_, driver) in driving.inputs.iter() {
+            self.contains_cycles_rec(driver, walk)?
+        }
+        walk.remove(signal);
+        Ok(())
+    }
+
+    /// We cannot lower verilog with cycles in it to LutLang expressions.
+    /// This function returns [Ok] when there are no cycles in the module
+    pub fn contains_cycles<'a>(&'a self) -> Result<(), &'a str> {
+        for output in self.outputs.iter() {
+            let mut stack: HashSet<&'a str> = HashSet::new();
+            self.contains_cycles_rec(output.get_name(), &mut stack)?
+        }
+        Ok(())
     }
 }
 
