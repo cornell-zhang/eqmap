@@ -824,6 +824,16 @@ impl SVModule {
                     let d = primitive.inputs.first_key_value().unwrap().1;
                     let d = self.get_expr(d, expr, map)?;
                     Ok(expr.add(LutLang::Reg([d])))
+                } else if Self::is_assign_prim(primitive.prim.as_str()) {
+                    let val = primitive.attributes.get("VAL").unwrap();
+                    if primitive.prim.as_str() == "CONST" {
+                        let val = val == "1'b1";
+                        Ok(expr.add(LutLang::Const(val)))
+                    } else {
+                        Ok(*map
+                            .get(val.as_str())
+                            .expect("Expected the assignment to be driven"))
+                    }
                 } else {
                     let mut subexpr: Vec<Id> = vec![];
                     let program = primitive.attributes.get("INIT").ok_or(format!(
