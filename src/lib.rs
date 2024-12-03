@@ -217,6 +217,33 @@ mod tests {
             .to_string()
     }
 
+    fn get_assignment_verilog() -> String {
+        "module passthru (
+            d,
+            y
+        );
+          input d;
+          wire d;
+          output y;
+          wire y;
+          assign y = d;
+        endmodule"
+            .to_string()
+    }
+
+    #[test]
+    fn test_assignment_verilog() {
+        let module = get_assignment_verilog();
+        let ast = sv_parse_wrapper(&module, None).unwrap();
+        let module = SVModule::from_ast(&ast);
+        assert!(module.is_ok());
+        let module = module.unwrap();
+        assert_eq!(
+            module.to_single_expr().unwrap().to_string(),
+            "d".to_string()
+        );
+    }
+
     #[test]
     fn test_parse_verilog() {
         let module = get_struct_verilog();
@@ -652,5 +679,14 @@ endmodule"
         assert_eq!(info.get_num_inputs(), 3);
         assert_eq!(info.get_num_outputs(), 1);
         assert_eq!(canon.to_string(), "(LUT 202 s a b)".to_string());
+    }
+
+    #[test]
+    fn test_circuit_stats() {
+        let expr: RecExpr<LutLang> = "(LUT 202 s a b)".parse().unwrap();
+        let info = LutExprInfo::new(&expr);
+        let stats = info.get_circuit_stats();
+        assert_eq!(stats.depth, 1);
+        assert_eq!(stats.lut_count, 1);
     }
 }
