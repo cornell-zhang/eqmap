@@ -612,6 +612,72 @@ impl SVModule {
                     cur_signals.push(SVSignal::new(1, name));
                 }
                 NodeEvent::Leave(RefNode::NetDeclAssignment(_net_decl)) => (),
+
+                // Handle wire assignment
+                NodeEvent::Enter(RefNode::NetAssignment(net_assign)) => {
+                    let lhs = unwrap_node!(net_assign, NetLvalue).unwrap();
+                    let lhs_id = unwrap_node!(lhs, SimpleIdentifier).unwrap();
+                    let lhs_name = get_identifier(lhs_id, ast).unwrap();
+                    let rhs = unwrap_node!(net_assign, Expression).unwrap();
+                    let rhs_id =
+                        unwrap_node!(rhs, SimpleIdentifier, BinaryNumber, HexNumber).unwrap();
+                    let assignment = unwrap_node!(net_assign, Symbol).unwrap();
+                    match assignment {
+                        RefNode::Symbol(sym) => {
+                            let loc = sym.nodes.0;
+                            let eq = ast.get_str(&loc).unwrap();
+                            if eq != "=" {
+                                return Err("Expected an assignment operator".to_string());
+                            }
+                        }
+                        _ => {
+                            return Err("Expected an assignment operator".to_string());
+                        }
+                    }
+                    match rhs_id {
+                        RefNode::SimpleIdentifier(_) => {
+                            let rhs_name = get_identifier(rhs_id, ast).unwrap();
+                            cur_insts.push(SVPrimitive::new_wire(
+                                rhs_name,
+                                lhs_name.clone(),
+                                lhs_name + "_wire",
+                            ));
+                        }
+                        RefNode::BinaryNumber(b) => {
+                            let loc = b.nodes.2.nodes.0;
+                            let val = ast.get_str(&loc).unwrap();
+                            let val = match val {
+                                "0" => false,
+                                "1" => true,
+                                _ => {
+                                    return Err(format!(
+                                        "Expected a 1 bit constant. Found {}",
+                                        val
+                                    ));
+                                }
+                            };
+                            cur_insts.push(SVPrimitive::new_const(
+                                val,
+                                lhs_name.clone(),
+                                lhs_name + "_const",
+                            ));
+                        }
+                        RefNode::HexNumber(b) => {
+                            let loc = b.nodes.2.nodes.0;
+                            let val = ast.get_str(&loc).unwrap();
+                            let val = !matches!(val, "0");
+                            cur_insts.push(SVPrimitive::new_const(
+                                val,
+                                lhs_name.clone(),
+                                lhs_name + "_const_hex",
+                            ));
+                        }
+                        _ => {
+                            return Err("Expected a SimpleIdentifier or PrimaryLiteral".to_string());
+                        }
+                    }
+                }
+                NodeEvent::Leave(RefNode::NetAssignment(_net_assign)) => (),
                 _ => (),
             }
         }
@@ -830,9 +896,7 @@ impl SVModule {
                         let val = val == "1'b1";
                         Ok(expr.add(LutLang::Const(val)))
                     } else {
-                        Ok(*map
-                            .get(val.as_str())
-                            .expect("Expected the assignment to be driven"))
+                        self.get_expr(val.as_str(), expr, map)
                     }
                 } else {
                     let mut subexpr: Vec<Id> = vec![];
