@@ -3,6 +3,7 @@ cargo build
 cargo build --release
 
 chmod +x ./bin/*
-export PATH=$PWD/target/release:$PWD/bin:$PATH
+chmod +x ./utils/*
+export PATH=$PWD/target/release:$PWD/bin:$PWD/utils:$PATH
 
 echo "SUCCESS"
