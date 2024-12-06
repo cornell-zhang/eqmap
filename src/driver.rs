@@ -9,7 +9,7 @@ use super::cost::{DepthCostFn, KLUTCostFn, NegativeCostFn};
 use super::lut::{canonicalize_expr, verify_expr, CircuitStats, LutExprInfo, LutLang};
 use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
-    RecExpr, RecExprParseError, Rewrite, Runner,
+    RecExpr, RecExprParseError, Rewrite, Runner, StopReason,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
@@ -32,6 +32,7 @@ pub struct Comparison<T> {
 #[derive(Debug, Serialize)]
 pub struct SynthReport {
     name: String,
+    stop_reason: String,
     extract_time: f64,
     build_time: f64,
     input_size: u64,
@@ -76,8 +77,16 @@ impl SynthReport {
             before: input_circuit_stats,
             after: output_circuit_stats,
         };
+        let stop_reason = match rpt.stop_reason {
+            StopReason::Saturated => "Saturated".to_string(),
+            StopReason::IterationLimit(n) => format!("{} Iterations", n),
+            StopReason::NodeLimit(n) => format!("{} Nodes", n),
+            StopReason::TimeLimit(n) => format!("{} Seasons", n),
+            StopReason::Other(s) => s,
+        };
         Self {
             name: "top".to_string(),
+            stop_reason,
             extract_time,
             build_time,
             saturated,
