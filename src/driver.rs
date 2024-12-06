@@ -81,7 +81,7 @@ impl SynthReport {
             StopReason::Saturated => "Saturated".to_string(),
             StopReason::IterationLimit(n) => format!("{} Iterations", n),
             StopReason::NodeLimit(n) => format!("{} Nodes", n),
-            StopReason::TimeLimit(n) => format!("{} Seasons", n),
+            StopReason::TimeLimit(n) => format!("{} Seconds", n),
             StopReason::Other(s) => s,
         };
         Self {
