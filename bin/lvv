@@ -1,10 +1,8 @@
 #!/usr/bin/bash
 set -eo pipefail
 
-cargo build --release
-
 if [ "$1" == "--help" ] || [ "$2" == "--help" ] || [ "$3" == "--help" ]; then
-    cargo run --quiet --release -- --help
+    fam --help
 else
     which yosys > /dev/null || { echo "yosys not found in PATH"; exit 1; }
     which fam > /dev/null || { echo "fam not found in PATH"; exit 1; }
