@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 set -eo pipefail
 cargo build --release 2>>/dev/null
 if [ "$1" == "--help" ]; then
