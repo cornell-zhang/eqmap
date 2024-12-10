@@ -95,8 +95,8 @@ pub fn permute_groups() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     rules
 }
 
-/// Condenses a k-Cut when it takes the form of a Shannon expansion
-pub fn shannon_expansion() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
+/// Condenses two cofactors along a single boolean term into one combined function
+pub fn condense_cofactors() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
 
     // Condense Shannon expansion
@@ -110,10 +110,10 @@ pub fn shannon_expansion() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     rules.push(
         rewrite!("mux-make-disjoint-xnor"; "(LUT 202 ?s ?a (NOT ?a))" => "(NOT (XOR ?s ?a))"),
     );
-    rules.push(rewrite!("lut2-shannon"; "(LUT 202 ?s (LUT ?p ?a ?b) (LUT ?q ?a ?b))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap()])}));
-    rules.push(rewrite!("lut3-shannon"; "(LUT 202 ?s (LUT ?p ?a ?b ?c) (LUT ?q ?a ?b ?c))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
-    rules.push(rewrite!("lut4-shannon"; "(LUT 202 ?s (LUT ?p ?a ?b ?c ?d) (LUT ?q ?a ?b ?c ?d))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()])}));
-    rules.push(rewrite!("lut5-shannon"; "(LUT 202 ?s (LUT ?p ?a ?b ?c ?d ?e) (LUT ?q ?a ?b ?c ?d ?e))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap()])}));
+    rules.push(rewrite!("lut2-shannon-condense"; "(LUT 202 ?s (LUT ?p ?a ?b) (LUT ?q ?a ?b))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap()])}));
+    rules.push(rewrite!("lut3-shannon-condense"; "(LUT 202 ?s (LUT ?p ?a ?b ?c) (LUT ?q ?a ?b ?c))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
+    rules.push(rewrite!("lut4-shannon-condense"; "(LUT 202 ?s (LUT ?p ?a ?b ?c ?d) (LUT ?q ?a ?b ?c ?d))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()])}));
+    rules.push(rewrite!("lut5-shannon-condense"; "(LUT 202 ?s (LUT ?p ?a ?b ?c ?d ?e) (LUT ?q ?a ?b ?c ?d ?e))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap()])}));
 
     rules
 }
@@ -202,8 +202,8 @@ pub fn redundant_inputs() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     rules
 }
 
-/// Returns a list of all rules except for disjoint support decomposition
-pub fn all_rules_minus_dsd() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
+/// Returns a list of all rules except for run-time calculated decompositions
+pub fn all_rules_minus_dyn_decomp() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
 
     // Structural mappings of gates to LUTs
@@ -230,9 +230,12 @@ pub fn all_rules_minus_dsd() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     // LUT permutation groups
     rules.append(&mut permute_groups());
 
-    // Condense Shannon expansion (a special case of fusing inputs)
-    rules.append(&mut shannon_expansion());
+    // Condense cofactors and general cuts
+    rules.append(&mut condense_cofactors());
     rules.append(&mut general_cut_fusion());
+
+    // Compile-time decompositions
+    rules.append(&mut known_decompositions());
 
     // LUT fuse non-mutually exclusive inputs (hard, opposite of DSD)
     rules

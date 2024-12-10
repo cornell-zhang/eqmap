@@ -4,14 +4,13 @@ use lut_synth::{
     analysis::LutAnalysis,
     driver::{process_string_expression, simple_reader, SynthRequest},
     lut,
-    rewrite::{all_rules_minus_dsd, known_decompositions, register_retiming},
+    rewrite::{all_rules_minus_dyn_decomp, register_retiming},
 };
 use std::path::PathBuf;
 
 fn get_main_runner(s: &str) -> Result<SynthRequest<LutAnalysis>, RecExprParseError<FromOpError>> {
     let expr: RecExpr<lut::LutLang> = s.parse()?;
-    let mut rules = all_rules_minus_dsd();
-    rules.append(&mut known_decompositions());
+    let mut rules = all_rules_minus_dyn_decomp();
     rules.append(&mut register_retiming());
 
     Ok(SynthRequest::default()
@@ -62,9 +61,13 @@ struct Args {
     #[arg(long)]
     command: Option<String>,
 
-    /// Don't use disjoint set decompositions
+    /// Find new decompositions at runtime
     #[arg(short = 'd', long, default_value_t = false)]
-    no_dsd: bool,
+    decomp: bool,
+
+    /// Perform an exact extraction using ILP (much slower)
+    #[arg(short = 'e', long, default_value_t = false)]
+    exact: bool,
 
     /// Don't use register retiming
     #[arg(short = 'r', long, default_value_t = false)]
@@ -107,9 +110,9 @@ fn main() -> std::io::Result<()> {
 
     let buf = simple_reader(args.command, args.input)?;
 
-    let mut rules = all_rules_minus_dsd();
-    if !args.no_dsd {
-        rules.append(&mut known_decompositions());
+    let mut rules = all_rules_minus_dyn_decomp();
+    if args.decomp {
+        todo!("Dynamic decomposition is not implemented yet");
     }
 
     if !args.no_retime {
@@ -119,14 +122,13 @@ fn main() -> std::io::Result<()> {
     if args.verbose {
         eprintln!("INFO: Running with {} rewrite rules", rules.len());
         eprintln!(
-            "INFO: DSD rewrites {}",
-            if args.no_dsd { "OFF" } else { "ON" }
+            "INFO: Dynamic Decomposition {}",
+            if args.decomp { "ON" } else { "OFF" }
         );
     }
 
     let req = SynthRequest::default()
         .with_rules(rules)
-        .with_k(args.k)
         .with_timeout(args.timeout)
         .with_node_limit(args.node_limit)
         .with_iter_limit(args.iter_limit);
@@ -144,6 +146,12 @@ fn main() -> std::io::Result<()> {
     };
 
     let req = if args.verbose { req.with_proof() } else { req };
+
+    let req = if args.exact {
+        req.with_exactness()
+    } else {
+        req.with_k(args.k)
+    };
 
     for line in buf.lines() {
         let result = process_string_expression(line, req.clone(), args.no_verify, args.verbose)?;

@@ -9,7 +9,7 @@ use super::cost::{DepthCostFn, KLUTCostFn, NegativeCostFn};
 use super::lut::{canonicalize_expr, verify_expr, CircuitStats, LutExprInfo, LutLang};
 use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
-    RecExpr, RecExprParseError, Rewrite, Runner, StopReason,
+    LpExtractor, RecExpr, RecExprParseError, Rewrite, Runner, StopReason,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
@@ -202,11 +202,14 @@ where
     Ok(())
 }
 
+/// An enum for the extraction strategies used to synthesize LUT networks.
+/// Only [ExtractStrat::Exact] uses ILP.
 #[derive(Debug, Clone)]
 enum ExtractStrat {
     MaxDepth,
     MinDepth,
-    CountLUT(usize),
+    LUTCount(usize),
+    Exact,
 }
 
 /// A request to simplify an expression.
@@ -260,7 +263,7 @@ impl<A: Analysis<LutLang>> std::default::Default for SynthRequest<A> {
         Self {
             expr: RecExpr::default(),
             rules: Vec::new(),
-            extract_strat: ExtractStrat::CountLUT(6),
+            extract_strat: ExtractStrat::LUTCount(6),
             no_canonicalize: false,
             assert_sat: false,
             gen_proof: false,
@@ -299,10 +302,18 @@ impl<A> SynthRequest<A>
 where
     A: Analysis<LutLang>,
 {
-    /// Request with extracting LUTs up to size `k`.
+    /// Request greedy extraction of LUTs up to size `k`.
     pub fn with_k(self, k: usize) -> Self {
         Self {
-            extract_strat: ExtractStrat::CountLUT(k),
+            extract_strat: ExtractStrat::LUTCount(k),
+            ..self
+        }
+    }
+
+    /// Request exact LUT extraction using ILP.
+    pub fn with_exactness(self) -> Self {
+        Self {
+            extract_strat: ExtractStrat::Exact,
             ..self
         }
     }
@@ -479,19 +490,19 @@ where
         Ok(())
     }
 
-    /// simplify `expr` using egg with cost model `c`
-    pub fn simplify_expr_with<C>(&mut self, c: C) -> Result<SynthOutput, String>
+    /// Extract requested expression with `extractor`
+    pub fn extract_with<F>(&mut self, extractor: F) -> Result<SynthOutput, String>
     where
+        F: FnOnce(&egg::EGraph<LutLang, A>, egg::Id) -> RecExpr<LutLang>,
         A: Analysis<LutLang> + std::default::Default,
-        C: CostFunction<LutLang>,
     {
         if self.result.is_none() {
             self.explore()?;
         }
         let runner = self.result.as_mut().unwrap();
 
-        // the Runner knows which e-class the expression given with `with_expr` is in
-        let root = runner.roots[0];
+        // We need to canonicalize the root ID
+        let root = runner.egraph.find(runner.roots[0]);
         if self.gen_proof {
             let report = runner.report();
             eprintln!("INFO: {}", report.to_string().replace('\n', "\nINFO: "));
@@ -500,8 +511,7 @@ where
         // use an Extractor to pick the best element of the root eclass
         eprintln!("INFO: Extracting...");
         let extraction_start = Instant::now();
-        let extractor = Extractor::new(&runner.egraph, c);
-        let (_best_cost, best) = extractor.find_best(root);
+        let best = extractor(&runner.egraph, root);
         let extraction_time = extraction_start.elapsed();
         if self.gen_proof {
             eprintln!(
@@ -549,18 +559,35 @@ where
         })
     }
 
+    /// Extract greedily requested expression with cost model `c`
+    pub fn greedy_extract_with<C>(&mut self, c: C) -> Result<SynthOutput, String>
+    where
+        C: CostFunction<LutLang>,
+        A: Analysis<LutLang> + std::default::Default,
+    {
+        self.extract_with(|egraph, root| {
+            let e = Extractor::new(egraph, c);
+            e.find_best(root).1
+        })
+    }
+
     /// Simplify expression with the extraction strategy in request `self`.
     pub fn simplify_expr(&mut self) -> Result<SynthOutput, String>
     where
         A: Analysis<LutLang> + std::default::Default,
     {
         match self.extract_strat {
-            ExtractStrat::MinDepth => self.simplify_expr_with(DepthCostFn),
+            ExtractStrat::MinDepth => self.greedy_extract_with(DepthCostFn),
             ExtractStrat::MaxDepth => {
                 eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");
-                self.simplify_expr_with(NegativeCostFn::new(DepthCostFn))
+                self.greedy_extract_with(NegativeCostFn::new(DepthCostFn))
             }
-            ExtractStrat::CountLUT(k) => self.simplify_expr_with(KLUTCostFn::new(k)),
+            ExtractStrat::LUTCount(k) => self.greedy_extract_with(KLUTCostFn::new(k)),
+            ExtractStrat::Exact => self.extract_with(|egraph, root| {
+                eprintln!("INFO: ILP ON");
+                let mut e = LpExtractor::new(egraph, egg::AstSize);
+                canonicalize_expr(e.timeout(172800.0).solve(root))
+            }),
         }
     }
 }

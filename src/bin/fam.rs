@@ -1,7 +1,7 @@
 use clap::Parser;
 use lut_synth::{
     driver::{process_expression, SynthRequest},
-    rewrite::{all_rules_minus_dsd, known_decompositions, register_retiming},
+    rewrite::{all_rules_minus_dyn_decomp, register_retiming},
     verilog::{sv_parse_wrapper, SVModule},
 };
 use std::{
@@ -39,9 +39,13 @@ struct Args {
     #[arg(long)]
     command: Option<String>,
 
-    /// Do not use disjoint set decompositions
+    /// Find new decompositions at runtime
     #[arg(short = 'd', long, default_value_t = false)]
-    no_dsd: bool,
+    decomp: bool,
+
+    /// Perform an exact extraction using ILP (much slower)
+    #[arg(short = 'e', long, default_value_t = false)]
+    exact: bool,
 
     /// Do not use register retiming
     #[arg(short = 'r', long, default_value_t = false)]
@@ -111,9 +115,9 @@ fn main() -> std::io::Result<()> {
         f.get_outputs().len()
     );
 
-    let mut rules = all_rules_minus_dsd();
-    if !args.no_dsd {
-        rules.append(&mut known_decompositions());
+    let mut rules = all_rules_minus_dyn_decomp();
+    if args.decomp {
+        todo!("Dynamic decomposition is not implemented yet");
     }
 
     if !args.no_retime {
@@ -123,8 +127,8 @@ fn main() -> std::io::Result<()> {
     if args.verbose {
         eprintln!("INFO: Running with {} rewrite rules", rules.len());
         eprintln!(
-            "INFO: DSD rewrites {}",
-            if args.no_dsd { "OFF" } else { "ON" }
+            "INFO: Dynamic Decomposition {}",
+            if args.decomp { "ON" } else { "OFF" }
         );
         eprintln!(
             "INFO: Retiming rewrites {}",
@@ -134,7 +138,6 @@ fn main() -> std::io::Result<()> {
 
     let req = SynthRequest::default()
         .with_rules(rules)
-        .with_k(args.k)
         .with_timeout(args.timeout)
         .with_node_limit(args.node_limit)
         .with_iter_limit(args.iter_limit);
@@ -161,8 +164,10 @@ fn main() -> std::io::Result<()> {
 
     let req = if args.min_depth {
         req.with_min_depth()
+    } else if args.exact {
+        req.with_exactness()
     } else {
-        req
+        req.with_k(args.k)
     };
 
     eprintln!("INFO: Compiling Verilog...");

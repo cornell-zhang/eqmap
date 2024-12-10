@@ -19,6 +19,7 @@ An early experiment on representing LUT networks within E-Graphs for logic synth
   - [VerilogHDL Extension](https://marketplace.visualstudio.com/items?itemName=mshr-h.VerilogHDL)
 - [Verible](https://github.com/chipsalliance/verible)
 - [Yosys](https://github.com/YosysHQ/yosys)
+- [CBC Solver](https://github.com/coin-or/Cbc)
 
 ### Installing & Getting Started
 
