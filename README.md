@@ -48,7 +48,7 @@ You can also try to synthesize your own verilog `my_file.v`:
 The project has two conditionally compiled features:
 
 1. `egraph_fold` (should really not be used)
-1. `exactness` (used for exact synthesis, requires cbc)
+2. `exactness` (used for exact synthesis, requires cbc)
 
 To build with these features enabled:
 
