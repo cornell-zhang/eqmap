@@ -28,7 +28,7 @@ pub struct Comparison<T> {
     after: T,
 }
 
-/// The stats associated with a synthesis run.
+/// The many stats associated with a synthesis run.
 #[derive(Debug, Serialize)]
 pub struct SynthReport {
     name: String,
@@ -102,6 +102,7 @@ impl SynthReport {
 }
 
 /// The output of a [SynthRequest] run.
+/// It optionally contains an explanation and a [SynthReport] report.
 pub struct SynthOutput {
     expr: RecExpr<LutLang>,
     expl: Option<Explanation<LutLang>>,
@@ -213,7 +214,9 @@ enum ExtractStrat {
     Exact,
 }
 
-/// A request to simplify an expression.
+/// A request to explore and extract an expression.
+/// The request can be configured with various option
+/// before dedicating to a particular expression.
 pub struct SynthRequest<A>
 where
     A: Analysis<LutLang>,

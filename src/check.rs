@@ -7,7 +7,7 @@
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// An enum to help facilitate model checking down the road
+/// An enum to help facilitate model checking
 pub enum Check {
     /// Two models are proven equivalent
     Equiv,

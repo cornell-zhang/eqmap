@@ -597,7 +597,7 @@ pub fn swap_pos(bv: &u64, k: usize, pos: usize) -> u64 {
     from_bitvec(&nbv)
 }
 
-/// A struct to categorize measurements that characterize the circuit.
+/// The area and depth information of a circuit
 #[derive(Debug, Serialize)]
 pub struct CircuitStats {
     /// The number of LUTs in the circuit
@@ -611,7 +611,7 @@ pub struct CircuitStats {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// A struct to facilitate certain analyses on LUT expressions.
+/// Facilitates several analyses on LUT expressions.
 /// For example, finding common subexpressions, testing if a expression is canonical,
 /// getting lut counts, or model checking.
 pub struct LutExprInfo<'a> {

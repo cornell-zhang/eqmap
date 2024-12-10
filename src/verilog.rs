@@ -130,10 +130,7 @@ impl SVSignal {
     }
 }
 
-/// The [SVPrimitive] struct represents a primitive instance in the inputted structural verilog.
-/// For now, it show always be a LUT.
-/// For the `inputs` and `outputs` pairs of a primitive, the key is driven by the value.
-/// E.g. (I0, a) in inputs and (y, O) in outputs. Input I0 is driven by signal a, signal y is driven by output O.
+/// The [SVPrimitive] struct represents a primitive instance within a netlist.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SVPrimitive {
     /// The name of the primitive
@@ -141,8 +138,10 @@ pub struct SVPrimitive {
     /// The name of the instance
     pub name: String,
     /// Maps input ports to their signal driver
+    /// E.g. (I0, a) means I0 is driven by signal a.
     inputs: BTreeMap<String, String>,
     /// Maps output signals to their port driver
+    /// E.g. (y, O) means signal y is driven by output O.
     outputs: BTreeMap<String, String>,
     /// Stores arguments to module parameters as well as any other attribute
     pub attributes: BTreeMap<String, String>,
@@ -308,7 +307,7 @@ impl fmt::Display for SVPrimitive {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Represents a Verilog Module. For now it can only have one output.
+/// Represents the connectivity of a Verilog module.
 pub struct SVModule {
     /// The file name of the module
     pub fname: Option<String>,
