@@ -173,6 +173,10 @@ fn simple_tests() {
     assert_eq!(simplify("(LUT 2 true)"), "true");
     assert_eq!(simplify("(LUT 1 false)"), "true");
     assert_eq!(simplify("(LUT 2 false)"), "false");
+    assert_eq!(
+        simplify("(LUT 202 s1 (LUT 8 a b) (LUT 6 a b))"),
+        "(LUT 134 s1 a b)"
+    );
 }
 
 #[test]
