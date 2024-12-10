@@ -11,10 +11,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "output", nargs="?", type=argparse.FileType("w"), default=sys.stdout
     )
+    parser.add_argument("--version", type=str, default="Unknown")
     args = parser.parse_args()
 
     modules = {}
-    version = {}
+    version = args.version
     mergedRpt = {"version": version}
     for inputData in args.inputs:
         data = json.load(inputData)
@@ -24,7 +25,7 @@ if __name__ == "__main__":
             if k == "name":
                 name = v.strip("\\")
             elif k == "version":
-                mergedRpt[k] = v
+                version = v
             else:
                 record[k] = v
 
@@ -39,6 +40,7 @@ if __name__ == "__main__":
         modules[name] = record
 
     mergedRpt["modules"] = modules
+    mergedRpt["version"] = version
 
     with args.output as f:
         json.dump(mergedRpt, args.output, indent=2, sort_keys=True)
