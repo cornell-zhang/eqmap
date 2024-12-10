@@ -9,6 +9,7 @@ An early experiment on representing LUT networks within E-Graphs for logic synth
 ### Dependencies
 
 #### Building
+
 - Bash Shell (use WSL for Windows)
 - [rustup](https://rustup.rs/)
   - Crates (these are fetched automatically)
@@ -20,6 +21,7 @@ An early experiment on representing LUT networks within E-Graphs for logic synth
   - [CBC Solver](https://github.com/coin-or/Cbc)
 
 #### Development
+
 - VSCode
   - [Rust Analyzer Extension](https://rust-analyzer.github.io/)
   - [VerilogHDL Extension](https://marketplace.visualstudio.com/items?itemName=mshr-h.VerilogHDL)
@@ -44,8 +46,9 @@ You can also try to synthesize your own verilog `my_file.v`:
 ### Features
 
 The project has two conditionally compiled features:
+
 1. `egraph_fold` (should really not be used)
-2. `exactness` (used for exact synthesis, requires cbc)
+1. `exactness` (used for exact synthesis, requires cbc)
 
 To build with these features enabled:
 
