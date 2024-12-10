@@ -51,6 +51,10 @@ To build with these features enabled:
 
 `cargo build --release --features exactness`
 
+Or to get the tools in your PATH:
+
+`source utils/setup.sh exactness`
+
 ### Docs
 
 You can generate most of the documentation with `cargo doc`.

@@ -1,6 +1,5 @@
 #!/bin/bash
-cargo build
-cargo build --release
+cargo build --release --features default,$1,$2,$3,$4
 
 chmod +x ./bin/*
 chmod +x ./utils/*
