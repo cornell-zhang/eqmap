@@ -176,6 +176,14 @@ fn main() -> std::io::Result<()> {
         req
     };
 
+    #[cfg(feature = "exactness")]
+    if args.exact && args.output.is_none() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Stdout is reserved for cbc solver. Specify an output file",
+        ));
+    }
+
     eprintln!("INFO: Compiling Verilog...");
     let expr = f
         .to_single_expr()

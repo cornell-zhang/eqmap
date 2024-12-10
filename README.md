@@ -8,20 +8,28 @@ An early experiment on representing LUT networks within E-Graphs for logic synth
 
 ### Dependencies
 
+#### Building
+- Bash Shell (use WSL for Windows)
 - [rustup](https://rustup.rs/)
-  - Crates
+  - Crates (these are fetched automatically)
     - [egg](https://docs.rs/egg/latest/egg/)
     - [bitvec](https://docs.rs/bitvec/latest/bitvec/)
     - [clap](https://docs.rs/clap/latest/clap/)
     - [indicatif](https://docs.rs/indicatif/latest/indicatif/)
+- ILP (only when using Cargo feature `exactness`)
+  - [CBC Solver](https://github.com/coin-or/Cbc)
+
+#### Development
 - VSCode
   - [Rust Analyzer Extension](https://rust-analyzer.github.io/)
   - [VerilogHDL Extension](https://marketplace.visualstudio.com/items?itemName=mshr-h.VerilogHDL)
-- [Verible](https://github.com/chipsalliance/verible)
-- [Yosys](https://github.com/YosysHQ/yosys)
-- [CBC Solver](https://github.com/coin-or/Cbc)
+- RTL Tools
+  - [Verible](https://github.com/chipsalliance/verible)
+  - [Yosys](https://github.com/YosysHQ/yosys)
 
 ### Installing & Getting Started
+
+First, install all the prerequisites for building. For basic functionally, you need Rust and Linux or Mac OS.
 
 `cargo build`
 
@@ -32,6 +40,16 @@ You can also try to synthesize your own verilog `my_file.v`:
 `source utils/setup.sh # Add tools to path`
 
 `lvv my_file.v`
+
+### Features
+
+The project has two conditionally compiled features:
+1. `egraph_fold` (should really not be used)
+2. `exactness` (used for exact synthesis, requires cbc)
+
+To build with these features enabled:
+
+`cargo build --release --features exactness`
 
 ### Docs
 
