@@ -8,7 +8,7 @@ use egg::{CostFunction, Id, Language};
 
 /// A cost function that extracts LUTs with at most `k` fan-in.
 /// Gates have cost [u64::MAX] to prevent their extraction.
-/// Registers have cost zero.
+/// Registers have cost one.
 pub struct KLUTCostFn {
     k: usize,
 }
