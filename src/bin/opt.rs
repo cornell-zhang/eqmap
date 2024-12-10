@@ -129,6 +129,7 @@ fn main() -> std::io::Result<()> {
 
     let req = SynthRequest::default()
         .with_rules(rules)
+        .with_k(args.k)
         .with_timeout(args.timeout)
         .with_node_limit(args.node_limit)
         .with_iter_limit(args.iter_limit);
@@ -147,10 +148,11 @@ fn main() -> std::io::Result<()> {
 
     let req = if args.verbose { req.with_proof() } else { req };
 
+    #[cfg(feature = "exactness")]
     let req = if args.exact {
         req.with_exactness()
     } else {
-        req.with_k(args.k)
+        req
     };
 
     for line in buf.lines() {

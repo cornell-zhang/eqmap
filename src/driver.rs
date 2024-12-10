@@ -9,7 +9,7 @@ use super::cost::{DepthCostFn, KLUTCostFn, NegativeCostFn};
 use super::lut::{canonicalize_expr, verify_expr, CircuitStats, LutExprInfo, LutLang};
 use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
-    LpExtractor, RecExpr, RecExprParseError, Rewrite, Runner, StopReason,
+    RecExpr, RecExprParseError, Rewrite, Runner, StopReason,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
@@ -209,6 +209,7 @@ enum ExtractStrat {
     MaxDepth,
     MinDepth,
     LUTCount(usize),
+    #[cfg(feature = "exactness")]
     Exact,
 }
 
@@ -311,6 +312,7 @@ where
     }
 
     /// Request exact LUT extraction using ILP.
+    #[cfg(feature = "exactness")]
     pub fn with_exactness(self) -> Self {
         Self {
             extract_strat: ExtractStrat::Exact,
@@ -583,9 +585,10 @@ where
                 self.greedy_extract_with(NegativeCostFn::new(DepthCostFn))
             }
             ExtractStrat::LUTCount(k) => self.greedy_extract_with(KLUTCostFn::new(k)),
+            #[cfg(feature = "exactness")]
             ExtractStrat::Exact => self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP ON");
-                let mut e = LpExtractor::new(egraph, egg::AstSize);
+                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
                 canonicalize_expr(e.timeout(172800.0).solve(root))
             }),
         }

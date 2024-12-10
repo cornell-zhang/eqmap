@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - run: cargo test --all-features
+      - run: cargo test --features default
 
   # Check formatting with rustfmt
   formatting:
@@ -40,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run Clippy
-        run: cargo clippy --all-targets --all-features
+        run: cargo clippy --all-targets --features default
 
   build:
     name: Integration Tests

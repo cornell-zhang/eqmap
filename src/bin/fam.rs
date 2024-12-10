@@ -44,6 +44,7 @@ struct Args {
     decomp: bool,
 
     /// Perform an exact extraction using ILP (much slower)
+    #[cfg(feature = "exactness")]
     #[arg(short = 'e', long, default_value_t = false)]
     exact: bool,
 
@@ -164,10 +165,15 @@ fn main() -> std::io::Result<()> {
 
     let req = if args.min_depth {
         req.with_min_depth()
-    } else if args.exact {
-        req.with_exactness()
     } else {
         req.with_k(args.k)
+    };
+
+    #[cfg(feature = "exactness")]
+    let req = if args.exact {
+        req.with_exactness()
+    } else {
+        req
     };
 
     eprintln!("INFO: Compiling Verilog...");
