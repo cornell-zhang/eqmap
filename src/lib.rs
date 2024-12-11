@@ -669,6 +669,27 @@ endmodule"
     }
 
     #[test]
+    fn test_cycle() {
+        let simple_cycle_expr: RecExpr<LutLang> = "(CYCLE (REG (AND a ARG0)))".parse().unwrap();
+        assert!(LutLang::func_equiv(
+            &simple_cycle_expr,
+            &"(CYCLE (REG (AND a ARG0)))".parse().unwrap()
+        )
+        .is_equiv());
+        assert!(
+            LutLang::func_equiv(&simple_cycle_expr, &"(AND a b)".parse().unwrap())
+                .is_inconclusive()
+        );
+        assert!(LutLang::func_equiv(
+            &simple_cycle_expr,
+            &"(CYCLE (REG (AND (XOR (AND a 1) ARG0) ARG0)))"
+                .parse()
+                .unwrap()
+        )
+        .is_inconclusive());
+    }
+
+    #[test]
     fn test_interface_count() {
         let expr: RecExpr<LutLang> = "(MUX s a b)".parse().unwrap();
         let info = LutExprInfo::new(&expr);

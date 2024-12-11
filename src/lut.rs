@@ -32,6 +32,7 @@ define_language! {
         "LUT" = Lut(Box<[Id]>), // Program is first
         "BUS" = Bus(Box<[Id]>), // a bus of nodes
         "REG" = Reg([Id; 1]),
+        "CYCLE" = CYCLE([Id; 1]),
     }
 }
 
@@ -58,7 +59,8 @@ impl LutLang {
                 }
             }
             LutLang::Var(f) => match f.as_str() {
-                "NOR" | "LUT" | "MUX" | "AND" | "XOR" | "NOT" | "BUS" | "DC" | "x" | "REG" => Err(
+                "NOR" | "LUT" | "MUX" | "AND" | "XOR" | "NOT" | "BUS" | "DC" | "x" | "REG"
+                | "CYCLE" => Err(
                     "Variable name is already reserved. Check for missing parentheses.".to_string(),
                 ),
                 _ => Ok(()),
@@ -258,6 +260,7 @@ impl LutLang {
                 Ok(bv)
             }
             LutLang::Reg(_) => Err("REG is not combinational logic".to_string()),
+            LutLang::CYCLE(_) => Err("CYCLE is not combinational logic".to_string()),
         }
     }
 
@@ -286,6 +289,14 @@ impl LutLang {
             | (LutLang::Mux(_), LutLang::Mux(_))
             | (LutLang::Bus(_), LutLang::Bus(_))
             | (LutLang::Reg(_), LutLang::Reg(_)) => {
+                for (a, b) in self.children().iter().zip(other.children()) {
+                    if !expr[*a].deep_equals(&expr[*b], expr) {
+                        return false;
+                    }
+                }
+                true
+            }
+            (LutLang::CYCLE(_), LutLang::CYCLE(_)) => {
                 for (a, b) in self.children().iter().zip(other.children()) {
                     if !expr[*a].deep_equals(&expr[*b], expr) {
                         return false;
