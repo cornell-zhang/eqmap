@@ -616,11 +616,10 @@ impl SVModule {
                 // TODO(mrh259): Refactor this branch of logic and this function in general
                 NodeEvent::Enter(RefNode::NetAssignment(net_assign)) => {
                     let lhs = unwrap_node!(net_assign, NetLvalue).unwrap();
-                    let lhs_id = unwrap_node!(lhs, SimpleIdentifier).unwrap();
+                    let lhs_id = unwrap_node!(lhs, Identifier).unwrap();
                     let lhs_name = get_identifier(lhs_id, ast).unwrap();
                     let rhs = unwrap_node!(net_assign, Expression).unwrap();
-                    let rhs_id =
-                        unwrap_node!(rhs, SimpleIdentifier, BinaryNumber, HexNumber).unwrap();
+                    let rhs_id = unwrap_node!(rhs, Identifier, BinaryNumber, HexNumber).unwrap();
                     let assignment = unwrap_node!(net_assign, Symbol).unwrap();
                     match assignment {
                         RefNode::Symbol(sym) => {
@@ -635,7 +634,7 @@ impl SVModule {
                         }
                     }
                     match rhs_id {
-                        RefNode::SimpleIdentifier(_) => {
+                        RefNode::Identifier(_) => {
                             let rhs_name = get_identifier(rhs_id, ast).unwrap();
                             cur_insts.push(SVPrimitive::new_wire(
                                 rhs_name.clone(),
