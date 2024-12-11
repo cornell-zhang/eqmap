@@ -672,7 +672,7 @@ impl SVModule {
                             ));
                         }
                         _ => {
-                            return Err("Expected a SimpleIdentifier or PrimaryLiteral".to_string());
+                            return Err("Expected a Identifier or PrimaryLiteral".to_string());
                         }
                     }
                 }
