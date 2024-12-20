@@ -94,9 +94,8 @@ impl LutLang {
                     }
                 }
             } else if let LutLang::Arg(id) = self {
-                if let LutLang::Program(_) = expr[*id] {
-                } else {
-                    return Err("Arg must contain a program".to_string());
+                if !matches!(expr[*id], LutLang::Program(_)) {
+                    return Err("Arg must contain a program (u64)".to_string());
                 }
             }
         }
