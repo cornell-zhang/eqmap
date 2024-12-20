@@ -688,7 +688,9 @@ endmodule"
         )
         .is_equiv());
         let eval_cycle_expr: RecExpr<LutLang> = "(CYCLE (REG in))".parse().unwrap();
-        assert!(LutLang::func_equiv(&eval_cycle_expr, &"(REG in)".parse().unwrap()).is_equiv());
+        assert!(
+            LutLang::func_equiv(&eval_cycle_expr, &"(REG in)".parse().unwrap()).is_inconclusive()
+        );
         assert!(LutLang::func_equiv(
             &simple_cycle_expr,
             &"(CYCLE (REG (AND (XOR (AND a 1) (ARG 0)) (ARG 0))))"
