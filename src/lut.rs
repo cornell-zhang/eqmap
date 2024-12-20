@@ -33,7 +33,7 @@ define_language! {
         "BUS" = Bus(Box<[Id]>), // a bus of nodes
         "REG" = Reg([Id; 1]),
         "ARG" = Arg([Id; 1]),
-        "CYCLE" = CYCLE([Id; 1]),
+        "CYCLE" = Cycle([Id; 1]),
     }
 }
 
@@ -268,7 +268,7 @@ impl LutLang {
             }
             LutLang::Reg(_) => Err("REG is not combinational logic".to_string()),
             LutLang::Arg(_) => Err("ARG is not combinational logic".to_string()),
-            LutLang::CYCLE(_) => Err("CYCLE is not combinational logic".to_string()),
+            LutLang::Cycle(_) => Err("CYCLE is not combinational logic".to_string()),
         }
     }
 
@@ -298,7 +298,7 @@ impl LutLang {
             | (LutLang::Bus(_), LutLang::Bus(_))
             | (LutLang::Reg(_), LutLang::Reg(_))
             | (LutLang::Arg(_), LutLang::Arg(_))
-            | (LutLang::CYCLE(_), LutLang::CYCLE(_)) => {
+            | (LutLang::Cycle(_), LutLang::Cycle(_)) => {
                 for (a, b) in self.children().iter().zip(other.children()) {
                     if !expr[*a].deep_equals(&expr[*b], expr) {
                         return false;
