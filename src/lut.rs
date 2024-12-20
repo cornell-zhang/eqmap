@@ -32,7 +32,7 @@ define_language! {
         "LUT" = Lut(Box<[Id]>), // Program is first
         "BUS" = Bus(Box<[Id]>), // a bus of nodes
         "REG" = Reg([Id; 1]),
-        "ARG" = Arg(Id),
+        "ARG" = Arg([Id; 1]),
         "CYCLE" = CYCLE([Id; 1]),
     }
 }
@@ -93,9 +93,11 @@ impl LutLang {
                         return Err("Bus construct cannot be nested".to_string());
                     }
                 }
-            } else if let LutLang::Arg(id) = self {
-                if !matches!(expr[*id], LutLang::Program(_)) {
-                    return Err("Arg must contain a program (u64)".to_string());
+            } else if let LutLang::Arg(l) = self {
+                for id in l.iter() {
+                    if !matches!(expr[*id], LutLang::Program(_)) {
+                        return Err("Arg must contain a program (u64)".to_string());
+                    }
                 }
             }
         }
