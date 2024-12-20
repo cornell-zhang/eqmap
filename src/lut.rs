@@ -313,7 +313,6 @@ impl LutLang {
                 }
                 true
             }
-
             _ => false,
         }
     }
