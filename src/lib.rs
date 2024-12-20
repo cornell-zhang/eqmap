@@ -670,10 +670,21 @@ endmodule"
 
     #[test]
     fn test_cycle() {
-        let simple_cycle_expr: RecExpr<LutLang> = "(CYCLE (REG (AND a ARG0)))".parse().unwrap();
+        let simple_cycle_expr: RecExpr<LutLang> = "(CYCLE (REG (AND a (ARG 0))))".parse().unwrap();
         assert!(LutLang::func_equiv(
             &simple_cycle_expr,
-            &"(CYCLE (REG (AND a ARG0)))".parse().unwrap()
+            &"(CYCLE (REG (AND a (ARG 0))))".parse().unwrap()
+        )
+        .is_equiv());
+        let complex_cycle_expr: RecExpr<LutLang> =
+            "(CYCLE ( XOR (ARG 0) (CYCLE (REG (AND a (ARG 1))))))"
+                .parse()
+                .unwrap();
+        assert!(LutLang::func_equiv(
+            &complex_cycle_expr,
+            &"(CYCLE ( XOR (ARG 0) (CYCLE (REG (AND a (ARG 1))))))"
+                .parse()
+                .unwrap()
         )
         .is_equiv());
         assert!(
@@ -682,7 +693,7 @@ endmodule"
         );
         assert!(LutLang::func_equiv(
             &simple_cycle_expr,
-            &"(CYCLE (REG (AND (XOR (AND a 1) ARG0) ARG0)))"
+            &"(CYCLE (REG (AND (XOR (AND a 1) (ARG 0)) (ARG 0))))"
                 .parse()
                 .unwrap()
         )
