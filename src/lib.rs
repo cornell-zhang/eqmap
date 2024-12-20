@@ -677,12 +677,12 @@ endmodule"
         )
         .is_equiv());
         let complex_cycle_expr: RecExpr<LutLang> =
-            "(CYCLE ( XOR (ARG 0) (CYCLE (REG (AND a (ARG 1))))))"
+            "(CYCLE (XOR (ARG 0) (CYCLE (REG (AND a (ARG 1))))))"
                 .parse()
                 .unwrap();
         assert!(LutLang::func_equiv(
             &complex_cycle_expr,
-            &"(CYCLE ( XOR (ARG 0) (CYCLE (REG (AND a (ARG 1))))))"
+            &"(CYCLE (XOR (ARG 0) (CYCLE (REG (AND a (ARG 1))))))"
                 .parse()
                 .unwrap()
         )
@@ -698,6 +698,17 @@ endmodule"
                 .unwrap()
         )
         .is_inconclusive());
+    }
+
+    #[test]
+    fn test_cycle_verify() {
+        let bad_cycle: RecExpr<LutLang> = "(CYCLE (REG (AND a (ARG myarg))))".parse().unwrap();
+        let root = bad_cycle.as_ref().last().unwrap();
+        assert!(root.verify_rec(&bad_cycle).is_err());
+
+        let good_cycle: RecExpr<LutLang> = "(CYCLE (REG (AND a (ARG 0))))".parse().unwrap();
+        let root = good_cycle.as_ref().last().unwrap();
+        assert!(root.verify_rec(&good_cycle).is_ok());
     }
 
     #[test]

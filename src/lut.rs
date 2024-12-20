@@ -93,6 +93,11 @@ impl LutLang {
                         return Err("Bus construct cannot be nested".to_string());
                     }
                 }
+            } else if let LutLang::Arg(id) = self {
+                if let LutLang::Program(_) = expr[*id] {
+                } else {
+                    return Err("Arg must contain a program".to_string());
+                }
             }
         }
         Ok(())
