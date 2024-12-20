@@ -266,7 +266,10 @@ impl LutLang {
             }
             LutLang::Reg(_) => Err("REG is not combinational logic".to_string()),
             LutLang::Arg(_) => Err("ARG is not combinational logic".to_string()),
-            LutLang::Cycle(_) => Err("CYCLE is not combinational logic".to_string()),
+            LutLang::Cycle(a) => {
+                let a0 = &a[0];
+                Ok(!expr[*a0].eval_rec(inputs, expr)?)
+            }
         }
     }
 
@@ -304,6 +307,13 @@ impl LutLang {
                 }
                 true
             }
+            (LutLang::Cycle([a]), b) | (b, LutLang::Cycle([a])) => {
+                if !expr[*a].deep_equals(b, expr) {
+                    return false;
+                }
+                true
+            }
+
             _ => false,
         }
     }
