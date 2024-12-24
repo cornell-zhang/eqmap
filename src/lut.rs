@@ -99,11 +99,6 @@ impl LutLang {
                     return Err("Arg must contain a program (u64)".to_string());
                 }
             }
-            Self::Cycle([id]) => {
-                if !matches!(expr[*id], LutLang::Reg(_)) {
-                    return Err("Expression should not contain combinational feedback".to_string());
-                }
-            }
             _ => (),
         }
 

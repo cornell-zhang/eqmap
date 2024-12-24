@@ -192,6 +192,15 @@ fn test_proof_generation() {
 }
 
 #[test]
+fn test_args_egraphs() {
+    assert_eq!(simplify("(CYCLE (REG (ARG 0)))"), "(CYCLE (REG (ARG 0)))");
+    assert_eq!(
+        simplify("(CYCLE (REG (NOT (ARG 0))))"),
+        "(CYCLE (LUT 1 (REG (ARG 0))))"
+    );
+}
+
+#[test]
 fn test_eval() {
     let expr: RecExpr<lut::LutLang> = "(MUX s0 a b)".parse().unwrap();
     let other: RecExpr<lut::LutLang> = "(LUT 202 s0 a b)".parse().unwrap();
