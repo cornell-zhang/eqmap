@@ -709,6 +709,10 @@ endmodule"
         let good_cycle: RecExpr<LutLang> = "(CYCLE (REG (AND a (ARG 0))))".parse().unwrap();
         let root = good_cycle.as_ref().last().unwrap();
         assert!(root.verify_rec(&good_cycle).is_ok());
+
+        let bad_cycle: RecExpr<LutLang> = "(CYCLE (REG (AND a (ARG 1))))".parse().unwrap();
+        let root = bad_cycle.as_ref().last().unwrap();
+        assert!(root.verify_rec(&bad_cycle).is_err());
     }
 
     #[test]

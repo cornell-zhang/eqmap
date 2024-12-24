@@ -70,8 +70,7 @@ impl LutLang {
         }
     }
 
-    /// Recursively verify the grammar of a [LutLang] expression `expr` rooted at `self`
-    pub fn verify_rec(&self, expr: &RecExpr<Self>) -> Result<(), String> {
+    fn verify_rec_cfg(&self, expr: &RecExpr<Self>, depth: u64) -> Result<(), String> {
         self.verify()?;
 
         match self {
@@ -94,20 +93,34 @@ impl LutLang {
                     }
                 }
             }
-            Self::Arg([id]) => {
-                if !matches!(expr[*id], LutLang::Program(_)) {
-                    return Err("Arg must contain a program (u64)".to_string());
+            Self::Arg([id]) => match expr[*id] {
+                Self::Program(index) => {
+                    if index >= depth {
+                        return Err("Argument index out of bounds".to_string());
+                    }
                 }
-            }
+                _ => return Err("Arg must contain an index (u64)".to_string()),
+            },
             _ => (),
         }
 
+        let depth = if matches!(self, LutLang::Cycle(_)) {
+            depth + 1
+        } else {
+            depth
+        };
+
         for c in self.children() {
             let t = &expr[*c];
-            t.verify_rec(expr)?;
+            t.verify_rec_cfg(expr, depth)?;
         }
 
         Ok(())
+    }
+
+    /// Recursively verify the grammar of a [LutLang] expression `expr` rooted at `self`
+    pub fn verify_rec(&self, expr: &RecExpr<Self>) -> Result<(), String> {
+        self.verify_rec_cfg(expr, 0)
     }
 
     /// Extract the program from a [LutLang::Lut] contained in expression `expr`
