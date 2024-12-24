@@ -863,7 +863,7 @@ impl SVModule {
         map: &mut HashMap<&'a str, Id>,
     ) -> Result<Id, String> {
         if map.contains_key(signal) {
-            return Ok(*map.get(signal).unwrap());
+            return Ok(map[signal]);
         }
 
         let id = match self.get_driving_primitive(signal) {
