@@ -93,11 +93,23 @@ impl Analysis<lut::LutLang> for LutAnalysis {
         *to = merged;
         DidMerge(merged_to, *to != from)
     }
-    fn make(_egraph: &egg::EGraph<lut::LutLang, Self>, enode: &lut::LutLang) -> Self::Data {
+    fn make(egraph: &egg::EGraph<lut::LutLang, Self>, enode: &lut::LutLang) -> Self::Data {
         match enode {
             lut::LutLang::Program(p) => LutAnalysisData::new(Some(*p), None, None, None),
             lut::LutLang::Const(c) => LutAnalysisData::new(None, Some(*c), None, None),
             lut::LutLang::Var(v) => LutAnalysisData::new(None, None, Some(v.to_string()), None),
+            lut::LutLang::Arg([index]) => {
+                let index = egraph[*index]
+                    .data
+                    .get_program()
+                    .expect("Expected Arg child to be an index");
+                LutAnalysisData::new(
+                    None,
+                    None,
+                    Some("arg".to_string() + &index.to_string()),
+                    None,
+                )
+            }
             lut::LutLang::Bus(b) => LutAnalysisData::new(None, None, None, Some(b.len())),
             _ => LutAnalysisData::default(),
         }

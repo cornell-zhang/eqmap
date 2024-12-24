@@ -73,10 +73,9 @@ impl LutLang {
     /// Recursively verify the grammar of a [LutLang] expression `expr` rooted at `self`
     pub fn verify_rec(&self, expr: &RecExpr<Self>) -> Result<(), String> {
         self.verify()?;
-        for c in self.children() {
-            let t = &expr[*c];
-            t.verify_rec(expr)?;
-            if let LutLang::Lut(l) = self {
+
+        match self {
+            Self::Lut(l) => {
                 if let LutLang::Program(p) = expr[l[0]] {
                     let k = l.len() - 1;
                     if k < Self::MAX_LUT_SIZE && p >= (1 << (1 << k)) {
@@ -85,7 +84,8 @@ impl LutLang {
                 } else {
                     return Err("LUT must have a program".to_string());
                 }
-            } else if let LutLang::Bus(l) = self {
+            }
+            Self::Bus(l) => {
                 for id in l.iter() {
                     if let LutLang::Program(_) = expr[*id] {
                         return Err("Bus cannot contain a program".to_string());
@@ -93,12 +93,25 @@ impl LutLang {
                         return Err("Bus construct cannot be nested".to_string());
                     }
                 }
-            } else if let LutLang::Arg([id]) = self {
+            }
+            Self::Arg([id]) => {
                 if !matches!(expr[*id], LutLang::Program(_)) {
                     return Err("Arg must contain a program (u64)".to_string());
                 }
             }
+            Self::Cycle([id]) => {
+                if !matches!(expr[*id], LutLang::Reg(_)) {
+                    return Err("Expression should not contain combinational feedback".to_string());
+                }
+            }
+            _ => (),
         }
+
+        for c in self.children() {
+            let t = &expr[*c];
+            t.verify_rec(expr)?;
+        }
+
         Ok(())
     }
 
@@ -266,7 +279,7 @@ impl LutLang {
             }
             LutLang::Reg(_) => Err("REG is not combinational logic".to_string()),
             LutLang::Arg(_) => Err("ARG is not combinational logic".to_string()),
-            LutLang::Cycle([a]) => Ok(expr[*a].eval_rec(inputs, expr)?),
+            LutLang::Cycle([a]) => expr[*a].eval_rec(inputs, expr),
         }
     }
 
