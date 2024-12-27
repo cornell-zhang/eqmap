@@ -100,9 +100,13 @@ impl Analysis<lut::LutLang> for LutAnalysis {
         let mut merged = to.clone();
         merged.const_val = from.const_val.or(to.const_val);
         merged.input = from.input.clone().or(to.input.clone());
+
+        // However, rewrite rules can match on redundant logic in an eclass.
+        // If we took the intersection, we would not have that info. So we take the union.
         from.cut.iter().for_each(|x| {
             merged.cut.insert(x.clone());
         });
+
         let merged_to = merged != *to;
         *to = merged;
         DidMerge(merged_to, *to != from)
