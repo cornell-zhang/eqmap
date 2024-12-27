@@ -492,6 +492,15 @@ where
         // Clear the progress bar
         mp.clear().unwrap();
 
+        if self.gen_proof {
+            let runner = self.result.as_ref().unwrap();
+            let croot = runner.egraph.find(runner.roots[0]);
+            let data = &runner.egraph[croot].data;
+            eprintln!("INFO: Root analysis");
+            eprintln!("INFO: =============");
+            eprintln!("INFO:\t{:?}", data);
+        }
+
         Ok(())
     }
 
@@ -648,14 +657,15 @@ where
         .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
     if verbose && result.has_explanation() {
+        eprintln!("INFO: Flattened proof");
+        eprintln!("INFO: =============");
         let proof = result.get_proof();
         let mut linecount = 0;
         for line in proof.lines() {
-            eprintln!("INFO: {}", line);
+            eprintln!("INFO:\t{}", line);
             linecount += 1;
         }
         eprintln!("INFO: Approx. {} lines in proof tree", linecount);
-        eprintln!("INFO: ============================================================");
     } else if req.expr.as_ref().len() < 240 {
         let expr = expr.to_string();
         let len = expr.len().min(240);

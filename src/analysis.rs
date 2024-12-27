@@ -8,8 +8,10 @@
 
 */
 
+use std::collections::HashSet;
+
 use super::lut;
-use egg::{Analysis, DidMerge};
+use egg::{Analysis, DidMerge, Language};
 
 /// An e-class is typically a boolean signal.
 /// However, we store constants and input aliases for folding.
@@ -24,6 +26,8 @@ pub struct LutAnalysisData {
     input: Option<String>,
     /// The bus size of the node (if it is a bus)
     size: Option<usize>,
+    /// Dominating cut
+    cut: HashSet<String>,
 }
 
 impl LutAnalysisData {
@@ -33,13 +37,20 @@ impl LutAnalysisData {
         const_val: Option<bool>,
         input: Option<String>,
         size: Option<usize>,
+        cut: HashSet<String>,
     ) -> Self {
         Self {
             program,
             const_val,
             input,
             size,
+            cut,
         }
+    }
+
+    /// Add a cut to the class, removing the old one
+    pub fn with_cut(self, cut: HashSet<String>) -> Self {
+        Self { cut, ..self }
     }
 
     /// Extract the LUT program in this class. If it is an input or gate, throw an error
@@ -89,29 +100,49 @@ impl Analysis<lut::LutLang> for LutAnalysis {
         let mut merged = to.clone();
         merged.const_val = from.const_val.or(to.const_val);
         merged.input = from.input.clone().or(to.input.clone());
+        from.cut.iter().for_each(|x| {
+            merged.cut.insert(x.clone());
+        });
         let merged_to = merged != *to;
         *to = merged;
         DidMerge(merged_to, *to != from)
     }
     fn make(egraph: &egg::EGraph<lut::LutLang, Self>, enode: &lut::LutLang) -> Self::Data {
         match enode {
-            lut::LutLang::Program(p) => LutAnalysisData::new(Some(*p), None, None, None),
-            lut::LutLang::Const(c) => LutAnalysisData::new(None, Some(*c), None, None),
-            lut::LutLang::Var(v) => LutAnalysisData::new(None, None, Some(v.to_string()), None),
+            lut::LutLang::Program(p) => {
+                LutAnalysisData::new(Some(*p), None, None, None, HashSet::new())
+            }
+            lut::LutLang::Const(c) => {
+                LutAnalysisData::new(None, Some(*c), None, None, HashSet::new())
+            }
+            lut::LutLang::Var(v) => LutAnalysisData::new(
+                None,
+                None,
+                Some(v.to_string()),
+                None,
+                HashSet::from([v.to_string()]),
+            ),
             lut::LutLang::Arg([index]) => {
                 let index = egraph[*index]
                     .data
                     .get_program()
                     .expect("Expected Arg child to be an index");
-                LutAnalysisData::new(
-                    None,
-                    None,
-                    Some("arg".to_string() + &index.to_string()),
-                    None,
-                )
+                let name = "arg".to_string() + &index.to_string();
+                LutAnalysisData::new(None, None, Some(name.clone()), None, HashSet::from([name]))
             }
-            lut::LutLang::Bus(b) => LutAnalysisData::new(None, None, None, Some(b.len())),
-            _ => LutAnalysisData::default(),
+            lut::LutLang::Bus(b) => {
+                LutAnalysisData::new(None, None, None, Some(b.len()), HashSet::new())
+            }
+            _ => {
+                let mut merged_cut = HashSet::new();
+                // We don't need to skip the first child, because by default cut is empty
+                for c in enode.children() {
+                    for e in &egraph[*c].data.cut {
+                        merged_cut.insert(e.clone());
+                    }
+                }
+                LutAnalysisData::default().with_cut(merged_cut)
+            }
         }
     }
     #[cfg(feature = "egraph_fold")]
