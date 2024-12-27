@@ -1,7 +1,7 @@
 use clap::Parser;
 use lut_synth::{
     driver::{process_expression, SynthRequest},
-    rewrite::{all_rules_minus_dyn_decomp, register_retiming},
+    rewrite::{all_rules_minus_dyn_decomp, dyn_decompositions, register_retiming},
     verilog::{sv_parse_wrapper, SVModule},
 };
 use std::{
@@ -118,7 +118,7 @@ fn main() -> std::io::Result<()> {
 
     let mut rules = all_rules_minus_dyn_decomp();
     if args.decomp {
-        todo!("Dynamic decomposition is not implemented yet");
+        rules.append(&mut dyn_decompositions());
     }
 
     if !args.no_retime {

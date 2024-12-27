@@ -8,6 +8,8 @@
   This module also contains all the appliers for LUT rewrite rules. This code is the most delicate and requires the most testing.
 
 */
+use crate::lut::LutLang;
+
 use super::analysis::LutAnalysis;
 use super::lut;
 use super::lut::to_bitvec;
@@ -17,15 +19,22 @@ use std::collections::{HashMap, HashSet};
 
 /// Returns a list of structural mappings of logic functions to LUTs.
 /// For example, MUXes are mapped to 3-LUTs and AND gates to 2-LUTs.
-pub fn struct_lut_map<A>() -> Vec<Rewrite<lut::LutLang, A>>
+pub fn struct_lut_map<A>(bidirectional: bool) -> Vec<Rewrite<lut::LutLang, A>>
 where
     A: Analysis<lut::LutLang> + std::default::Default,
 {
     let mut rules: Vec<Rewrite<lut::LutLang, A>> = Vec::new();
     // Logic element conversions
-    rules.push(rewrite!("nor2-conversion"; "(NOR ?a ?b)" => "(LUT 1 ?a ?b)"));
-    rules.push(rewrite!("and2-conversion"; "(AND ?a ?b)" => "(LUT 8 ?a ?b)"));
-    rules.push(rewrite!("xor2-conversion"; "(XOR ?a ?b)" => "(LUT 6 ?a ?b)"));
+    if bidirectional {
+        rules.append(&mut rewrite!("nor2-conversion"; "(NOR ?a ?b)" <=> "(LUT 1 ?a ?b)"));
+        rules.append(&mut rewrite!("and2-conversion"; "(AND ?a ?b)" <=> "(LUT 8 ?a ?b)"));
+        rules.append(&mut rewrite!("xor2-conversion"; "(XOR ?a ?b)" <=> "(LUT 6 ?a ?b)"));
+    } else {
+        rules.push(rewrite!("nor2-conversion"; "(NOR ?a ?b)" => "(LUT 1 ?a ?b)"));
+        rules.push(rewrite!("and2-conversion"; "(AND ?a ?b)" => "(LUT 8 ?a ?b)"));
+        rules.push(rewrite!("xor2-conversion"; "(XOR ?a ?b)" => "(LUT 6 ?a ?b)"));
+    }
+
     rules.append(&mut rewrite!("inverter-conversion"; "(NOT ?a)" <=> "(LUT 1 ?a)"));
     // s? a : b
     rules.append(&mut rewrite!("mux2-1-conversion"; "(MUX ?s ?a ?b)" <=> "(LUT 202 ?s ?a ?b)"));
@@ -189,6 +198,35 @@ pub fn known_decompositions() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     rules
 }
 
+// This returns a function that implements Condition
+fn is_var(
+    var: &'static str,
+    var2: &'static str,
+    var3: &'static str,
+) -> impl Fn(&mut egg::EGraph<LutLang, LutAnalysis>, egg::Id, &Subst) -> bool {
+    let var = var.parse().unwrap();
+    let var2 = var2.parse().unwrap();
+    let var3 = var3.parse().unwrap();
+    move |egraph, _, subst| {
+        egraph[subst[var]].data.is_an_input()
+            && egraph[subst[var2]].data.is_an_input()
+            && egraph[subst[var3]].data.is_an_input()
+    }
+}
+
+/// Find dynamic decompositions of LUTs at runtime
+pub fn dyn_decompositions() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
+    let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
+    // rules.push(rewrite!("lut3-shannon-expand"; "(LUT ?p ?a ?b ?c)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
+    rules.push(rewrite!("lut4-shannon-expand"; "(LUT ?p ?a ?b ?c ?d)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()])}));
+    rules.push(rewrite!("lut5-shannon-expand"; "(LUT ?p ?a ?b ?c ?d ?e)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap()])}));
+    rules.push(rewrite!("lut6-shannon-expand"; "(LUT ?p ?a ?b ?c ?d ?e ?f)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap(), "?f".parse().unwrap()])}));
+    rules.push(
+        rewrite!("mux-expand"; "(LUT 202 ?s ?a ?b)" => "(LUT 14 (LUT 8 ?s ?a) (LUT 2 ?s ?b))" if is_var("?s", "?a", "?b")),
+    );
+    rules
+}
+
 /// Canonicalizes LUTs with redundant inputs
 pub fn redundant_inputs() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
@@ -207,7 +245,7 @@ pub fn all_rules_minus_dyn_decomp() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
 
     // Structural mappings of gates to LUTs
-    rules.append(&mut struct_lut_map());
+    rules.append(&mut struct_lut_map(false));
 
     // Evaluate constant programs
     rules.append(&mut constant_luts());
@@ -647,6 +685,246 @@ impl Applier<lut::LutLang, LutAnalysis> for FuseCut {
                     vec![new_lut]
                 } else {
                     vec![]
+                }
+            }
+        }
+    }
+}
+
+/// A module dedicated to dynamically finding separable decompositions of LUTs
+pub mod decomp {
+    use std::collections::HashSet;
+
+    use crate::{
+        analysis::LutAnalysis,
+        lut::{self, from_bitvec, to_bitvec, LutLang},
+    };
+    use bitvec::prelude::*;
+    use egg::{Analysis, Applier, Id, Var};
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    /// A data type for folding LUTs
+    enum AbstractNode {
+        /// A LUT node with [u64] configuration
+        Lut(u64, Vec<Id>),
+        /// A constant true/false node
+        Const(bool),
+        /// An indirect node
+        Node(Id),
+    }
+
+    impl AbstractNode {
+        /// Returns the number of children of the node
+        pub fn num_inputs(&self) -> usize {
+            match self {
+                AbstractNode::Lut(_, inputs) => inputs.len(),
+                AbstractNode::Node(_) => 1,
+                _ => 0,
+            }
+        }
+
+        /// Returns the children of the node
+        pub fn get_inputs(&self) -> Vec<Id> {
+            match self {
+                AbstractNode::Lut(_, inputs) => inputs.clone(),
+                AbstractNode::Node(id) => vec![*id],
+                _ => Vec::new(),
+            }
+        }
+
+        /// Put this [AbstractNode] into the `egraph`
+        pub fn construct<A>(self, egraph: &mut egg::EGraph<LutLang, A>) -> Id
+        where
+            A: Analysis<LutLang>,
+        {
+            match self {
+                AbstractNode::Lut(program, mut inputs) => {
+                    let pid = egraph.add(LutLang::Program(program));
+                    let mut c = vec![pid];
+                    c.append(&mut inputs);
+                    egraph.add(LutLang::Lut(c.into()))
+                }
+                AbstractNode::Const(b) => egraph.add(LutLang::Const(b)),
+                AbstractNode::Node(id) => id,
+            }
+        }
+
+        /// Given a program `p` and a set of inputs `inputs`, this function returns a simplification of the LUT
+        fn fold_lut(self) -> Self {
+            if let Self::Lut(program, inputs) = self {
+                // Evaluate constant inputs
+                let k = inputs.len();
+
+                if k <= 1 {
+                    match program & 3 {
+                        0 => return Self::Const(false),
+                        3 => return Self::Const(true),
+                        2 => return Self::Node(inputs[0]),
+                        1 => return Self::Lut(1, inputs),
+                        _ => unreachable!(),
+                    }
+                }
+
+                // Evaluate invariant inputs
+                for pos in 0..k {
+                    let pbv = to_bitvec(program, 1 << k).unwrap();
+                    let mut nbv: BitVec<usize, Lsb0> = BitVec::with_capacity(1 << (k - 1));
+                    for i in 0..(1 << (k - 1)) {
+                        let mut index_lo = to_bitvec(i, k - 1).unwrap();
+                        let mut index_hi = index_lo.clone();
+                        index_lo.insert(k - pos - 1, false);
+                        index_hi.insert(k - pos - 1, true);
+                        let index_lo = from_bitvec(&index_lo) as usize;
+                        let index_hi = from_bitvec(&index_hi) as usize;
+                        if pbv[index_lo] != pbv[index_hi] {
+                            break;
+                        }
+                        nbv.push(pbv[index_lo]);
+                    }
+                    if nbv.len() == 1 << (k - 1) {
+                        let np = from_bitvec(&nbv);
+                        let mut c = inputs;
+                        c.remove(pos);
+                        return Self::Lut(np, c);
+                    } else {
+                        continue;
+                    }
+                }
+                Self::Lut(program, inputs)
+            } else {
+                self
+            }
+        }
+
+        /// Returns true if the two nodes are cognates
+        pub fn are_cognates(&self, other: &Self) -> bool {
+            if self == other {
+                return true;
+            }
+
+            match (self, other) {
+                (Self::Lut(p1, inputs1), Self::Lut(p2, inputs2)) => {
+                    if inputs1.len() != inputs2.len() {
+                        return false;
+                    }
+                    let input_set: HashSet<Id> = HashSet::from_iter(inputs1.iter().cloned());
+                    if !inputs2.iter().all(|i| input_set.contains(i)) {
+                        return false;
+                    }
+                    p1 == p2 || *p1 == !p2
+                }
+                (Self::Const(_), Self::Const(_)) => true,
+                _ => false,
+            }
+        }
+    }
+
+    /// Given a program `p` and a set of inputs `inputs`, this function returns a simplification of the LUT
+    fn fold_lut_greedily(program: u64, inputs: Vec<Id>) -> AbstractNode {
+        let init = AbstractNode::Lut(program, inputs);
+        let mut current = init;
+        loop {
+            let next = current.clone().fold_lut();
+            if next == current {
+                break;
+            }
+            current = next;
+        }
+        current
+    }
+    /// A rewrite applier for expanding a LUT along its two cofactors in the most-significant operand.
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ShannonExpand {
+        /// The program
+        program: Var,
+        /// The redundant inputs must be at the last two positions
+        vars: Vec<Var>,
+    }
+
+    impl ShannonExpand {
+        /// Create an applier that combines duplicated inputs to a LUT.
+        /// The last two elements in `vars` must be the same.
+        pub fn new(program: Var, vars: Vec<Var>) -> Self {
+            Self { program, vars }
+        }
+
+        fn inputs_overlap(x: &[egg::Id], y: &[egg::Id]) -> bool {
+            for a in x {
+                for b in y {
+                    if a == b {
+                        return true;
+                    }
+                }
+            }
+            false
+        }
+    }
+
+    impl Applier<LutLang, LutAnalysis> for ShannonExpand {
+        fn apply_one(
+            &self,
+            egraph: &mut egg::EGraph<LutLang, LutAnalysis>,
+            eclass: egg::Id,
+            subst: &egg::Subst,
+            searcher_ast: Option<&egg::PatternAst<LutLang>>,
+            rule_name: egg::Symbol,
+        ) -> Vec<egg::Id> {
+            let operands = self
+                .vars
+                .iter()
+                .map(|v| subst[*v])
+                .collect::<Vec<egg::Id>>();
+            let program = egraph[subst[self.program]]
+                .data
+                .get_program()
+                .expect("Expected program");
+            let k = operands.len();
+            // Only going to decompose in three variables or more
+            if k <= 2 || program == 0 || program.count_ones() == (1 << k) {
+                return vec![];
+            }
+
+            // No self loops
+            if k == 3 && program == 202 {
+                return vec![];
+            }
+
+            // No repeats
+            if super::FuseCut::has_repeats(&operands) {
+                return vec![];
+            }
+
+            let (c1, c0) = lut::cofactors_in_msb(&program, k);
+            let c1 = fold_lut_greedily(c1, operands[1..].to_vec());
+            let c0 = fold_lut_greedily(c0, operands[1..].to_vec());
+
+            // We want to make sure that the cofactors are not cognates
+            if Self::inputs_overlap(&c1.get_inputs(), &c0.get_inputs())
+                && c1.num_inputs() == c0.num_inputs()
+            {
+                return vec![];
+            }
+
+            if searcher_ast.is_some() {
+                todo!("Implement pattern update for ShannonExpand");
+            }
+
+            match (c1.num_inputs(), c0.num_inputs()) {
+                // These cases need to be prefolded
+                // (0, _) => vec![],
+                // (_, 0) => vec![],
+                (a, b) => {
+                    let c1_id = c1.construct(egraph);
+                    let c0_id = c0.construct(egraph);
+                    let mux_p = egraph.add(lut::LutLang::Program(202));
+                    let new_node = lut::LutLang::Lut(vec![mux_p, operands[0], c1_id, c0_id].into());
+                    let new_lut = egraph.add(new_node);
+                    if egraph.union_trusted(eclass, new_lut, rule_name) {
+                        eprintln!("{} {}", a, b);
+                        vec![new_lut]
+                    } else {
+                        vec![]
+                    }
                 }
             }
         }

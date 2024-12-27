@@ -4,7 +4,7 @@ use lut_synth::{
     analysis::LutAnalysis,
     driver::{process_string_expression, simple_reader, SynthRequest},
     lut,
-    rewrite::{all_rules_minus_dyn_decomp, register_retiming},
+    rewrite::{all_rules_minus_dyn_decomp, dyn_decompositions, register_retiming},
 };
 use std::path::PathBuf;
 
@@ -66,6 +66,7 @@ struct Args {
     decomp: bool,
 
     /// Perform an exact extraction using ILP (much slower)
+    #[cfg(feature = "exactness")]
     #[arg(short = 'e', long, default_value_t = false)]
     exact: bool,
 
@@ -112,7 +113,7 @@ fn main() -> std::io::Result<()> {
 
     let mut rules = all_rules_minus_dyn_decomp();
     if args.decomp {
-        todo!("Dynamic decomposition is not implemented yet");
+        rules.append(&mut dyn_decompositions());
     }
 
     if !args.no_retime {
