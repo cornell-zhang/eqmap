@@ -411,6 +411,10 @@ where
 
     /// Do not run canonicalization on the input before exploration.
     pub fn without_canonicalization(self) -> Self {
+        if self.canonicalized && self.result.is_some() {
+            panic!("Cannot uncanonicalize after exploration");
+        }
+
         Self {
             no_canonicalize: true,
             result: None,
