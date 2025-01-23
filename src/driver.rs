@@ -36,6 +36,7 @@ pub struct SynthReport {
     extract_time: f64,
     build_time: f64,
     input_size: u64,
+    input_contains_gates: bool,
     num_inputs: u64,
     num_outputs: u64,
     num_classes: u64,
@@ -68,6 +69,7 @@ impl SynthReport {
         let num_iterations = runner.report().iterations as u64;
         let input_info = LutExprInfo::new(input);
         let input_size = input_info.get_cse().as_ref().len() as u64;
+        let input_contains_gates = input_info.contains_gates();
         let num_inputs = input_info.get_num_inputs() as u64;
         let num_outputs = input_info.get_num_outputs() as u64;
         let input_circuit_stats = input_info.get_circuit_stats();
@@ -91,12 +93,21 @@ impl SynthReport {
             build_time,
             saturated,
             input_size,
+            input_contains_gates,
             num_inputs,
             num_outputs,
             num_classes,
             num_nodes,
             num_iterations,
             circuit_stats,
+        }
+    }
+
+    /// Mark whether the input originally contained gates or not.
+    pub fn contains_gates(self, v: bool) -> Self {
+        Self {
+            input_contains_gates: self.input_contains_gates || v,
+            ..self
         }
     }
 }
@@ -258,6 +269,9 @@ where
     /// The maximum number of nodes to canonicalize
     max_canon_size: usize,
 
+    /// Whether the expression was non-trivially canonicalized before exploration.
+    canonicalized: bool,
+
     /// The running result
     result: Option<Runner<LutLang, A>>,
 }
@@ -277,6 +291,7 @@ impl<A: Analysis<LutLang>> std::default::Default for SynthRequest<A> {
             node_limit: 20_000,
             iter_limit: 16,
             max_canon_size: MAX_CANON_SIZE,
+            canonicalized: false,
             result: None,
         }
     }
@@ -297,6 +312,7 @@ impl<A: Analysis<LutLang> + std::clone::Clone> std::clone::Clone for SynthReques
             node_limit: self.node_limit,
             iter_limit: self.iter_limit,
             max_canon_size: self.max_canon_size,
+            canonicalized: self.canonicalized,
             result: None,
         }
     }
@@ -395,6 +411,10 @@ where
 
     /// Do not run canonicalization on the input before exploration.
     pub fn without_canonicalization(self) -> Self {
+        if self.canonicalized && self.result.is_some() {
+            panic!("Cannot uncanonicalize after exploration");
+        }
+
         Self {
             no_canonicalize: true,
             result: None,
@@ -474,8 +494,10 @@ where
                 self.expr.as_ref().len()
             );
         } else if !self.no_canonicalize {
-            self.expr = canonicalize_expr(self.expr.clone())
-        };
+            let info = LutExprInfo::new(&self.expr);
+            self.canonicalized = info.contains_gates();
+            self.expr = canonicalize_expr(self.expr.clone());
+        }
 
         if self.gen_proof {
             let info = LutExprInfo::new(&self.expr);
@@ -491,6 +513,15 @@ where
 
         // Clear the progress bar
         mp.clear().unwrap();
+
+        if self.gen_proof {
+            let runner = self.result.as_ref().unwrap();
+            let croot = runner.egraph.find(runner.roots[0]);
+            let data = &runner.egraph[croot].data;
+            eprintln!("INFO: Root analysis");
+            eprintln!("INFO: =============");
+            eprintln!("INFO:\t{:?}", data);
+        }
 
         Ok(())
     }
@@ -547,12 +578,10 @@ where
         }
 
         let rpt = if self.produce_rpt {
-            Some(SynthReport::new(
-                &self.expr,
-                extraction_time.as_secs_f64(),
-                runner,
-                &best,
-            ))
+            Some(
+                SynthReport::new(&self.expr, extraction_time.as_secs_f64(), runner, &best)
+                    .contains_gates(self.canonicalized),
+            )
         } else {
             None
         };
@@ -648,14 +677,15 @@ where
         .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
     if verbose && result.has_explanation() {
+        eprintln!("INFO: Flattened proof");
+        eprintln!("INFO: =============");
         let proof = result.get_proof();
         let mut linecount = 0;
         for line in proof.lines() {
-            eprintln!("INFO: {}", line);
+            eprintln!("INFO:\t{}", line);
             linecount += 1;
         }
         eprintln!("INFO: Approx. {} lines in proof tree", linecount);
-        eprintln!("INFO: ============================================================");
     } else if req.expr.as_ref().len() < 240 {
         let expr = expr.to_string();
         let len = expr.len().min(240);

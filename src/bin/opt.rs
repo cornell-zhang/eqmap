@@ -86,9 +86,9 @@ struct Args {
     #[arg(short = 't', long,
         default_value_t =
         if cfg!(debug_assertions) {
-            27
+            30
         } else {
-            9
+            10
         })
     ]
     timeout: u64,

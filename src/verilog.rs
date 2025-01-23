@@ -716,7 +716,7 @@ impl SVModule {
         let last_id: Id = (size - 1).into();
         match output_n {
             LutLang::Bus(l) => {
-                for (i, t) in l.iter().rev().enumerate() {
+                for (i, t) in l.iter().enumerate() {
                     let defname = format!("y{}", i);
                     mapping.insert(*t, outputs.get(i).unwrap_or(&defname).to_string());
                     module.outputs.push(SVSignal::new(1, mapping[t].clone()));

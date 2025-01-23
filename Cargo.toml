@@ -1,6 +1,6 @@
 [package]
 name = "lut-synth"
-version = "0.2.0"
+version = "0.3.1"
 edition = "2021"
 default-run = "fam"
 
@@ -23,3 +23,4 @@ default = []
 # default = ["egraph_fold"]
 egraph_fold = []
 exactness = [ "egg/lp" ]
+cut_analysis = []

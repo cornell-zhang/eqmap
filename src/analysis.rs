@@ -10,6 +10,8 @@
 
 use super::lut;
 use egg::{Analysis, DidMerge};
+#[cfg(feature = "cut_analysis")]
+use std::collections::HashSet;
 
 /// An e-class is typically a boolean signal.
 /// However, we store constants and input aliases for folding.
@@ -24,6 +26,9 @@ pub struct LutAnalysisData {
     input: Option<String>,
     /// The bus size of the node (if it is a bus)
     size: Option<usize>,
+    /// Dominating cut
+    #[cfg(feature = "cut_analysis")]
+    cut: HashSet<String>,
 }
 
 impl LutAnalysisData {
@@ -39,7 +44,33 @@ impl LutAnalysisData {
             const_val,
             input,
             size,
+            #[cfg(feature = "cut_analysis")]
+            cut: HashSet::new(),
         }
+    }
+
+    /// Add a cut to the class, removing the old one
+    #[cfg(feature = "cut_analysis")]
+    pub fn with_cut(self, cut: HashSet<String>) -> Self {
+        Self { cut, ..self }
+    }
+
+    /// Merge the child cuts into the class, removing the old one
+    #[cfg(feature = "cut_analysis")]
+    pub fn merge_cut(
+        self,
+        egraph: &egg::EGraph<lut::LutLang, LutAnalysis>,
+        node: &lut::LutLang,
+    ) -> Self {
+        let mut cut: HashSet<String> = HashSet::new();
+        use egg::Language;
+        for c in node.children() {
+            for e in &egraph[*c].data.cut {
+                cut.insert(e.clone());
+            }
+        }
+
+        Self { cut, ..self }
     }
 
     /// Extract the LUT program in this class. If it is an input or gate, throw an error
@@ -89,6 +120,14 @@ impl Analysis<lut::LutLang> for LutAnalysis {
         let mut merged = to.clone();
         merged.const_val = from.const_val.or(to.const_val);
         merged.input = from.input.clone().or(to.input.clone());
+
+        // Rewrite rules can create redundant logic, so we need to track the current cut.
+        // If we took the intersection, we would not have that info. So we take the union.
+        #[cfg(feature = "cut_analysis")]
+        from.cut.iter().for_each(|x| {
+            merged.cut.insert(x.clone());
+        });
+
         let merged_to = merged != *to;
         *to = merged;
         DidMerge(merged_to, *to != from)
@@ -97,21 +136,36 @@ impl Analysis<lut::LutLang> for LutAnalysis {
         match enode {
             lut::LutLang::Program(p) => LutAnalysisData::new(Some(*p), None, None, None),
             lut::LutLang::Const(c) => LutAnalysisData::new(None, Some(*c), None, None),
-            lut::LutLang::Var(v) => LutAnalysisData::new(None, None, Some(v.to_string()), None),
+            lut::LutLang::Var(v) => {
+                let d = LutAnalysisData::new(None, None, Some(v.to_string()), None);
+
+                #[cfg(feature = "cut_analysis")]
+                let d = d.with_cut(HashSet::from([v.to_string()]));
+
+                d
+            }
             lut::LutLang::Arg([index]) => {
                 let index = egraph[*index]
                     .data
                     .get_program()
                     .expect("Expected Arg child to be an index");
-                LutAnalysisData::new(
-                    None,
-                    None,
-                    Some("arg".to_string() + &index.to_string()),
-                    None,
-                )
+                let name = "arg".to_string() + &index.to_string();
+                let d = LutAnalysisData::new(None, None, Some(name.clone()), None);
+
+                #[cfg(feature = "cut_analysis")]
+                let d = d.with_cut(HashSet::from([name]));
+
+                d
             }
             lut::LutLang::Bus(b) => LutAnalysisData::new(None, None, None, Some(b.len())),
-            _ => LutAnalysisData::default(),
+            _ => {
+                let d = LutAnalysisData::default();
+
+                #[cfg(feature = "cut_analysis")]
+                let d = d.merge_cut(egraph, enode);
+
+                d
+            }
         }
     }
     #[cfg(feature = "egraph_fold")]
