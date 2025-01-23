@@ -8,10 +8,10 @@
 
 */
 
-use std::collections::HashSet;
-
 use super::lut;
-use egg::{Analysis, DidMerge, Language};
+use egg::{Analysis, DidMerge};
+#[cfg(feature = "cut_analysis")]
+use std::collections::HashSet;
 
 /// An e-class is typically a boolean signal.
 /// However, we store constants and input aliases for folding.
@@ -27,6 +27,7 @@ pub struct LutAnalysisData {
     /// The bus size of the node (if it is a bus)
     size: Option<usize>,
     /// Dominating cut
+    #[cfg(feature = "cut_analysis")]
     cut: HashSet<String>,
 }
 
@@ -37,19 +38,38 @@ impl LutAnalysisData {
         const_val: Option<bool>,
         input: Option<String>,
         size: Option<usize>,
-        cut: HashSet<String>,
     ) -> Self {
         Self {
             program,
             const_val,
             input,
             size,
-            cut,
+            #[cfg(feature = "cut_analysis")]
+            cut: HashSet::new(),
         }
     }
 
     /// Add a cut to the class, removing the old one
+    #[cfg(feature = "cut_analysis")]
     pub fn with_cut(self, cut: HashSet<String>) -> Self {
+        Self { cut, ..self }
+    }
+
+    /// Merge the child cuts into the class, removing the old one
+    #[cfg(feature = "cut_analysis")]
+    pub fn merge_cut(
+        self,
+        egraph: &egg::EGraph<lut::LutLang, LutAnalysis>,
+        node: &lut::LutLang,
+    ) -> Self {
+        let mut cut: HashSet<String> = HashSet::new();
+        use egg::Language;
+        for c in node.children() {
+            for e in &egraph[*c].data.cut {
+                cut.insert(e.clone());
+            }
+        }
+
         Self { cut, ..self }
     }
 
@@ -101,8 +121,9 @@ impl Analysis<lut::LutLang> for LutAnalysis {
         merged.const_val = from.const_val.or(to.const_val);
         merged.input = from.input.clone().or(to.input.clone());
 
-        // However, rewrite rules can match on redundant logic in an eclass.
+        // Rewrite rules can create redundant logic, so we need to track the current cut.
         // If we took the intersection, we would not have that info. So we take the union.
+        #[cfg(feature = "cut_analysis")]
         from.cut.iter().for_each(|x| {
             merged.cut.insert(x.clone());
         });
@@ -113,39 +134,37 @@ impl Analysis<lut::LutLang> for LutAnalysis {
     }
     fn make(egraph: &egg::EGraph<lut::LutLang, Self>, enode: &lut::LutLang) -> Self::Data {
         match enode {
-            lut::LutLang::Program(p) => {
-                LutAnalysisData::new(Some(*p), None, None, None, HashSet::new())
+            lut::LutLang::Program(p) => LutAnalysisData::new(Some(*p), None, None, None),
+            lut::LutLang::Const(c) => LutAnalysisData::new(None, Some(*c), None, None),
+            lut::LutLang::Var(v) => {
+                let d = LutAnalysisData::new(None, None, Some(v.to_string()), None);
+
+                #[cfg(feature = "cut_analysis")]
+                let d = d.with_cut(HashSet::from([v.to_string()]));
+
+                d
             }
-            lut::LutLang::Const(c) => {
-                LutAnalysisData::new(None, Some(*c), None, None, HashSet::new())
-            }
-            lut::LutLang::Var(v) => LutAnalysisData::new(
-                None,
-                None,
-                Some(v.to_string()),
-                None,
-                HashSet::from([v.to_string()]),
-            ),
             lut::LutLang::Arg([index]) => {
                 let index = egraph[*index]
                     .data
                     .get_program()
                     .expect("Expected Arg child to be an index");
                 let name = "arg".to_string() + &index.to_string();
-                LutAnalysisData::new(None, None, Some(name.clone()), None, HashSet::from([name]))
+                let d = LutAnalysisData::new(None, None, Some(name.clone()), None);
+
+                #[cfg(feature = "cut_analysis")]
+                let d = d.with_cut(HashSet::from([name]));
+
+                d
             }
-            lut::LutLang::Bus(b) => {
-                LutAnalysisData::new(None, None, None, Some(b.len()), HashSet::new())
-            }
+            lut::LutLang::Bus(b) => LutAnalysisData::new(None, None, None, Some(b.len())),
             _ => {
-                let mut merged_cut = HashSet::new();
-                // We don't need to skip the first child, because by default cut is empty
-                for c in enode.children() {
-                    for e in &egraph[*c].data.cut {
-                        merged_cut.insert(e.clone());
-                    }
-                }
-                LutAnalysisData::default().with_cut(merged_cut)
+                let d = LutAnalysisData::default();
+
+                #[cfg(feature = "cut_analysis")]
+                let d = d.merge_cut(egraph, enode);
+
+                d
             }
         }
     }

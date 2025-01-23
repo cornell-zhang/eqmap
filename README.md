@@ -49,6 +49,7 @@ The project has two conditionally compiled features:
 
 1. `egraph_fold` (should really not be used)
 2. `exactness` (used for exact synthesis, requires cbc)
+3. `cut_analysis` (tracks principle inputs used in cut of logic)
 
 To build with these features enabled:
 
