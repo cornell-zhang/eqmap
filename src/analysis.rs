@@ -55,6 +55,12 @@ impl LutAnalysisData {
         Self { cut, ..self }
     }
 
+    /// Get the cut
+    #[cfg(feature = "cut_analysis")]
+    pub fn get_cut(&self) -> &HashSet<String> {
+        &self.cut
+    }
+
     /// Merge the child cuts into the class, removing the old one
     #[cfg(feature = "cut_analysis")]
     pub fn merge_cut(

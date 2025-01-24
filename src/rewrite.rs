@@ -8,7 +8,6 @@
   This module also contains all the appliers for LUT rewrite rules. This code is the most delicate and requires the most testing.
 
 */
-use crate::lut::LutLang;
 
 use super::analysis::LutAnalysis;
 use super::lut;
@@ -198,32 +197,16 @@ pub fn known_decompositions() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     rules
 }
 
-// This returns a function that implements Condition
-fn is_var(
-    var: &'static str,
-    var2: &'static str,
-    var3: &'static str,
-) -> impl Fn(&mut egg::EGraph<LutLang, LutAnalysis>, egg::Id, &Subst) -> bool {
-    let var = var.parse().unwrap();
-    let var2 = var2.parse().unwrap();
-    let var3 = var3.parse().unwrap();
-    move |egraph, _, subst| {
-        egraph[subst[var]].data.is_an_input()
-            && egraph[subst[var2]].data.is_an_input()
-            && egraph[subst[var3]].data.is_an_input()
-    }
-}
-
 /// Find dynamic decompositions of LUTs at runtime
 pub fn dyn_decompositions() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
-    // rules.push(rewrite!("lut3-shannon-expand"; "(LUT ?p ?a ?b ?c)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
+    rules.push(
+        rewrite!("mux-expand"; "(LUT 202 ?s ?a ?b)" => "(LUT 14 (LUT 8 ?s ?a) (LUT 2 ?s ?b))"),
+    );
+    rules.push(rewrite!("lut3-shannon-expand"; "(LUT ?p ?a ?b ?c)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
     rules.push(rewrite!("lut4-shannon-expand"; "(LUT ?p ?a ?b ?c ?d)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()])}));
     rules.push(rewrite!("lut5-shannon-expand"; "(LUT ?p ?a ?b ?c ?d ?e)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap()])}));
     rules.push(rewrite!("lut6-shannon-expand"; "(LUT ?p ?a ?b ?c ?d ?e ?f)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap(), "?f".parse().unwrap()])}));
-    rules.push(
-        rewrite!("mux-expand"; "(LUT 202 ?s ?a ?b)" => "(LUT 14 (LUT 8 ?s ?a) (LUT 2 ?s ?b))" if is_var("?s", "?a", "?b")),
-    );
     rules
 }
 
@@ -269,8 +252,8 @@ pub fn all_rules_minus_dyn_decomp() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     rules.append(&mut permute_groups());
 
     // Condense cofactors and general cuts
-    rules.append(&mut condense_cofactors());
-    rules.append(&mut general_cut_fusion());
+    // rules.append(&mut condense_cofactors());
+    // rules.append(&mut general_cut_fusion());
 
     // Compile-time decompositions
     rules.append(&mut known_decompositions());
@@ -691,12 +674,12 @@ impl Applier<lut::LutLang, LutAnalysis> for FuseCut {
     }
 }
 
-/// A module dedicated to dynamically finding separable decompositions of LUTs
+/// A module dedicated to dynamically finding decompositions of LUTs
+#[cfg(feature = "dyn_decomp")]
 pub mod decomp {
-    use std::collections::HashSet;
 
     use crate::{
-        analysis::LutAnalysis,
+        analysis::{self, LutAnalysis},
         lut::{self, from_bitvec, to_bitvec, LutLang},
     };
     use bitvec::prelude::*;
@@ -795,28 +778,6 @@ pub mod decomp {
                 self
             }
         }
-
-        /// Returns true if the two nodes are cognates
-        pub fn are_cognates(&self, other: &Self) -> bool {
-            if self == other {
-                return true;
-            }
-
-            match (self, other) {
-                (Self::Lut(p1, inputs1), Self::Lut(p2, inputs2)) => {
-                    if inputs1.len() != inputs2.len() {
-                        return false;
-                    }
-                    let input_set: HashSet<Id> = HashSet::from_iter(inputs1.iter().cloned());
-                    if !inputs2.iter().all(|i| input_set.contains(i)) {
-                        return false;
-                    }
-                    p1 == p2 || *p1 == !p2
-                }
-                (Self::Const(_), Self::Const(_)) => true,
-                _ => false,
-            }
-        }
     }
 
     /// Given a program `p` and a set of inputs `inputs`, this function returns a simplification of the LUT
@@ -848,10 +809,18 @@ pub mod decomp {
             Self { program, vars }
         }
 
-        fn inputs_overlap(x: &[egg::Id], y: &[egg::Id]) -> bool {
-            for a in x {
-                for b in y {
+        fn cuts_overlap(
+            egraph: &mut egg::EGraph<lut::LutLang, analysis::LutAnalysis>,
+            children: &[egg::Id],
+        ) -> bool {
+            for (i, a) in children.iter().enumerate() {
+                for b in children.iter().skip(i + 1) {
                     if a == b {
+                        return true;
+                    }
+                    let ac = egraph[*a].data.get_cut();
+                    let bc = egraph[*b].data.get_cut();
+                    if ac.intersection(bc).count() > 0 {
                         return true;
                     }
                 }
@@ -883,27 +852,22 @@ pub mod decomp {
             if k <= 2 || program == 0 || program.count_ones() == (1 << k) {
                 return vec![];
             }
-
-            // No self loops
-            if k == 3 && program == 202 {
+            if !operands[1..].windows(2).all(|w| w[0] <= w[1]) {
+                return vec![];
+            }
+            // No overlapping cuts of children
+            if operands.contains(&eclass) {
+                return vec![];
+            }
+            if Self::cuts_overlap(egraph, &operands) {
                 return vec![];
             }
 
-            // No repeats
-            if super::FuseCut::has_repeats(&operands) {
-                return vec![];
-            }
+            eprintln!("ShannonExpand: {:?}", operands);
 
             let (c1, c0) = lut::cofactors_in_msb(&program, k);
             let c1 = fold_lut_greedily(c1, operands[1..].to_vec());
             let c0 = fold_lut_greedily(c0, operands[1..].to_vec());
-
-            // We want to make sure that the cofactors are not cognates
-            if Self::inputs_overlap(&c1.get_inputs(), &c0.get_inputs())
-                && c1.num_inputs() == c0.num_inputs()
-            {
-                return vec![];
-            }
 
             if searcher_ast.is_some() {
                 todo!("Implement pattern update for ShannonExpand");
@@ -920,9 +884,14 @@ pub mod decomp {
                     let new_node = lut::LutLang::Lut(vec![mux_p, operands[0], c1_id, c0_id].into());
                     let new_lut = egraph.add(new_node);
                     if egraph.union_trusted(eclass, new_lut, rule_name) {
-                        eprintln!("{} {}", a, b);
+                        eprintln!(
+                            "{:?} {:?}",
+                            egraph[c1_id].data.get_cut(),
+                            egraph[c0_id].data.get_cut()
+                        );
                         vec![new_lut]
                     } else {
+                        eprintln!("nothing to new union");
                         vec![]
                     }
                 }
