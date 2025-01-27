@@ -5,7 +5,7 @@
 */
 use std::time::{Duration, Instant};
 
-use super::cost::{DepthCostFn, KLUTCostFn, NegativeCostFn};
+use super::cost::{DepthCostFn, GateCostFn, KLUTCostFn, NegativeCostFn};
 use super::lut::{canonicalize_expr, verify_expr, CircuitStats, LutExprInfo, LutLang};
 use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
@@ -221,6 +221,7 @@ enum ExtractStrat {
     MaxDepth,
     MinDepth,
     LUTCount(usize),
+    Disassemble,
     #[cfg(feature = "exactness")]
     Exact,
 }
@@ -351,6 +352,14 @@ where
     pub fn with_max_depth(self) -> Self {
         Self {
             extract_strat: ExtractStrat::MaxDepth,
+            ..self
+        }
+    }
+
+    /// Extract only gates.
+    pub fn with_disassembler(self) -> Self {
+        Self {
+            extract_strat: ExtractStrat::Disassemble,
             ..self
         }
     }
@@ -617,6 +626,7 @@ where
                 self.greedy_extract_with(NegativeCostFn::new(DepthCostFn))
             }
             ExtractStrat::LUTCount(k) => self.greedy_extract_with(KLUTCostFn::new(k)),
+            ExtractStrat::Disassemble => self.greedy_extract_with(GateCostFn),
             #[cfg(feature = "exactness")]
             ExtractStrat::Exact => self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP ON");

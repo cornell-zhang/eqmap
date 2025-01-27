@@ -3,7 +3,7 @@ use clap::Parser;
 use lut_synth::rewrite::dyn_decompositions;
 use lut_synth::{
     driver::{process_expression, SynthRequest},
-    rewrite::{all_rules_minus_dyn_decomp, register_retiming},
+    rewrite::{all_static_rules, register_retiming},
     verilog::{sv_parse_wrapper, SVModule},
 };
 use std::{
@@ -45,6 +45,11 @@ struct Args {
     #[cfg(feature = "dyn_decomp")]
     #[arg(short = 'd', long, default_value_t = false)]
     decomp: bool,
+
+    /// Disassemble the LUTs into their constituent gates
+    #[cfg(feature = "dyn_decomp")]
+    #[arg(long, default_value_t = false)]
+    disassemble: bool,
 
     /// Perform an exact extraction using ILP (much slower)
     #[cfg(feature = "exactness")]
@@ -119,10 +124,15 @@ fn main() -> std::io::Result<()> {
         f.get_outputs().len()
     );
 
-    let mut rules = all_rules_minus_dyn_decomp();
+    let mut rules = all_static_rules(false);
 
     #[cfg(feature = "dyn_decomp")]
-    if args.decomp {
+    if args.disassemble {
+        rules = all_static_rules(true);
+    }
+
+    #[cfg(feature = "dyn_decomp")]
+    if args.decomp || args.disassemble {
         rules.append(&mut dyn_decompositions());
     }
 
@@ -173,6 +183,13 @@ fn main() -> std::io::Result<()> {
         req.with_min_depth()
     } else {
         req.with_k(args.k)
+    };
+
+    #[cfg(feature = "dyn_decomp")]
+    let req = if args.disassemble {
+        req.with_disassembler()
+    } else {
+        req
     };
 
     #[cfg(feature = "exactness")]

@@ -150,3 +150,36 @@ where
         a * b
     }
 }
+
+/// A cost function that attempts to extract only gates
+pub struct GateCostFn;
+
+impl CostFunction<LutLang> for GateCostFn {
+    type Cost = u64;
+    fn cost<C>(&mut self, enode: &LutLang, mut costs: C) -> Self::Cost
+    where
+        C: FnMut(Id) -> Self::Cost,
+    {
+        let op_cost = match enode {
+            LutLang::Not(_) => 2,
+            LutLang::And(_) | LutLang::Nor(_) | LutLang::Xor(_) => 4,
+            LutLang::Program(_) => 0,
+            LutLang::Bus(_) => 0,
+            LutLang::Reg(_) => 1,
+            LutLang::Cycle(_) => 0,
+            LutLang::Arg(_) => 0,
+            LutLang::Const(_) => 0,
+            LutLang::Var(_) => 1,
+            LutLang::DC => 0,
+            LutLang::Lut(l) => 10 * l.len() as u64 * l.len() as u64,
+            _ => u64::MAX,
+        };
+        enode.fold(op_cost, |sum, id| {
+            if costs(id) > u64::MAX - sum {
+                u64::MAX
+            } else {
+                sum + costs(id)
+            }
+        })
+    }
+}

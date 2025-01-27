@@ -30,6 +30,8 @@ where
         rules.push(
             rewrite!("mux-expand"; "(LUT 202 ?s ?a ?b)" => "(LUT 14 (LUT 8 ?s ?a) (LUT 2 ?s ?b))"),
         );
+        rules.push(rewrite!("or2-conversion"; "(LUT 14 ?a ?b)" => "(NOT (NOR ?a ?b))"));
+        rules.push(rewrite!("and-one-inv-conversion"; "(LUT 2 ?a ?b)" => "(AND (NOT ?a) ?b)"))
     } else {
         rules.push(rewrite!("nor2-conversion"; "(NOR ?a ?b)" => "(LUT 1 ?a ?b)"));
         rules.push(rewrite!("and2-conversion"; "(AND ?a ?b)" => "(LUT 8 ?a ?b)"));
@@ -223,12 +225,13 @@ pub fn redundant_inputs() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     rules
 }
 
-/// Returns a list of all rules except for run-time calculated decompositions
-pub fn all_rules_minus_dyn_decomp() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
+/// Returns a list of all static LUT rewrite rules
+/// `bidirectional` determines if gates are inserted for 2-LUTs
+pub fn all_static_rules(bidirectional: bool) -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
 
     // Structural mappings of gates to LUTs
-    rules.append(&mut struct_lut_map(false));
+    rules.append(&mut struct_lut_map(bidirectional));
 
     // Evaluate constant programs
     rules.append(&mut constant_luts());
@@ -260,6 +263,11 @@ pub fn all_rules_minus_dyn_decomp() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
 
     // LUT fuse non-mutually exclusive inputs (hard, opposite of DSD)
     rules
+}
+
+/// Returns a list of all lutpacking rules except for run-time calculated decompositions
+pub fn lutpacking_rules() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
+    all_static_rules(false)
 }
 
 fn zip_vars_with_ids(vars: &[Var], subst: &Subst) -> HashMap<egg::Id, Var> {
@@ -891,7 +899,7 @@ pub mod decomp {
     #[test]
     fn test_decomp() {
         let expr: egg::RecExpr<lut::LutLang> = "(LUT 61642 s1 s0 c d)".parse().unwrap();
-        let mut rules = super::all_rules_minus_dyn_decomp();
+        let mut rules = super::lutpacking_rules();
         rules.append(&mut super::dyn_decompositions());
 
         use crate::driver::SynthRequest;

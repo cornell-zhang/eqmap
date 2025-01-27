@@ -6,13 +6,13 @@ use lut_synth::{
     analysis::LutAnalysis,
     driver::{process_string_expression, simple_reader, SynthRequest},
     lut,
-    rewrite::{all_rules_minus_dyn_decomp, register_retiming},
+    rewrite::{all_static_rules, register_retiming},
 };
 use std::path::PathBuf;
 
 fn get_main_runner(s: &str) -> Result<SynthRequest<LutAnalysis>, RecExprParseError<FromOpError>> {
     let expr: RecExpr<lut::LutLang> = s.parse()?;
-    let mut rules = all_rules_minus_dyn_decomp();
+    let mut rules = all_static_rules(false);
     rules.append(&mut register_retiming());
 
     Ok(SynthRequest::default()
@@ -68,6 +68,11 @@ struct Args {
     #[arg(short = 'd', long, default_value_t = false)]
     decomp: bool,
 
+    /// Disassemble the LUTs into their constituent gates
+    #[cfg(feature = "dyn_decomp")]
+    #[arg(long, default_value_t = false)]
+    disassemble: bool,
+
     /// Perform an exact extraction using ILP (much slower)
     #[cfg(feature = "exactness")]
     #[arg(short = 'e', long, default_value_t = false)]
@@ -114,10 +119,15 @@ fn main() -> std::io::Result<()> {
 
     let buf = simple_reader(args.command, args.input)?;
 
-    let mut rules = all_rules_minus_dyn_decomp();
+    let mut rules = all_static_rules(false);
 
     #[cfg(feature = "dyn_decomp")]
-    if args.decomp {
+    if args.disassemble {
+        rules = all_static_rules(true);
+    }
+
+    #[cfg(feature = "dyn_decomp")]
+    if args.decomp || args.disassemble {
         rules.append(&mut dyn_decompositions());
     }
 
@@ -154,6 +164,13 @@ fn main() -> std::io::Result<()> {
     };
 
     let req = if args.verbose { req.with_proof() } else { req };
+
+    #[cfg(feature = "dyn_decomp")]
+    let req = if args.disassemble {
+        req.with_disassembler()
+    } else {
+        req
+    };
 
     #[cfg(feature = "exactness")]
     let req = if args.exact {
