@@ -1,7 +1,9 @@
 use clap::Parser;
+#[cfg(feature = "dyn_decomp")]
+use lut_synth::rewrite::dyn_decompositions;
 use lut_synth::{
     driver::{process_expression, SynthRequest},
-    rewrite::{all_rules_minus_dyn_decomp, dyn_decompositions, register_retiming},
+    rewrite::{all_rules_minus_dyn_decomp, register_retiming},
     verilog::{sv_parse_wrapper, SVModule},
 };
 use std::{
@@ -130,6 +132,7 @@ fn main() -> std::io::Result<()> {
 
     if args.verbose {
         eprintln!("INFO: Running with {} rewrite rules", rules.len());
+        #[cfg(feature = "dyn_decomp")]
         eprintln!(
             "INFO: Dynamic Decomposition {}",
             if args.decomp { "ON" } else { "OFF" }

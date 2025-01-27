@@ -1,10 +1,12 @@
 use clap::Parser;
 use egg::*;
+#[cfg(feature = "dyn_decomp")]
+use lut_synth::rewrite::dyn_decompositions;
 use lut_synth::{
     analysis::LutAnalysis,
     driver::{process_string_expression, simple_reader, SynthRequest},
     lut,
-    rewrite::{all_rules_minus_dyn_decomp, dyn_decompositions, register_retiming},
+    rewrite::{all_rules_minus_dyn_decomp, register_retiming},
 };
 use std::path::PathBuf;
 
@@ -125,6 +127,7 @@ fn main() -> std::io::Result<()> {
 
     if args.verbose {
         eprintln!("INFO: Running with {} rewrite rules", rules.len());
+        #[cfg(feature = "dyn_decomp")]
         eprintln!(
             "INFO: Dynamic Decomposition {}",
             if args.decomp { "ON" } else { "OFF" }
