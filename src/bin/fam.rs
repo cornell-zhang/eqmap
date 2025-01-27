@@ -40,6 +40,7 @@ struct Args {
     command: Option<String>,
 
     /// Find new decompositions at runtime
+    #[cfg(feature = "dyn_decomp")]
     #[arg(short = 'd', long, default_value_t = false)]
     decomp: bool,
 
@@ -117,6 +118,8 @@ fn main() -> std::io::Result<()> {
     );
 
     let mut rules = all_rules_minus_dyn_decomp();
+
+    #[cfg(feature = "dyn_decomp")]
     if args.decomp {
         rules.append(&mut dyn_decompositions());
     }

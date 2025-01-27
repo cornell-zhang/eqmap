@@ -8,7 +8,6 @@
   This module also contains all the appliers for LUT rewrite rules. This code is the most delicate and requires the most testing.
 
 */
-
 use super::analysis::LutAnalysis;
 use super::lut;
 use super::lut::to_bitvec;
@@ -201,6 +200,7 @@ pub fn known_decompositions() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
 }
 
 /// Find dynamic decompositions of LUTs at runtime
+#[cfg(feature = "dyn_decomp")]
 pub fn dyn_decompositions() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
     rules.push(rewrite!("lut3-shannon-expand"; "(LUT ?p ?a ?b ?c)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
