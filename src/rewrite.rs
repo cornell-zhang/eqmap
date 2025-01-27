@@ -28,6 +28,9 @@ where
         rules.append(&mut rewrite!("nor2-conversion"; "(NOR ?a ?b)" <=> "(LUT 1 ?a ?b)"));
         rules.append(&mut rewrite!("and2-conversion"; "(AND ?a ?b)" <=> "(LUT 8 ?a ?b)"));
         rules.append(&mut rewrite!("xor2-conversion"; "(XOR ?a ?b)" <=> "(LUT 6 ?a ?b)"));
+        rules.push(
+            rewrite!("mux-expand"; "(LUT 202 ?s ?a ?b)" => "(LUT 14 (LUT 8 ?s ?a) (LUT 2 ?s ?b))"),
+        );
     } else {
         rules.push(rewrite!("nor2-conversion"; "(NOR ?a ?b)" => "(LUT 1 ?a ?b)"));
         rules.push(rewrite!("and2-conversion"; "(AND ?a ?b)" => "(LUT 8 ?a ?b)"));
@@ -200,9 +203,6 @@ pub fn known_decompositions() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
 /// Find dynamic decompositions of LUTs at runtime
 pub fn dyn_decompositions() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
-    rules.push(
-        rewrite!("mux-expand"; "(LUT 202 ?s ?a ?b)" => "(LUT 14 (LUT 8 ?s ?a) (LUT 2 ?s ?b))"),
-    );
     rules.push(rewrite!("lut3-shannon-expand"; "(LUT ?p ?a ?b ?c)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
     rules.push(rewrite!("lut4-shannon-expand"; "(LUT ?p ?a ?b ?c ?d)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()])}));
     rules.push(rewrite!("lut5-shannon-expand"; "(LUT ?p ?a ?b ?c ?d ?e)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap()])}));
@@ -726,7 +726,6 @@ pub mod decomp {
         /// Given a program `p` and a set of inputs `inputs`, this function returns a simplification of the LUT
         fn fold_lut(self) -> Self {
             if let Self::Lut(program, inputs) = self {
-                // Evaluate constant inputs
                 let k = inputs.len();
 
                 if k <= 1 {
@@ -804,7 +803,6 @@ pub mod decomp {
             egraph: &mut egg::EGraph<lut::LutLang, analysis::LutAnalysis>,
             children: &[egg::Id],
         ) -> bool {
-            let mut sum: usize = 0;
             for (i, a) in children.iter().enumerate() {
                 let ac = egraph[*a].data.get_cut();
                 // Don't want inverters to be elaborated on
@@ -820,9 +818,8 @@ pub mod decomp {
                         return true;
                     }
                 }
-                sum += ac.len();
             }
-            sum <= 2
+            false
         }
     }
 
