@@ -887,4 +887,25 @@ pub mod decomp {
             }
         }
     }
+
+    #[test]
+    fn test_decomp() {
+        let expr: egg::RecExpr<lut::LutLang> = "(LUT 61642 s1 s0 c d)".parse().unwrap();
+        let mut rules = super::all_rules_minus_dyn_decomp();
+        rules.append(&mut super::dyn_decompositions());
+
+        use crate::driver::SynthRequest;
+        let mut req = SynthRequest::default()
+            .with_expr(expr)
+            .with_rules(rules)
+            .with_k(3)
+            .with_asserts()
+            .without_progress_bar()
+            .with_timeout(20)
+            .with_node_limit(20_000)
+            .with_iter_limit(30);
+
+        let ans = req.simplify_expr().unwrap().get_expr().to_string();
+        assert_eq!(ans, "(LUT 202 s1 s0 (LUT 202 s0 c d))");
+    }
 }
