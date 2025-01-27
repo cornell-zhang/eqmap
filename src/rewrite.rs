@@ -114,10 +114,10 @@ pub fn condense_cofactors() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     rules.push(
         rewrite!("mux-make-disjoint-and-not"; "(LUT 202 ?s false ?a)" => "(AND (NOT ?s) ?a)"),
     );
-    // rules.push(rewrite!("mux-make-disjoint-xor"; "(LUT 202 ?s (NOT ?a) ?a)" => "(XOR ?s ?a)"));
-    // rules.push(
-    //     rewrite!("mux-make-disjoint-xnor"; "(LUT 202 ?s ?a (NOT ?a))" => "(NOT (XOR ?s ?a))"),
-    // );
+    rules.push(rewrite!("mux-make-disjoint-xor"; "(LUT 202 ?s (NOT ?a) ?a)" => "(XOR ?s ?a)"));
+    rules.push(
+        rewrite!("mux-make-disjoint-xnor"; "(LUT 202 ?s ?a (NOT ?a))" => "(NOT (XOR ?s ?a))"),
+    );
     rules.push(rewrite!("lut2-shannon-condense"; "(LUT 202 ?s (LUT ?p ?a ?b) (LUT ?q ?a ?b))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap()])}));
     rules.push(rewrite!("lut3-shannon-condense"; "(LUT 202 ?s (LUT ?p ?a ?b ?c) (LUT ?q ?a ?b ?c))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
     rules.push(rewrite!("lut4-shannon-condense"; "(LUT 202 ?s (LUT ?p ?a ?b ?c ?d) (LUT ?q ?a ?b ?c ?d))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()])}));
@@ -200,9 +200,9 @@ pub fn known_decompositions() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
 /// Find dynamic decompositions of LUTs at runtime
 pub fn dyn_decompositions() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
-    // rules.push(
-    //     rewrite!("mux-expand"; "(LUT 202 ?s ?a ?b)" => "(LUT 14 (LUT 8 ?s ?a) (LUT 2 ?s ?b))"),
-    // );
+    rules.push(
+        rewrite!("mux-expand"; "(LUT 202 ?s ?a ?b)" => "(LUT 14 (LUT 8 ?s ?a) (LUT 2 ?s ?b))"),
+    );
     rules.push(rewrite!("lut3-shannon-expand"; "(LUT ?p ?a ?b ?c)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
     rules.push(rewrite!("lut4-shannon-expand"; "(LUT ?p ?a ?b ?c ?d)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()])}));
     rules.push(rewrite!("lut5-shannon-expand"; "(LUT ?p ?a ?b ?c ?d ?e)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap()])}));
@@ -588,45 +588,6 @@ impl FuseCut {
         }
         pos_map
     }
-
-    /// Returns true if there is an overlap in the cuts of root operands and child LUT operands
-    fn cuts_overlap(
-        egraph: &mut egg::EGraph<lut::LutLang, LutAnalysis>,
-        roots: &[egg::Id],
-        children: &[egg::Id],
-    ) -> bool {
-        // for r in roots {
-        //     for c in children {
-        //         if r == c {
-        //             continue;
-        //         }
-        //         let rc = egraph[*r].data.get_cut();
-        //         let cc = egraph[*c].data.get_cut();
-        //         if rc.intersection(cc).count() > 0 {
-        //             return true;
-        //         }
-        //     }
-        // }
-        // for r in children {
-        //     for c in children {
-        //         let rc = egraph[*r].data.get_cut();
-        //         let cc = egraph[*c].data.get_cut();
-        //         if rc.intersection(cc).count() > 0 {
-        //             return true;
-        //         }
-        //     }
-        // }
-        // for r in roots {
-        //     for c in roots {
-        //         let rc = egraph[*r].data.get_cut();
-        //         let cc = egraph[*c].data.get_cut();
-        //         if rc.intersection(cc).count() > 0 {
-        //             return true;
-        //         }
-        //     }
-        // }
-        false
-    }
 }
 
 impl Applier<lut::LutLang, LutAnalysis> for FuseCut {
@@ -645,9 +606,6 @@ impl Applier<lut::LutLang, LutAnalysis> for FuseCut {
             .collect::<Vec<egg::Id>>();
         let rhs_operands = self.rhs.iter().map(|v| subst[*v]).collect::<Vec<egg::Id>>();
         if FuseCut::has_repeats(&root_operands) || FuseCut::has_repeats(&rhs_operands) {
-            return vec![];
-        }
-        if FuseCut::cuts_overlap(egraph, &root_operands, &rhs_operands) {
             return vec![];
         }
         let root_program = egraph[subst[self.root_p]]
@@ -745,15 +703,6 @@ pub mod decomp {
                 AbstractNode::Lut(_, inputs) => inputs.len(),
                 AbstractNode::Node(_) => 1,
                 _ => 0,
-            }
-        }
-
-        /// Returns the children of the node
-        pub fn get_inputs(&self) -> Vec<Id> {
-            match self {
-                AbstractNode::Lut(_, inputs) => inputs.clone(),
-                AbstractNode::Node(id) => vec![*id],
-                _ => Vec::new(),
             }
         }
 
@@ -858,6 +807,7 @@ pub mod decomp {
             let mut sum: usize = 0;
             for (i, a) in children.iter().enumerate() {
                 let ac = egraph[*a].data.get_cut();
+                // Don't want inverters to be elaborated on
                 if ac.len() == 1 && !egraph[*a].data.is_an_input() {
                     return true;
                 }
@@ -899,6 +849,10 @@ pub mod decomp {
             if k <= 2 || program == 0 || program.count_ones() == (1 << k) {
                 return vec![];
             }
+            if k == 3 && program == 202 {
+                return vec![];
+            }
+            // Can only decompose in one variable order or else the e-graph will explode
             if !operands.windows(2).all(|w| w[0] <= w[1]) {
                 return vec![];
             }
@@ -914,29 +868,25 @@ pub mod decomp {
             let c1 = fold_lut_greedily(c1, operands[1..].to_vec());
             let c0 = fold_lut_greedily(c0, operands[1..].to_vec());
 
+            // Don't want to decompose when one of the cofactors is constant
+            // TODO: Pre-fold this into a different form
+            if c0.num_inputs() == 0 || c1.num_inputs() == 0 {
+                return vec![];
+            }
+
             if searcher_ast.is_some() {
                 todo!("Implement pattern update for ShannonExpand");
             }
 
-            match (c1.num_inputs(), c0.num_inputs()) {
-                // These cases need to be prefolded
-                (0, _) => vec![],
-                (_, 0) => vec![],
-                (a, b) => {
-                    let c1_id = c1.construct(egraph);
-                    let c0_id = c0.construct(egraph);
-                    let mux_p = egraph.add(lut::LutLang::Program(202));
-                    let new_node = lut::LutLang::Lut(vec![mux_p, operands[0], c1_id, c0_id].into());
-                    let new_lut = egraph.add(new_node);
-                    if egraph.union_trusted(eclass, new_lut, rule_name) {
-                        eprintln!("ShannonExpand: {:?} -> {:?}", eclass, new_lut);
-                        eprintln!("====");
-                        eprintln!("====");
-                        vec![new_lut]
-                    } else {
-                        vec![]
-                    }
-                }
+            let c1_id = c1.construct(egraph);
+            let c0_id = c0.construct(egraph);
+            let mux_p = egraph.add(lut::LutLang::Program(202));
+            let new_node = lut::LutLang::Lut(vec![mux_p, operands[0], c1_id, c0_id].into());
+            let new_lut = egraph.add(new_node);
+            if egraph.union_trusted(eclass, new_lut, rule_name) {
+                vec![new_lut]
+            } else {
+                vec![]
             }
         }
     }
