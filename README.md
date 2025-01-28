@@ -64,7 +64,7 @@ Options:
   -d, --decomp                   Find new decompositions at runtime
       --disassemble              Disassemble the LUTs into their constituent gates
   -r, --no-retime                Do not use register retiming
-  -v, --verbose                  Print explanations (this generates a proof and runs much slower)
+  -v, --verbose                  This generates a proof and runs much slower
       --min-depth                Extract based on min circuit depth instead of using 'k'.
   -k, --k <K>                    Max fan in size for extracted LUTs [default: 6]
   -t, --timeout <TIMEOUT>        Timeout in seconds for each expression [default: 10]
