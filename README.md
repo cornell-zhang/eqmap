@@ -56,7 +56,7 @@ Arguments:
   [OUTPUT]  Path to output verilog file. If not provided, emits to stdout
 
 Options:
-      --report <REPORT>          Path to output report JSON file. If not provided, does not emit a report
+      --report <REPORT>          Path to output report JSON file. 
   -a, --assert-sat               Return an error if the graph does not reach saturation
   -f, --no-verify                Do not verify functionality of the output
   -c, --no-canonicalize          Do not canonicalize the input into LUTs
@@ -65,7 +65,7 @@ Options:
       --disassemble              Disassemble the LUTs into their constituent gates
   -r, --no-retime                Do not use register retiming
   -v, --verbose                  Print explanations (this generates a proof and runs much slower)
-      --min-depth                Extract based on min circuit depth instead of using 'k'. Can cause inf loop
+      --min-depth                Extract based on min circuit depth instead of using 'k'.
   -k, --k <K>                    Max fan in size for extracted LUTs [default: 6]
   -t, --timeout <TIMEOUT>        Timeout in seconds for each expression [default: 10]
   -s, --node-limit <NODE_LIMIT>  Maximum number of nodes in graph [default: 48000]
