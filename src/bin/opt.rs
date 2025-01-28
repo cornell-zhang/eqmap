@@ -70,8 +70,8 @@ struct Args {
 
     /// Disassemble the LUTs into their constituent gates
     #[cfg(feature = "dyn_decomp")]
-    #[arg(long, default_value_t = false)]
-    disassemble: bool,
+    #[arg(long)]
+    disassemble: Option<String>,
 
     /// Perform an exact extraction using ILP (much slower)
     #[cfg(feature = "exactness")]
@@ -122,12 +122,12 @@ fn main() -> std::io::Result<()> {
     let mut rules = all_static_rules(false);
 
     #[cfg(feature = "dyn_decomp")]
-    if args.disassemble {
+    if args.disassemble.is_some() {
         rules = all_static_rules(true);
     }
 
     #[cfg(feature = "dyn_decomp")]
-    if args.decomp || args.disassemble {
+    if args.decomp || args.disassemble.is_some() {
         rules.append(&mut dyn_decompositions());
     }
 
@@ -166,10 +166,11 @@ fn main() -> std::io::Result<()> {
     let req = if args.verbose { req.with_proof() } else { req };
 
     #[cfg(feature = "dyn_decomp")]
-    let req = if args.disassemble {
-        req.with_disassembler()
-    } else {
-        req
+    let req = match args.disassemble {
+        Some(list) => req
+            .with_disassembly_into(&list)
+            .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?,
+        None => req,
     };
 
     #[cfg(feature = "exactness")]

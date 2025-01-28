@@ -3,6 +3,8 @@
   The code module contains a super simple cost function that extracts LUTs with at most `k` fan-in.
 
 */
+use std::collections::HashSet;
+
 use super::lut::LutLang;
 use egg::{CostFunction, Id, Language};
 
@@ -152,7 +154,16 @@ where
 }
 
 /// A cost function that attempts to extract only gates
-pub struct GateCostFn;
+pub struct GateCostFn {
+    set: HashSet<String>,
+}
+
+impl GateCostFn {
+    /// Returns a new cost function that extracts only the gates in `set`
+    pub fn new(set: HashSet<String>) -> Self {
+        Self { set }
+    }
+}
 
 impl CostFunction<LutLang> for GateCostFn {
     type Cost = u64;
@@ -161,8 +172,20 @@ impl CostFunction<LutLang> for GateCostFn {
         C: FnMut(Id) -> Self::Cost,
     {
         let op_cost = match enode {
-            LutLang::Not(_) => 2,
-            LutLang::And(_) | LutLang::Nor(_) | LutLang::Xor(_) => 4,
+            LutLang::Not(_) => {
+                if self.set.contains("INV") || self.set.contains(&enode.get_prim_name().unwrap()) {
+                    2
+                } else {
+                    u64::MAX
+                }
+            }
+            LutLang::And(_) | LutLang::Nor(_) | LutLang::Xor(_) | LutLang::Mux(_) => {
+                if self.set.contains(&enode.get_prim_name().unwrap()) {
+                    4
+                } else {
+                    u64::MAX
+                }
+            }
             LutLang::Program(_) => 0,
             LutLang::Bus(_) => 0,
             LutLang::Reg(_) => 1,
@@ -172,7 +195,6 @@ impl CostFunction<LutLang> for GateCostFn {
             LutLang::Var(_) => 1,
             LutLang::DC => 0,
             LutLang::Lut(l) => 10 * l.len() as u64 * l.len() as u64,
-            _ => u64::MAX,
         };
         enode.fold(op_cost, |sum, id| {
             if costs(id) > u64::MAX - sum {
