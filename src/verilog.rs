@@ -719,7 +719,7 @@ impl SVModule {
                 for (i, t) in l.iter().enumerate() {
                     let defname = format!("y{}", i);
                     mapping.insert(*t, outputs.get(i).unwrap_or(&defname).to_string());
-                    module.outputs.push(SVSignal::new(1, mapping[t].clone()));
+                    module.append_outputs(&mut vec![SVSignal::new(1, mapping[t].clone())]);
                 }
             }
             _ => {
@@ -727,9 +727,7 @@ impl SVModule {
                     last_id,
                     outputs.first().unwrap_or(&"y".to_string()).to_string(),
                 );
-                module
-                    .outputs
-                    .push(SVSignal::new(1, mapping[&last_id].clone()));
+                module.append_outputs(&mut vec![SVSignal::new(1, mapping[&last_id].clone())]);
             }
         }
 
@@ -762,6 +760,15 @@ impl SVModule {
                     let signal = SVSignal::new(1, sname.clone());
                     module.signals.push(signal.clone());
                     module.inputs.push(signal);
+
+                    // Check if signal is directly driven by an input
+                    if mapping.contains_key(&id.into()) {
+                        let output = mapping[&id.into()].clone();
+                        let wire =
+                            SVPrimitive::new_wire(sname.clone(), output.clone(), fresh_prim());
+                        module.driving_module.insert(output, module.instances.len());
+                        module.instances.push(wire);
+                    }
                     mapping.insert(id.into(), sname);
                 }
                 LutLang::Program(p) => {
