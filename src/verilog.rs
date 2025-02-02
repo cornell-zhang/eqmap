@@ -6,7 +6,7 @@
 */
 
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{hash_map::Entry, BTreeMap, HashMap, HashSet},
     fmt,
     path::{Path, PathBuf},
 };
@@ -383,7 +383,9 @@ impl SVModule {
 
     /// Names output `id` with `name` inside `self`
     pub fn name_output(&mut self, id: Id, name: String, mapping: &mut HashMap<Id, String>) {
-        if mapping.contains_key(&id) {
+        if let Entry::Vacant(e) = mapping.entry(id) {
+            e.insert(name.clone());
+        } else {
             // In this case, create a wire
             let driver = mapping[&id].clone();
             let signal = SVSignal::new(1, name.clone());
@@ -396,8 +398,6 @@ impl SVModule {
                 .insert(name.clone(), self.instances.len());
             self.instances.push(wire);
             self.signals.push(signal);
-        } else {
-            mapping.insert(id, name.clone());
         }
         self.outputs.push(SVSignal::new(1, name));
     }
