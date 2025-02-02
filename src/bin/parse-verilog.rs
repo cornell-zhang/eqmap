@@ -20,7 +20,7 @@ struct Args {
     /// Get a separate expression for each output
     #[arg(short = 'm', long, default_value_t = false)]
     multiple_expr: bool,
-    /// Print the parseed module
+    /// Print the parsed module as a data structure
     #[arg(short = 'v', long, default_value_t = false)]
     verbose: bool,
 }
