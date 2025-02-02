@@ -20,6 +20,9 @@ struct Args {
     /// Get a separate expression for each output
     #[arg(short = 'm', long, default_value_t = false)]
     multiple_expr: bool,
+    /// Print the parseed module
+    #[arg(short = 'v', long, default_value_t = false)]
+    verbose: bool,
 }
 
 fn main() -> std::io::Result<()> {
@@ -47,6 +50,11 @@ fn main() -> std::io::Result<()> {
 
     let f =
         SVModule::from_ast(&ast).map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+
+    if args.verbose {
+        eprintln!("SVModule: ");
+        eprintln!("{:?}", f);
+    }
 
     if !args.round_trip {
         if args.multiple_expr {
