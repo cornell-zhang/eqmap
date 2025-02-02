@@ -719,9 +719,7 @@ impl SVModule {
                 for (i, t) in l.iter().enumerate() {
                     let defname = format!("y{}", i);
                     mapping.insert(*t, outputs.get(i).unwrap_or(&defname).to_string());
-                    let signal = SVSignal::new(1, mapping[t].clone());
-                    module.outputs.push(signal.clone());
-                    module.signals.push(signal);
+                    module.outputs.push(SVSignal::new(1, mapping[t].clone()));
                 }
             }
             _ => {
@@ -729,9 +727,9 @@ impl SVModule {
                     last_id,
                     outputs.first().unwrap_or(&"y".to_string()).to_string(),
                 );
-                let signal = SVSignal::new(1, mapping[&last_id].clone());
-                module.outputs.push(signal.clone());
-                module.signals.push(signal);
+                module
+                    .outputs
+                    .push(SVSignal::new(1, mapping[&last_id].clone()));
             }
         }
 
