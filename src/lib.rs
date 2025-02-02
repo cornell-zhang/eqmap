@@ -219,15 +219,15 @@ mod tests {
 
     fn get_assignment_verilog() -> String {
         "module passthru (
-            d,
-            y
-        );
-          input d;
-          wire d;
-          output y;
-          wire y;
-          assign y = d;
-        endmodule"
+    d,
+    y
+);
+  input d;
+  wire d;
+  output y;
+  wire y;
+  assign y = d;
+endmodule"
             .to_string()
     }
 
@@ -242,6 +242,15 @@ mod tests {
             module.to_single_expr().unwrap().to_string(),
             "d".to_string()
         );
+    }
+
+    #[test]
+    fn test_assignment_emission() {
+        let expr: RecExpr<LutLang> = "d".parse().unwrap();
+        let module = SVModule::from_expr(expr, "passthru".to_string(), vec!["y".to_string()]);
+        assert!(module.is_ok());
+        let module = module.unwrap();
+        assert_eq!(module.to_string(), get_assignment_verilog());
     }
 
     #[test]

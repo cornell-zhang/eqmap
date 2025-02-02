@@ -762,6 +762,15 @@ impl SVModule {
                     let signal = SVSignal::new(1, sname.clone());
                     module.signals.push(signal.clone());
                     module.inputs.push(signal);
+
+                    // Check if signal is directly driven by an input
+                    if mapping.contains_key(&id.into()) {
+                        let output = mapping[&id.into()].clone();
+                        let wire =
+                            SVPrimitive::new_wire(sname.clone(), output.clone(), fresh_prim());
+                        module.driving_module.insert(output, module.instances.len());
+                        module.instances.push(wire);
+                    }
                     mapping.insert(id.into(), sname);
                 }
                 LutLang::Program(p) => {
