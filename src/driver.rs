@@ -492,6 +492,11 @@ where
         self
     }
 
+    /// Return a reference to the underlying expression
+    pub fn get_expr(&self) -> &RecExpr<LutLang> {
+        &self.expr
+    }
+
     fn explore(&mut self) -> Result<(), String>
     where
         A: Analysis<LutLang> + std::default::Default,
@@ -717,7 +722,7 @@ where
         eprintln!("WARNING: Running with debug assertions is slow");
     }
 
-    let mut req = req.clone().with_expr(expr.clone());
+    let mut req = req.with_expr(expr.clone());
 
     let mut result = req
         .simplify_expr()
@@ -733,8 +738,8 @@ where
             linecount += 1;
         }
         eprintln!("INFO: Approx. {} lines in proof tree", linecount);
-    } else if req.expr.as_ref().len() < 240 {
-        let expr = expr.to_string();
+    } else if req.get_expr().as_ref().len() < 240 {
+        let expr = req.get_expr().to_string();
         let len = expr.len().min(240);
         eprintln!("INFO: {} ... => ", &expr[0..len]);
     }
