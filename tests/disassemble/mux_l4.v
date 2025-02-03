@@ -1,4 +1,4 @@
-// RUN: fam %s --disassemble -s 80000 -n 40 2>>/dev/null | FileCheck %s
+// RUN: fam %s --disassemble NOR2,INV,AND2 -s 80000 -n 40 2>>/dev/null | FileCheck %s
 
 module mux_4_1 (
     b,
