@@ -6,7 +6,7 @@
 */
 
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{hash_map::Entry, BTreeMap, HashMap, HashSet},
     fmt,
     path::{Path, PathBuf},
 };
@@ -381,6 +381,27 @@ impl SVModule {
         self.signals.append(outputs);
     }
 
+    /// Names output `id` with `name` inside `self`
+    pub fn name_output(&mut self, id: Id, name: String, mapping: &mut HashMap<Id, String>) {
+        if let Entry::Vacant(e) = mapping.entry(id) {
+            e.insert(name.clone());
+        } else {
+            // In this case, create a wire
+            let driver = mapping[&id].clone();
+            let signal = SVSignal::new(1, name.clone());
+            let wire = SVPrimitive::new_wire(
+                driver.clone(),
+                name.clone(),
+                name.clone() + "_wire_" + &driver,
+            );
+            self.driving_module
+                .insert(name.clone(), self.instances.len());
+            self.instances.push(wire);
+            self.signals.push(signal);
+        }
+        self.outputs.push(SVSignal::new(1, name));
+    }
+
     /// Get the driving primitive for a signal
     pub fn get_driving_primitive<'a>(&'a self, signal: &'a str) -> Result<&'a SVPrimitive, String> {
         match self.driving_module.get(signal) {
@@ -718,18 +739,19 @@ impl SVModule {
             LutLang::Bus(l) => {
                 for (i, t) in l.iter().enumerate() {
                     let defname = format!("y{}", i);
-                    mapping.insert(*t, outputs.get(i).unwrap_or(&defname).to_string());
-                    module.outputs.push(SVSignal::new(1, mapping[t].clone()));
+                    module.name_output(
+                        *t,
+                        outputs.get(i).unwrap_or(&defname).to_string(),
+                        &mut mapping,
+                    );
                 }
             }
             _ => {
-                mapping.insert(
+                module.name_output(
                     last_id,
                     outputs.first().unwrap_or(&"y".to_string()).to_string(),
+                    &mut mapping,
                 );
-                module
-                    .outputs
-                    .push(SVSignal::new(1, mapping[&last_id].clone()));
             }
         }
 
@@ -763,13 +785,16 @@ impl SVModule {
                     module.signals.push(signal.clone());
                     module.inputs.push(signal);
 
-                    // Check if signal is directly driven by an input
+                    // Check if input directly drives an output
                     if mapping.contains_key(&id.into()) {
                         let output = mapping[&id.into()].clone();
                         let wire =
                             SVPrimitive::new_wire(sname.clone(), output.clone(), fresh_prim());
-                        module.driving_module.insert(output, module.instances.len());
+                        module
+                            .driving_module
+                            .insert(output.clone(), module.instances.len());
                         module.instances.push(wire);
+                        module.signals.push(SVSignal::new(1, output));
                     }
                     mapping.insert(id.into(), sname);
                 }

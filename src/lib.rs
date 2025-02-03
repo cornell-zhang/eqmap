@@ -254,6 +254,30 @@ endmodule"
     }
 
     #[test]
+    fn test_duplicate_assignment() {
+        let expr: RecExpr<LutLang> = "(BUS d d)".parse().unwrap();
+        let module = SVModule::from_expr(expr, "passthru".to_string(), vec![]);
+        assert!(module.is_ok());
+        let module = module.unwrap();
+        let correct = "module passthru (
+    d,
+    y0,
+    y1
+);
+  input d;
+  wire d;
+  output y0;
+  wire y0;
+  output y1;
+  wire y1;
+  assign y1 = y0;
+  assign y0 = d;
+endmodule"
+            .to_string();
+        assert_eq!(module.to_string(), correct);
+    }
+
+    #[test]
     fn test_parse_verilog() {
         let module = get_struct_verilog();
         let ast = sv_parse_wrapper(&module, None).unwrap();
