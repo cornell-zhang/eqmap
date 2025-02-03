@@ -68,7 +68,7 @@ struct Args {
     #[arg(short = 'd', long, default_value_t = false)]
     decomp: bool,
 
-    /// Disassemble the LUTs into their constituent gates
+    /// Comma separated list of cell types to decompose into
     #[cfg(feature = "dyn_decomp")]
     #[arg(long)]
     disassemble: Option<String>,

@@ -3,10 +3,9 @@
   The code module contains a super simple cost function that extracts LUTs with at most `k` fan-in.
 
 */
-use std::collections::HashSet;
-
 use super::lut::LutLang;
 use egg::{CostFunction, Id, Language};
+use std::collections::HashSet;
 
 /// A cost function that extracts LUTs with at most `k` fan-in.
 /// Gates have cost [u64::MAX] to prevent their extraction.

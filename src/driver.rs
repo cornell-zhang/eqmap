@@ -3,9 +3,6 @@
   The code module common infrastructure to created command-line tools for logic synthesis.
 
 */
-use std::collections::HashSet;
-use std::time::{Duration, Instant};
-
 use super::cost::{DepthCostFn, GateCostFn, KLUTCostFn, NegativeCostFn};
 use super::lut::{canonicalize_expr, verify_expr, CircuitStats, LutExprInfo, LutLang};
 use egg::{
@@ -13,6 +10,8 @@ use egg::{
     RecExpr, RecExprParseError, Rewrite, Runner, StopReason,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use std::collections::HashSet;
+use std::time::{Duration, Instant};
 
 use serde::Serialize;
 use std::{
@@ -234,7 +233,8 @@ impl ExtractStrat {
         "MUX", "AND2", "OR2", "XOR2", "NOT", "INV", "REG", "NAND2", "NOR2",
     ];
 
-    /// Create an extraction strategy from a set of gates you want to extract.
+    /// Create an extraction strategy from a comma-separated list of gates.
+    /// For example, `list` can be `"MUX,AND2,NOT"`.
     pub fn from_gate_set(list: &str) -> Result<Self, String> {
         if list.is_empty() || list == "all" {
             return Self::from_gate_set(Self::WHITELIST_STR);
@@ -244,7 +244,11 @@ impl ExtractStrat {
         let gates: HashSet<String> = list.split(',').map(|s| s.to_string()).collect();
         for gate in &gates {
             if !Self::WHITELIST.contains(&gate.as_str()) {
-                return Err(format!("Gate {} is not in the whitelist", gate));
+                return Err(format!(
+                    "Gate {} is not in the whitelist {}",
+                    gate,
+                    Self::WHITELIST_STR
+                ));
             }
         }
         Ok(ExtractStrat::Disassemble(gates))
@@ -381,7 +385,7 @@ where
         }
     }
 
-    /// Extract only gates.
+    /// Extract by disassembling into logic gates.
     pub fn with_disassembler(self) -> Self {
         Self {
             extract_strat: ExtractStrat::from_gate_set(ExtractStrat::WHITELIST_STR).unwrap(),
@@ -389,7 +393,7 @@ where
         }
     }
 
-    /// Extract only select gates from `list`
+    /// Extract by disassembling into logic gates in the `list`.
     pub fn with_disassembly_into(self, list: &str) -> Result<Self, String> {
         Ok(Self {
             extract_strat: ExtractStrat::from_gate_set(list)?,
@@ -652,16 +656,14 @@ where
     where
         A: Analysis<LutLang> + std::default::Default,
     {
-        match &self.extract_strat {
+        match self.extract_strat.to_owned() {
             ExtractStrat::MinDepth => self.greedy_extract_with(DepthCostFn),
             ExtractStrat::MaxDepth => {
                 eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");
                 self.greedy_extract_with(NegativeCostFn::new(DepthCostFn))
             }
-            ExtractStrat::LUTCount(k) => self.greedy_extract_with(KLUTCostFn::new(*k)),
-            ExtractStrat::Disassemble(set) => {
-                self.greedy_extract_with(GateCostFn::new(set.clone()))
-            }
+            ExtractStrat::LUTCount(k) => self.greedy_extract_with(KLUTCostFn::new(k)),
+            ExtractStrat::Disassemble(set) => self.greedy_extract_with(GateCostFn::new(set)),
             #[cfg(feature = "exactness")]
             ExtractStrat::Exact => self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP ON");
