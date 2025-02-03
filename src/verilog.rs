@@ -109,6 +109,15 @@ const CLK: &str = "clk";
 const REG_NAME: &str = "FDRE";
 const LUT_ROOT: &str = "LUT";
 
+/// Escaped identifiers in Verilog must have a dangling space to end the escaped sequence.
+fn emit_id(id: String) -> String {
+    if id.starts_with("\\") {
+        id + " "
+    } else {
+        id
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Represents a signal declaration in the verilog
 pub struct SVSignal {
@@ -265,7 +274,7 @@ impl fmt::Display for SVPrimitive {
                 "{}assign {} = {};",
                 indent,
                 self.outputs.keys().next().unwrap(),
-                self.attributes["VAL"]
+                emit_id(self.attributes["VAL"].clone())
             );
         }
 
@@ -287,7 +296,7 @@ impl fmt::Display for SVPrimitive {
         }
         for (input, value) in self.inputs.iter() {
             let indent = " ".repeat(level + 4);
-            writeln!(f, "{}.{}({}),", indent, input, value)?;
+            writeln!(f, "{}.{}({}),", indent, input, emit_id(value.clone()))?;
         }
         if self.prim.as_str() == REG_NAME {
             let indent = " ".repeat(level + 4);
@@ -295,7 +304,7 @@ impl fmt::Display for SVPrimitive {
         }
         for (i, (value, output)) in self.outputs.iter().enumerate() {
             let indent = " ".repeat(level + 4);
-            write!(f, "{}.{}({})", indent, output, value)?;
+            write!(f, "{}.{}({})", indent, output, emit_id(value.clone()))?;
             if i == self.outputs.len() - 1 {
                 writeln!(f)?;
             } else {
@@ -1067,11 +1076,11 @@ impl fmt::Display for SVModule {
         writeln!(f, "{}module {} (", indent, self.name)?;
         for input in self.inputs.iter() {
             let indent = " ".repeat(level + 4);
-            writeln!(f, "{}{},", indent, input.name)?;
+            writeln!(f, "{}{},", indent, emit_id(input.name.clone()))?;
         }
         for (i, output) in self.outputs.iter().enumerate() {
             let indent = " ".repeat(level + 4);
-            write!(f, "{}{}", indent, output.name)?;
+            write!(f, "{}{}", indent, emit_id(output.name.clone()))?;
             if i == self.outputs.len() - 1 {
                 writeln!(f)?;
             } else {
@@ -1082,14 +1091,14 @@ impl fmt::Display for SVModule {
         let mut already_decl: HashSet<String> = HashSet::new();
         for input in self.inputs.iter() {
             let indent = " ".repeat(level + 2);
-            writeln!(f, "{}input {};", indent, input.name)?;
-            writeln!(f, "{}wire {};", indent, input.name)?;
+            writeln!(f, "{}input {};", indent, emit_id(input.name.clone()))?;
+            writeln!(f, "{}wire {};", indent, emit_id(input.name.clone()))?;
             already_decl.insert(input.name.clone());
         }
         for output in self.outputs.iter() {
             let indent = " ".repeat(level + 2);
-            writeln!(f, "{}output {};", indent, output.name)?;
-            writeln!(f, "{}wire {};", indent, output.name)?;
+            writeln!(f, "{}output {};", indent, emit_id(output.name.clone()))?;
+            writeln!(f, "{}wire {};", indent, emit_id(output.name.clone()))?;
             already_decl.insert(output.name.clone());
         }
         for signal in self.signals.iter() {
