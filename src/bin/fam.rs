@@ -15,13 +15,13 @@ use std::{
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
-    /// Path to input verilog file. If not provided, reads from stdin
+    /// If provided, verilog is read from the file over stdin
     input: Option<PathBuf>,
 
-    /// Path to output verilog file. If not provided, emits to stdout
+    /// If provided, verilog is emitted to the file over stdout
     output: Option<PathBuf>,
 
-    /// Path to output report JSON file. If not provided, does not emit a report
+    /// If provided, output a JSON file to the path with results
     #[arg(long)]
     report: Option<PathBuf>,
 
@@ -36,10 +36,6 @@ struct Args {
     /// Do not canonicalize the input into LUTs
     #[arg(short = 'c', long, default_value_t = false)]
     no_canonicalize: bool,
-
-    /// Opt a specific LUT expr instead of from file
-    #[arg(long)]
-    command: Option<String>,
 
     /// Find new decompositions at runtime
     #[cfg(feature = "dyn_decomp")]
@@ -64,7 +60,7 @@ struct Args {
     #[arg(short = 'v', long, default_value_t = false)]
     verbose: bool,
 
-    /// Extract based on min circuit depth instead of using 'k'. Can cause inf loop
+    /// Extract for min circuit depth
     #[arg(long, default_value_t = false)]
     min_depth: bool,
 

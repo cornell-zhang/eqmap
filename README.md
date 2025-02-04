@@ -52,26 +52,25 @@ Tech Re-Mapping with E-Graphs
 Usage: fam [OPTIONS] [INPUT] [OUTPUT]
 
 Arguments:
-  [INPUT]   Path to input verilog file. If not provided, reads from stdin
-  [OUTPUT]  Path to output verilog file. If not provided, emits to stdout
+  [INPUT]   If provided, verilog is read from the file over stdin
+  [OUTPUT]  If provided, verilog is emitted to the file over stdout
 
 Options:
-      --report <REPORT>          Path to output report JSON file. 
-  -a, --assert-sat               Return an error if the graph does not reach saturation
-  -f, --no-verify                Do not verify functionality of the output
-  -c, --no-canonicalize          Do not canonicalize the input into LUTs
-      --command <COMMAND>        Opt a specific LUT expr instead of from file
-  -d, --decomp                   Find new decompositions at runtime
-      --disassemble              Disassemble the LUTs into their constituent gates
-  -r, --no-retime                Do not use register retiming
-  -v, --verbose                  This generates a proof and runs much slower
-      --min-depth                Extract based on min circuit depth instead of using 'k'.
-  -k, --k <K>                    Max fan in size for extracted LUTs [default: 6]
-  -t, --timeout <TIMEOUT>        Timeout in seconds for each expression [default: 10]
-  -s, --node-limit <NODE_LIMIT>  Maximum number of nodes in graph [default: 48000]
-  -n, --iter-limit <ITER_LIMIT>  Maximum number of rewrite iterations [default: 32]
-  -h, --help                     Print help
-  -V, --version                  Print version
+      --report <REPORT>            If provided, output a JSON file to the path with results
+  -a, --assert-sat                 Return an error if the graph does not reach saturation
+  -f, --no-verify                  Do not verify functionality of the output
+  -c, --no-canonicalize            Do not canonicalize the input into LUTs
+  -d, --decomp                     Find new decompositions at runtime
+      --disassemble <DISASSEMBLE>  Comma separated list of cell types to decompose into
+  -r, --no-retime                  Do not use register retiming
+  -v, --verbose                    Print explanations (this generates a proof and runs much slower)
+      --min-depth                  Extract for min circuit depth
+  -k, --k <K>                      Max fan in size for extracted LUTs [default: 6]
+  -t, --timeout <TIMEOUT>          Timeout in seconds for each expression [default: 10]
+  -s, --node-limit <NODE_LIMIT>    Maximum number of nodes in graph [default: 48000]
+  -n, --iter-limit <ITER_LIMIT>    Maximum number of rewrite iterations [default: 32]
+  -h, --help                       Print help
+  -V, --version                    Print version
 ```
 
 ### Features
