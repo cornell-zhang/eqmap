@@ -56,7 +56,7 @@ struct Args {
     #[arg(short = 'r', long, default_value_t = false)]
     no_retime: bool,
 
-    /// Print explanations (this generates a proof and runs slower)
+    /// Print explanations (generates a proof and runs slower)
     #[arg(short = 'v', long, default_value_t = false)]
     verbose: bool,
 
