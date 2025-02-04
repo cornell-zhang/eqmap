@@ -35,7 +35,7 @@ First, install all the prerequisites for building. For basic functionally, you n
 
 `cargo build`
 
-`cargo run --release -- tests/verilog/mux_reg.v # Run the synthesizer on a very simple 4:1 pipelined mux`
+`cargo run --release -- tests/verilog/mux_reg.v # Sanity check`
 
 You can also try to synthesize your own verilog `my_file.v`:
 
@@ -75,7 +75,7 @@ Options:
 
 ### Features
 
-The project has two conditionally compiled features:
+The project has three conditionally compiled features:
 
 1. `egraph_fold` (should really not be used)
 2. `exactness` (used for exact synthesis, requires cbc)
@@ -100,7 +100,10 @@ Here is a rough outline of the type system defined by `LutLang`:
 It is important to note that there is an implicit coversion from BUS types to Node types. The least significant bit is taken.
 REG expressions trivially result in inconclusive. Sequential logic isn't fully supported yet.
 
-`<Node> ::= <Const> | x | <Input> | NOR <Node> <Node> | MUX <Node> <Node> <Node> | LUT <Program> <Node> ... <Node> | REG <Node> | ARG <u64> | CYCLE <Node>`
+```
+<Node> ::= <Const> | x | <Input> | NOR <Node> <Node> | MUX <Node> <Node> <Node>
+            | LUT <Program> <Node> ... <Node> | REG <Node> | ARG <u64> | CYCLE <Node>
+```
 
 `<Const> ::= false | true // Base type is a bool`
 
