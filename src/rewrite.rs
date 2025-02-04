@@ -112,16 +112,13 @@ pub fn condense_cofactors() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
 
     // Condense Shannon expansion
-    rules.push(rewrite!("mux-make-disjoint-or"; "(LUT 202 ?s true ?a)" => "(NOT (NOR ?s ?a))"));
-    rules.push(rewrite!("mux-make-disjoint-or-not"; "(LUT 202 ?s ?a true)" => "(NOT (NOR (AND ?s ?a) (NOT ?s)))"));
-    rules.push(rewrite!("mux-make-disjoint-and"; "(LUT 202 ?s ?a false)" => "(AND ?s ?a)"));
-    rules.push(
-        rewrite!("mux-make-disjoint-and-not"; "(LUT 202 ?s false ?a)" => "(AND (NOT ?s) ?a)"),
-    );
-    rules.push(rewrite!("mux-make-disjoint-xor"; "(LUT 202 ?s (NOT ?a) ?a)" => "(XOR ?s ?a)"));
-    rules.push(
-        rewrite!("mux-make-disjoint-xnor"; "(LUT 202 ?s ?a (NOT ?a))" => "(NOT (XOR ?s ?a))"),
-    );
+    // TODO(matth2k): Rewrite these in terms of LUTs
+    rules.push(rewrite!("mux-make-disjoint-or"; "(LUT 202 ?s true ?a)" => "(LUT 14 ?s ?a)"));
+    rules.push(rewrite!("mux-make-disjoint-or-not"; "(LUT 202 ?s ?a true)" => "(LUT 14 (LUT 8 ?s ?a) (LUT 1 ?s))"));
+    rules.push(rewrite!("mux-make-disjoint-and"; "(LUT 202 ?s ?a false)" => "(LUT 8 ?s ?a)"));
+    rules.push(rewrite!("mux-make-disjoint-and-not"; "(LUT 202 ?s false ?a)" => "(LUT 2 ?s ?a)"));
+    rules.push(rewrite!("mux-make-disjoint-xor"; "(LUT 202 ?s (NOT ?a) ?a)" => "(LUT 6 ?s ?a)"));
+    rules.push(rewrite!("mux-make-disjoint-xnor"; "(LUT 202 ?s ?a (NOT ?a))" => "(LUT 9 ?s ?a)"));
     rules.push(rewrite!("lut2-shannon-condense"; "(LUT 202 ?s (LUT ?p ?a ?b) (LUT ?q ?a ?b))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap()])}));
     rules.push(rewrite!("lut3-shannon-condense"; "(LUT 202 ?s (LUT ?p ?a ?b ?c) (LUT ?q ?a ?b ?c))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
     rules.push(rewrite!("lut4-shannon-condense"; "(LUT 202 ?s (LUT ?p ?a ?b ?c ?d) (LUT ?q ?a ?b ?c ?d))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()])}));

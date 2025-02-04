@@ -63,7 +63,7 @@ Options:
   -d, --decomp                     Find new decompositions at runtime
       --disassemble <DISASSEMBLE>  Comma separated list of cell types to decompose into
   -r, --no-retime                  Do not use register retiming
-  -v, --verbose                    Print explanations (this generates a proof and runs much slower)
+  -v, --verbose                    Print explanations (this generates a proof and runs slower)
       --min-depth                  Extract for min circuit depth
   -k, --k <K>                      Max fan in size for extracted LUTs [default: 6]
   -t, --timeout <TIMEOUT>          Timeout in seconds for each expression [default: 10]
@@ -103,10 +103,11 @@ REG expressions trivially result in inconclusive. Sequential logic isn't fully s
 ```
 <Node> ::= <Const> | x | <Input> | NOR <Node> <Node> | MUX <Node> <Node> <Node>
             | LUT <Program> <Node> ... <Node> | REG <Node> | ARG <u64> | CYCLE <Node>
+
+
+<Const> ::= false | true // Base type is a bool
+
+<Input> ::= <String> // Any string is parsed as an input variable
+
+<Program> ::= <u64> // Can store a program for up to 6 bits
 ```
-
-`<Const> ::= false | true // Base type is a bool`
-
-`<Input> ::= <String> // Any string is parsed as an input variable`
-
-`<Program> ::= <u64> // Can store a program for up to 6 bits`
