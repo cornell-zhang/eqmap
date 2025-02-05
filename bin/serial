@@ -1,0 +1,62 @@
+#!/bin/bash
+set -eo pipefail
+LIB="$(dirname $0)/../verilog/lutlang.v"
+LIB="$(realpath $LIB)"
+SIMLIB="$(dirname $0)/../verilog/simlib.v"
+SIMLIB="$(realpath $SIMLIB)"
+if [ "$1" == "--help" ] || [ "$2" == "--help" ] || [ "$3" == "--help" ]; then
+    fam --help
+else
+    which yosys > /dev/null || { echo "yosys not found in PATH"; exit 1; }
+    which fam > /dev/null || { echo "fam not found in PATH"; exit 1; }
+    ls $LIB > /dev/null || { echo "fam not found in PATH"; exit 1; }
+
+    echo "SRCS=\$(wildcard *.v)" > Makefile
+    echo "FAMILY=xcup" >> Makefile
+    echo "# flatten design before synthesis, no clock buffers, no IO buffers, no carry logic, no MUXes" >> Makefile
+    echo "SYNTH_OPT=-flatten -noclkbuf -noiopad -nocarry -nowidelut -ise" >> Makefile
+    echo "YOSYS=yosys # Yosys 0.33 (git sha1 2584903a060)" >> Makefile
+    echo "" >> Makefile
+    echo ".PHONY: all clean" >> Makefile
+    echo "" >> Makefile
+    echo "all: mux_4_1_synth.v" >> Makefile
+    echo "" >> Makefile
+    echo "clean:" >> Makefile
+    echo "	rm -f *.xil *.synth *.ys *.dot *.png" >> Makefile
+    echo "" >> Makefile
+    echo "%.v.synth: %_synth.ys" >> Makefile
+    echo "	+\$(YOSYS) -s \$<" >> Makefile
+    echo "" >> Makefile
+    echo "%.v.xil: %_xil.ys" >> Makefile
+    echo "	+\$(YOSYS) -s \$<" >> Makefile
+    echo "%.v.inline: %_inline.ys" >> Makefile
+    echo "	+\$(YOSYS) -s \$<" >> Makefile
+    echo "" >> Makefile
+    echo "# This script synthesizes to LUTs" >> Makefile
+    echo "%_xil.ys: %.v" >> Makefile
+    echo "	@echo \"read_verilog \$<\" > \$@" >> Makefile
+    echo "	@echo \"synth_xilinx -family \$(FAMILY) \$(SYNTH_OPT)\" >> \$@" >> Makefile
+    echo "	@echo \"clean -purge\" >> \$@" >> Makefile
+    echo "	@echo \"splitnets -format _\" >> \$@" >> Makefile
+    echo "	@echo \"write_verilog -simple-lhs \$<.xil\" >> \$@" >> Makefile
+    echo "" >> Makefile
+    echo "# This script synthesizes to AND, NOR, XOR, INV, MUXes" >> Makefile
+    echo "%_synth.ys: %.v" >> Makefile
+    echo "	@echo \"read_verilog \$<\" > \$@" >> Makefile
+    echo "	@echo \"techmap -map $LIB\" >> \$@" >> Makefile
+    echo "	@echo \"clean -purge\" >> \$@" >> Makefile
+    echo "	@echo \"splitnets -format _\" >> \$@" >> Makefile
+    echo "	@echo \"write_verilog -simple-lhs \$<.synth\" >> \$@" >> Makefile
+    echo "%_inline.ys: %.v" >> Makefile
+    echo "	@echo \"read_verilog $SIMLIB\" > \$@" >> Makefile
+    echo "	@echo \"read_verilog \$<\" >> \$@" >> Makefile
+    echo "	@echo \"flatten\" >> \$@" >> Makefile
+    echo "	@echo \"clean -purge\" >> \$@" >> Makefile
+    echo "	@echo \"write_verilog -simple-lhs -noattr \$<.inline\" >> \$@" >> Makefile
+
+    make $1.synth 1>&2
+    fam $1.synth $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} ${16} > $1.egraph.v
+    make $1.egraph.v.inline 1>&2
+    cat $1.egraph.v.inline
+    rm -f $1.synth $1.egraph.v.inline
+fi

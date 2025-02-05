@@ -27,6 +27,17 @@ where
         rules.append(&mut rewrite!("nor2-conversion"; "(NOR ?a ?b)" <=> "(LUT 1 ?a ?b)"));
         rules.append(&mut rewrite!("and2-conversion"; "(AND ?a ?b)" <=> "(LUT 8 ?a ?b)"));
         rules.append(&mut rewrite!("xor2-conversion"; "(XOR ?a ?b)" <=> "(LUT 6 ?a ?b)"));
+        rules.append(&mut rewrite!("xor2-relation"; "(XOR ?a ?b)" <=> "(NOT (NOR (AND (NOT ?a) ?b) (AND (NOT ?b) ?a)))"));
+        rules.append(
+            &mut rewrite!("and-distributive"; "(AND ?a (NOT (NOR ?b ?c)))" <=> "(NOT (NOR (AND ?a ?b) (AND ?a ?c)))"),
+        );
+        rules.append(
+            &mut rewrite!("or-distributive"; "(NOT (NOR ?a (AND ?b ?c)))" <=> "(AND (NOT (NOR ?a ?b)) (NOT (NOR ?a ?c)))"),
+        );
+        rules.append(&mut rewrite!("and-assoc"; "(AND (AND ?a ?b) ?c)" <=> "(AND ?a (AND ?b ?c))"));
+        rules.append(
+            &mut rewrite!("or-assoc"; "(NOT (NOR ?a (NOT (NOR ?b ?c))))" <=> "(NOT (NOR (NOT (NOR ?a ?b)) ?c))"),
+        );
         rules.push(
             rewrite!("mux-expand"; "(LUT 202 ?s ?a ?b)" => "(LUT 14 (LUT 8 ?s ?a) (LUT 2 ?s ?b))"),
         );
