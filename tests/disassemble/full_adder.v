@@ -22,7 +22,7 @@ module full_adder (
 
   assign s = a ^ b ^ cin;
   assign cout = (a & b) | (cin & ~a & b) | (cin & a & ~b);
-  //   assign cout = (a & b) | (cin * (a ^ b));
+  //   assign cout = (a & b) | (cin & (a ^ b));
   //   assign cout = (a & b) ^ (cin * (a ^ b));
 
 

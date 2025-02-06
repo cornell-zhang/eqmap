@@ -42,7 +42,8 @@ where
             rewrite!("mux-expand"; "(LUT 202 ?s ?a ?b)" => "(LUT 14 (LUT 8 ?s ?a) (LUT 2 ?s ?b))"),
         );
         rules.push(rewrite!("or2-conversion"; "(LUT 14 ?a ?b)" => "(NOT (NOR ?a ?b))"));
-        rules.push(rewrite!("and-one-inv-conversion"; "(LUT 2 ?a ?b)" => "(AND (NOT ?a) ?b)"))
+        rules.push(rewrite!("and-one-inv-conversion"; "(LUT 2 ?a ?b)" => "(AND (NOT ?a) ?b)"));
+        rules.append(&mut rewrite!("demorgan"; "(NOR ?a ?b)" <=> "(AND (NOT ?a) (NOT ?b))"));
     } else {
         rules.push(rewrite!("nor2-conversion"; "(NOR ?a ?b)" => "(LUT 1 ?a ?b)"));
         rules.push(rewrite!("and2-conversion"; "(AND ?a ?b)" => "(LUT 8 ?a ?b)"));

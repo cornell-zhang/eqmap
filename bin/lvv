@@ -42,7 +42,7 @@ else
     echo "	@echo \"splitnets -format _\" >> \$@" >> Makefile
     echo "	@echo \"write_verilog -simple-lhs \$<.synth\" >> \$@" >> Makefile
 
-    make $1.xil
+    make $1.xil 1>&2
     fam $1.xil $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} ${16}
     rm -f $1.xil
 fi
