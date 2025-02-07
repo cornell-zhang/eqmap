@@ -912,63 +912,71 @@ impl SVModule {
             return Ok(map[signal]);
         }
 
-        let id = match self.get_driving_primitive(signal) {
-            Ok(primitive) => {
-                if Self::is_gate_prim(primitive.prim.as_str()) {
-                    // Update the mapping
-                    let mut subexpr: HashMap<&'a str, Id> = HashMap::new();
-                    for (port, signal) in primitive.inputs.iter() {
-                        subexpr.insert(port, self.get_expr(signal, expr, map)?);
-                    }
-                    match primitive.prim.as_str() {
-                        "AND2" => Ok(expr.add(LutLang::And([subexpr["A"], subexpr["B"]]))),
-                        "NOR2" => Ok(expr.add(LutLang::Nor([subexpr["A"], subexpr["B"]]))),
-                        "XOR2" => Ok(expr.add(LutLang::Xor([subexpr["A"], subexpr["B"]]))),
-                        "MUX" | "MUXF7" | "MUXF8" | "MUXF9" => {
-                            Ok(expr.add(LutLang::Mux([subexpr["S"], subexpr["A"], subexpr["B"]])))
+        let id =
+            match self.get_driving_primitive(signal) {
+                Ok(primitive) => {
+                    if Self::is_gate_prim(primitive.prim.as_str()) {
+                        // Update the mapping
+                        let mut subexpr: HashMap<&'a str, Id> = HashMap::new();
+                        for (port, signal) in primitive.inputs.iter() {
+                            subexpr.insert(port, self.get_expr(signal, expr, map)?);
                         }
-                        "NOT" => Ok(expr.add(LutLang::Not([subexpr["A"]]))),
-                        "INV" => Ok(expr.add(LutLang::Not([subexpr["I"]]))),
-                        _ => Err(format!("Unsupported gate primitive {}", primitive.prim)),
-                    }
-                } else if Self::is_reg_prim(primitive.prim.as_str()) {
-                    let d = primitive.inputs.first_key_value().unwrap().1;
-                    let d = self.get_expr(d, expr, map)?;
-                    Ok(expr.add(LutLang::Reg([d])))
-                } else if Self::is_assign_prim(primitive.prim.as_str()) {
-                    let val = primitive.attributes.get("VAL").unwrap();
-                    if primitive.prim.as_str() == "CONST" {
-                        let val = val == "1'b1";
-                        Ok(expr.add(LutLang::Const(val)))
+                        match primitive.prim.as_str() {
+                            "AND2" => Ok(expr.add(LutLang::And([subexpr["A"], subexpr["B"]]))),
+                            "NOR2" => Ok(expr.add(LutLang::Nor([subexpr["A"], subexpr["B"]]))),
+                            "XOR2" => Ok(expr.add(LutLang::Xor([subexpr["A"], subexpr["B"]]))),
+                            "MUX" => Ok(expr.add(LutLang::Mux([
+                                subexpr["S"],
+                                subexpr["A"],
+                                subexpr["B"],
+                            ]))),
+                            "MUXF7" | "MUXF8" | "MUXF9" => Ok(expr.add(LutLang::Mux([
+                                subexpr["S"],
+                                subexpr["I1"],
+                                subexpr["I0"],
+                            ]))),
+                            "NOT" => Ok(expr.add(LutLang::Not([subexpr["A"]]))),
+                            "INV" => Ok(expr.add(LutLang::Not([subexpr["I"]]))),
+                            _ => Err(format!("Unsupported gate primitive {}", primitive.prim)),
+                        }
+                    } else if Self::is_reg_prim(primitive.prim.as_str()) {
+                        let d = primitive.inputs.first_key_value().unwrap().1;
+                        let d = self.get_expr(d, expr, map)?;
+                        Ok(expr.add(LutLang::Reg([d])))
+                    } else if Self::is_assign_prim(primitive.prim.as_str()) {
+                        let val = primitive.attributes.get("VAL").unwrap();
+                        if primitive.prim.as_str() == "CONST" {
+                            let val = val == "1'b1";
+                            Ok(expr.add(LutLang::Const(val)))
+                        } else {
+                            self.get_expr(val.as_str(), expr, map)
+                        }
                     } else {
-                        self.get_expr(val.as_str(), expr, map)
+                        let mut subexpr: Vec<Id> = vec![];
+                        let program = primitive.attributes.get("INIT").ok_or(format!(
+                            "Only {} and {} primitives are supported. INIT not found.",
+                            LUT_ROOT, REG_NAME
+                        ))?;
+                        let program: u64 = init_parser(program)?;
+                        subexpr.push(expr.add(LutLang::Program(program)));
+                        for input in (0..primitive.inputs.len()).rev().map(|x| format!("I{}", x)) {
+                            let driver = primitive.inputs.get(&input).ok_or(format!(
+                                "Expected {} on {} to be driven.",
+                                input, LUT_ROOT
+                            ))?;
+                            subexpr.push(self.get_expr(driver, expr, map)?);
+                        }
+                        Ok(expr.add(LutLang::Lut(subexpr.into())))
                     }
-                } else {
-                    let mut subexpr: Vec<Id> = vec![];
-                    let program = primitive.attributes.get("INIT").ok_or(format!(
-                        "Only {} and {} primitives are supported. INIT not found.",
-                        LUT_ROOT, REG_NAME
-                    ))?;
-                    let program: u64 = init_parser(program)?;
-                    subexpr.push(expr.add(LutLang::Program(program)));
-                    for input in (0..primitive.inputs.len()).rev().map(|x| format!("I{}", x)) {
-                        let driver = primitive
-                            .inputs
-                            .get(&input)
-                            .ok_or(format!("Expected {} on {} to be driven.", input, LUT_ROOT))?;
-                        subexpr.push(self.get_expr(driver, expr, map)?);
+                }
+                Err(e) => {
+                    if self.is_an_input(signal) {
+                        Ok(expr.add(LutLang::Var(signal.into())))
+                    } else {
+                        Err(e)
                     }
-                    Ok(expr.add(LutLang::Lut(subexpr.into())))
                 }
-            }
-            Err(e) => {
-                if self.is_an_input(signal) {
-                    Ok(expr.add(LutLang::Var(signal.into())))
-                } else {
-                    Err(e)
-                }
-            }
-        }?;
+            }?;
 
         map.insert(signal, id);
         Ok(id)
