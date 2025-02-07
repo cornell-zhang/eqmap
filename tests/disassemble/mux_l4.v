@@ -67,33 +67,33 @@ module mux_4_1 (
   // CHECK:     .B(tmp4),
   // CHECK:     .Y(tmp7)
   // CHECK: );
-  // CHECK: AND2 #(
+  // CHECK: NOT #(
   // CHECK: ) __4__ (
   // CHECK:     .A(s1),
-  // CHECK:     .B(tmp7),
   // CHECK:     .Y(tmp9)
   // CHECK: );
   // CHECK: NOR2 #(
   // CHECK: ) __5__ (
-  // CHECK:     .A(s0),
-  // CHECK:     .B(d),
-  // CHECK:     .Y(tmp11)
+  // CHECK:     .A(tmp9),
+  // CHECK:     .B(tmp7),
+  // CHECK:     .Y(tmp10)
   // CHECK: );
-  // CHECK: NOT #(
+  // CHECK: AND2 #(
   // CHECK: ) __6__ (
-  // CHECK:     .A(c),
-  // CHECK:     .Y(tmp13)
+  // CHECK:     .A(d),
+  // CHECK:     .B(tmp2),
+  // CHECK:     .Y(tmp12)
   // CHECK: );
   // CHECK: AND2 #(
   // CHECK: ) __7__ (
   // CHECK:     .A(s0),
-  // CHECK:     .B(tmp13),
+  // CHECK:     .B(c),
   // CHECK:     .Y(tmp14)
   // CHECK: );
   // CHECK: NOR2 #(
   // CHECK: ) __8__ (
   // CHECK:     .A(tmp14),
-  // CHECK:     .B(tmp11),
+  // CHECK:     .B(tmp12),
   // CHECK:     .Y(tmp15)
   // CHECK: );
   // CHECK: NOR2 #(
@@ -105,7 +105,12 @@ module mux_4_1 (
   // CHECK: NOR2 #(
   // CHECK: ) __10__ (
   // CHECK:     .A(tmp16),
-  // CHECK:     .B(tmp9),
+  // CHECK:     .B(tmp10),
+  // CHECK:     .Y(tmp17)
+  // CHECK: );
+  // CHECK: NOT #(
+  // CHECK: ) __11__ (
+  // CHECK:     .A(tmp17),
   // CHECK:     .Y(y)
   // CHECK: );
 
