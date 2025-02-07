@@ -168,6 +168,7 @@ fn main() -> std::io::Result<()> {
     #[cfg(feature = "dyn_decomp")]
     let req = match args.disassemble {
         Some(list) => req
+            .without_canonicalization()
             .with_disassembly_into(&list)
             .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?,
         None => req,
