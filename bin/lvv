@@ -1,48 +1,77 @@
 #!/bin/bash
 set -eo pipefail
+LIB="$(dirname $0)/../verilog/lutlang.v"
+LIB="$(realpath $LIB)"
+SIMLIB="$(dirname $0)/../verilog/simlib.v"
+SIMLIB="$(realpath $SIMLIB)"
+MKFILE=$1.mk
+
+# Decide whether to use Vivado or Yosys based on the stem given to Make
+if [ -z $FSTEM ]; then
+    FSTEM=yxil
+fi
 
 if [ "$1" == "--help" ] || [ "$2" == "--help" ] || [ "$3" == "--help" ]; then
     fam --help
+elif [ ! -f "$1" ]; then
+    echo "First argument must be the input file."
+    echo "Usage: $0 <input.v> [fam options]"
+    echo "Check that file exists and it is the first argument"
 else
     which yosys > /dev/null || { echo "yosys not found in PATH"; exit 1; }
     which fam > /dev/null || { echo "fam not found in PATH"; exit 1; }
 
-    echo "SRCS=\$(wildcard *.v)" > Makefile
-    echo "FAMILY=xcup" >> Makefile
-    echo "# flatten design before synthesis, no clock buffers, no IO buffers, no carry logic, no MUXes" >> Makefile
-    echo "SYNTH_OPT=-flatten -noclkbuf -noiopad -nocarry -nowidelut -ise" >> Makefile
-    echo "YOSYS=yosys # Yosys 0.33 (git sha1 2584903a060)" >> Makefile
-    echo "" >> Makefile
-    echo ".PHONY: all clean" >> Makefile
-    echo "" >> Makefile
-    echo "all: mux_4_1_synth.v" >> Makefile
-    echo "" >> Makefile
-    echo "clean:" >> Makefile
-    echo "	rm -f *.xil *.synth *.ys *.dot *.png" >> Makefile
-    echo "" >> Makefile
-    echo "%.v.synth: %_synth.ys" >> Makefile
-    echo "	+\$(YOSYS) -s \$<" >> Makefile
-    echo "" >> Makefile
-    echo "%.v.xil: %_xil.ys" >> Makefile
-    echo "	+\$(YOSYS) -s \$<" >> Makefile
-    echo "" >> Makefile
-    echo "# This script synthesizes to LUTs" >> Makefile
-    echo "%_xil.ys: %.v" >> Makefile
-    echo "	@echo \"read_verilog \$<\" > \$@" >> Makefile
-    echo "	@echo \"synth_xilinx -family \$(FAMILY) \$(SYNTH_OPT)\" >> \$@" >> Makefile
-    echo "	@echo \"clean -purge\" >> \$@" >> Makefile
-    echo "	@echo \"splitnets -format _\" >> \$@" >> Makefile
-    echo "	@echo \"write_verilog -simple-lhs \$<.xil\" >> \$@" >> Makefile
-    echo "" >> Makefile
-    echo "# This script synthesizes to AND, NOR, XOR, INV, MUXes" >> Makefile
-    echo "%_synth.ys: %.v" >> Makefile
-    echo "	@echo \"read_verilog \$<\" > \$@" >> Makefile
-    echo "	@echo \"techmap -map lutlang.v\" >> \$@" >> Makefile
-    echo "	@echo \"clean -purge\" >> \$@" >> Makefile
-    echo "	@echo \"splitnets -format _\" >> \$@" >> Makefile
-    echo "	@echo \"write_verilog -simple-lhs \$<.synth\" >> \$@" >> Makefile
+    echo "SRCS=\$(wildcard *.v)" > $MKFILE
+    echo "# Set both Yosys and Vivado to use Ultrascale+ Arch" >> $MKFILE
+    echo "FAMILY=xcup" >> $MKFILE
+    echo "PART=xczu3eg-sbva484-1-i" >> $MKFILE
+    echo "# flatten design before synthesis, no clock buffers, no IO buffers, no carry logic, no MUXes" >> $MKFILE
+    echo "SYNTH_OPT=-flatten -noclkbuf -noiopad -nocarry -nowidelut -ise" >> $MKFILE
+    echo "YOSYS=yosys # Yosys 0.33 (git sha1 2584903a060)" >> $MKFILE
+    echo "XILINX_VIVADO?=\$(realpath \$(dirname \$(which vivado))/..)" >> $MKFILE
+    echo "VIVADO=\$(XILINX_VIVADO)/bin/vivado" >> $MKFILE
+    echo "" >> $MKFILE
+    echo ".PHONY: all clean" >> $MKFILE
+    echo "" >> $MKFILE
+    echo "all: $1.xil" >> $MKFILE
+    echo "" >> $MKFILE
+    echo "clean:" >> $MKFILE
+    echo "	rm -f *.xil *.synth *.ys *.dot *.png" >> $MKFILE
+    echo "" >> $MKFILE
+    echo "%.v.synth: %_synth.ys" >> $MKFILE
+    echo "	+\$(YOSYS) -s \$<" >> $MKFILE
+    echo "" >> $MKFILE
+    echo "%.v.yxil: %_yxil.ys" >> $MKFILE
+    echo "	+\$(YOSYS) -s \$<" >> $MKFILE
+    echo "" >> $MKFILE
+    echo "# This script synthesizes to LUTs" >> $MKFILE
+    echo "%_yxil.ys: %.v" >> $MKFILE
+    echo "	@echo \"read_verilog \$<\" > \$@" >> $MKFILE
+    echo "	@echo \"synth_xilinx -family \$(FAMILY) \$(SYNTH_OPT)\" >> \$@" >> $MKFILE
+    echo "	@echo \"clean -purge\" >> \$@" >> $MKFILE
+    echo "	@echo \"splitnets -format _\" >> \$@" >> $MKFILE
+    echo "	@echo \"write_verilog -simple-lhs \$<.yxil\" >> \$@" >> $MKFILE
+    echo "" >> $MKFILE
+    echo "# This script synthesizes to AND, NOR, XOR, INV, MUXes" >> $MKFILE
+    echo "%_synth.ys: %.v" >> $MKFILE
+    echo "	@echo \"read_verilog \$<\" > \$@" >> $MKFILE
+    echo "	@echo \"techmap -map $LIB\" >> \$@" >> $MKFILE
+    echo "	@echo \"clean -purge\" >> \$@" >> $MKFILE
+    echo "	@echo \"splitnets -format _\" >> \$@" >> $MKFILE
+    echo "	@echo \"write_verilog -simple-lhs \$<.synth\" >> \$@" >> $MKFILE
+    echo "" >> $MKFILE
+    echo "%.v.vxil: %_vxil.tcl" >> $MKFILE
+    echo "	+\$(VIVADO) -mode tcl -source \$< -nolog -nojournal" >> $MKFILE
+    echo "" >> $MKFILE
+    echo "%_vxil.tcl: %.v" >> $MKFILE
+    echo "	@echo \"add_files \$<\" > \$@" >> $MKFILE
+    echo "	@echo \"synth_design -top \$* -mode out_of_context -part \$(PART)\" >> \$@" >> $MKFILE
+    echo "	@echo \"write_verilog -force \$<.vxil\" >> \$@" >> $MKFILE
+    echo "	@echo \"quit\" >> \$@" >> $MKFILE
+    echo "" >> $MKFILE
 
-    make $1.xil 1>&2
-    fam $1.xil $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} ${16}
-    rm -f $1.xil
+
+    make -f $MKFILE $1.$FSTEM 1>&2
+    fam $1.$FSTEM $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} ${16}
+    rm -f $1.$FSTEM $MKFILE
 fi

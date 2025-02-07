@@ -27,22 +27,21 @@ where
         rules.append(&mut rewrite!("nor2-conversion"; "(NOR ?a ?b)" <=> "(LUT 1 ?a ?b)"));
         rules.append(&mut rewrite!("and2-conversion"; "(AND ?a ?b)" <=> "(LUT 8 ?a ?b)"));
         rules.append(&mut rewrite!("xor2-conversion"; "(XOR ?a ?b)" <=> "(LUT 6 ?a ?b)"));
-        rules.append(&mut rewrite!("xor2-relation"; "(XOR ?a ?b)" <=> "(NOT (NOR (AND (NOT ?a) ?b) (AND (NOT ?b) ?a)))"));
-        rules.append(
-            &mut rewrite!("and-distributive"; "(AND ?a (NOT (NOR ?b ?c)))" <=> "(NOT (NOR (AND ?a ?b) (AND ?a ?c)))"),
-        );
-        rules.append(
-            &mut rewrite!("or-distributive"; "(NOT (NOR ?a (AND ?b ?c)))" <=> "(AND (NOT (NOR ?a ?b)) (NOT (NOR ?a ?c)))"),
-        );
-        rules.append(&mut rewrite!("and-assoc"; "(AND (AND ?a ?b) ?c)" <=> "(AND ?a (AND ?b ?c))"));
-        rules.append(
-            &mut rewrite!("or-assoc"; "(NOT (NOR ?a (NOT (NOR ?b ?c))))" <=> "(NOT (NOR (NOT (NOR ?a ?b)) ?c))"),
-        );
-        rules.push(
-            rewrite!("mux-expand"; "(LUT 202 ?s ?a ?b)" => "(LUT 14 (LUT 8 ?s ?a) (LUT 2 ?s ?b))"),
-        );
         rules.push(rewrite!("or2-conversion"; "(LUT 14 ?a ?b)" => "(NOT (NOR ?a ?b))"));
         rules.push(rewrite!("and-one-inv-conversion"; "(LUT 2 ?a ?b)" => "(AND (NOT ?a) ?b)"));
+        rules.append(&mut rewrite!("xor2-nor-nand"; "(XOR ?a ?b)" <=> "(NOT (NOR (AND (NOT ?a) ?b) (AND (NOT ?b) ?a)))"));
+        rules.append(
+            &mut rewrite!("and-distributivity"; "(AND ?a (NOT (NOR ?b ?c)))" <=> "(NOT (NOR (AND ?a ?b) (AND ?a ?c)))"),
+        );
+        rules.append(
+            &mut rewrite!("or-distributivity"; "(NOT (NOR ?a (AND ?b ?c)))" <=> "(AND (NOT (NOR ?a ?b)) (NOT (NOR ?a ?c)))"),
+        );
+        rules.append(
+            &mut rewrite!("and-associativity"; "(AND (AND ?a ?b) ?c)" <=> "(AND ?a (AND ?b ?c))"),
+        );
+        rules.append(
+            &mut rewrite!("or-associativity"; "(NOT (NOR ?a (NOT (NOR ?b ?c))))" <=> "(NOT (NOR (NOT (NOR ?a ?b)) ?c))"),
+        );
         rules.append(&mut rewrite!("demorgan"; "(NOR ?a ?b)" <=> "(AND (NOT ?a) (NOT ?b))"));
     } else {
         rules.push(rewrite!("nor2-conversion"; "(NOR ?a ?b)" => "(LUT 1 ?a ?b)"));
@@ -214,6 +213,9 @@ pub fn known_decompositions() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
 #[cfg(feature = "dyn_decomp")]
 pub fn dyn_decompositions() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
+    rules.push(
+        rewrite!("mux-expand"; "(LUT 202 ?s ?a ?b)" => "(LUT 14 (LUT 8 ?s ?a) (LUT 2 ?s ?b))"),
+    );
     rules.push(rewrite!("lut3-shannon-expand"; "(LUT ?p ?a ?b ?c)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
     rules.push(rewrite!("lut4-shannon-expand"; "(LUT ?p ?a ?b ?c ?d)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()])}));
     rules.push(rewrite!("lut5-shannon-expand"; "(LUT ?p ?a ?b ?c ?d ?e)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap()])}));
