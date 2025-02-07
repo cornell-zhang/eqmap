@@ -457,7 +457,10 @@ impl SVModule {
     }
 
     fn is_gate_prim(name: &str) -> bool {
-        matches!(name, "AND2" | "NOR2" | "XOR2" | "NOT" | "INV" | "MUX")
+        matches!(
+            name,
+            "AND2" | "NOR2" | "XOR2" | "NOT" | "INV" | "MUX" | "MUXF7" | "MUXF8" | "MUXF9"
+        )
     }
 
     fn is_assign_prim(name: &str) -> bool {
@@ -921,7 +924,7 @@ impl SVModule {
                         "AND2" => Ok(expr.add(LutLang::And([subexpr["A"], subexpr["B"]]))),
                         "NOR2" => Ok(expr.add(LutLang::Nor([subexpr["A"], subexpr["B"]]))),
                         "XOR2" => Ok(expr.add(LutLang::Xor([subexpr["A"], subexpr["B"]]))),
-                        "MUX" => {
+                        "MUX" | "MUXF7" | "MUXF8" | "MUXF9" => {
                             Ok(expr.add(LutLang::Mux([subexpr["S"], subexpr["A"], subexpr["B"]])))
                         }
                         "NOT" => Ok(expr.add(LutLang::Not([subexpr["A"]]))),
