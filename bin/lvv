@@ -28,8 +28,8 @@ else
     echo "# flatten design before synthesis, no clock buffers, no IO buffers, no carry logic, no MUXes" >> $MKFILE
     echo "SYNTH_OPT=-flatten -noclkbuf -noiopad -nocarry -nowidelut -ise" >> $MKFILE
     echo "YOSYS=yosys # Yosys 0.33 (git sha1 2584903a060)" >> $MKFILE
-    echo "XILINX_VIVADO?=\$(dirname \$(which vivado))" >> $MKFILE
-    echo "VIVADO=\$(XILINX_VIVADO)/vivado" >> $MKFILE
+    echo "XILINX_VIVADO?=\$(realpath \$(dirname \$(which vivado))/..)" >> $MKFILE
+    echo "VIVADO=\$(XILINX_VIVADO)/bin/vivado" >> $MKFILE
     echo "" >> $MKFILE
     echo ".PHONY: all clean" >> $MKFILE
     echo "" >> $MKFILE
@@ -65,7 +65,7 @@ else
     echo "" >> $MKFILE
     echo "%_vxil.tcl: %.v" >> $MKFILE
     echo "	@echo \"add_files \$<\" > \$@" >> $MKFILE
-    echo "	@echo \"synth_design -top $* -mode out_of_context -part $PART\" >> \$@" >> $MKFILE
+    echo "	@echo \"synth_design -top \$* -mode out_of_context -part $PART\" >> \$@" >> $MKFILE
     echo "	@echo \"write_verilog -force \$<.vxil\" >> \$@" >> $MKFILE
     echo "	@echo \"quit\" >> \$@" >> $MKFILE
     echo "" >> $MKFILE
