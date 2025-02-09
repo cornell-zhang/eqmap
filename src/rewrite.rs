@@ -923,7 +923,7 @@ pub mod decomp {
     fn test_decomp() {
         let expr: egg::RecExpr<lut::LutLang> = "(LUT 61642 s1 s0 c d)".parse().unwrap();
         let mut rules = super::lutpacking_rules();
-        rules.append(&mut super::dyn_decompositions());
+        rules.append(&mut super::dyn_decompositions(false));
 
         use crate::driver::SynthRequest;
         let mut req = SynthRequest::default()
