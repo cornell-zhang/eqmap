@@ -128,7 +128,7 @@ fn main() -> std::io::Result<()> {
 
     #[cfg(feature = "dyn_decomp")]
     if args.decomp || args.disassemble.is_some() {
-        rules.append(&mut dyn_decompositions());
+        rules.append(&mut dyn_decompositions(false));
     }
 
     if !args.no_retime {

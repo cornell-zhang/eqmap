@@ -209,17 +209,18 @@ pub fn known_decompositions() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     rules
 }
 
-/// Find dynamic decompositions of LUTs at runtime
+/// Find dynamic decompositions of LUTs at runtime.
+/// Finds compositions in any variable order when `any_order` is true
 #[cfg(feature = "dyn_decomp")]
-pub fn dyn_decompositions() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
+pub fn dyn_decompositions(any_order: bool) -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
     rules.push(
         rewrite!("mux-expand"; "(LUT 202 ?s ?a ?b)" => "(LUT 14 (LUT 8 ?s ?a) (LUT 2 ?s ?b))"),
     );
-    rules.push(rewrite!("lut3-shannon-expand"; "(LUT ?p ?a ?b ?c)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
-    rules.push(rewrite!("lut4-shannon-expand"; "(LUT ?p ?a ?b ?c ?d)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()])}));
-    rules.push(rewrite!("lut5-shannon-expand"; "(LUT ?p ?a ?b ?c ?d ?e)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap()])}));
-    rules.push(rewrite!("lut6-shannon-expand"; "(LUT ?p ?a ?b ?c ?d ?e ?f)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap(), "?f".parse().unwrap()])}));
+    rules.push(rewrite!("lut3-shannon-expand"; "(LUT ?p ?a ?b ?c)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()], any_order)}));
+    rules.push(rewrite!("lut4-shannon-expand"; "(LUT ?p ?a ?b ?c ?d)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()], any_order)}));
+    rules.push(rewrite!("lut5-shannon-expand"; "(LUT ?p ?a ?b ?c ?d ?e)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap()], any_order)}));
+    rules.push(rewrite!("lut6-shannon-expand"; "(LUT ?p ?a ?b ?c ?d ?e ?f)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap(), "?f".parse().unwrap()], any_order)}));
     rules
 }
 
@@ -809,13 +810,19 @@ pub mod decomp {
         program: Var,
         /// The redundant inputs must be at the last two positions
         vars: Vec<Var>,
+        /// Can decompose in any variable order (expensive)
+        any_order: bool,
     }
 
     impl ShannonExpand {
         /// Create an applier that combines duplicated inputs to a LUT.
         /// The last two elements in `vars` must be the same.
-        pub fn new(program: Var, vars: Vec<Var>) -> Self {
-            Self { program, vars }
+        pub fn new(program: Var, vars: Vec<Var>, any_order: bool) -> Self {
+            Self {
+                program,
+                vars,
+                any_order,
+            }
         }
 
         fn cuts_overlap(
@@ -869,9 +876,14 @@ pub mod decomp {
                 return vec![];
             }
             // Can only decompose in one variable order or else the e-graph will explode
-            if !operands.windows(2).all(|w| w[0] <= w[1]) {
+            if self.any_order {
+                if !operands[1..].windows(2).all(|w| w[0] <= w[1]) {
+                    return vec![];
+                }
+            } else if !operands.windows(2).all(|w| w[0] <= w[1]) {
                 return vec![];
             }
+
             // No overlapping cuts of children
             if operands.contains(&eclass) {
                 return vec![];
