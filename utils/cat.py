@@ -8,9 +8,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "inputs", nargs="*", type=argparse.FileType("r"), default=[sys.stdin]
     )
-    parser.add_argument(
-        "output", nargs="?", type=argparse.FileType("w"), default=sys.stdout
-    )
     parser.add_argument("--version", type=str, default="Unknown")
     args = parser.parse_args()
 
@@ -42,6 +39,5 @@ if __name__ == "__main__":
     mergedRpt["modules"] = modules
     mergedRpt["version"] = version
 
-    with args.output as f:
-        json.dump(mergedRpt, args.output, indent=2, sort_keys=True)
-        f.write("\n")
+    json.dump(mergedRpt, sys.stdout, indent=2, sort_keys=True)
+    sys.stdout.write("\n")
