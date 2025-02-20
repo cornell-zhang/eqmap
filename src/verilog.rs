@@ -84,9 +84,7 @@ fn parse_literal_as_bool(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<b
             match num {
                 1 => Ok(true),
                 0 => Ok(false),
-                _ => {
-                    return Err(format!("Expected a 1 bit constant. Found {}", num));
-                }
+                _ => Err(format!("Expected a 1 bit constant. Found {}", num)),
             }
         }
         RefNode::HexValue(b) => {
@@ -96,9 +94,7 @@ fn parse_literal_as_bool(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<b
             match num {
                 1 => Ok(true),
                 0 => Ok(false),
-                _ => {
-                    return Err(format!("Expected a 1 bit constant. Found {}", num));
-                }
+                _ => Err(format!("Expected a 1 bit constant. Found {}", num)),
             }
         }
         RefNode::UnsignedNumber(b) => {
@@ -108,9 +104,7 @@ fn parse_literal_as_bool(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<b
             match num {
                 1 => Ok(true),
                 0 => Ok(false),
-                _ => {
-                    return Err(format!("Expected a 1 bit constant. Found {}", num));
-                }
+                _ => Err(format!("Expected a 1 bit constant. Found {}", num)),
             }
         }
         _ => unreachable!(),
@@ -679,7 +673,6 @@ impl SVModule {
                     match arg_i {
                         Some(n) => {
                             let arg_name = get_identifier(n, ast);
-
                             cur_insts
                                 .last_mut()
                                 .unwrap()
