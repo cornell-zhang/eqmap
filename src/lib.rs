@@ -425,16 +425,32 @@ endmodule"
 
     #[test]
     fn test_constant_parse() {
-        let module = "module my_gate (
+        let module = "module my_gates (
             y
         );
-          output y;
-          wire y;
-          AND2 _0_ (
-              .A(1'b1),
-              .B(1'd0),
-              .Y(y)
-          );
+        output y;
+        wire y;
+        wire tmp1;
+        wire tmp2;
+
+        AND2 _0_ (
+            .A(1'd1),
+            .B(1'h01),
+            .Y(tmp1)
+        );
+
+        AND2 _1_ (
+            .A(1'b00),
+            .B(1'd0),
+            .Y(tmp2)
+        );
+
+        AND2 _2_ (
+            .A(tmp1),
+            .B(tmp2),
+            .Y(y)
+        );
+
         endmodule"
             .to_string();
         let ast = sv_parse_wrapper(&module, None).unwrap();
@@ -443,7 +459,7 @@ endmodule"
         let module = module.unwrap();
         assert_eq!(
             module.to_single_expr().unwrap().to_string(),
-            "(AND true false)".to_string()
+            "(AND (AND true true) (AND false false))".to_string()
         );
     }
 
