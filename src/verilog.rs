@@ -65,6 +65,58 @@ pub fn get_identifier(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<Stri
     }
 }
 
+/// Parse a literal `node` in the `ast` into a boolean value
+fn parse_literal_as_bool(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<bool, String> {
+    let value = unwrap_node!(node, BinaryValue, HexValue, UnsignedNumber);
+
+    if value.is_none() {
+        return Err(
+            "Expected a BinaryValue, HexValue, or UnsignedNumber Node under the Literal"
+                .to_string(),
+        );
+    }
+
+    match value.unwrap() {
+        RefNode::BinaryValue(b) => {
+            let loc = b.nodes.0;
+            let val = ast.get_str(&loc).unwrap();
+            let num = u64::from_str_radix(val, 2).unwrap();
+            match num {
+                1 => Ok(true),
+                0 => Ok(false),
+                _ => {
+                    return Err(format!("Expected a 1 bit constant. Found {}", num));
+                }
+            }
+        }
+        RefNode::HexValue(b) => {
+            let loc = b.nodes.0;
+            let val = ast.get_str(&loc).unwrap();
+            let num = u64::from_str_radix(val, 16).unwrap();
+            match num {
+                1 => Ok(true),
+                0 => Ok(false),
+                _ => {
+                    return Err(format!("Expected a 1 bit constant. Found {}", num));
+                }
+            }
+        }
+        RefNode::UnsignedNumber(b) => {
+            let loc = b.nodes.0;
+            let val = ast.get_str(&loc).unwrap();
+            let num = val.parse::<u64>().unwrap();
+            match num {
+                1 => Ok(true),
+                0 => Ok(false),
+                _ => {
+                    return Err(format!("Expected a 1 bit constant. Found {}", num));
+                }
+            }
+        }
+        _ => unreachable!(),
+    }
+}
+
 fn init_format(program: u64, k: usize) -> Result<String, ()> {
     let w = 1 << k;
     match k {
@@ -634,16 +686,19 @@ impl SVModule {
                                 .add_signal(port_name, arg_name.unwrap())?;
                         }
                         None => {
-                            // Ignore clock enable and resets
+                            // Ignore clock enable and reset signals,
+                            // because they are not along the data path
+                            // The verilog emitter just re-inserts them at the end
+                            // This means we can only use D Flip-flops that are constantly *ON*.
                             if port_name == "CE" || port_name == "R" {
                                 if unwrap_node!(arg, PrimaryLiteral).is_none() {
                                     return Err(format!(
-                                        "Port {} should be driven constant",
+                                        "Non-data port {} should be driven constant",
                                         port_name
                                     ));
                                 }
                             } else {
-                                // Assume it is a constant and just make the connection
+                                // If we don't have a identifier, it must be a constant connection
                                 let arg_name = cur_insts.last().unwrap().name.clone()
                                     + port_name.as_str()
                                     + "_const";
@@ -652,75 +707,23 @@ impl SVModule {
                                     .last_mut()
                                     .unwrap()
                                     .add_signal(port_name.clone(), arg_name.clone())?;
-                                let unwrapped_connection = unwrap_node!(arg, PrimaryLiteral);
-                                if unwrapped_connection.is_none() {
+
+                                // Create the constant
+                                let literal = unwrap_node!(arg, PrimaryLiteral);
+                                if literal.is_none() {
                                     return Err(format!(
-                                        "Expected a PrimaryLiteral for port {}",
+                                        "Expected a literal for connection on port {}",
                                         port_name
                                     ));
                                 }
-                                let value = unwrap_node!(
-                                    unwrapped_connection.unwrap(),
-                                    BinaryValue,
-                                    HexValue,
-                                    UnsignedNumber
-                                )
-                                .unwrap();
-
-                                let value = match value {
-                                    RefNode::BinaryValue(b) => {
-                                        let loc = b.nodes.0;
-                                        let val = ast.get_str(&loc).unwrap();
-                                        let num = u64::from_str_radix(val, 2).unwrap();
-                                        match num {
-                                            1 => true,
-                                            0 => false,
-                                            _ => {
-                                                return Err(format!(
-                                                    "Expected a 1 bit constant. Found {}",
-                                                    num
-                                                ));
-                                            }
-                                        }
-                                    }
-                                    RefNode::HexValue(b) => {
-                                        let loc = b.nodes.0;
-                                        let val = ast.get_str(&loc).unwrap();
-                                        let num = u64::from_str_radix(val, 16).unwrap();
-                                        match num {
-                                            1 => true,
-                                            0 => false,
-                                            _ => {
-                                                return Err(format!(
-                                                    "Expected a 1 bit constant. Found {}",
-                                                    num
-                                                ));
-                                            }
-                                        }
-                                    }
-                                    RefNode::UnsignedNumber(b) => {
-                                        let loc = b.nodes.0;
-                                        let val = ast.get_str(&loc).unwrap();
-                                        let num = val.parse::<u64>().unwrap();
-                                        match num {
-                                            1 => true,
-                                            0 => false,
-                                            _ => {
-                                                return Err(format!(
-                                                    "Expected a 1 bit constant. Found {}",
-                                                    num
-                                                ));
-                                            }
-                                        }
-                                    }
-                                    _ => unreachable!(),
-                                };
-
+                                let value = parse_literal_as_bool(literal.unwrap(), ast)?;
                                 let const_inst = SVPrimitive::new_const(
                                     value,
                                     arg_name.clone(),
                                     arg_name.clone() + "_inst",
                                 );
+
+                                // Insert the constant before the current instance
                                 cur_insts.insert(cur_insts.len() - 1, const_inst);
                             }
                         }
@@ -746,7 +749,7 @@ impl SVModule {
                     let lhs_id = unwrap_node!(lhs, Identifier).unwrap();
                     let lhs_name = get_identifier(lhs_id, ast).unwrap();
                     let rhs = unwrap_node!(net_assign, Expression).unwrap();
-                    let rhs_id = unwrap_node!(rhs, Identifier, BinaryNumber, HexNumber).unwrap();
+                    let rhs_id = unwrap_node!(rhs, Identifier, PrimaryLiteral).unwrap();
                     let assignment = unwrap_node!(net_assign, Symbol).unwrap();
                     match assignment {
                         RefNode::Symbol(sym) => {
@@ -760,47 +763,20 @@ impl SVModule {
                             return Err("Expected an assignment operator".to_string());
                         }
                     }
-                    match rhs_id {
-                        RefNode::Identifier(_) => {
-                            let rhs_name = get_identifier(rhs_id, ast).unwrap();
-                            cur_insts.push(SVPrimitive::new_wire(
-                                rhs_name.clone(),
-                                lhs_name.clone(),
-                                lhs_name + "_wire_" + &rhs_name,
-                            ));
-                        }
-                        RefNode::BinaryNumber(b) => {
-                            let loc = b.nodes.2.nodes.0;
-                            let val = ast.get_str(&loc).unwrap();
-                            let val = match val {
-                                "0" => false,
-                                "1" => true,
-                                _ => {
-                                    return Err(format!(
-                                        "Expected a 1 bit constant. Found {}",
-                                        val
-                                    ));
-                                }
-                            };
-                            cur_insts.push(SVPrimitive::new_const(
-                                val,
-                                lhs_name.clone(),
-                                lhs_name + "_const_binary",
-                            ));
-                        }
-                        RefNode::HexNumber(b) => {
-                            let loc = b.nodes.2.nodes.0;
-                            let val = ast.get_str(&loc).unwrap();
-                            let val = !matches!(val, "0");
-                            cur_insts.push(SVPrimitive::new_const(
-                                val,
-                                lhs_name.clone(),
-                                lhs_name + "_const_hex",
-                            ));
-                        }
-                        _ => {
-                            return Err("Expected a Identifier or PrimaryLiteral".to_string());
-                        }
+                    if matches!(rhs_id, RefNode::Identifier(_)) {
+                        let rhs_name = get_identifier(rhs_id, ast).unwrap();
+                        cur_insts.push(SVPrimitive::new_wire(
+                            rhs_name.clone(),
+                            lhs_name.clone(),
+                            lhs_name + "_wire_" + &rhs_name,
+                        ));
+                    } else {
+                        let val = parse_literal_as_bool(rhs_id, ast)?;
+                        cur_insts.push(SVPrimitive::new_const(
+                            val,
+                            lhs_name.clone(),
+                            lhs_name + "_const_binary",
+                        ));
                     }
                 }
                 NodeEvent::Leave(RefNode::NetAssignment(_net_assign)) => (),
