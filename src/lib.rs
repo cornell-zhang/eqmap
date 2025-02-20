@@ -424,6 +424,30 @@ endmodule"
     }
 
     #[test]
+    fn test_constant_parse() {
+        let module = "module my_gate (
+            y
+        );
+          output y;
+          wire y;
+          AND2 _0_ (
+              .A(1'b1),
+              .B(1'd0),
+              .Y(y)
+          );
+        endmodule"
+            .to_string();
+        let ast = sv_parse_wrapper(&module, None).unwrap();
+        let module = SVModule::from_ast(&ast);
+        assert!(module.is_ok());
+        let module = module.unwrap();
+        assert_eq!(
+            module.to_single_expr().unwrap().to_string(),
+            "(AND true false)".to_string()
+        );
+    }
+
+    #[test]
     fn test_verilog_emitter() {
         let mux: RecExpr<LutLang> = "(LUT 202 s1 (LUT 202 s0 a b) (LUT 202 s0 c d))"
             .parse()
