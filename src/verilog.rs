@@ -623,14 +623,10 @@ impl SVModule {
                     let port_name = get_identifier(port, ast).unwrap();
                     let arg = unwrap_node!(connection, Expression).unwrap();
                     let arg_i = unwrap_node!(arg.clone(), HierarchicalIdentifier);
-                    eprintln!("Cur insts last {:?}", cur_insts.last());
 
                     match arg_i {
                         Some(n) => {
                             let arg_name = get_identifier(n, ast);
-                            eprintln!("Port {}", port_name);
-                            eprintln!("Cur insts last {:?}", cur_insts.last());
-                            eprintln!("Arg Name {:?}", arg_name);
 
                             cur_insts
                                 .last_mut()
@@ -646,9 +642,6 @@ impl SVModule {
                                         port_name
                                     ));
                                 }
-                                // TODO: is this continue doing anything in the control flow?
-                                // TODO: Can we delete this?
-                                continue;
                             } else {
                                 // Assume it is a constant and just make the connection
                                 let arg_name = cur_insts.last().unwrap().name.clone()
@@ -724,15 +717,11 @@ impl SVModule {
                                 };
 
                                 let const_inst = SVPrimitive::new_const(
-                                    value, // TODO: Obtain the val
+                                    value,
                                     arg_name.clone(),
                                     arg_name.clone() + "_inst",
                                 );
                                 cur_insts.insert(cur_insts.len() - 1, const_inst);
-                                // return Err(format!(
-                                //     "Expected a HierarchicalIdentifier for port {}",
-                                //     port_name
-                                // ));
                             }
                         }
                     }
