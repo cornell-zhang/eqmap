@@ -623,10 +623,15 @@ impl SVModule {
                     let port_name = get_identifier(port, ast).unwrap();
                     let arg = unwrap_node!(connection, Expression).unwrap();
                     let arg_i = unwrap_node!(arg.clone(), HierarchicalIdentifier);
+                    eprintln!("Cur insts last {:?}", cur_insts.last());
 
                     match arg_i {
                         Some(n) => {
                             let arg_name = get_identifier(n, ast);
+                            eprintln!("Port {}", port_name);
+                            eprintln!("Cur insts last {:?}", cur_insts.last());
+                            eprintln!("Arg Name {:?}", arg_name);
+
                             cur_insts
                                 .last_mut()
                                 .unwrap()
@@ -641,12 +646,75 @@ impl SVModule {
                                         port_name
                                     ));
                                 }
+                                // TODO: is this continue doing anything in the control flow?
+                                // TODO: Can we delete this?
                                 continue;
                             } else {
-                                return Err(format!(
-                                    "Expected a HierarchicalIdentifier for port {}",
-                                    port_name
-                                ));
+                                // Assume it is a constant and just make the connection
+                                let arg_name = cur_insts.last().unwrap().name.clone()
+                                    + port_name.as_str()
+                                    + "_const";
+                                cur_signals.push(SVSignal::new(1, arg_name.clone()));
+                                cur_insts
+                                    .last_mut()
+                                    .unwrap()
+                                    .add_signal(port_name.clone(), arg_name.clone())?;
+                                let unwrapped_connection = unwrap_node!(arg, PrimaryLiteral);
+                                if unwrapped_connection.is_none() {
+                                    return Err(format!(
+                                        "Expected a PrimaryLiteral for port {}",
+                                        port_name
+                                    ));
+                                }
+                                let value = unwrap_node!(
+                                    unwrapped_connection.unwrap(),
+                                    BinaryNumber,
+                                    HexNumber
+                                )
+                                .unwrap();
+
+                                let value = match value {
+                                    RefNode::BinaryNumber(b) => {
+                                        let loc = b.nodes.2.nodes.0;
+                                        let val = ast.get_str(&loc).unwrap();
+                                        match val {
+                                            "0" => false,
+                                            "1" => true,
+                                            _ => {
+                                                return Err(format!(
+                                                    "Expected a 1 bit constant. Found {}",
+                                                    val
+                                                ));
+                                            }
+                                        }
+                                    }
+                                    RefNode::HexNumber(b) => {
+                                        let loc = b.nodes.2.nodes.0;
+                                        let val = ast.get_str(&loc).unwrap();
+                                        match val {
+                                            "0" => false,
+                                            "1" => true,
+                                            _ => {
+                                                return Err(format!(
+                                                    "Expected a 1 bit constant. Found {}",
+                                                    val
+                                                ));
+                                            }
+                                        }
+                                    }
+                                    _ => unreachable!(),
+                                };
+
+                                let const_inst = SVPrimitive::new_const(
+                                    value, // TODO: Obtain the val
+                                    arg_name.clone(),
+                                    arg_name.clone() + "_inst",
+                                );
+                                cur_insts.insert(cur_insts.len() - 1, const_inst);
+                                // return Err(format!(
+                                //     "Expected a HierarchicalIdentifier for port {}",
+                                //     port_name
+                                // ));
                             }
                         }
                     }
