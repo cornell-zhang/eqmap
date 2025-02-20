@@ -668,36 +668,54 @@ impl SVModule {
                                 }
                                 let value = unwrap_node!(
                                     unwrapped_connection.unwrap(),
-                                    BinaryNumber,
-                                    HexNumber
+                                    BinaryValue,
+                                    HexValue,
+                                    UnsignedNumber
                                 )
                                 .unwrap();
 
                                 let value = match value {
-                                    RefNode::BinaryNumber(b) => {
-                                        let loc = b.nodes.2.nodes.0;
+                                    RefNode::BinaryValue(b) => {
+                                        let loc = b.nodes.0;
                                         let val = ast.get_str(&loc).unwrap();
-                                        match val {
-                                            "0" => false,
-                                            "1" => true,
+                                        let num = u64::from_str_radix(val, 2).unwrap();
+                                        match num {
+                                            1 => true,
+                                            0 => false,
                                             _ => {
                                                 return Err(format!(
                                                     "Expected a 1 bit constant. Found {}",
-                                                    val
+                                                    num
                                                 ));
                                             }
                                         }
                                     }
-                                    RefNode::HexNumber(b) => {
-                                        let loc = b.nodes.2.nodes.0;
+                                    RefNode::HexValue(b) => {
+                                        let loc = b.nodes.0;
                                         let val = ast.get_str(&loc).unwrap();
-                                        match val {
-                                            "0" => false,
-                                            "1" => true,
+                                        let num = u64::from_str_radix(val, 16).unwrap();
+                                        match num {
+                                            1 => true,
+                                            0 => false,
                                             _ => {
                                                 return Err(format!(
                                                     "Expected a 1 bit constant. Found {}",
-                                                    val
+                                                    num
+                                                ));
+                                            }
+                                        }
+                                    }
+                                    RefNode::UnsignedNumber(b) => {
+                                        let loc = b.nodes.0;
+                                        let val = ast.get_str(&loc).unwrap();
+                                        let num = val.parse::<u64>().unwrap();
+                                        match num {
+                                            1 => true,
+                                            0 => false,
+                                            _ => {
+                                                return Err(format!(
+                                                    "Expected a 1 bit constant. Found {}",
+                                                    num
                                                 ));
                                             }
                                         }
