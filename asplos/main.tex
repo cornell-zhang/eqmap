@@ -4,7 +4,8 @@
 \documentclass[sigplan,nonacm]{acmart}
 
 \newcommand{\fixme}[1]{\textcolor{red}{#1}}
-
+\newcommand{\fullname}{Lut-Synth}
+\newcommand{\shortname}{FAM}
 
 % enable page numbers
 \settopmatter{printfolios=true}
@@ -15,11 +16,23 @@
 \title{Lorem Ipsum}
 
 \begin{abstract}
-    Really cool abstract
+    Really cool abstract \fixme{Do the abstract}
 \end{abstract}
 \maketitle % should come after the abstract
 
 \input{sections/00-intro}
+
+% Possible outline:
+% 1. Related work
+% 2. Egraph Construction
+% 2.a. Simplifying degenerate LUTs
+% 2.b. Functional composition
+% 2.c. Functional decomposition
+% 2.d. Symmetries of non-degenerate LUTs
+% 2.e LUTs under restriction
+% Experimental Setup
+% results
+% Future work
 
 % use the ACM bibliography style
 \bibliographystyle{ACM-Reference-Format}
