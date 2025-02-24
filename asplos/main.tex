@@ -1,0 +1,33 @@
+% use the base acmart.cls
+% use the sigplan proceeding template with the default 10 pt fonts
+% nonacm option removes ACM related text in the submission. 
+\documentclass[sigplan,nonacm]{acmart}
+
+\newcommand{\fixme}[1]{\textcolor{red}{#1}}
+
+
+% enable page numbers
+\settopmatter{printfolios=true}
+
+
+\begin{document}
+
+\title{Lorem Ipsum}
+
+\begin{abstract}
+    Really cool abstract
+\end{abstract}
+\maketitle % should come after the abstract
+
+\input{sections/00-intro}
+
+% use the ACM bibliography style
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+% \newpage
+%%
+%% If your work has an appendix, this is the place to put it.
+% \appendix
+
+\end{document}
