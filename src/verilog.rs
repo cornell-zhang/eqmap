@@ -80,7 +80,8 @@ fn parse_literal_as_bool(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<b
         RefNode::BinaryValue(b) => {
             let loc = b.nodes.0;
             let val = ast.get_str(&loc).unwrap();
-            let num = u64::from_str_radix(val, 2).unwrap();
+            let num = u64::from_str_radix(val, 2)
+                .map_err(|_e| format!("Could not parse binary value {val} as bool"))?;
             match num {
                 1 => Ok(true),
                 0 => Ok(false),
@@ -90,7 +91,8 @@ fn parse_literal_as_bool(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<b
         RefNode::HexValue(b) => {
             let loc = b.nodes.0;
             let val = ast.get_str(&loc).unwrap();
-            let num = u64::from_str_radix(val, 16).unwrap();
+            let num = u64::from_str_radix(val, 16)
+                .map_err(|_e| format!("Could not parse hex value {val} as bool"))?;
             match num {
                 1 => Ok(true),
                 0 => Ok(false),
@@ -100,7 +102,9 @@ fn parse_literal_as_bool(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<b
         RefNode::UnsignedNumber(b) => {
             let loc = b.nodes.0;
             let val = ast.get_str(&loc).unwrap();
-            let num = val.parse::<u64>().unwrap();
+            let num = val
+                .parse::<u64>()
+                .map_err(|_e| format!("Could not parse decimal value {val} as bool"))?;
             match num {
                 1 => Ok(true),
                 0 => Ok(false),
