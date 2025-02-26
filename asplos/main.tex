@@ -4,8 +4,9 @@
 \documentclass[sigplan,nonacm]{acmart}
 
 \newcommand{\fixme}[1]{\textcolor{red}{#1}}
+\newcommand{\todo}[1]{\textcolor{red}{TODO: #1}}
 \newcommand{\fullname}{Lut-Synth}
-\newcommand{\shortname}{FAM}
+\newcommand{\shortname}{SLS}
 
 % enable page numbers
 \settopmatter{printfolios=true}
@@ -13,10 +14,15 @@
 
 \begin{document}
 
-\title{Lorem Ipsum}
+\title{\fullname}
 
 \begin{abstract}
-    Really cool abstract \fixme{Do the abstract}
+    FPGA technology mapping is a well-studied problem and has been an area of interest in EDA tool design for decades.
+    In most respects, the computational complexity of technology mapping is understood, and adequate heuristic algorithms have been sucessfully employed to mitigate compile times while maintaing high QoR (quality of results).
+    As transistor scaling comes to an end within the next few years, synthesis tools will become more of the bottleneck in designing high performance accelerators. As a solution, we introduce \shortname{}, an e-graph driven technology mapper that can better span the cavern between SAT-based exact synthesis and heuristic cut enumeration techniques.
+    In our experiments, we show that \shortname{} can synthesize circuits with \todo{X\%} fewer LUTs on average, \textit{without ever increasing circuit depth}.
+    We also provide an empirical analysis the runtime of \shortname{} and show that it is still practical for large (~10,000 LUT) designs.
+    Finally, we demonstrate that our compiler infrastructure is reusable, and future work can use our compiler for RTL equivalence checking or auditing the QoR of synthesis tools.
 \end{abstract}
 \maketitle % should come after the abstract
 
