@@ -2,21 +2,21 @@
 
 \subsection{Simplifying Degenerate LUTs} \label{sec:rewrites:degen}
 
-\textbf{Definition:} A lookup table $F : \{ 0, 1 \}^n \rightarrow \{ 0, 1 \}$ is \textit{degenerate} if there is exists a Shannon expansion $F = x_i \cdot F_{x_i} + \overline{x_i} \cdot F_{\overline{x}_i}$
-such that $F_{x_i} = F_{\overline{x}_i}$ for some $i \in \{ 0, \ldots, n -1\}$. In other words, $F = F_{x_i} = F_{\overline{x}_i}$.
+\textbf{Definition:} A LUT's configuration $F : \{ 0, 1 \}^k \rightarrow \{ 0, 1 \}$ is \textit{degenerate} if there exists a Shannon expansion $F = x_i \cdot F_{x_i} + \overline{x_i} \cdot F_{\overline{x}_i}$
+such that $F_{x_i} = F_{\overline{x}_i}$ for some $i \in \{ 0, \ldots, k -1\}$. In other words, $F = F_{x_i} = F_{\overline{x}_i}$.
 
 The output of a degenerate LUT is not dependent on one of its inputs. Hence, it
 can be rewritten into a LUT which uses fewer inputs. This rule is applied by
 computing the Shannon expansions of LUTs and checking for equivalence.
 
 \begin{verbatim}
-    (LUT p x0 x1 x2) => (LUT p' x0 x1)
-        if p(x0, x1, 0) == p(x0, x1, 1) always
-        where p'(x0, x1) := p(x0, x1, 0)
+    (LUT F x0 x1 x2) => (LUT F' x0 x1)
+        if F(x0, x1, 0) == F(x0, x1, 1)
+        where F'(x0, x1) := F(x0, x1, 0)
 \end{verbatim}
 
 A separate rule is instantiated for every LUT size and every input position. In
-total, $\sum_{i=1}^{6} i = 6(6+1)/2 = 21$ rules are instantiated for searching
+total, $\sum_{k=1}^{6} k = 6(6+1)/2 = 21$ rules are instantiated for searching
 for degenerate LUTs. Since this rule is computationally expensive, it is
 applied greedily as a pre-processing step before the e-graph is built. None of
 the other rewrite rules create degenerate LUTs, so this has no impact on
@@ -26,6 +26,28 @@ results. Of course this rule can be enabled at any time, if it were necessary.
 
 \subsection{LUT Symmetries} \label{sec:rewrites:symmetry}
 
-\subsection{Simplifying LUTs under Restrictions} \label{sec:rewrites:restrict}
+\subsection{LUTs with Domain Restrictions} \label{sec:rewrites:restrict}
+
+\textbf{Definition:} A lookup table \texttt{(LUT F x0 x1 ...)} is \textit{restricted} if \texttt{xi == xj} for some $ i, j \in \{0, \ldots, k-1\}, \; i \neq j$.
+In other words, the domain of the LUT is restricted.
+
+The main advantage of using e-graphs is the compact way in which it represents
+notions of equality. When considering the entire set of rewrite rules under
+composition, we can observe new equalities being formed in the e-graph.
+Whenever an equality is found between two of the inputs to a $k$-LUT, it can be
+rewritten with a $(k-1)$-LUT. We simply need to define and compute
+$\texttt{restrict(F, i, j)}$ which maps $F : \{0, 1\}^k \rightarrow \{ 0, 1\}$
+to the domain-restricted $F \vert_{x_i = x_j} : \{0, 1\}^{k-1} \rightarrow \{
+    0, 1\}$. In pseudocode, the rewrite rule can be rwritten as follows:
+
+\begin{verbatim}
+    (LUT F x0 x1 x0) => (LUT G x0 x1)
+        where G := restrict(F, 0, 2)
+\end{verbatim}
+
+Since e-graph rewrite patterns search on e-classes, this rule is automatically
+re-checked when e-classes are merged. In total, there are as many domain
+restriction rules as there are combinations of positions in which inputs can
+alias: $\sum_{k=2}^{6} \binom{k}{2} = 35$ rules.
 
 \subsection{Functional Decomposition} \label{sec:rewrites:decomp}
