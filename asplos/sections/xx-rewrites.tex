@@ -1,0 +1,31 @@
+\section{E-Graph Construction} \label{sec:rewrites}
+
+\subsection{Simplifying Degenerate LUTs} \label{sec:rewrites:degen}
+
+\textbf{Definition:} A lookup table $F : \{ 0, 1 \}^n \rightarrow \{ 0, 1 \}$ is \textit{degenerate} if there is exists a Shannon expansion $F = x_i \cdot F_{x_i} + \overline{x_i} \cdot F_{\overline{x}_i}$
+such that $F_{x_i} = F_{\overline{x}_i}$ for some $i \in \{ 0, \ldots, n -1\}$. In other words, $F = F_{x_i} = F_{\overline{x}_i}$.
+
+The output of a degenerate LUT is not dependent on one of its inputs. Hence, it
+can be rewritten into a LUT which uses fewer inputs. This rule is applied by
+computing the Shannon expansions of LUTs and checking for equivalence.
+
+\begin{verbatim}
+    (LUT p x0 x1 x2) => (LUT p' x0 x1)
+        if p(x0, x1, 0) == p(x0, x1, 1) always
+        where p'(x0, x1) := p(x0, x1, 0)
+\end{verbatim}
+
+A separate rule is instantiated for every LUT size and every input position. In
+total, $\sum_{i=1}^{6} i = 6(6+1)/2 = 21$ rules are instantiated for searching
+for degenerate LUTs. Since this rule is computationally expensive, it is
+applied greedily as a pre-processing step before the e-graph is built. None of
+the other rewrite rules create degenerate LUTs, so this has no impact on
+results. Of course this rule can be enabled at any time, if it were necessary.
+
+\subsection{Functional Composition}  \label{sec:rewrites:composition}
+
+\subsection{LUT Symmetries} \label{sec:rewrites:symmetry}
+
+\subsection{Simplifying LUTs under Restrictions} \label{sec:rewrites:restrict}
+
+\subsection{Functional Decomposition} \label{sec:rewrites:decomp}
