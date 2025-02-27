@@ -22,8 +22,8 @@ define_language! {
     pub enum LutLang {
         Const(bool),
         Program(u64), // The only node type that is not a net
-        Var(Symbol),
         "x" = DC,
+        Var(Symbol),
         "NOR" = Nor([Id; 2]),
         "MUX" = Mux([Id; 3]), // s, a, b
         "AND" = And([Id; 2]),
@@ -61,9 +61,10 @@ impl LutLang {
             }
             LutLang::Var(f) => match f.as_str() {
                 "NOR" | "LUT" | "MUX" | "AND" | "XOR" | "NOT" | "BUS" | "DC" | "x" | "REG"
-                | "CYCLE" | "ARG" => Err(
-                    "Variable name is already reserved. Check for missing parentheses.".to_string(),
-                ),
+                | "CYCLE" | "ARG" => Err(format!(
+                    "Variable name '{}' is already reserved. Check for missing parentheses.",
+                    f.as_str()
+                )),
                 _ => Ok(()),
             },
             _ => Ok(()),
