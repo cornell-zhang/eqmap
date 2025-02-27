@@ -120,3 +120,14 @@ re-checked when e-classes are merged. Since LUT symmetry is represented in the
 graph, only one rule is needed for each lut size $k=2$ through 6.
 
 \subsection{Functional Decomposition}\label{sec:rewrites:decomp}
+
+\subsection{Register Retiming}\label{sec:rewrites:retiming}
+Register retiming, as a purely structural rule, can be implemented with a
+simple search and apply pattern. An example for $k=3$ would be written as
+follows:
+
+\begin{verbatim}
+    (LUT F (REG x0) (REG x1)) <=> (REG (LUT F x0 x1))
+\end{verbatim}
+
+Unlike the other rules, this rule is searched for in both directions.
