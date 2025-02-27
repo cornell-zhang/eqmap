@@ -1118,9 +1118,13 @@ impl SVModule {
         &'a self,
         signal: &'a str,
         walk: &mut HashSet<&'a str>,
+        visited: &mut HashSet<&'a str>,
     ) -> Result<(), &'a str> {
         if walk.contains(signal) {
             return Err(signal);
+        }
+        if visited.contains(signal) {
+            return Ok(());
         }
         walk.insert(signal);
         let driving = self.get_driving_primitive(signal);
@@ -1130,18 +1134,20 @@ impl SVModule {
         }
         let driving = driving.unwrap();
         for (_, driver) in driving.inputs.iter() {
-            self.contains_cycles_rec(driver, walk)?
+            self.contains_cycles_rec(driver, walk, visited)?
         }
         walk.remove(signal);
+        visited.insert(signal);
         Ok(())
     }
 
     /// We cannot lower verilog with cycles in it to LutLang expressions.
     /// This function returns [Ok] when there are no cycles in the module
     pub fn contains_cycles<'a>(&'a self) -> Result<(), &'a str> {
+        let mut visited = HashSet::new();
         for output in self.outputs.iter() {
             let mut stack: HashSet<&'a str> = HashSet::new();
-            self.contains_cycles_rec(output.get_name(), &mut stack)?
+            self.contains_cycles_rec(output.get_name(), &mut stack, &mut visited)?
         }
         Ok(())
     }
