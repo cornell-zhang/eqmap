@@ -524,7 +524,7 @@ impl Applier<lut::LutLang, LutAnalysis> for ShannonCondense {
         }
         let k = operands.len();
         assert!(k <= 5);
-        let new_prog = p << (1 << k) | q;
+        let new_prog = (p << (1 << k)) | q;
         let new_prog_id = egraph.add(lut::LutLang::Program(new_prog));
         let sel = subst[self.sel];
         let mut c = Vec::from(&[new_prog_id, sel]);
