@@ -8,6 +8,20 @@ with precise denotational semantics. Formalizing the meaning of Verilog
 netlists in a functional way is critical to ensuring correct rewrite rules and
 further understanding of the high-level interactions of these rules.
 
+\subsection{\texttt{LutLang} Representation}\label{sec:rewrites:lutlang}
+
+Our compiler has a custom Verilog frontend for the sake of converting netlists
+to a format, called \texttt{LutLang}, that is compatible with e-graph
+structures. When printed to text, \texttt{LutLang} takes on a Lisp-like syntax
+and our rewrite rules are written in such style. As an example, a 2-LUT
+cascaded into a 3-LUT is written as follows:
+
+\begin{verbatim}
+    (LUT F x0 x1 (LUT G x2 x3))
+\end{verbatim}
+
+\texttt{F} and \texttt{G} are the truth-tables of the LUTs. Since $k \leq 6$, truth tables are stored with 64-bit integers, but we analyze them as total functions from $\Bk \rightarrow \B$.
+
 \subsection{Simplifying Degenerate LUTs}\label{sec:rewrites:degen}
 
 \textbf{Definition:} A LUT's configuration $F : \Bk \rightarrow \B$ is \textit{degenerate} if there exists a Shannon expansion $F = x_i \cdot F_{x_i} + \overline{x_i} \cdot F_{\overline{x}_i}$
@@ -24,12 +38,13 @@ $k=3$, the rules takes on the following form:
         where F'(x0, x1) := F(x0, x1, true)
 \end{verbatim}
 
-One rule is instantiated for each LUT size $k =1$ through 6. One should notice
-that LUTs which are constant functions are also handled by this rule. Since
-this rule is computationally expensive, it is applied greedily as a
-pre-processing step before the e-graph is built. None of the other rewrite
-rules create degenerate LUTs, so this has no impact on results. Of course this
-rule can be enabled at any time, if it were necessary.
+To the left of \texttt{=>} is the \textit{search pattern}. The right-hand side
+of the rule is the \textit{application}. One rule is instantiated for each LUT
+size $k =1$ through 6. One should notice that LUTs which are constant functions
+are also handled by this rule. Since this rule is computationally expensive, it
+is applied greedily as a pre-processing step before the e-graph is built. None
+of the other rewrite rules create degenerate LUTs, so this has no impact on
+results. Of course this rule can be enabled at any time, if it were necessary.
 
 \subsection{Partial Application}\label{sec:rewrites:application}
 A LUT with a constant input can be partially evaluated to a LUT with one less
