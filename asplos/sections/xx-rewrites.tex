@@ -127,8 +127,8 @@ size and build time of the e-graph. However, we can still define rewrites that
 look for fully disjoint decompositions in one or more variables. This rule has
 no structural element to search for, so it runs every time an e-class is
 updated. Our implementation computes the Shannon expansion of a $k$-LUT's
-function $F$ and checks that both cofactors are cognates.For instance, given
-$k=3$ then it is true that:
+function $F$ and checks that both cofactors are cognates in a loose sense. For
+instance, given $k=3$ then it is true that:
 
 \begin{align*}
     F(x_0, x_1, x_2) = G(x_0, H(x_1, x_2)) \iff & F_{x_0} (x_1, x_2) = G_{x_0} (H(x_1, x_2))                             \\
