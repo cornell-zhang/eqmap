@@ -1,6 +1,13 @@
 \section{E-Graph Construction}\label{sec:rewrites}
-\todo{intro the section}
-\todo{fix rule counts, reorder sections}
+
+In the follow sections, we call the truth table of a LUT the \textit{program}
+or \textit{function} interchangeably. The program of a $k$-LUT is modeled as a
+function $F : \Bk \rightarrow \B$, where $\mathbb{Z}_2 = \mathbb{Z}/2\mathbb{Z}
+    = \mathbb{F}_2 = \{0,1\}$. To that end, we can endow the grammar of the netlist
+with precise denotational semantics. Formalizing the meaning of Verilog
+netlists in a functional way is critical to ensuring correct rewrite rules and
+further understanding of the high-level interactions of these rules.
+
 \subsection{Simplifying Degenerate LUTs}\label{sec:rewrites:degen}
 
 \textbf{Definition:} A LUT's configuration $F : \Bk \rightarrow \B$ is \textit{degenerate} if there exists a Shannon expansion $F = x_i \cdot F_{x_i} + \overline{x_i} \cdot F_{\overline{x}_i}$
