@@ -121,6 +121,23 @@ graph, only one rule is needed for each lut size $k=2$ through 6.
 
 \subsection{Functional Decomposition}\label{sec:rewrites:decomp}
 
+Decomposing boolean functions and logic minimization in general is
+NP-complete~\cite{logicmin}. Correspondingly, decomposing LUTs explodes the
+size and build time of the e-graph. However, we can still define rewrites that
+look for fully disjoint decompositions in one or more variables. This rule has
+no structural element to search for, so it runs every time an e-class is
+updated. Our implementation computes the Shannon expansion of a $k$-LUT's
+function $F$ and checks that both cofactors are cognates.For instance, given
+$k=3$ then it is true that:
+
+\begin{align*}
+    F(x_0, x_1, x_2) = G(x_0, H(x_1, x_2)) \iff & F_{x_0} (x_1, x_2) = G_{x_0} (H(x_1, x_2))                             \\
+                                                & \land F_{\overline{x}_0} (x_1, x_2) = G_{\overline{x}_0} (H(x_1, x_2))
+\end{align*}
+
+In practice, our implementation checks if either of the cofactors are constant
+functions or if the cofactors are equivalent up to complementation.
+
 \subsection{Register Retiming}\label{sec:rewrites:retiming}
 Register retiming, as a purely structural rule, can be implemented with a
 simple search and apply pattern. An example for $k=3$ would be written as
