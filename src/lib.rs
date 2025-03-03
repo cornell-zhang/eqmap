@@ -12,6 +12,7 @@ pub mod analysis;
 pub mod check;
 pub mod cost;
 pub mod driver;
+pub mod logic;
 pub mod lut;
 pub mod rewrite;
 pub mod verilog;

@@ -14,6 +14,7 @@ use std::{
 use egg::{Id, RecExpr};
 use sv_parser::{unwrap_node, Identifier, Locate, NodeEvent, RefNode};
 
+use super::logic::Logic;
 use super::lut::{LutExprInfo, LutLang};
 
 /// A wrapper for parsing verilog at file `path` with content `s`
@@ -65,8 +66,8 @@ pub fn get_identifier(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<Stri
     }
 }
 
-/// Parse a literal `node` in the `ast` into a boolean value
-fn parse_literal_as_bool(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<bool, String> {
+/// Parse a literal `node` in the `ast` into a four-state logic value
+fn parse_literal_as_logic(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<Logic, String> {
     let value = unwrap_node!(node, BinaryValue, HexValue, UnsignedNumber);
 
     if value.is_none() {
@@ -80,34 +81,43 @@ fn parse_literal_as_bool(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<b
         RefNode::BinaryValue(b) => {
             let loc = b.nodes.0;
             let val = ast.get_str(&loc).unwrap();
+            if val == "x" {
+                return Ok(Logic::X);
+            }
             let num = u64::from_str_radix(val, 2)
                 .map_err(|_e| format!("Could not parse binary value {val} as bool"))?;
             match num {
-                1 => Ok(true),
-                0 => Ok(false),
+                1 => Ok(true.into()),
+                0 => Ok(false.into()),
                 _ => Err(format!("Expected a 1 bit constant. Found {}", num)),
             }
         }
         RefNode::HexValue(b) => {
             let loc = b.nodes.0;
             let val = ast.get_str(&loc).unwrap();
+            if val == "x" {
+                return Ok(Logic::X);
+            }
             let num = u64::from_str_radix(val, 16)
                 .map_err(|_e| format!("Could not parse hex value {val} as bool"))?;
             match num {
-                1 => Ok(true),
-                0 => Ok(false),
+                1 => Ok(true.into()),
+                0 => Ok(false.into()),
                 _ => Err(format!("Expected a 1 bit constant. Found {}", num)),
             }
         }
         RefNode::UnsignedNumber(b) => {
             let loc = b.nodes.0;
             let val = ast.get_str(&loc).unwrap();
+            if val == "x" {
+                return Ok(Logic::X);
+            }
             let num = val
                 .parse::<u64>()
                 .map_err(|_e| format!("Could not parse decimal value {val} as bool"))?;
             match num {
-                1 => Ok(true),
-                0 => Ok(false),
+                1 => Ok(true.into()),
+                0 => Ok(false.into()),
                 _ => Err(format!("Expected a 1 bit constant. Found {}", num)),
             }
         }
@@ -245,15 +255,11 @@ impl SVPrimitive {
     }
 
     /// Create a new constant with name `name`
-    pub fn new_const(val: bool, signal: String, name: String) -> Self {
+    pub fn new_const(val: Logic, signal: String, name: String) -> Self {
         let mut output: BTreeMap<String, String> = BTreeMap::new();
         output.insert(signal, "Y".to_string());
         let mut attributes: BTreeMap<String, String> = BTreeMap::new();
-        if val {
-            attributes.insert("VAL".to_string(), "1'b1".to_string());
-        } else {
-            attributes.insert("VAL".to_string(), "1'b0".to_string());
-        }
+        attributes.insert("VAL".to_string(), val.as_str().to_string());
         SVPrimitive {
             prim: "CONST".to_string(),
             name,
@@ -731,7 +737,7 @@ impl SVModule {
                                         port_name
                                     ));
                                 }
-                                let value = parse_literal_as_bool(literal.unwrap(), ast)?;
+                                let value = parse_literal_as_logic(literal.unwrap(), ast)?;
                                 let const_inst = SVPrimitive::new_const(
                                     value,
                                     arg_name.clone(),
@@ -786,7 +792,7 @@ impl SVModule {
                             lhs_name + "_wire_" + &rhs_name,
                         ));
                     } else {
-                        let val = parse_literal_as_bool(rhs_id, ast)?;
+                        let val = parse_literal_as_logic(rhs_id, ast)?;
                         cur_insts.push(SVPrimitive::new_const(
                             val,
                             lhs_name.clone(),
@@ -973,7 +979,7 @@ impl SVModule {
                 LutLang::Const(b) => {
                     let sname = fresh_wire(id.into(), &mut mapping);
                     let pname = fresh_prim();
-                    let inst = SVPrimitive::new_const(*b, sname.clone(), pname);
+                    let inst = SVPrimitive::new_const(Logic::from(*b), sname.clone(), pname);
                     module.signals.push(SVSignal::new(1, sname.clone()));
                     module
                         .driving_module
