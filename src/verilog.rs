@@ -14,7 +14,7 @@ use std::{
 use egg::{Id, RecExpr};
 use sv_parser::{unwrap_node, Identifier, Locate, NodeEvent, RefNode};
 
-use super::logic::Logic;
+use super::logic::{dont_care, Logic};
 use super::lut::{LutExprInfo, LutLang};
 
 /// A wrapper for parsing verilog at file `path` with content `s`
@@ -980,6 +980,16 @@ impl SVModule {
                     let sname = fresh_wire(id.into(), &mut mapping);
                     let pname = fresh_prim();
                     let inst = SVPrimitive::new_const(Logic::from(*b), sname.clone(), pname);
+                    module.signals.push(SVSignal::new(1, sname.clone()));
+                    module
+                        .driving_module
+                        .insert(sname.clone(), module.instances.len());
+                    module.instances.push(inst);
+                }
+                LutLang::DC => {
+                    let sname = fresh_wire(id.into(), &mut mapping);
+                    let pname = fresh_prim();
+                    let inst = SVPrimitive::new_const(dont_care(), sname.clone(), pname);
                     module.signals.push(SVSignal::new(1, sname.clone()));
                     module
                         .driving_module
