@@ -85,6 +85,13 @@ impl LutLang {
                     return Err("LUT must have a program".to_string());
                 }
             }
+            Self::And(l) | Self::Xor(l) | Self::Nor(l) => {
+                for j in l {
+                    if matches!(expr[*j], LutLang::Program(_)) {
+                        return Err("Gate argument has unexpected integer.".to_string());
+                    }
+                }
+            }
             Self::Bus(l) => {
                 for id in l.iter() {
                     if let LutLang::Program(_) = expr[*id] {

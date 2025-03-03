@@ -215,7 +215,6 @@ fn main() -> std::io::Result<()> {
         process_expression(expr, req, args.no_verify, args.verbose)?.with_name(f.get_name());
 
     if let Some(p) = args.report {
-        eprintln!("INFO: Emitting report...");
         let mut writer = std::fs::File::create(p)?;
         result.write_report(&mut writer)?;
     }
