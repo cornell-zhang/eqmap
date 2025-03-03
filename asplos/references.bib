@@ -65,3 +65,117 @@
   month        = {Jun.},
   pages        = {4087-4094}
 }
+
+@inproceedings{gatedecomp,
+  author    = {Fan, Longfei and Wu, Chang},
+  title     = {FPGA Technology Mapping with Adaptive Gate Decomposition},
+  year      = {2023},
+  isbn      = {9781450394178},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  url       = {https://doi-org.proxy.library.cornell.edu/10.1145/3543622.3573048},
+  doi       = {10.1145/3543622.3573048},
+  abstract  = {Most existing technology mapping algorithms use graph covering approaches and suffer from the netlist structural bias problem. Chen and Cong proposed a simultaneous simple gate decomposition with technology mapping algorithm that encodes many gate decomposition choices into the netlist. However, their algorithm suffers from the long runtime problem due to a large set of choices. Later on, A. Mishchenko et al. proposed a mapping algorithm based on choice generation with the so-called lossless synthesis. Nevertheless, their algorithm cannot guarantee to find and keep all good choices a priori before mapping. In this paper, we propose a simultaneous mapping with gate decomposition algorithm named AGDMap. Our algorithm uses cut-enumeration based engine. Bin packing algorithm is used for simple gate decomposition during cut enumeration. Input sharing based cut cost computation is used during iterative cut selection for logic duplication reduction. Based on a set of EPFL benchmark suite and HLS generated designs, our algorithm produces results with significant area improvement. Compared with the lossless synthesis algorithm, for area optimization, our average improvement is 12.4\%. For delay optimization, we get results with similar delay and 9.2\% area reduction.},
+  booktitle = {Proceedings of the 2023 ACM/SIGDA International Symposium on Field Programmable Gate Arrays},
+  pages     = {135-140},
+  numpages  = {6},
+  keywords  = {FPGA, logic decomposition, structural bias, technology mapping},
+  location  = {Monterey, CA, USA},
+  series    = {FPGA '23}
+}
+
+@article{twolevellogic,
+  author   = {Umans, C. and Villa, T. and Sangiovanni-Vincentelli, A.L.},
+  journal  = {IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems},
+  title    = {Complexity of two-level logic minimization},
+  year     = {2006},
+  volume   = {25},
+  number   = {7},
+  pages    = {1230-1246},
+  keywords = {Minimization methods;Programmable logic arrays;Logic design;Computational complexity;Multivalued logic;Design automation;Data structures;Boolean functions;Computer science;History;Computational complexity;logic design;logic minimization;two-level logic},
+  doi      = {10.1109/TCAD.2005.855944}
+}
+
+@article{flowmap,
+  author   = {Cong, J. and Yuzheng Ding},
+  journal  = {IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems},
+  title    = {FlowMap: an optimal technology mapping algorithm for delay optimization in lookup-table based FPGA designs},
+  year     = {1994},
+  volume   = {13},
+  number   = {1},
+  pages    = {1-12},
+  keywords = {Delay;Field programmable gate arrays;Table lookup;Polynomials;Computer networks;Very large scale integration;Application specific integrated circuits;Heuristic algorithms;Algorithm design and analysis;Packaging},
+  doi      = {10.1109/43.273754}
+}
+
+@inproceedings{daomap,
+  author    = {Chen, D. and Cong, J.},
+  booktitle = {IEEE/ACM International Conference on Computer Aided Design, 2004. ICCAD-2004.},
+  title     = {DAOmap: a depth-optimal area optimization mapping algorithm for FPGA designs},
+  year      = {2004},
+  volume    = {},
+  number    = {},
+  publisher = {IEEE},
+  address   = {New York, NY, USA},
+  pages     = {752-759},
+  keywords  = {Design optimization;Field programmable gate arrays;Algorithm design and analysis;Table lookup;Cost function;Timing;Delay;Iterative algorithms;Runtime;Minimization methods},
+  doi       = {10.1109/ICCAD.2004.1382677}
+}
+
+@inproceedings{attmap,
+  author    = {Woo, Nam-Sung},
+  title     = {A heuristic method for FPGA technology mapping based on the edge visibility},
+  year      = {1991},
+  isbn      = {0897913957},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  url       = {https://doi.org/10.1145/127601.127675},
+  doi       = {10.1145/127601.127675},
+  booktitle = {Proceedings of the 28th ACM/IEEE Design Automation Conference},
+  pages     = {248-251},
+  numpages  = {4},
+  location  = {San Francisco, California, USA},
+  series    = {DAC '91}
+}
+
+@article{imap,
+  author   = {Manohararajah, V. and Brown, S.D. and Vranesic, Z.G.},
+  journal  = {IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems},
+  title    = {Heuristics for Area Minimization in LUT-Based FPGA Technology Mapping},
+  year     = {2006},
+  volume   = {25},
+  number   = {11},
+  pages    = {2331-2340},
+  keywords = {Field programmable gate arrays;Table lookup;Programmable logic arrays;Runtime;Dynamic programming;Minimization;Design optimization;Circuit synthesis;Design automation;Logic design;Circuit optimization;circuit synthesis;design automation;field programmable gate arrays;logic design},
+  doi      = {10.1109/TCAD.2006.882119}
+}
+
+@inproceedings{satmap,
+  author    = {Safarpour, Sean and Veneris, Andreas and Baeckler, Gregg and Yuan, Richard},
+  title     = {Efficient SAT-based Boolean matching for FPGA technology mapping},
+  year      = {2006},
+  isbn      = {1595933816},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  url       = {https://doi.org/10.1145/1146909.1147034},
+  doi       = {10.1145/1146909.1147034},
+  abstract  = {Most FPGA technology mapping approaches either target Lookup Tables (LUTs) or relatively simple Programmable Logic Blocks (PLBs). Considering networks of PLBs during technology mapping has the potential of providing unique optimizations unavailable through other techniques. This paper proposes a Boolean matching approach for FPGA technology mapping targeting networks of PLBs. To overcome the demanding memory requirements of previous approaches, the Boolean matching problem is formulated as a Boolean Satisfiability (SAT) problem. Since the SAT formulation provides a trade-off between space and time, the primary objective is to increase the efficiency of the SAT-based approach. To do this, the original SAT problem is decomposed into two easier SAT problems. To reduce the problem search space, a theorem is introduced to allow conflict clauses to be shared across problems and extra constraints are generated. Experiments demonstrate a 340\% run time improvement and 27\% more success in mapping than previous SAT-based approaches.},
+  booktitle = {Proceedings of the 43rd Annual Design Automation Conference},
+  pages     = {466-471},
+  numpages  = {6},
+  keywords  = {FPGA technology mapping, Boolean satisfiability, Boolean matching},
+  location  = {San Francisco, CA, USA},
+  series    = {DAC '06}
+}
+
+@article{satmap2,
+  author   = {Haaswijk, Winston and Soeken, Mathias and Mishchenko, Alan and De Micheli, Giovanni},
+  journal  = {IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems},
+  title    = {SAT-Based Exact Synthesis: Encodings, Topology Families, and Parallelism},
+  year     = {2020},
+  volume   = {39},
+  number   = {4},
+  pages    = {871-884},
+  keywords = {Encoding;Topology;Runtime;Boolean functions;Logic gates;Computational modeling;Parallel processing;Boolean satisfiability;circuit synthesis;design automation;exact synthesis;logic synthesis;SAT},
+  doi      = {10.1109/TCAD.2019.2897703}
+}
