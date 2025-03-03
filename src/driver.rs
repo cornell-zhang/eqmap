@@ -629,6 +629,8 @@ where
         }
 
         let rpt = if self.produce_rpt {
+            // TODO: Gathering the circuit stats should not be this slow
+            eprintln!("INFO: Producing report...");
             Some(
                 SynthReport::new(&self.expr, extraction_time.as_secs_f64(), runner, &best)
                     .contains_gates(self.canonicalized),
