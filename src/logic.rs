@@ -84,17 +84,17 @@ impl From<bool> for Logic {
     }
 }
 
-/// Create an [Logic::True] instance
+/// Create a [Logic::True] instance
 pub fn r#true() -> Logic {
     Logic::True
 }
 
-/// Create an [Logic::False] instance
+/// Create a [Logic::False] instance
 pub fn r#false() -> Logic {
     Logic::False
 }
 
-/// Create an don't care instance
+/// Create a don't care instance
 pub fn dont_care() -> Logic {
     Logic::X
 }
