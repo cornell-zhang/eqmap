@@ -276,6 +276,19 @@ impl SVPrimitive {
         }
     }
 
+    /// Create an unconnnected instance to represent logical 1
+    pub fn new_vcc(name: String) -> Self {
+        let mut attributes: BTreeMap<String, String> = BTreeMap::new();
+        attributes.insert("VAL".to_string(), "1'b1".to_string());
+        SVPrimitive {
+            prim: "CONST".to_string(),
+            name,
+            inputs: BTreeMap::new(),
+            outputs: BTreeMap::new(),
+            attributes,
+        }
+    }
+
     /// Create a new wire assignment with name `name` driven by `driver`
     pub fn new_wire(driver: String, signal: String, name: String) -> Self {
         let mut output: BTreeMap<String, String> = BTreeMap::new();
@@ -319,7 +332,7 @@ impl SVPrimitive {
             "I" | "I0" | "I1" | "I2" | "I3" | "I4" | "I5" | "D" | "A" | "B" | "S" => {
                 self.add_input(port, signal)
             }
-            "O" | "Y" | "Q" | "G" => self.add_output(port, signal),
+            "O" | "Y" | "Q" | "G" | "P" => self.add_output(port, signal),
             "C" | "CE" | "R" => Ok(()),
             _ => Err(format!("Unknown port name {}", port)),
         }
@@ -637,6 +650,11 @@ impl SVModule {
                     // Xilinx has a module named GND for constants
                     if mod_name == "GND" {
                         cur_insts.push(SVPrimitive::new_gnd(inst_name));
+                        continue;
+                    }
+
+                    if mod_name == "VCC" {
+                        cur_insts.push(SVPrimitive::new_vcc(inst_name));
                         continue;
                     }
 

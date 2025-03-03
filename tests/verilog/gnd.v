@@ -2,19 +2,29 @@
 
 module gnd (
     d,
-    y
+    y0,
+    y1
 );
   input d;
   wire d;
-  wire tmp;
-  output y;
-  wire y;
-  GND GND (.G(tmp));
-  AND2 AND2 (
+  wire g;
+  wire v;
+  output y0;
+  wire y0;
+  output y1;
+  wire y1;
+  GND GND (.G(g));
+  VCC VCC (.P(v));
+  AND2 AND_G (
       .A(d),
-      .B(tmp),
-      .Y(y)
+      .B(g),
+      .Y(y0)
+  );
+  AND2 AND_V (
+      .A(d),
+      .B(v),
+      .Y(y1)
   );
 
-  // CHECK: (AND d false)
+  // CHECK: (BUS (AND d false) (AND d true))
 endmodule
