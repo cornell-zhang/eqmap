@@ -3,7 +3,7 @@
 In the follow sections, we call the truth table of a LUT the \textit{program}
 or \textit{function} interchangeably. The program of a $k$-LUT is modeled as a
 function $F : \Bk \rightarrow \B$, where $\mathbb{Z}_2 = \mathbb{Z}/2\mathbb{Z}
-    = \mathbb{F}_2 = \{0,1\}$. To that end, we can endow the grammar of the netlist
+    = \mathbb{B} = \{0,1\}$. To that end, we can endow the grammar of the netlist
 with precise denotational semantics. Formalizing the meaning of Verilog
 netlists in a functional way is critical to ensuring correct rewrite rules and
 further understanding of the high-level interactions of these rules.
@@ -79,7 +79,7 @@ we can write this rule for one specific input position, without loss of
 generality. Therefore, we only need to sweep over the size of the two LUTs in
 the search pattern. In total, there are $6*6 = 36$ LUT packing rules. When the
 cut of logic is larger than 6 leaves, the rules fail gracefully and do not
-interefere with reaching equality saturation.
+interfere with reaching equality saturation.
 \subsection{LUT Symmetries}\label{sec:rewrites:symmetry}
 
 The semantics of LUTs should not depend on the order of their inputs. If two
@@ -130,7 +130,7 @@ Whenever an equality is found between two of the inputs to a $k$-LUT, it can be
 rewritten with a $(k-1)$-LUT. We simply need to define and compute
 $\texttt{restrict(F, i, j)}$ which maps $F : \Bx{k} \rightarrow \B$ to the
 domain-restricted $F \vert_{x_i = x_j} : \Bx{k-1} \rightarrow \B$. In
-pseudocode, the rewrite rule can be rwritten as follows:
+pseudocode, the rewrite rule can be rewritten as follows:
 
 \begin{verbatim}
     (LUT F x0 x1 x1) => (LUT G x0 x1)
