@@ -1,2 +1,25 @@
 \section{Introduction}\label{sec:intro}
-The is the introduction hehe~\cite{esynth, qbf}.
+Given the complexity of modern electronic systems, a high degree of automation
+is required to develop custom hardware within sensible timelines. At the
+highest level, FPGA and ASIC design flows can be split into logical synthesis
+and physical synthesis (optimize timing, placement and routing, etc..). This
+division of work produces suboptimal designs, and neither are the invididual
+synthesis steps locally optimal on their own. However, logic minimization
+problems in general are NP-Hard~\todo{cite}, and modern EDA flows bring compile
+times down to the human timescale while maintaining acceptable QoR (quality of
+results).
+
+With the end of Moore's Law scaling, chip area becomes a tighter constraint,
+and logic synthesis is more of a bottleneck. Hence, future synthesis tools will
+need to expand the design spaces they explore and find more optimal solutions.
+Nonetheless, finding provably optimal circuits is computationally intractable.
+In this paper, we will introduce how FPGA technology mapping can be augmented
+with e-graph data structures to find \textit{more} exact solutions, without
+significantly increasing compile times.
+
+Technology mapping is the hand-off between logical synthesis and physical
+synthesis. It converts digital logic written in RTL into a netlist of gates
+that belong to the target cell library. For FPGAs, the primary target cell is
+the LUT (lookup table). Since every $k$-LUT can be re-programmed to satisfy any
+$k$ input boolean function, FPGA technology mapping has a uniquely large
+solution space. \todo{It looks like a node covering problem}
