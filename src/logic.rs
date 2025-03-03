@@ -4,7 +4,7 @@
 
 */
 
-use std::fmt;
+use std::{fmt, str::FromStr};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// An enum to represent four-state logic
@@ -80,6 +80,20 @@ impl From<bool> for Logic {
             Logic::True
         } else {
             Logic::False
+        }
+    }
+}
+
+impl FromStr for Logic {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "1'b1" | "1'h1" => Ok(Logic::True),
+            "1'b0" | "1'h0" => Ok(Logic::False),
+            "1'bx" | "1'hx" => Ok(Logic::X),
+            "1'bz" | "1'hz" => Ok(Logic::Z),
+            _ => Err(format!("Invalid logic value: {}", s)),
         }
     }
 }

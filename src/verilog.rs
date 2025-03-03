@@ -1037,8 +1037,12 @@ impl SVModule {
                     } else if Self::is_assign_prim(primitive.prim.as_str()) {
                         let val = primitive.attributes.get("VAL").unwrap();
                         if primitive.prim.as_str() == "CONST" {
-                            let val = val == "1'b1";
-                            Ok(expr.add(LutLang::Const(val)))
+                            let val = val.parse::<Logic>()?;
+                            if val.is_dont_care() {
+                                Ok(expr.add(LutLang::DC))
+                            } else {
+                                Ok(expr.add(LutLang::Const(val.unwrap())))
+                            }
                         } else {
                             self.get_expr(val.as_str(), expr, map)
                         }
