@@ -9,6 +9,7 @@
 \newcommand{\todo}[1]{\textcolor{red}{TODO:\ #1}}
 \newcommand{\fullname}{More Exact Technology-Mapping using E-Graphs}
 \newcommand{\shortname}{E-Pack}
+\newcommand{\metric}{5\% fewer LUTs}
 \newcommand{\B}{\mathbb{Z}_{2}}
 \newcommand{\Bk}{\mathbb{Z}_{2}^{k}}
 \newcommand{\Bx}[1]{\mathbb{Z}_{2}^{#1}}
@@ -31,7 +32,7 @@
     high performance accelerators. As a solution, we introduce E-Pack, an e-graph
     driven technology mapper that can better span the wide gap between SAT-based
     exact synthesis and heuristic cut enumeration techniques. We show that E-Pack
-    can synthesize circuits with 5\% fewer LUTs on average---without ever
+    can synthesize circuits with \metric{} on average---without ever
     increasing circuit depth. We also provide an empirical analysis of the runtime
     of E-Pack and show that it is still practical for large designs. Finally, we
     demonstrate that our compiler infrastructure is reusable, and future work can
@@ -47,14 +48,16 @@
 
 % Unstarted sections:
 % Related work
+% Define what an iteration is
 % Different extraction techniques
-% Experimental Setup
+% [x] Experimental Setup
 % Future work
 
 % Unstarted figures:
-%Tool-flow pic
-% A rewritten circuit
+% Tool-flow pic
+% [x] A rewritten circuit
 % Rewrite transition diagram
+% Revise table (make baseline vivado)
 
 % use the ACM bibliography style
 \bibliographystyle{ACM-Reference-Format}
