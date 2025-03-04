@@ -1,12 +1,27 @@
 \section{Results}\label{sec:results}
+For our experiments, we used a Red Hat 8 server running a Intel Xeon Gold 6242
+CPU. Since \shortname{} is written in Rust, it mostly uses the built-in
+functionality of the egg library. The egg e-graph runner was ran in a
+time-limited configuration, meaning there was no limit in the size of the
+e-graph or number of rewrite iterations. The specific time limit for e-graph
+construction was 10 minutes. In most cases, the test circuit saturated the
+e-graph before this time limit. \shortname{} was evaluated against circuits
+from three benchmark suites: EPFL~\cite{epflbench}, ISCAS'85~\cite{iscasbench},
+and LGSynth'91~\cite{lgsynthbench}. However, we also included an ALU and
+pipelined multiplication module to test how our compiler behaves with
+increasing levels of bit-parallelism and pipeline stages. Finally, we measure
+how our mapping optimizations influence timing closure.
 
-\subsection{Benchmarks}\label{sec:results:benchmark}
-\todo{30 out of 96 benchmarks improve by 5 percent}
+\subsection{Benchmarking}\label{sec:results:benchmark}
 \begin{table}
     \centering
     \csvautobooktabular{data/results.csv}
     \caption{Results of 30 improved benchmarks from ISCAS'85, LGSynth'91, and EPFL}\label{tab:results}
 \end{table}
+Among the 96 benchmarks we tested, we found that \shortname{} was able to
+reduce the LUT count 31\% of the time. On average, \shortname{} packed the
+netlists to \metric{}. The results in Table~\ref{tab:results} list the LUT counts \todo{explain table}.
+
 \subsection{Marginal Improvement}\label{sec:results:margin}
 \todo{graph showing improvement with iter count}
 \begin{figure}
