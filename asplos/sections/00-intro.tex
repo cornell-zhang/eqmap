@@ -38,7 +38,26 @@ As a consequence, cut enumeration and functional mapping lie on two different
 extremes. The former is faster but limited by the input structure, while the
 latter is unbiased but fundamentally unscalable.
 
-To that end, we propose an e-graph driven technology mapper than can better
-span the time-QoR spectrum.
+For this reason, we propose an e-graph driven technology mapper than can better
+span the time-QoR spectrum. E-graphs are a data structure which use union-find
+operations to compactly represent equality, and our work seeks to evaluate the
+suitability of such an approach for logic synthesis, specifically technology
+mapping to FPGAs. Our results show many benchmarks, big and small, which
+synthesize to significantly fewer LUTs using our compiler, \shortname{}, over
+the vendor EDA tools. To that end, our work makes the following contributions:
 
-\todo{What are our contributions?}
+\begin{itemize}
+    \item We formulate an intermediate language and generating set of e-graph rewrite
+          rules, as well as justify the types of circuit topologies that are reachable
+          under composition.
+    \item We evaluate our compiler against 96 benchmarks combined from three sources:
+          EPFL~\cite{epflbench}, ISCAS'85~\cite{iscasbench}, and
+          LGSynth'91~\cite{lgsynthbench}.
+    \item \shortname{} is packaged as a Verilog-to-Verilog tool that can be dropped into existing RTL flows.
+\end{itemize}
+
+Before elaborating on our methodology and experimental setup, we first discuss
+related ideas in technology mapping and e-graph driven compilers. Then, the
+results section illustrates the typical reduction in LUT count our tool
+achieves without increasing circuit depth. Lastly, we discuss the future work
+of our compiler.
