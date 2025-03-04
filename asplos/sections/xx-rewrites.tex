@@ -154,15 +154,40 @@ updated. Our implementation computes the Shannon expansion of a $k$-LUT's
 function $F$ and checks that both cofactors are cognates in a loose sense. For
 instance, given $k=3$ then it is true that:
 
-\begin{align}
-    F(x_0, x_1, x_2) = G(x_0, H(x_1, x_2)) \iff & F_{x_0} (x_1, x_2) = G_{x_0} (H(x_1, x_2))                             \nonumber \\
-                                                & \land F_{\overline{x}_0} (x_1, x_2) = G_{\overline{x}_0} (H(x_1, x_2))
-\end{align}
+\begin{gather}
+    F(x_0, x_1, x_2) = G(x_0, H(x_1, x_2)) \nonumber \\
+    \Big\Updownarrow                       \nonumber \\
+    F_{x_0} (x_1, x_2) = G_{x_0} (H(x_1, x_2)) \land F_{\overline{x}_0} (x_1, x_2) = G_{\overline{x}_0} (H(x_1, x_2))
+\end{gather}
 
 In practice, our implementation checks if either of the cofactors are constant
 functions or if the cofactors are equivalent up to complementation.
 
 \subsection{Register Retiming}\label{sec:rewrites:retiming}
+
+\begin{figure*}[tb]
+    \begin{subfigure}{0.33\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/mux_4_1.png}
+        \caption{Three 3-LUT, three FF topology.}\label{fig:retiming:a}
+        \Description[]{}
+    \end{subfigure}
+    \begin{subfigure}{0.33\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/mux_4_1_retime_dsd.png}
+        \caption{Two 4-LUT, one FF topology.}\label{fig:retiming:b}
+        \Description[]{}
+    \end{subfigure}
+    \begin{subfigure}{0.33\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/mux_4_1_retime.png}
+        \caption{One 6-LUT, one FF topology.}\label{fig:retiming:c}
+        \Description[]{}
+    \end{subfigure}
+    \caption{Three varying topologies for 4:1 MUX with pipeline register. \todo{Placeholder images. Remake by hand.}}\label{fig:retiming}
+    \Description[]{}
+\end{figure*}
+
 Register retiming, as a purely structural rule, can be implemented with a
 simple search and apply pattern. An example for $k=3$ would be written as
 follows:
@@ -172,3 +197,12 @@ follows:
 \end{verbatim}
 
 Unlike the other rules, this rule is searched for in both directions.
+Figure~\ref{fig:retiming} illustrates an example of how register retiming can
+compose with LUT rewrite rules to reduce LUT count and register count
+simultaneously. In this case, LUTs representing 2:1 multiplexers are push
+across register boundaries. Since this logic happens to have a one 6-LUT
+packing and two 4-LUT packing, the total LUT count is reduced in conjunction
+with register count. Moreover, our cost model can take into account different
+weights for flip-flop cells versus LUT cells. E-graph extraction is elaborated
+in the next section, but it should be noted that our trials weight LUTs and
+registers equally.
