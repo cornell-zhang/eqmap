@@ -91,8 +91,8 @@ permutation applied to the inputs.
 
 \begin{proof}
     $\odot$ is a right-action defined for the sake of permuting the inputs to a function before they are applied:
-    \[ \odot : \big (\Bk \rightarrow \mathbb{Z}_2 \big ) \times S_k \rightarrow \big (\Bk \rightarrow \mathbb{Z}_2 \big )\]
-    \[ F \odot \sigma : (x_0, x_1, \ldots, x_{k-1}) \mapsto F(x_{\sigma(0)}, x_{\sigma(1)}, \ldots, x_{\sigma(k-1)}) \]
+    \begin{equation} \odot : \big (\Bk \rightarrow \mathbb{Z}_2 \big ) \times S_k \rightarrow \big (\Bk \rightarrow \mathbb{Z}_2 \big ) \end{equation}
+    \begin{equation} F \odot \sigma : (x_0, x_1, \ldots, x_{k-1}) \mapsto F(x_{\sigma(0)}, x_{\sigma(1)}, \ldots, x_{\sigma(k-1)}) \end{equation}
 
     It is trivial to prove that this right-action is associative:
     \begin{align*}
@@ -100,8 +100,10 @@ permutation applied to the inputs.
         (F \odot \sigma_1) \odot \sigma_2 & = F \odot (\sigma_2 \circ \sigma_1)
     \end{align*}
     With this property, the rest follows directly:
-    \[ F = G \odot
-        \sigma \iff F \odot \sigma^{-1} = (G \odot \sigma) \odot \sigma^{-1} = G \]
+    \begin{equation}
+        F = G \odot
+        \sigma \iff F \odot \sigma^{-1} = (G \odot \sigma) \odot \sigma^{-1} = G
+    \end{equation}
 \end{proof}
 
 Therefore, we can conclude that $k$-LUTs have as much symmetry as can be
@@ -152,10 +154,10 @@ updated. Our implementation computes the Shannon expansion of a $k$-LUT's
 function $F$ and checks that both cofactors are cognates in a loose sense. For
 instance, given $k=3$ then it is true that:
 
-\begin{align*}
-    F(x_0, x_1, x_2) = G(x_0, H(x_1, x_2)) \iff & F_{x_0} (x_1, x_2) = G_{x_0} (H(x_1, x_2))                             \\
+\begin{align}
+    F(x_0, x_1, x_2) = G(x_0, H(x_1, x_2)) \iff & F_{x_0} (x_1, x_2) = G_{x_0} (H(x_1, x_2))                             \nonumber \\
                                                 & \land F_{\overline{x}_0} (x_1, x_2) = G_{\overline{x}_0} (H(x_1, x_2))
-\end{align*}
+\end{align}
 
 In practice, our implementation checks if either of the cofactors are constant
 functions or if the cofactors are equivalent up to complementation.
