@@ -5,9 +5,9 @@
 \usepackage{csvsimple}
 
 \newcommand{\fixme}[1]{\textcolor{red}{#1}}
-\newcommand{\todo}[1]{\textcolor{red}{TODO: #1}}
+\newcommand{\todo}[1]{\textcolor{red}{TODO:\ #1}}
 \newcommand{\fullname}{More Exact Technology-Mapping using E-Graphs}
-\newcommand{\shortname}{E-Map}
+\newcommand{\shortname}{E-Pack}
 \newcommand{\B}{\mathbb{Z}_{2}}
 \newcommand{\Bk}{\mathbb{Z}_{2}^{k}}
 \newcommand{\Bx}[1]{\mathbb{Z}_{2}^{#1}}
@@ -27,12 +27,12 @@
     been successfully employed to mitigate compile times while maintaining high QoR
     (quality of results). As transistor scaling comes to an end within the coming
     years, logic synthesis tools will become more of a bottleneck in the design of
-    high performance accelerators. As a solution, we introduce E-Map, an e-graph
+    high performance accelerators. As a solution, we introduce E-Pack, an e-graph
     driven technology mapper that can better span the wide gap between SAT-based
-    exact synthesis and heuristic cut enumeration techniques. We show that E-Map
+    exact synthesis and heuristic cut enumeration techniques. We show that E-Pack
     can synthesize circuits with 5\% fewer LUTs on average---without ever
     increasing circuit depth. We also provide an empirical analysis of the runtime
-    of E-Map and show that it is still practical for large designs. Finally, we
+    of E-Pack and show that it is still practical for large designs. Finally, we
     demonstrate that our compiler infrastructure is reusable, and future work can
     use our compiler for RTL equivalence checking or auditing the QoR of synthesis
     tools.
