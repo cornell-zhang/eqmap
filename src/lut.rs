@@ -780,20 +780,30 @@ impl<'a> LutExprInfo<'a> {
 
     /// Get the (used) inputs of the expression
     pub fn get_inputs(&self) -> Vec<String> {
-        let root = &self.expr[self.root];
-        root.get_input_set(self.expr)
+        let cse = self.get_cse();
+        let mut vec = vec![];
+        for n in cse.as_ref() {
+            if let LutLang::Var(s) = n {
+                vec.push(s.as_str().to_string());
+            }
+        }
+        vec
     }
 
     /// Get the number of (used) inputs of the expression
-    pub fn get_num_inputs(&self) -> usize {
-        self.get_inputs().len()
+    pub fn get_num_inputs(&self) -> u64 {
+        let cse = self.get_cse();
+        cse.as_ref()
+            .iter()
+            .filter(|n| matches!(n, LutLang::Var(_)))
+            .count() as u64
     }
 
     /// Get the number of outputs of the expression
-    pub fn get_num_outputs(&self) -> usize {
+    pub fn get_num_outputs(&self) -> u64 {
         let root = &self.expr[self.root];
         match root {
-            LutLang::Bus(l) => l.len(),
+            LutLang::Bus(l) => l.len() as u64,
             _ => 1,
         }
     }

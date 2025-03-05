@@ -70,8 +70,8 @@ impl SynthReport {
         let input_info = LutExprInfo::new(input);
         let input_size = input_info.get_cse().as_ref().len() as u64;
         let input_contains_gates = input_info.contains_gates();
-        let num_inputs = input_info.get_num_inputs() as u64;
-        let num_outputs = input_info.get_num_outputs() as u64;
+        let num_inputs = input_info.get_num_inputs();
+        let num_outputs = input_info.get_num_outputs();
         let input_circuit_stats = input_info.get_circuit_stats();
         let output_info = LutExprInfo::new(output);
         let output_circuit_stats = output_info.get_circuit_stats();
