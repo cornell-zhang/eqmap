@@ -14,10 +14,12 @@ thousands of e-nodes across tens of thousands of e-classes, a greedy extraction
 algorithm is the most pragmatic. The greedy extractor iterates over the
 e-classes, updating the cost of the cheapest e-node until the database of costs
 no longer change. Whenever possible, our compiler uses the builtin
-functionality of the egg e-graph Rust library~\cite{docsEgg}. In our case, the
-cost of a LUT is always one plus the sum of the costs of its children nodes.
-The subtle interactions between extraction and the rewrite rule set are further
-explained in Section~\todo{result sec}.
+functionality of the egg e-graph Rust library~\cite{docsEgg}. However, e-graph
+extraction itself is an ongoing research area~\cite{smoothe}, and future work
+would experiment with different extraction algorithms. In any case, the cost of
+a LUT is always one plus the sum of the costs of its children nodes. The subtle
+interactions between extraction and the rewrite rule set are further explained
+in Section~\todo{result sec}.
 
 \subsection{Verilog Support}\label{sec:flow:verilog}
 In order for our compiler to be compatible with as many existing design flows
