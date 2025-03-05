@@ -26,7 +26,7 @@ else
     echo "FAMILY=xcup" >> $MKFILE
     echo "PART=xczu3eg-sbva484-1-i" >> $MKFILE
     echo "# flatten design before synthesis, no clock buffers, no IO buffers, no carry logic, no MUXes" >> $MKFILE
-    echo "SYNTH_OPT=-flatten -noclkbuf -noiopad -nocarry -nowidelut -ise" >> $MKFILE
+    echo "SYNTH_OPT=-flatten -noclkbuf -noiopad -nocarry -nowidelut -nosrl -ise" >> $MKFILE
     echo "YOSYS=yosys # Yosys 0.33 (git sha1 2584903a060)" >> $MKFILE
     echo "XILINX_VIVADO?=\$(realpath \$(dirname \$(which vivado))/..)" >> $MKFILE
     echo "VIVADO=\$(XILINX_VIVADO)/bin/vivado" >> $MKFILE
