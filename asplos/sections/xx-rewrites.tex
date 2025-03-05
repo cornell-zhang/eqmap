@@ -1,15 +1,21 @@
 \section{E-Graph Construction}\label{sec:rewrites}
-% Equivalence relations are added to the e-graph by continually rewriting terms
-% that match within a set of rewrite rules. Rewrite rules express equivalence
-% relationships in full generality.
+The e-graph is built by accumulating new equivalence relations through the
+iterative rewriting of terms. Rewrite rules define the equivalence relations in
+full generality by designating a search pattern of terms to rewrite. The
+right-hand side of the rule describes how to apply the rewrite to the pattern.
+Rewrites must be merged back into the union-find data structure, so this is an
+iterative process. Lastly, one needs to define a grammar that can represent the
+structure of electronic circuits and lends itself well to pattern matching. As
+an example, one can write De Morgan's laws as rewrite rule:
 
-In the follow sections, we call the truth table of a LUT the \textit{program}
-or \textit{function} interchangeably. The program of a $k$-LUT is modeled as a
-function $F : \Bk \rightarrow \B$, where $\mathbb{Z}_2 = \mathbb{Z}/2\mathbb{Z}
-    = \mathbb{B} = \{0,1\}$. To that end, we can endow the grammar of the netlist
-with precise denotational semantics. Formalizing the meaning of FPGA netlists
-is critical to both ensuring correctness and finding deeper insight into the
-structure of these rules under composition.
+\begin{verbatim}
+    (NOT (AND x y)) => (OR (NOT x) (NOT y))
+\end{verbatim}
+
+In the following subsections, we will define our netlist representation,
+\texttt{LutLang}, and the accompanying equivalence relations. Formalizing the
+meaning of FPGA netlists is critical to both ensuring correctness and finding
+deeper insight into the structure of our rewrite rules under composition.
 
 \subsection{\texttt{LutLang} Representation}\label{sec:rewrites:lutlang}
 
@@ -20,10 +26,18 @@ and our rewrite rules are written in such style. As an example, a 2-LUT
 cascaded into a 3-LUT is written as follows:
 
 \begin{verbatim}
-    (LUT F x0 x1 (LUT G x2 x3))
+    (LUT F x2 x3 (LUT G x0 x1))
 \end{verbatim}
 
-\texttt{F} and \texttt{G} are the truth-tables of the LUTs. Since $k \leq 6$, truth tables are stored with 64-bit integers, but we analyze them as total functions from $\Bk \rightarrow \B$.
+\texttt{F} and \texttt{G} are the truth-tables of the LUTs.
+We also call them the \textit{program} or \textit{function} interchangeably.
+Since $k \leq 6$, truth tables are stored with 64-bit integers, but we analyze them as total functions from $\Bk \rightarrow \B$.
+To clarify notation, $\mathbb{Z}_2 = \mathbb{Z}/2\mathbb{Z} = \mathbb{B} = \{0,1\}$.
+To that end, the semantics of a LUT is simply applying its boolean inputs to the function:
+
+\begin{equation}
+    \llbracket \texttt{(LUT G x0 x1)} \rrbracket = G(\llbracket \texttt{x0} \rrbracket, \llbracket \texttt{x1} \rrbracket)
+\end{equation}
 
 \subsection{Simplifying Degenerate LUTs}\label{sec:rewrites:degen}
 
