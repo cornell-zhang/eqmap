@@ -1,12 +1,15 @@
 \section{E-Graph Construction}\label{sec:rewrites}
+% Equivalence relations are added to the e-graph by continually rewriting terms
+% that match within a set of rewrite rules. Rewrite rules express equivalence
+% relationships in full generality.
 
 In the follow sections, we call the truth table of a LUT the \textit{program}
 or \textit{function} interchangeably. The program of a $k$-LUT is modeled as a
 function $F : \Bk \rightarrow \B$, where $\mathbb{Z}_2 = \mathbb{Z}/2\mathbb{Z}
     = \mathbb{B} = \{0,1\}$. To that end, we can endow the grammar of the netlist
-with precise denotational semantics. Formalizing the meaning of Verilog
-netlists in a functional way is critical to ensuring correct rewrite rules and
-further understanding of the high-level interactions of these rules.
+with precise denotational semantics. Formalizing the meaning of FPGA netlists
+is critical to both ensuring correctness and finding deeper insight into the
+structure of these rules under composition.
 
 \subsection{\texttt{LutLang} Representation}\label{sec:rewrites:lutlang}
 
