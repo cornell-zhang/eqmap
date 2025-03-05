@@ -46,13 +46,6 @@ To that end, the semantics of a LUT is simply applying its boolean inputs to the
     \Description[]{}
 \end{figure}
 
-\begin{figure}
-    \centering
-    \includegraphics[width=0.47\textwidth]{img/egraph.png}
-    \caption{Compilation steps internal to \shortname{} Verilog tool.}\label{fig:egraph}
-    \Description[]{}
-\end{figure}
-
 \subsection{Simplifying Degenerate LUTs}\label{sec:rewrites:degen}
 
 \textbf{Definition:} A LUT's configuration $F : \Bk \rightarrow \B$ is \textit{degenerate} if there exists a Shannon expansion $F = x_i \cdot F_{x_i} + \overline{x_i} \cdot F_{\overline{x}_i}$

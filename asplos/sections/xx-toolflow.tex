@@ -6,10 +6,20 @@ test our hypothesis, \shortname{} must be compatible with existing synthesis
 flows, and attempts at finding reduced circuits must be verified.
 
 \begin{figure}
-    \centering
-    \includegraphics[width=0.47\textwidth]{img/flow.png}
-    \caption{Tool flow to integrate E-Pack with existing RTL synthesis engines.}\label{fig:flow}
-    \Description[]{}
+    \begin{subfigure}{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/flow.png}
+        \caption{Tool flow to integrate E-Pack with existing RTL synthesis engines.}\label{fig:flow:rtl}
+        \Description[]{}
+    \end{subfigure}
+    \hfill\vspace{4mm}
+    \begin{subfigure}{0.47\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/egraph.png}
+        \caption{Compilation steps internal to \shortname{} Verilog tool.}\label{fig:flow:egraph}
+        \Description[]{}
+    \end{subfigure}
+    \caption{\todo{root caption}}\label{fig:flow}
 \end{figure}
 
 \subsection{Extraction}\label{sec:flow:extraction}
