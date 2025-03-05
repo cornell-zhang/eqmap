@@ -39,6 +39,20 @@ To that end, the semantics of a LUT is simply applying its boolean inputs to the
     \llbracket \texttt{(LUT G x0 x1)} \rrbracket = G(\llbracket \texttt{x0} \rrbracket, \llbracket \texttt{x1} \rrbracket)
 \end{equation}
 
+\begin{figure}
+    \centering
+    \includegraphics[width=0.47\textwidth]{img/rewrites.png}
+    \caption{Transition diagram of rewrite rules. A solid arrow means that the application of the source rule always becomes an instance of the target rule.}\label{fig:rewrites}
+    \Description[]{}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.47\textwidth]{img/egraph.png}
+    \caption{Compilation steps internal to \shortname{} Verilog tool.}\label{fig:egraph}
+    \Description[]{}
+\end{figure}
+
 \subsection{Simplifying Degenerate LUTs}\label{sec:rewrites:degen}
 
 \textbf{Definition:} A LUT's configuration $F : \Bk \rightarrow \B$ is \textit{degenerate} if there exists a Shannon expansion $F = x_i \cdot F_{x_i} + \overline{x_i} \cdot F_{\overline{x}_i}$
