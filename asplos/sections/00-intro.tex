@@ -40,11 +40,18 @@ latter is unbiased but fundamentally unscalable.
 
 For this reason, we propose an e-graph driven technology mapper than can better
 span the time-QoR spectrum. E-graphs are a data structure which use union-find
-operations to compactly represent equality, and our work seeks to evaluate the
-suitability of such an approach for logic synthesis, specifically technology
-mapping to FPGAs. Our results show many benchmarks, big and small, which
-synthesize to significantly fewer LUTs using our compiler, \shortname{}, over
-the vendor EDA tools. To that end, our work makes the following contributions:
+operations to compactly represent abstract equivalence relationships. E-graphs
+are useful as an optimizing compiler framework, because terms can be
+iteratively rewritten in a nondestructive fashion. Instead of a optimization
+pass architecture, e-graph driven compilers store all transformed terms in
+parallel and defer selection of the best one. Our work seeks to evaluate the
+suitability of e-graphs for logic synthesis, specifically technology mapping to
+FPGAs.
+
+We introduce \shortname{}: a tool for repacking FPGA netlists into more compact
+forms---without increasing circuit depth. Our results show many benchmarks, big
+and small, which synthesize to significantly fewer LUTs over vendor EDA tools.
+To that end, our work makes the following contributions:
 
 \begin{itemize}
     \item We formulate an intermediate language and generating set of e-graph rewrite
