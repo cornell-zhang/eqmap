@@ -1,7 +1,6 @@
-× Num. Stages,LUT Count,,,FF Count,,,CLB Count,
- ,Initial,E-Pack,\% Difference,Initial,E-Pack,\% Difference,Initial,E-Pack
-1,982,929,-5.40\%,32,32,0\%,t0d0,todo
-2,971,888,-8.55\%,96,126,+31.25\%,t0d0,todo
-4,1041,931,-10.57\%,224,326,+45.54\%,t0d0,todo
-8,1243,1071,-13.84\%,480,1075,+124.0\%,t0d0,todo
-16,1317,1150,-12.68\%,992,2656,+167.7\%,t0d0,todo
+× Num. Stages,LUTs,,,FFs,,,CLBs,,
+ ,Initial,E-Pack,\% Difference,Initial,E-Pack,\% Difference,Initial,E-Pack,\% Difference
+1,982,912,-7.13\%,32,32,0\%,148,146,-1.35\%
+2,971,907,-6.59\%,96,118,+22.91\%,137,137,0\%
+4,1041,931,-10.57\%,224,326,+45.54\%,147,138,-6.12\%
+8,1243,1071,-13.84\%,480,1075,+124.0\%,175,180,+2.86\%
