@@ -350,3 +350,78 @@
   location  = {Monterey, CA, USA},
   series    = {FPGA '23}
 }
+
+@inproceedings{egraphmath,
+  author    = {Briggs, Ian and Panchekha, Pavel},
+  title     = {Synthesizing mathematical identities with e-graphs},
+  year      = {2022},
+  isbn      = {9781450392709},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  url       = {https://doi.org/10.1145/3520308.3534506},
+  doi       = {10.1145/3520308.3534506},
+  abstract  = {Identities compactly describe properties of a mathematical expression and can be leveraged into faster and more accurate function implementations. However, identities must currently be discovered manually, which requires a lot of expertise. We propose a two-phase synthesis and deduplication pipeline that discovers these identities automatically. In the synthesis step, a set of rewrite rules is composed, using an e-graph, to discover candidate identities. However, most of these candidates are duplicates, which a secondary de-duplication step discards using integer linear programming and another e-graph. Applied to a set of 61 benchmarks, the synthesis phase generates 7215 candidate identities which the de-duplication phase then reduces down to 125 core identities.},
+  booktitle = {Proceedings of the 1st ACM SIGPLAN International Symposium on E-Graph Research, Applications, Practices, and Human-Factors},
+  pages     = {1-6},
+  numpages  = {6},
+  keywords  = {synthesis, e-graphs, approximation theory},
+  location  = {San Diego, CA, USA},
+  series    = {EGRAPHS 2022}
+}
+
+@article{cclemma,
+  author     = {Kurashige, Cole and Ji, Ruyi and Giridharan, Aditya and Barbone, Mark and Noor, Daniel and Itzhaky, Shachar and Jhala, Ranjit and Polikarpova, Nadia},
+  title      = {CCLemma: E-Graph Guided Lemma Discovery for Inductive Equational Proofs},
+  year       = {2024},
+  issue_date = {August 2024},
+  publisher  = {Association for Computing Machinery},
+  address    = {New York, NY, USA},
+  volume     = {8},
+  number     = {ICFP},
+  url        = {https://doi.org/10.1145/3674653},
+  doi        = {10.1145/3674653},
+  journal    = {Proc. ACM Program. Lang.},
+  month      = aug,
+  articleno  = {264},
+  numpages   = {27},
+  keywords   = {Automated Theorem Proving, Equational Reasoning, Lemma Synthesis, Synthesis, Verification}
+}
+
+@inproceedings{eqsat,
+  author    = {Tate, Ross and Stepp, Michael and Tatlock, Zachary and Lerner, Sorin},
+  title     = {Equality saturation: a new approach to optimization},
+  year      = {2009},
+  isbn      = {9781605583792},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  url       = {https://doi.org/10.1145/1480881.1480915},
+  doi       = {10.1145/1480881.1480915},
+  abstract  = {Optimizations in a traditional compiler are applied sequentially, with each optimization destructively modifying the program to produce a transformed program that is then passed to the next optimization. We present a new approach for structuring the optimization phase of a compiler. In our approach, optimizations take the form of equality analyses that add equality information to a common intermediate representation. The optimizer works by repeatedly applying these analyses to infer equivalences between program fragments, thus saturating the intermediate representation with equalities. Once saturated, the intermediate representation encodes multiple optimized versions of the input program. At this point, a profitability heuristic picks the final optimized program from the various programs represented in the saturated representation. Our proposed way of structuring optimizers has a variety of benefits over previous approaches: our approach obviates the need to worry about optimization ordering, enables the use of a global optimization heuristic that selects among fully optimized programs, and can be used to perform translation validation, even on compilers other than our own. We present our approach, formalize it, and describe our choice of intermediate representation. We also present experimental results showing that our approach is practical in terms of time and space overhead, is effective at discovering intricate optimization opportunities, and is effective at performing translation validation for a realistic optimizer.},
+  booktitle = {Proceedings of the 36th Annual ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages},
+  pages     = {264–276},
+  numpages  = {13},
+  keywords  = {compiler optimization, equality reasoning, intermediate representation},
+  location  = {Savannah, GA, USA},
+  series    = {POPL '09}
+}
+
+
+@article{10.1145/1594834.1480915,
+  author     = {Tate, Ross and Stepp, Michael and Tatlock, Zachary and Lerner, Sorin},
+  title      = {Equality saturation: a new approach to optimization},
+  year       = {2009},
+  issue_date = {January 2009},
+  publisher  = {Association for Computing Machinery},
+  address    = {New York, NY, USA},
+  volume     = {44},
+  number     = {1},
+  issn       = {0362-1340},
+  url        = {https://doi.org/10.1145/1594834.1480915},
+  doi        = {10.1145/1594834.1480915},
+  abstract   = {Optimizations in a traditional compiler are applied sequentially, with each optimization destructively modifying the program to produce a transformed program that is then passed to the next optimization. We present a new approach for structuring the optimization phase of a compiler. In our approach, optimizations take the form of equality analyses that add equality information to a common intermediate representation. The optimizer works by repeatedly applying these analyses to infer equivalences between program fragments, thus saturating the intermediate representation with equalities. Once saturated, the intermediate representation encodes multiple optimized versions of the input program. At this point, a profitability heuristic picks the final optimized program from the various programs represented in the saturated representation. Our proposed way of structuring optimizers has a variety of benefits over previous approaches: our approach obviates the need to worry about optimization ordering, enables the use of a global optimization heuristic that selects among fully optimized programs, and can be used to perform translation validation, even on compilers other than our own. We present our approach, formalize it, and describe our choice of intermediate representation. We also present experimental results showing that our approach is practical in terms of time and space overhead, is effective at discovering intricate optimization opportunities, and is effective at performing translation validation for a realistic optimizer.},
+  journal    = {SIGPLAN Not.},
+  month      = jan,
+  pages      = {264–276},
+  numpages   = {13},
+  keywords   = {compiler optimization, equality reasoning, intermediate representation}
+}
