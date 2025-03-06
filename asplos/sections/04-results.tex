@@ -48,7 +48,33 @@ netlists to \metric{}. The results in Table~\ref{tab:results} list the LUT count
     \csvautobooktabular{data/mult.csv}
     \caption{LUT and flip-flop counts are report post-synthesis, but before placement and routing. CLB counts are reported after placement and routing.}\label{tab:multiply}
 \end{table*}
-\todo{explain pipelined mult design}
+
+Hardware designs with feed forward pipelines provide interesting opportunities
+to apply register retiming and find a higher-level of area optimization. When
+closing timing on FPGA designs, the critical path is often dominated by the
+effects of routing congestion, moreso than ASIC design. Hence, reducing the
+cell count and circuit depth along the delay path is a valid optimization
+strategy for FPGA design. As a caveat, it is important to note that other work
+has also observed the opposite trend~\cite{academicfpga}: decreasing depth too
+much can strain the router. In any case, E-Pack can be utilized to reduce total
+CLB usage. To elaborate, every CLB in the Ultrascale+ architecture contains 1
+slice, which itself contains 8 LUTs and 16 flip-flops~\cite{ug574}.
+Intuitively, a design that maps to CLBs efficiently will contain more
+flip-flops than LUTs due to this 2:1 ratio. To test this hypothesis,
+Table~\ref{tab:multiply} shows the results of a pipelined multiplier with a
+varying number of pipeline stages processed with E-Pack.
+
+While the total drop is CLB usage is desirable, the area gains as a percentage
+are modest due to the suboptimality of greedy e-graph extraction. Register
+retiming rewrites, when enabled, vastly increase the design space. More
+importantly, register retiming changes the topology of the stateful
+elements---i.e. the flip-flops. As a consequence, greedy extraction cannot take
+into account the fanout of flip-flops. It chooses a poor design point with less
+register fanout and a greater total number of registers. The few regressions
+observed in mapping combinational logic (Fig.~\ref{fig:marginal:improvement})
+become more frequent and exacerbated in sequential logic. While these result
+\textit{do} demonstrate that optimizing for CLB count over raw cell count is a
+feasible strategy, a different extraction method will be needed in future work.
 
 \subsection{Case Study: Bit-Parallel Designs}\label{sec:results:scalability}
 \begin{table}
