@@ -221,6 +221,7 @@ enum ExtractStrat {
     MaxDepth,
     MinDepth,
     LUTCount(usize),
+    LUTCountRegWeighted(usize, u64),
     Disassemble(HashSet<String>),
     #[cfg(feature = "exactness")]
     Exact,
@@ -356,6 +357,14 @@ where
     pub fn with_k(self, k: usize) -> Self {
         Self {
             extract_strat: ExtractStrat::LUTCount(k),
+            ..self
+        }
+    }
+
+    /// Request greedy extraction of LUTs up to size `k` and registers with weight `w`.
+    pub fn with_klut_regw(self, k: usize, w: u64) -> Self {
+        Self {
+            extract_strat: ExtractStrat::LUTCountRegWeighted(k, w),
             ..self
         }
     }
@@ -670,6 +679,9 @@ where
                 self.greedy_extract_with(NegativeCostFn::new(DepthCostFn))
             }
             ExtractStrat::LUTCount(k) => self.greedy_extract_with(KLUTCostFn::new(k)),
+            ExtractStrat::LUTCountRegWeighted(k, w) => {
+                self.greedy_extract_with(KLUTCostFn::new(k).with_reg_weight(w))
+            }
             ExtractStrat::Disassemble(set) => self.greedy_extract_with(GateCostFn::new(set)),
             #[cfg(feature = "exactness")]
             ExtractStrat::Exact => self.extract_with(|egraph, root| {

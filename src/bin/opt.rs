@@ -86,9 +86,17 @@ struct Args {
     #[arg(short = 'v', long, default_value_t = false)]
     verbose: bool,
 
+    /// Extract for min circuit depth
+    #[arg(long, default_value_t = false)]
+    min_depth: bool,
+
     /// Max fan in size for LUTs
     #[arg(short = 'k', long, default_value_t = 4)]
     k: usize,
+
+    /// Ratio of register cost to LUT cost
+    #[arg(short = 'w', long, default_value_t = 1)]
+    reg_weight: u64,
 
     /// Timeout in seconds for each expression
     #[arg(short = 't', long,
@@ -164,6 +172,12 @@ fn main() -> std::io::Result<()> {
     };
 
     let req = if args.verbose { req.with_proof() } else { req };
+
+    let req = if args.min_depth {
+        req.with_min_depth()
+    } else {
+        req.with_klut_regw(args.k, args.reg_weight)
+    };
 
     #[cfg(feature = "dyn_decomp")]
     let req = match args.disassemble {

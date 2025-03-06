@@ -12,15 +12,29 @@ use std::collections::HashSet;
 /// Registers have cost one.
 pub struct KLUTCostFn {
     k: usize,
+    reg_cost: u64,
 }
 
 impl KLUTCostFn {
+    const DEF_REG_COST: u64 = 1;
+
     /// Returns a new cost function with the given `k` value.
     pub fn new(k: usize) -> Self {
         if k < 1 || k > LutLang::MAX_LUT_SIZE {
             panic!("k must be between 1 and {}", LutLang::MAX_LUT_SIZE);
         }
-        Self { k }
+        Self {
+            k,
+            reg_cost: Self::DEF_REG_COST,
+        }
+    }
+
+    /// Updates the cost of registers to `weight`
+    pub fn with_reg_weight(self, weight: u64) -> Self {
+        Self {
+            reg_cost: weight,
+            ..self
+        }
     }
 }
 
@@ -40,7 +54,7 @@ impl CostFunction<LutLang> for KLUTCostFn {
             }
             LutLang::Program(_) => 0,
             LutLang::Bus(_) => 0,
-            LutLang::Reg(_) => 1,
+            LutLang::Reg(_) => self.reg_cost,
             LutLang::Cycle(_) => 0,
             LutLang::Arg(_) => 0,
             LutLang::Const(_) => 0,

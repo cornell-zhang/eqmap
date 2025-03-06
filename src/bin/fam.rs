@@ -68,6 +68,10 @@ struct Args {
     #[arg(short = 'k', long, default_value_t = 6)]
     k: usize,
 
+    /// Ratio of register cost to LUT cost
+    #[arg(short = 'w', long, default_value_t = 1)]
+    reg_weight: u64,
+
     /// Timeout in seconds for each expression
     #[arg(short = 't', long,
         default_value_t =
@@ -178,7 +182,7 @@ fn main() -> std::io::Result<()> {
     let req = if args.min_depth {
         req.with_min_depth()
     } else {
-        req.with_k(args.k)
+        req.with_klut_regw(args.k, args.reg_weight)
     };
 
     #[cfg(feature = "dyn_decomp")]
