@@ -21,7 +21,7 @@ Technology mapping is the hand-off between logical synthesis and physical
 synthesis. It converts the abstract Boolean logic into a network of gates that
 belong to the target cell library. For FPGAs, the primary target cell is the
 LUT (lookup table). Since every $k$-LUT can be re-programmed to satisfy any $k$
-input boolean function, FPGA technology mapping has a unmistakably large
+input boolean function, FPGA technology mapping has an unmistakably large
 solution space. Whether the circuit is optimized for latency or area, most FPGA
 tools approach technology mapping as a graph covering problem~\cite{flowmap,
     daomap, attmap, imap}. In the literature, a group of circuit nodes implemented
@@ -42,7 +42,7 @@ For this reason, we propose an e-graph driven technology mapper than can better
 span the time-QoR spectrum. E-graphs are a data structure which use union-find
 operations to compactly represent abstract equivalence relations. E-graphs are
 useful as an optimizing compiler framework, because terms can be iteratively
-rewritten in a nondestructive fashion. Instead of a optimization pass
+rewritten in a nondestructive fashion. Instead of an optimization pass
 architecture, e-graph driven compilers store all transformed terms in parallel
 and defer selection of the best one. Our work seeks to evaluate the suitability
 of e-graphs for logic synthesis, specifically technology mapping to FPGAs.
