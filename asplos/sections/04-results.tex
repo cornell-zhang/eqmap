@@ -27,17 +27,19 @@ On average, \shortname{} packed the netlists to \metric{}. The results in
 Table~\ref{tab:results} list the all the reduced LUT counts, sorted by
 approximate design size. AMD, formerly Xilinx, Vivado 2022~\cite{vivado} was
 used as the baseline synthesis tool. For the E-Pack flow, Yosys~\cite{yosys} is
-used to generate the initial mapped circuit. \todo{Do we have anything to say
-    about term1, int2float, i5, c6288, adder, and sqaure?}
+used to generate the initial mapped circuit. At a glance, circuits like
+`int2float,' `c6288,` `adder,' and `square' have the most to gain from
+\shortname{}. These circuits are all arithmetic in nature, and this is a
+recurring point of emphasis throughout the rest of the results.
 
-One result that is not illustrated in the table is the apparent importance of
-the initial structure inputted to E-Pack. We have not eliminated all sources of
-structural bias, and hence our superoptimization tool still occasionally gets
-stuck at a local minimum. Future work will investigate which qualities make a
-RTL synthesis engine work well with our tool versus ones that do not. For
-example, E-Pack optimized Yosys 0.33 netlists better than ones provided by
-Yosys 0.47. Likewise, future work will experiment with rewrite procedures than
-can break out of these local minimums on their own.
+One result that is \textit{not} illustrated in the table is the apparent
+importance of the initial structure inputted to E-Pack. We have not eliminated
+all sources of structural bias, and hence our superoptimization tool still
+occasionally gets stuck at a local minimum. Future work will investigate which
+qualities make a RTL synthesis engine work well with our tool versus ones that
+do not. For example, E-Pack optimized Yosys 0.33 netlists better than ones
+provided by Yosys 0.47. Likewise, future work will experiment with rewrite
+procedures than can break out of these local minimums on their own.
 
 \subsection{Marginal Improvement and Cost}\label{sec:results:margin}
 \begin{figure}
@@ -93,8 +95,8 @@ CLB usage. To elaborate, every CLB in the Ultrascale+ architecture contains 1
 slice, which itself contains 8 LUTs and 16 flip-flops~\cite{ug574}.
 Intuitively, a design that maps to CLBs efficiently will contain more
 flip-flops than LUTs due to this 2:1 ratio. To test this hypothesis,
-Table~\ref{tab:multiply} shows the results of a pipelined multiplier with a
-varying number of pipeline stages processed with E-Pack.
+Table~\ref{tab:multiply} shows the results of a 32-bit pipelined multiplier
+with a varying number of pipeline stages processed with E-Pack.
 
 While the total drop is CLB usage is desirable, the area gains as a percentage
 are modest due to the suboptimality of greedy e-graph extraction. Register
