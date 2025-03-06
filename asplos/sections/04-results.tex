@@ -39,7 +39,7 @@ example, E-Pack optimized Yosys 0.33 netlists better than ones provided by
 Yosys 0.47. Likewise, future work will experiment with rewrite procedures than
 can break out of these local minimums on their own.
 
-\subsection{Marginal Improvement and Time Cost}\label{sec:results:margin}
+\subsection{Marginal Improvement and Cost}\label{sec:results:margin}
 \begin{figure}
     \begin{subfigure}{0.47\textwidth}
         \centering
@@ -54,10 +54,25 @@ can break out of these local minimums on their own.
         \caption{Marginal increase in runtime versus iteration count. Later iterations consume more time as the graph is larger.}\label{fig:marginal:runtime}
         \Description[]{}
     \end{subfigure}
-    \caption{Comparison between gains in QoR against increasing execution time with graph size. Running a netlist to equality saturation requires more rewrite iterations, and hence a larger e-graph.}\label{fig:marginal}
+    \caption{Comparison of gains in QoR against e-graph size and runtime. Running a netlist to equality saturation requires more rewrite iterations, and hence a larger e-graph.}\label{fig:marginal}
     \Description[]{}
 \end{figure}
-\todo{explain graph showing improvement with iter count}
+
+Given that \shortname{} is fundamentally a superoptimization tool, we want to
+provide evidence that significant gains can be found within reasonable time
+bounds. To that end, we empirically studied the marginal gains in QoR as the
+e-graph contains increasingly longer rewrite sequences. Within the e-graph
+infrastructure, this phasing of applying rewrites and rebuilding the union-find
+data structure is known as an \textit{iteration}. As shown in
+Fig.~\ref{fig:marginal:improvement}, nearly all the performance gains are
+discovered within the first 10 iterations---well before equality
+saturation---suggesting that most of the optimizations are relatively local.
+Some notable exception occur, such as `alu4' being reduced in size after the
+40th iteration. Lastly, the growing runtime of e-graph exploration with each
+iteration should be addressed. The marginal cost of executing an iteration of
+rewrites becomes prohibitive as the e-graph becomes larger.
+Fig.~\ref{fig:marginal:runtime} illustrates that after approximately the 30th
+iteration, the marginal runtime rapidly increases into the 10s of seconds.
 
 \subsection{Case Study: Pipelined Designs}\label{sec:results:retiming}
 \begin{table*}[t]
