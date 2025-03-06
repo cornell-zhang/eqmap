@@ -63,9 +63,10 @@ Options:
   -d, --decomp                     Find new decompositions at runtime
       --disassemble <DISASSEMBLE>  Comma separated list of cell types to decompose into
   -r, --no-retime                  Do not use register retiming
-  -v, --verbose                    Print explanations  (generates a proof and runs slower)
+  -v, --verbose                    Print explanations (generates a proof and runs slower)
       --min-depth                  Extract for min circuit depth
   -k, --k <K>                      Max fan in size for extracted LUTs [default: 6]
+  -w, --reg-weight <REG_WEIGHT>    Ratio of register cost to LUT cost [default: 1]
   -t, --timeout <TIMEOUT>          Timeout in seconds for each expression [default: 10]
   -s, --node-limit <NODE_LIMIT>    Maximum number of nodes in graph [default: 48000]
   -n, --iter-limit <ITER_LIMIT>    Maximum number of rewrite iterations [default: 32]
