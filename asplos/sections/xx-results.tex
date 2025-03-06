@@ -19,7 +19,7 @@ how our mapping optimizations influence timing closure.
     \caption{Results of 30 improved benchmarks from ISCAS'85, LGSynth'91, and EPFL}\label{tab:results}
 \end{table}
 Among the 96 benchmarks we tested, we found that \shortname{} was able to
-reduce the LUT count 31\% of the time. On average, \shortname{} packed the
+reduce the LUT count \fmetric{} of the time. On average, \shortname{} packed the
 netlists to \metric{}. The results in Table~\ref{tab:results} list the LUT counts \todo{explain table}.
 
 \subsection{Marginal Improvement and Time Cost}\label{sec:results:margin}
@@ -27,20 +27,20 @@ netlists to \metric{}. The results in Table~\ref{tab:results} list the LUT count
     \begin{subfigure}{0.47\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/improvement.png}
-        \caption{Marginal improvement versus iteration count.}\label{fig:marginal:improvement}
+        \caption{Marginal improvement versus iteration count. The labels mark the equality saturation point.}\label{fig:marginal:improvement}
         \Description[]{}
     \end{subfigure}
     \hfill\vspace{4mm}
     \begin{subfigure}{0.47\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/runtime.png}
-        \caption{Marginal increase in runtime versus iteration count.}\label{fig:marginal:runtime}
+        \caption{Marginal increase in runtime versus iteration count. Longer iterations consume more time as the graph is larger.}\label{fig:marginal:runtime}
         \Description[]{}
     \end{subfigure}
-    \caption{\todo{root figure caption}}\label{fig:marginal}
+    \caption{Comparison between gains in QoR against increasing execution time with graph size. Running a netlist to equality saturation requires more rewrite iterations, and hence a larger e-graph.}\label{fig:marginal}
     \Description[]{}
 \end{figure}
-\todo{graph showing improvement with iter count}
+\todo{explain graph showing improvement with iter count}
 
 \subsection{Case Study: Pipelined Designs}\label{sec:results:retiming}
 \begin{table*}[t]
@@ -48,7 +48,7 @@ netlists to \metric{}. The results in Table~\ref{tab:results} list the LUT count
     \csvautobooktabular{data/mult.csv}
     \caption{\todo{mult captiofn}}\label{tab:multiply}
 \end{table*}
-\todo{pipelined mult design}
+\todo{explain pipelined mult design}
 
 \subsection{Case Study: Bit-Parallel Designs}\label{sec:results:scalability}
 \begin{table}
@@ -56,4 +56,4 @@ netlists to \metric{}. The results in Table~\ref{tab:results} list the LUT count
     \csvautobooktabular{data/alu.csv}
     \caption{Synthesis results of $n$-bit ALU}\label{tab:alu}
 \end{table}
-\todo{increasing ALU bit parallelism}
+\todo{explain increasing ALU bit parallelism}
