@@ -176,7 +176,8 @@ look for fully disjoint decompositions in one or more variables. This rule has
 no structural element to search for, so it runs every time an e-class is
 updated. Our implementation computes the Shannon expansion of a $k$-LUT's
 function $F$ and checks that both cofactors are cognates in a loose sense. For
-instance, given $k=3$ then it is true that:
+instance, given $k=3$ then it is true that for any $G, H \in \B^2 \rightarrow
+    \B$ that:
 
 \begin{gather}
     F(x_0, x_1, x_2) = G(x_0, H(x_1, x_2)) \nonumber \\
@@ -213,7 +214,7 @@ functions or if the cofactors are equivalent up to complementation.
 \end{figure*}
 
 Register retiming, as a purely structural rule, can be implemented with a
-simple search and apply pattern. An example for $k=3$ would be written as
+simple search and apply pattern. An example for $k=2$ would be written as
 follows:
 
 \begin{verbatim}
