@@ -445,3 +445,44 @@
   keywords  = {Field programmable gate arrays;Benchmark testing;Video recording;Clocks;Runtime;Optimization;Performance evaluation;FPGA;Benchmark Designs;CAD Tool Flows;Academic vs Commercial;Vivado;Ultrascale;Verilog-To-Routing;ABC},
   doi       = {10.1109/FPT.2015.7393137}
 }
+
+@inproceedings{seer,
+  author    = {Cheng, Jianyi and Coward, Samuel and Chelini, Lorenzo and Barbalho, Rafael and Drane, Theo},
+  title     = {SEER: Super-Optimization Explorer for High-Level Synthesis using E-graph Rewriting},
+  year      = {2024},
+  isbn      = {9798400703850},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  url       = {https://doi.org/10.1145/3620665.3640392},
+  doi       = {10.1145/3620665.3640392},
+  abstract  = {High-level synthesis (HLS) is a process that automatically translates a software program in a high-level language into a low-level hardware description. However, the hardware designs produced by HLS tools still suffer from a significant performance gap compared to manual implementations. This is because the input HLS programs must still be written using hardware design principles.Existing techniques either leave the program source unchanged or perform a fixed sequence of source transformation passes, potentially missing opportunities to find the optimal design. We propose a super-optimization approach for HLS that automatically rewrites an arbitrary software program into efficient HLS code that can be used to generate an optimized hardware design. We developed a toolflow named SEER, based on the e-graph data structure, to efficiently explore equivalent implementations of a program at scale. SEER provides an extensible framework, orchestrating existing software compiler passes and hardware optimizers.Our work is the first attempt to exploit e-graph rewriting for large software compiler frameworks, such as MLIR. Across a set of open-source benchmarks, we show that SEER achieves up to 38\texttimes{} the performance within 1.4\texttimes{} the area of the original program. Via an Intel-provided case study, SEER demonstrates the potential to outperform manually optimized designs produced by hardware experts.},
+  booktitle = {Proceedings of the 29th ACM International Conference on Architectural Support for Programming Languages and Operating Systems, Volume 2},
+  pages     = {1029-1044},
+  numpages  = {16},
+  location  = {La Jolla, CA, USA},
+  series    = {ASPLOS '24}
+}
+
+@inproceedings{roverbl,
+  author    = {Coward, Samuel and Constantinides, George A. and Drane, Theo},
+  booktitle = {2022 IEEE 29th Symposium on Computer Arithmetic (ARITH)},
+  title     = {Automatic Datapath Optimization using E-Graphs},
+  year      = {2022},
+  volume    = {},
+  number    = {},
+  pages     = {43-50},
+  keywords  = {Measurement;Costs;Scalability;Manuals;Pareto optimization;Hardware;Space exploration;hardware optimization;design automation;datapath design},
+  doi       = {10.1109/ARITH54963.2022.00016}
+}
+
+@inproceedings{impress,
+  author    = {Ustun, Ecenur and San, Ismail and Yin, Jiaqi and Yu, Cunxi and Zhang, Zhiru},
+  booktitle = {2022 IEEE 30th Annual International Symposium on Field-Programmable Custom Computing Machines (FCCM)},
+  title     = {IMpress: Large Integer Multiplication Expression Rewriting for FPGA HLS},
+  year      = {2022},
+  volume    = {},
+  number    = {},
+  pages     = {1-10},
+  keywords  = {Costs;Genetic expression;Hardware;Timing;Table lookup;Complexity theory;Cryptography},
+  doi       = {10.1109/FCCM53951.2022.9786123}
+}
