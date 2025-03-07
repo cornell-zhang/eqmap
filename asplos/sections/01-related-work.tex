@@ -12,10 +12,13 @@
 \subsection{LUT Decomposition}\label{sec:relatedwork:decomp}
 
 \subsection{E-Graph Superoptimization}\label{sec:relatedwork:egraph}
-Equivalence graphs---e-graphs for short---are a data structure that were
+Equivalence graphs (e-graphs for short) are a data structure that were
 originally conceived to facilitate automated proof generation. For example,
-e-graphs can be used to simplify mathematical expressions~\cite{egraphmath} and
-\todo{what cclemmadoes}~\cite{cclemma}. \todo{explain how EqSat works, why its
-    good}. In recent years, e-graphs~\cite{eggpaper} and equality
-saturation~\cite{eqsat} have enjoyed renewed popularity within the compilers
-field. \todo{compiler examples}
+e-graphs can be used to simplify mathematical expressions~\cite{egraphmath} or
+for automated reasoning about functional programs~\cite{cclemma}. In recent
+years, e-graphs~\cite{eggpaper} and equality saturation~\cite{eqsat} have
+enjoyed renewed popularity within the compilers field. Equality saturation is
+useful for optimizing compilers, because they defer greedy decisions,
+Extracting solutions from e-graphs can result in more optimal---sometimes
+provably optimal---program transformations. In contrast, traditional compiler
+pass pipelines suffer from a \textit{phase-ordering problem}.

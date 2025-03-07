@@ -17,15 +17,15 @@ optimizations influence CLB usage and timing closure.
 \begin{table}
     \centering
     \csvautobooktabular{data/results.csv}
-    \caption{Results of 30 improved benchmarks from ISCAS'85~\cite{iscasbench}, LGSynth'91~\cite{lgsynthbench}, and EPFL~\cite{epflbench}}\label{tab:results}
+    \caption{Results of \nimproved{} improved benchmarks from ISCAS'85~\cite{iscasbench}, LGSynth'91~\cite{lgsynthbench}, and EPFL~\cite{epflbench}}\label{tab:results}
 \end{table}
 
-We used an compilation of 96 combinational benchmarks from three academic
-sources to test LUT packing ability. Among the combinational benchmarks we
-tested, \shortname{} was able to reduce the LUT count \fmetric{} of the time.
-On average, \shortname{} packed the netlists to \metric{}. The results in
-Table~\ref{tab:results} list the all the reduced LUT counts, sorted by
-approximate design size. AMD, formerly Xilinx, Vivado 2022~\cite{vivado} was
+We used an compilation of \nbenchmarks{} combinational benchmarks from three
+academic sources to test LUT packing ability. Among the combinational
+benchmarks we tested, \shortname{} was able to reduce the LUT count \fmetric{}
+of the time. On average, \shortname{} packed the netlists to \metric{}. The
+results in Table~\ref{tab:results} list the all the reduced LUT counts, sorted
+by approximate design size. AMD, formerly Xilinx, Vivado 2022~\cite{vivado} was
 used as the baseline synthesis tool. For the E-Pack flow, Yosys~\cite{yosys} is
 used to generate the initial mapped circuit. At a glance, circuits like
 `int2float,' `c6288,` `adder,' and `square' have the most to gain from
@@ -116,6 +116,27 @@ feasible strategy, a different extraction method will be needed in future work.
     \csvautobooktabular{data/alu.csv}
     \caption{Synthesis results of $n$-bit ALU}\label{tab:alu}
 \end{table}
-The 99 academic combinational benchmarks packed by E-Pack have an average of 470 LUTs following the baseline synthesis by Vivado 2022. Among the 30 improved benchmarks in Table~\ref{tab:results}, only 3 exceed 1000 LUTs. Although this e-graph driven technology provides promising results for smaller benchmarks, FPGA technology mapping is especially difficult—and thus important—for larger designs with hundreds or thousands of LUTs. Through our case study on bit-parallel designs, we demonstrate that E-Pack performs just as well for large designs, achieving area reductions without incurring excessive build times.
 
-To test how E-Pack scales with increasing numbers of LUTs, we created an ALU benchmark and varied the input and output bit widths from 8 bits to 4096 bits. Table~\ref{tab:alu} shows the LUT counts from the initial synthesis by Vivado 2022, followed by the packed LUT counts within only 5 minutes of build time. Although the 1024-bit, 2048-bit, and 4096-bit ALU designs had up to 15000 LUTs, E-Pack was able to achieve up to almost 15\% improvement over Vivado within 5 minutes of build time. While larger run-times lead to slightly better improvements, these results demonstrate how E-Pack can achieve area reductions within a short period of time, even when input designs are scaled to beyond 10000 LUTs. Therefore, E-Pack also proves to be a practical tool that can be run after baseline synthesis by Vivado or Yosys to quickly achieve better LUT packing with minimal time cost, even when applied to large designs.
+While the academic benchmarks enable direct comparisons to the rest of the
+literature, the circuits are relatively small. On average, the designs map to
+470 LUTs with \shortname{}. Among the \nimproved{} improved benchmarks in
+Table~\ref{tab:results}, only three exceed 1000 LUTs. Although this e-graph
+driven technology provides promising results for smaller benchmarks, FPGA
+technology mapping is especially difficult---and thus important---for larger
+designs with tens of thousands of LUTs. Through our case study on bit-parallel
+designs, we demonstrate that \shortname{} performs just as well on large
+designs, achieving area reductions without incurring excessive build times.
+
+To test how \shortname{} scales with increasing numbers of LUTs, we created a
+synthetic ALU benchmark and varied the input and output bit widths from 8 bits
+to 4096 bits. Table~\ref{tab:alu} lists the LUT counts from the initial
+synthesis by Vivado 2022, followed by the packed LUT counts. Even tough the
+1024-bit, 2048-bit, and 4096-bit ALU designs had up to 15,000 LUTs,
+\shortname{} was able to achieve up to almost 15\% improvement over Vivado
+within 5 minutes of extra build time. While llonger runs lead to slightly
+better improvements, these results demonstrate how \shortname{} can achieve
+area reductions within a short period of time, even when input designs are
+scaled to beyond 10,000 LUTs. In this specific case, \shortname{} can be used
+to audit synthesis tools and reverse-engineer adverse behavior. Hence,
+\shortname{} proves to be a practical tool to run after a baseline synthesis by
+Vivado or Yosys to quickly achieve better LUT packing with minimal time cost.
