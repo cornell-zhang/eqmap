@@ -41,7 +41,7 @@ timing closure.
         \caption{Distribution of 129 LUTs after synthesis of `i9' with Yosys 0.3 + \shortname{}}\label{fig:histogram:epack}
         \Description[]{}
     \end{subfigure}
-    \caption{Comparison of two initial structures ((a) and (b)) and E-Packed structure (c) \todo{regenerate these figs}}\label{fig:histogram}
+    \caption{Comparison of two initial structures, (a) and (b), and E-Packed structure (c) \todo{regenerate these figs}}\label{fig:histogram}
     \Description[]{}
 \end{figure}
 
@@ -49,22 +49,26 @@ We used an compilation of \nbenchmarks{} combinational benchmarks from three
 academic sources to test LUT packing ability. Among the combinational
 benchmarks we tested, \shortname{} was able to reduce the LUT count \fmetric{}
 of the time. On average, \shortname{} packed the netlists to \metric{}. The
-results in Table~\ref{tab:results} list the all the reduced LUT counts, sorted
-by approximate design size. AMD, formerly Xilinx, Vivado 2022~\cite{vivado} was
-used as the baseline synthesis tool. For the E-Pack flow, Yosys~\cite{yosys} is
-used to generate the initial mapped circuit. At a glance, circuits like
-`int2float,' `c6288,` `adder,' and `square' have the most to gain from
-\shortname{}. These circuits are all arithmetic in nature, and this is a
-recurring point of emphasis throughout the rest of the results.
+results in Table~\ref{tab:results} list all the reduced LUT counts, sorted by
+approximate design size. AMD/Xilinx Vivado 2022~\cite{vivado} was used as the
+baseline synthesis tool. For the E-Pack flow, Yosys~\cite{yosys} is used to
+generate the initial mapped circuit. At a glance, circuits like `int2float,'
+`c6288,` `adder,' and `square' have the most to gain from \shortname{}. These
+circuits are all arithmetic in nature, and this is a recurring point of
+emphasis throughout the rest of the results.
 
-One result that is \textit{not} illustrated in the table is the apparent
+One result that is \textit{not} demonstrated by the table is the apparent
 importance of the initial structure inputted to E-Pack. We have not eliminated
 all sources of structural bias, and hence our superoptimization tool still
-occasionally gets stuck at a local minimum. Future work will investigate which
-qualities make a RTL synthesis engine work well with our tool versus ones that
-do not. For example, E-Pack optimized Yosys 0.33 netlists better than ones
-provided by Yosys 0.47. Likewise, future work will experiment with rewrite
-procedures than can break out of these local minimums on their own.
+occasionally gets stuck at a local minimum. Fig.~\ref{fig:histogram}
+illustrates the issue by depicting the different distributions of $k$-LUT usage
+by different tool flows. In short, an overly packed LUT network will fare worse
+in attempts to superoptimize it. Future work will investigate which qualities
+make an RTL synthesis engine work well with our tool versus ones that do not.
+For example, E-Pack optimized Yosys 0.33 netlists
+(Fig.~\ref{fig:histogram:y33}) better than ones provided by Yosys 0.47
+(Fig.~\ref{fig:histogram:y44}). Likewise, future work will experiment with
+rewrite procedures than can break out of these local minimums on their own.
 
 \subsection{Marginal Improvement and Cost}\label{sec:results:margin}
 \begin{figure}
@@ -162,6 +166,7 @@ within 5 minutes of extra build time. While llonger runs lead to slightly
 better improvements, these results demonstrate how \shortname{} can achieve
 area reductions within a short period of time, even when input designs are
 scaled to beyond 10,000 LUTs. In this specific case, \shortname{} can be used
-to audit synthesis tools and reverse-engineer adverse behavior. Hence,
-\shortname{} proves to be a practical tool to run after a baseline synthesis by
-Vivado or Yosys to quickly achieve better LUT packing with minimal time cost.
+to audit synthesis tools and perhaps even reverse-engineer adverse behavior.
+Hence, \shortname{} proves to be a practical tool to run after a baseline
+synthesis by Vivado or Yosys to quickly achieve better LUT packing with minimal
+time cost.
