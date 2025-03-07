@@ -1,9 +1,15 @@
 % use the base acmart.cls
 % use the sigplan proceeding template with the default 10 pt fonts
 % nonacm option removes ACM related text in the submission. 
-\documentclass[sigplan,nonacm]{acmart}
+\documentclass[conference,10pt]{IEEEtran}
 \usepackage{csvsimple}
 \usepackage{subcaption}
+\usepackage{cite}
+\usepackage{amsmath,amsthm,amssymb,amsfonts,stmaryrd}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
 
 \newcommand{\fixme}[1]{\textcolor{red}{#1}}
 \newcommand{\todo}[1]{\textcolor{red}{TODO:\ #1}}
@@ -18,12 +24,14 @@
 \newcommand{\Bx}[1]{\mathbb{Z}_{2}^{#1}}
 
 % enable page numbers
-\settopmatter{printfolios=true}
+% \settopmatter{printfolios=true}
 
 
 \begin{document}
 
 \title{\fullname}
+\author{\IEEEauthorblockN{Anonymous Authors}}
+\maketitle
 
 \begin{abstract}
     FPGA technology mapping is a well-studied problem and has been an area of
@@ -42,7 +50,6 @@
     use our compiler for RTL equivalence checking or auditing the QoR of synthesis
     tools.
 \end{abstract}
-\maketitle % should come after the abstract
 
 \input{sections/00-intro}
 \input{sections/01-background}
@@ -65,8 +72,8 @@
 % (Matt): Explain/mention rewrite figure in text
 
 % use the ACM bibliography style
-\bibliographystyle{ACM-Reference-Format}
-\bibliography{references}
+\bibliographystyle{IEEEtran}
+\bibliography{IEEEabrv,references}
 
 % \newpage
 %%
