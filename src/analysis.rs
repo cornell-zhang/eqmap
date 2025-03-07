@@ -138,7 +138,7 @@ impl Analysis<lut::LutLang> for LutAnalysis {
         *to = merged;
         DidMerge(merged_to, *to != from)
     }
-    fn make(egraph: &egg::EGraph<lut::LutLang, Self>, enode: &lut::LutLang) -> Self::Data {
+    fn make(egraph: &mut egg::EGraph<lut::LutLang, Self>, enode: &lut::LutLang) -> Self::Data {
         match enode {
             lut::LutLang::Program(p) => LutAnalysisData::new(Some(*p), None, None, None),
             lut::LutLang::Const(c) => LutAnalysisData::new(None, Some(*c), None, None),
