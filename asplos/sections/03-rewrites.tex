@@ -43,7 +43,6 @@ To that end, the semantics of a LUT is simply applying its boolean inputs to the
     \centering
     \includegraphics[width=0.47\textwidth]{img/rewrites.png}
     \caption{Transition diagram of rewrite rules. A solid arrow means that the application of the source rule always becomes an instance of the target rule.}\label{fig:rewrites}
-    \Description[]{}
 \end{figure}
 
 \subsection{Simplifying Degenerate LUTs}\label{sec:rewrites:degen}
@@ -195,22 +194,18 @@ functions or if the cofactors are equivalent up to complementation.
         \centering
         \includegraphics[width=\textwidth]{img/mux_4_1.png}
         \caption{Three 3-LUT, three FF topology.}\label{fig:retiming:a}
-        \Description[]{}
     \end{subfigure}
     \begin{subfigure}{0.33\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/mux_4_1_retime_dsd.png}
         \caption{Two 4-LUT, one FF topology.}\label{fig:retiming:b}
-        \Description[]{}
     \end{subfigure}
     \begin{subfigure}{0.33\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/mux_4_1_retime.png}
         \caption{One 6-LUT, one FF topology.}\label{fig:retiming:c}
-        \Description[]{}
     \end{subfigure}
     \caption{Three varying topologies for 4:1 MUX with pipeline register. \todo{Placeholder images. Remake by hand.}}\label{fig:retiming}
-    \Description[]{}
 \end{figure*}
 
 Register retiming, as a purely structural rule, can be implemented with a

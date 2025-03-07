@@ -25,24 +25,20 @@ timing closure.
         \centering
         \includegraphics[width=\textwidth]{img/y33.png}
         \caption{Distribution of 150 LUTs after synthesis of `i9' with Yosys 0.33}\label{fig:histogram:y33}
-        \Description[]{}
     \end{subfigure}
     \hfill\vspace{4mm}
     \begin{subfigure}{0.47\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/y44.png}
         \caption{Distribution of 137 LUTs after synthesis of `i9' with Yosys 0.44}\label{fig:histogram:y44}
-        \Description[]{}
     \end{subfigure}
     \hfill\vspace{4mm}
     \begin{subfigure}{0.47\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/epack.png}
         \caption{Distribution of 129 LUTs after synthesis of `i9' with Yosys 0.3 + \shortname{}}\label{fig:histogram:epack}
-        \Description[]{}
     \end{subfigure}
     \caption{Comparison of two initial structures, (a) and (b), and E-Packed structure (c) \todo{regenerate these figs}}\label{fig:histogram}
-    \Description[]{}
 \end{figure}
 
 We used an compilation of \nbenchmarks{} combinational benchmarks from three
@@ -77,17 +73,14 @@ their own.
         \centering
         \includegraphics[width=\textwidth]{img/improvement.png}
         \caption{Marginal improvement versus iteration count. The labels mark the equality saturation point.}\label{fig:marginal:improvement}
-        \Description[]{}
     \end{subfigure}
     \hfill\vspace{4mm}
     \begin{subfigure}{0.47\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/runtime_derivative.png}
         \caption{Marginal increase in runtime versus iteration count. Later iterations consume more time as the graph is larger.}\label{fig:marginal:runtime}
-        \Description[]{}
     \end{subfigure}
     \caption{Comparison of gains in QoR against e-graph size and runtime. Running a netlist to equality saturation requires more rewrite iterations, and hence a larger e-graph.}\label{fig:marginal}
-    \Description[]{}
 \end{figure}
 
 Given that \shortname{} is fundamentally a superoptimization tool, we want to
