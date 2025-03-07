@@ -1,6 +1,5 @@
 \section{Related Work}\label{sec:relatedwork}
 % Related work
-% - e-syn
 % - rover
 % - egraphconstraints
 % - dsd
@@ -12,13 +11,28 @@
 \subsection{LUT Decomposition}\label{sec:relatedwork:decomp}
 
 \subsection{E-Graph Superoptimization}\label{sec:relatedwork:egraph}
-Equivalence graphs (e-graphs for short) are a data structure that were
-originally conceived to facilitate automated proof generation. For example,
-e-graphs can be used to simplify mathematical expressions~\cite{egraphmath} or
-for automated reasoning about functional programs~\cite{cclemma}. In recent
-years, e-graphs~\cite{eggpaper} and equality saturation~\cite{eqsat} have
-enjoyed renewed popularity within the compilers field. Equality saturation is
-useful for optimizing compilers, because they defer greedy decisions.
-Extracting solutions from e-graphs can result in more optimal---sometimes
-provably optimal---program transformations. In contrast, traditional compiler
-pass pipelines suffer from a \textit{phase-ordering problem}.
+In recent years, e-graphs and equality saturation have enjoyed renewed
+popularity within the compilers field. Equality saturation is useful for
+optimizing compilers, because they defer greedy decisions. Extracting solutions
+from e-graphs can result in more optimal---sometimes provably optimal---program
+transformations. In contrast, traditional compiler pass pipelines suffer from a
+\textit{phase-ordering problem}. In essence, there is almost never an ordering
+of transformation passes that is optimal for all input programs. It is a
+deep-rooted problem in compiler design, but the problem is particularly
+consequential for designing dataflow architectures. Several recent works use
+e-graphs to improve upon typical optimizing compiler architecture.
+
+SEER~\cite{seer} uses e-graphs to optimize the data-level and pipeline
+parallelism of control flow in high-level synthesis (HLS) programs.
+IMpress~\cite{impress} also uses e-graphs at the HLS level, optimizing the
+muliplication of large bit-width integers. At a lower level,
+ROVER~\cite{rover,roverbl,egraphconstraints} rewrites arithmetic data paths at
+the word and bit levels. ROVER straddles the RTL and physical level of
+abstraction, making it more general purpose than IMpredss. In any case, the
+work which is most similar in its goals to ours is E-Syn~\cite{esynth}. E-Syn
+rewrites the Boolean algebra of a circuit using known properties like De
+Morgan's laws and the consensus theorem. Ultimately, E-Syn performs its
+optimizations during technology-independent synthesis steps, whereas
+\shortname{} applies as a post-processing step \textit{after} technology
+mapping. Furthermore, \shortname{}'s rewriting system models the netlist in
+terms of total functions, rather than as expressions over a Boolean algebra.
