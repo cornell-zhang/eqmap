@@ -11,6 +11,8 @@ use egg::{
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::collections::HashSet;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use serde::Serialize;
@@ -591,24 +593,37 @@ where
                 }
                 _ => None,
             };
-            let mut time_bar = match self.build_strat {
-                BuildStrat::TimeLimited(t) | BuildStrat::Custom(t, _, _) => {
-                    // eprintln!("Adding a spinner");
-                    let b = ProgressBar::new(t).with_message(format!("doing stuff {t}"));
-                    // b.set_style(
-                    //     ProgressStyle::with_template("{spinner:.dim.bold} cargo: {wide_msg}")
-                    //         .unwrap()
-                    //         .tick_chars("/|\\- "),
-                    // );
-                    b.enable_steady_tick(Duration::from_secs(1));
-                    std::thread::sleep(Duration::from_secs(20));
-                    Some(b)
-                }
-                _ => None,
-            };
             runner.with_hook(move |r| report_progress(r, iter_bar.as_mut(), node_bar.as_mut()))
         } else {
             runner
+        };
+
+        // Make a time bar
+        let time_bar = match self.build_strat {
+            BuildStrat::TimeLimited(t) | BuildStrat::Custom(t, _, _) => {
+                // This is a Copilot special right here...
+                let stop_signal = Arc::new(AtomicBool::new(false));
+                let stop_signal_clone = Arc::clone(&stop_signal);
+                let b = Arc::new(mp.add(ProgressBar::new(t * 2)));
+                b.set_style(
+                    ProgressStyle::with_template("[{bar:60.green}] {spinner:.green} {elapsed}")
+                        .unwrap(),
+                );
+                b.tick();
+
+                let pb_clone = Arc::clone(&b);
+                std::thread::spawn(move || {
+                    for _ in 0..(t * 2 - 1) {
+                        std::thread::sleep(Duration::from_millis(500));
+                        if stop_signal_clone.load(std::sync::atomic::Ordering::Relaxed) {
+                            break;
+                        }
+                        pb_clone.inc(1);
+                    }
+                });
+                Some((stop_signal, b))
+            }
+            _ => None,
         };
 
         if self.expr.as_ref().len() > self.max_canon_size {
@@ -635,6 +650,10 @@ where
         self.result = Some(runner.with_expr(&self.expr).run(&self.rules));
 
         // Clear the progress bar
+        if let Some(t) = time_bar {
+            t.0.store(true, Ordering::Relaxed);
+            t.1.finish_and_clear();
+        }
         mp.clear().unwrap();
 
         if self.gen_proof {
