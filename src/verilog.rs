@@ -797,6 +797,20 @@ impl SVModule {
                     }
                 }
                 NodeEvent::Leave(RefNode::NetAssignment(_net_assign)) => (),
+
+                // The stuff we definitely don't support
+                NodeEvent::Enter(RefNode::BinaryOperator(_)) => {
+                    return Err("Binary operators are not supported".to_string());
+                }
+                NodeEvent::Enter(RefNode::UnaryOperator(_)) => {
+                    return Err("Unary operators are not supported".to_string());
+                }
+                NodeEvent::Enter(RefNode::Concatenation(_)) => {
+                    return Err("Concatenation not supported".to_string());
+                }
+                NodeEvent::Enter(RefNode::BitSelect(_)) => {
+                    return Err("Bit selection not supported".to_string());
+                }
                 _ => (),
             }
         }
