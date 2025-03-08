@@ -75,6 +75,8 @@ jobs:
         run: echo "comparator (release, proof gen)" >> $GITHUB_STEP_SUMMARY; (time cargo run --release --bin opt -- tests/lutlang/gate_compare.txt --verbose 2>>/dev/null) 2>> $GITHUB_STEP_SUMMARY
       - name: Run comparator (release,)
         run: echo "comparator (release,)" >> $GITHUB_STEP_SUMMARY; (time cargo run --release --bin opt -- tests/lutlang/gate_compare.txt 2>>/dev/null) 2>> $GITHUB_STEP_SUMMARY
+      - name: Run epak (release,)
+        run: echo "epak (release,)" >> $GITHUB_STEP_SUMMARY; (time cargo run --release --bin epak -- verilog/multPipe_n4.v 1>>/dev/null 2>>/dev/null) 2>> $GITHUB_STEP_SUMMARY
 
   coverage:
     name: Code Coverage
