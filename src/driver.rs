@@ -599,8 +599,8 @@ where
         };
 
         // Make a time bar
-        let time_bar = match self.build_strat {
-            BuildStrat::TimeLimited(t) | BuildStrat::Custom(t, _, _) => {
+        let time_bar = match (self.prog_bar, self.build_strat.clone()) {
+            (true, BuildStrat::TimeLimited(t)) | (true, BuildStrat::Custom(t, _, _)) => {
                 // This is a Copilot special right here...
                 let stop_signal = Arc::new(AtomicBool::new(false));
                 let stop_signal_clone = Arc::clone(&stop_signal);

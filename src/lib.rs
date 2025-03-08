@@ -193,6 +193,43 @@ mod tests {
             .to_string()
     }
 
+    fn get_const_verilog() -> String {
+        "module mux_4_1 (
+            a,
+            b,
+            c,
+            d,
+            y
+        );
+          input a;
+          wire a;
+          input b;
+          wire b;
+          input c;
+          wire c;
+          input d;
+          wire d;
+          wire s0;
+          wire s1;
+          output y;
+          wire y;
+          VCC VCC (.Y(s0));
+          GND GND (.Y(s1));
+          LUT6 #(
+              .INIT(64'hf0f0ccccff00aaaa)
+          ) _0_ (
+              .I0(d),
+              .I1(c),
+              .I2(a),
+              .I3(b),
+              .I4(s1),
+              .I5(s0),
+              .O (y)
+          );
+        endmodule"
+            .to_string()
+    }
+
     fn get_fdre_verilog() -> String {
         "module mux_4_1 (
             d,
@@ -294,6 +331,19 @@ endmodule"
         assert_eq!(instance.name, "_0_");
         assert_eq!(instance.attributes.len(), 1);
         assert_eq!(instance.attributes["INIT"], "64'hf0f0ccccff00aaaa");
+    }
+
+    #[test]
+    fn test_constant_verilog() {
+        let module = get_const_verilog();
+        let ast = sv_parse_wrapper(&module, None).unwrap();
+        let module = SVModule::from_ast(&ast);
+        assert!(module.is_ok());
+        let module = module.unwrap();
+        assert_eq!(
+            module.to_single_expr().unwrap().to_string(),
+            "(LUT 17361601744336890538 true false b a c d)".to_string()
+        );
     }
 
     #[test]
