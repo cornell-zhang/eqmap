@@ -811,6 +811,12 @@ impl SVModule {
                 NodeEvent::Enter(RefNode::BitSelect(_)) => {
                     return Err("Bit selection not supported".to_string());
                 }
+                NodeEvent::Enter(RefNode::AlwaysConstruct(_)) => {
+                    return Err("Always block not supported".to_string());
+                }
+                NodeEvent::Enter(RefNode::ConditionalStatement(_)) => {
+                    return Err("If/else block not supported".to_string());
+                }
                 _ => (),
             }
         }
