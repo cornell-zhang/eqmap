@@ -2,12 +2,12 @@ use clap::Parser;
 #[cfg(feature = "dyn_decomp")]
 use lut_synth::rewrite::dyn_decompositions;
 use lut_synth::{
-    driver::{process_expression, SynthRequest},
+    driver::{SynthRequest, process_expression},
     rewrite::{all_static_rules, register_retiming},
-    verilog::{sv_parse_wrapper, SVModule},
+    verilog::{SVModule, sv_parse_wrapper},
 };
 use std::{
-    io::{stdin, Read},
+    io::{Read, stdin},
     path::PathBuf,
 };
 

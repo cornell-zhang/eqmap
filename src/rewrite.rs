@@ -12,7 +12,7 @@ use super::analysis::LutAnalysis;
 use super::lut;
 use super::lut::to_bitvec;
 use bitvec::{bitvec, order::Lsb0, vec::BitVec};
-use egg::{rewrite, Analysis, Applier, Pattern, PatternAst, Rewrite, Subst, Var};
+use egg::{Analysis, Applier, Pattern, PatternAst, Rewrite, Subst, Var, rewrite};
 use std::collections::{HashMap, HashSet};
 
 /// Returns a list of structural mappings of logic functions to LUTs.
@@ -312,11 +312,7 @@ where
                     .parse()
                     .unwrap();
             let (id, b) = egraph.union_instantiations(old_ast, &new_ast, subst, rule_name);
-            if b {
-                vec![id]
-            } else {
-                vec![]
-            }
+            if b { vec![id] } else { vec![] }
         }
         _ => panic!("Expected LUT in union_with_lut_pattern"),
     }
@@ -700,7 +696,7 @@ pub mod decomp {
 
     use crate::{
         analysis::{self, LutAnalysis},
-        lut::{self, from_bitvec, to_bitvec, LutLang},
+        lut::{self, LutLang, from_bitvec, to_bitvec},
     };
     use bitvec::prelude::*;
     use egg::{Analysis, Applier, Id, Var};

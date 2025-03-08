@@ -55,11 +55,7 @@ impl Logic {
 
     /// Create a four-state logic element from a boolean
     pub fn from_bool(b: bool) -> Logic {
-        if b {
-            Logic::True
-        } else {
-            Logic::False
-        }
+        if b { Logic::True } else { Logic::False }
     }
 }
 
@@ -76,11 +72,7 @@ impl fmt::Display for Logic {
 
 impl From<bool> for Logic {
     fn from(value: bool) -> Self {
-        if value {
-            Logic::True
-        } else {
-            Logic::False
-        }
+        if value { Logic::True } else { Logic::False }
     }
 }
 

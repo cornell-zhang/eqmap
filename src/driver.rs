@@ -4,7 +4,7 @@
 
 */
 use super::cost::{DepthCostFn, GateCostFn, KLUTCostFn, NegativeCostFn};
-use super::lut::{canonicalize_expr, verify_expr, CircuitStats, LutExprInfo, LutLang};
+use super::lut::{CircuitStats, LutExprInfo, LutLang, canonicalize_expr, verify_expr};
 use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
     RecExpr, RecExprParseError, Rewrite, Runner, StopReason,
@@ -771,7 +771,9 @@ where
         if check.is_not_equiv() {
             match result.get_expl() {
                 Some(e) => eprintln!("ERROR: Failed for explanation {}", e),
-                None => eprintln!("ERROR: Failed for unknown reason. Try running with --verbose for an attempted proof"),
+                None => eprintln!(
+                    "ERROR: Failed for unknown reason. Try running with --verbose for an attempted proof"
+                ),
             }
             return Err(std::io::Error::new(
                 std::io::ErrorKind::Other,

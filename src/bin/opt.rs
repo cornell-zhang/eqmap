@@ -4,7 +4,7 @@ use egg::*;
 use lut_synth::rewrite::dyn_decompositions;
 use lut_synth::{
     analysis::LutAnalysis,
-    driver::{process_string_expression, simple_reader, SynthRequest},
+    driver::{SynthRequest, process_string_expression, simple_reader},
     lut,
     rewrite::{all_static_rules, register_retiming},
 };

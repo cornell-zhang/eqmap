@@ -6,15 +6,15 @@
 */
 
 use std::{
-    collections::{hash_map::Entry, BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet, hash_map::Entry},
     fmt,
     path::{Path, PathBuf},
 };
 
 use egg::{Id, RecExpr};
-use sv_parser::{unwrap_node, Identifier, Locate, NodeEvent, RefNode};
+use sv_parser::{Identifier, Locate, NodeEvent, RefNode, unwrap_node};
 
-use super::logic::{dont_care, Logic};
+use super::logic::{Logic, dont_care};
 use super::lut::{LutExprInfo, LutLang};
 
 /// A wrapper for parsing verilog at file `path` with content `s`
@@ -171,11 +171,7 @@ const LUT_ROOT: &str = "LUT";
 
 /// Escaped identifiers in Verilog must have a dangling space to end the escaped sequence.
 fn emit_id(id: String) -> String {
-    if id.starts_with("\\") {
-        id + " "
-    } else {
-        id
-    }
+    if id.starts_with("\\") { id + " " } else { id }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -615,7 +611,7 @@ impl SVModule {
                                         return Err(format!(
                                             "Could not parse hex value from INIT string {}",
                                             loc
-                                        ))
+                                        ));
                                     }
                                 }
                             }
@@ -628,7 +624,7 @@ impl SVModule {
                                         return Err(format!(
                                             "Could not parse decimal value from INIT string {}",
                                             loc
-                                        ))
+                                        ));
                                     }
                                 }
                             }

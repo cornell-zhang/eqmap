@@ -1,12 +1,12 @@
 use std::{
-    io::{stdin, Read},
+    io::{Read, stdin},
     path::PathBuf,
 };
 
 use clap::Parser;
 use lut_synth::{
     lut::verify_expr,
-    verilog::{sv_parse_wrapper, SVModule},
+    verilog::{SVModule, sv_parse_wrapper},
 };
 /// Parse structural verilog into a LutLang Expression
 #[derive(Parser, Debug)]

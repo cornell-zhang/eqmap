@@ -23,8 +23,8 @@ mod tests {
 
     use analysis::LutAnalysis;
     use egg::{Analysis, Language, RecExpr};
-    use lut::{verify_expr, LutExprInfo, LutLang};
-    use verilog::{sv_parse_wrapper, SVModule, SVPrimitive};
+    use lut::{LutExprInfo, LutLang, verify_expr};
+    use verilog::{SVModule, SVPrimitive, sv_parse_wrapper};
 
     use super::*;
 
@@ -745,33 +745,39 @@ endmodule"
     #[test]
     fn test_cycle() {
         let simple_cycle_expr: RecExpr<LutLang> = "(CYCLE (REG (AND a (ARG 0))))".parse().unwrap();
-        assert!(LutLang::func_equiv(
-            &simple_cycle_expr,
-            &"(CYCLE (REG (AND a (ARG 0))))".parse().unwrap()
-        )
-        .is_equiv());
+        assert!(
+            LutLang::func_equiv(
+                &simple_cycle_expr,
+                &"(CYCLE (REG (AND a (ARG 0))))".parse().unwrap()
+            )
+            .is_equiv()
+        );
         let complex_cycle_expr: RecExpr<LutLang> =
             "(CYCLE (XOR (ARG 0) (CYCLE (REG (AND a (ARG 1))))))"
                 .parse()
                 .unwrap();
-        assert!(LutLang::func_equiv(
-            &complex_cycle_expr,
-            &"(CYCLE (XOR (ARG 0) (CYCLE (REG (AND a (ARG 1))))))"
-                .parse()
-                .unwrap()
-        )
-        .is_equiv());
+        assert!(
+            LutLang::func_equiv(
+                &complex_cycle_expr,
+                &"(CYCLE (XOR (ARG 0) (CYCLE (REG (AND a (ARG 1))))))"
+                    .parse()
+                    .unwrap()
+            )
+            .is_equiv()
+        );
         let eval_cycle_expr: RecExpr<LutLang> = "(CYCLE (REG in))".parse().unwrap();
         assert!(
             LutLang::func_equiv(&eval_cycle_expr, &"(REG in)".parse().unwrap()).is_inconclusive()
         );
-        assert!(LutLang::func_equiv(
-            &simple_cycle_expr,
-            &"(CYCLE (REG (AND (XOR (AND a 1) (ARG 0)) (ARG 0))))"
-                .parse()
-                .unwrap()
-        )
-        .is_inconclusive());
+        assert!(
+            LutLang::func_equiv(
+                &simple_cycle_expr,
+                &"(CYCLE (REG (AND (XOR (AND a 1) (ARG 0)) (ARG 0))))"
+                    .parse()
+                    .unwrap()
+            )
+            .is_inconclusive()
+        );
     }
 
     #[test]

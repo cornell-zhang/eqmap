@@ -4,15 +4,15 @@
 
 */
 use super::analysis::LutAnalysis;
-use super::check::{equivalent, inconclusive, not_equivalent, Check};
+use super::check::{Check, equivalent, inconclusive, not_equivalent};
 use super::cost::DepthCostFn;
 use bitvec::prelude::*;
-use egg::define_language;
 use egg::CostFunction;
 use egg::Id;
 use egg::Language;
 use egg::RecExpr;
 use egg::Symbol;
+use egg::define_language;
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
 
