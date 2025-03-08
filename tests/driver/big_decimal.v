@@ -37,22 +37,22 @@ module mux_4_1 (
 endmodule
 
 // CHECK: module mux_4_1 (
-// CHECK:     b,
+// CHECK:     c,
 // CHECK:     a,
 // CHECK:     d,
-// CHECK:     c,
+// CHECK:     b,
 // CHECK:     s1,
 // CHECK:     s0,
 // CHECK:     y
 // CHECK: );
-// CHECK:   input b;
-// CHECK:   wire b;
+// CHECK:   input c;
+// CHECK:   wire c;
 // CHECK:   input a;
 // CHECK:   wire a;
 // CHECK:   input d;
 // CHECK:   wire d;
-// CHECK:   input c;
-// CHECK:   wire c;
+// CHECK:   input b;
+// CHECK:   wire b;
 // CHECK:   input s1;
 // CHECK:   wire s1;
 // CHECK:   input s0;
@@ -61,10 +61,10 @@ endmodule
 // CHECK:   wire y;
 // CHECK:   wire tmp7;
 // CHECK:   LUT4 #(
-// CHECK:       .INIT(16'hfc0a)
+// CHECK:       .INIT(16'hf0ca)
 // CHECK:   ) __0__ (
 // CHECK:       .I0(d),
-// CHECK:       .I1(c),
+// CHECK:       .I1(b),
 // CHECK:       .I2(s1),
 // CHECK:       .I3(s0),
 // CHECK:       .O(tmp7)
@@ -72,10 +72,10 @@ endmodule
 // CHECK:   LUT4 #(
 // CHECK:       .INIT(16'hcaf0)
 // CHECK:   ) __1__ (
-// CHECK:       .I0(b),
+// CHECK:       .I0(c),
 // CHECK:       .I1(a),
 // CHECK:       .I2(tmp7),
-// CHECK:       .I3(s1),
+// CHECK:       .I3(s0),
 // CHECK:       .O(y)
 // CHECK:   );
 // CHECK: endmodule

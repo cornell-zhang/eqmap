@@ -29,10 +29,6 @@ module gate_test (
   wire f;
   input g;
   wire g;
-  input s0;
-  wire s0;
-  input s1;
-  wire s1;
   wire tmp0;
   output y;
   wire y;
@@ -99,22 +95,22 @@ endmodule
 // CHECK:   wire c;
 // CHECK:   output y;
 // CHECK:   wire y;
-// CHECK:   wire tmp6;
+// CHECK:   wire tmp4;
 // CHECK:   wire tmp7;
 // CHECK:   LUT2 #(
-// CHECK:       .INIT(4'h1)
+// CHECK:       .INIT(4'h8)
 // CHECK:   ) __0__ (
-// CHECK:       .I0(g),
-// CHECK:       .I1(a),
-// CHECK:       .O(tmp6)
+// CHECK:       .I0(e),
+// CHECK:       .I1(d),
+// CHECK:       .O(tmp4)
 // CHECK:   );
 // CHECK:   LUT4 #(
-// CHECK:       .INIT(16'h55c0)
+// CHECK:       .INIT(16'hccc5)
 // CHECK:   ) __1__ (
 // CHECK:       .I0(b),
-// CHECK:       .I1(e),
-// CHECK:       .I2(d),
-// CHECK:       .I3(tmp6),
+// CHECK:       .I1(tmp4),
+// CHECK:       .I2(g),
+// CHECK:       .I3(a),
 // CHECK:       .O(tmp7)
 // CHECK:   );
 // CHECK:   LUT3 #(
