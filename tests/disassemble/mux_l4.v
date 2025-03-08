@@ -1,4 +1,4 @@
-// RUN: epak %s --disassemble NOR2,INV,AND2 -s 140000 -n 40 2>>/dev/null | FileCheck %s
+// RUN: epak %s --disassemble NOR2,INV,AND2 -s 140000 2>>/dev/null | FileCheck %s
 
 module mux_4_1 (
     b,
