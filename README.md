@@ -1,10 +1,10 @@
 ![](https://github.com/matth2k/lut-synth/actions/workflows/rust.yml/badge.svg)
 
-# lut-synth: LUT Network Synthesis with E-Graphs
+# E-Pack: Technology Mapping with E-Graphs
 
 ## Description
 
-An early experiment on representing LUT networks within E-Graphs for logic synthesis
+A Verilog-to-Verilog tool for superoptimizing FPGA netlists with E-Graphs
 
 ### Dependencies
 
@@ -17,6 +17,8 @@ An early experiment on representing LUT networks within E-Graphs for logic synth
     - [bitvec](https://docs.rs/bitvec/latest/bitvec/)
     - [clap](https://docs.rs/clap/latest/clap/)
     - [indicatif](https://docs.rs/indicatif/latest/indicatif/)
+    - [sv-parser](https://docs.rs/sv-parser/latest/sv_parser/)
+    - [serde_json](https://docs.rs/serde_json/latest/serde_json/)
 - ILP (only when using Cargo feature `exactness`)
   - [CBC Solver](https://github.com/coin-or/Cbc)
 
