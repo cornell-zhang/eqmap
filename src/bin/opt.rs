@@ -21,9 +21,7 @@ fn get_main_runner(s: &str) -> Result<SynthRequest<LutAnalysis>, RecExprParseErr
         .with_k(4)
         .with_asserts()
         .without_progress_bar()
-        .with_timeout(20)
-        .with_node_limit(20_000)
-        .with_iter_limit(30))
+        .with_joint_limits(20, 20_000, 30))
 }
 
 #[allow(dead_code)]
@@ -155,9 +153,7 @@ fn main() -> std::io::Result<()> {
     let req = SynthRequest::default()
         .with_rules(rules)
         .with_k(args.k)
-        .with_timeout(args.timeout)
-        .with_node_limit(args.node_limit)
-        .with_iter_limit(args.iter_limit);
+        .with_joint_limits(args.timeout, args.node_limit, args.iter_limit);
 
     let req = if args.assert_sat {
         req.with_asserts()
@@ -190,7 +186,7 @@ fn main() -> std::io::Result<()> {
 
     #[cfg(feature = "exactness")]
     let req = if args.exact {
-        req.with_exactness()
+        req.with_exactness(args.timeout)
     } else {
         req
     };

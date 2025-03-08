@@ -928,9 +928,7 @@ pub mod decomp {
             .with_k(3)
             .with_asserts()
             .without_progress_bar()
-            .with_timeout(20)
-            .with_node_limit(20_000)
-            .with_iter_limit(30);
+            .with_joint_limits(20, 20_000, 30);
 
         let ans = req.simplify_expr().unwrap().get_expr().to_string();
         assert_eq!(ans, "(LUT 202 s1 s0 (LUT 202 s0 c d))");

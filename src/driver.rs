@@ -201,30 +201,53 @@ impl std::fmt::Display for SynthOutput {
 /// Update a progress bar with the current state of the runner.
 fn report_progress<L, A>(
     runner: &Runner<L, A>,
-    iter_bar: &mut ProgressBar,
-    node_bar: &mut ProgressBar,
+    iter_bar: Option<&mut ProgressBar>,
+    node_bar: Option<&mut ProgressBar>,
 ) -> Result<(), String>
 where
     L: Language,
     A: Analysis<L> + std::default::Default,
 {
-    iter_bar.inc(1);
-    let nodes = runner.egraph.total_number_of_nodes();
-    node_bar.set_position(nodes as u64);
+    if let Some(b) = iter_bar {
+        b.inc(1);
+    }
+    if let Some(b) = node_bar {
+        let nodes = runner.egraph.total_number_of_nodes();
+        b.set_position(nodes as u64);
+    }
     Ok(())
+}
+
+/// An enum for the e-graph build strategy
+#[derive(Debug, Clone)]
+enum BuildStrat {
+    /// Build the e-graph with a time limit
+    TimeLimited(u64),
+    /// Build the e-graph with a node limit
+    SizeLimited(usize),
+    /// Build the e-graph with a rewrite iteration limit
+    IterLimited(usize),
+    /// Build the e-graph with a combination of limits (time, nodes, iterations)
+    Custom(u64, usize, usize),
 }
 
 /// An enum for the extraction strategies used to synthesize LUT networks.
 /// Only [ExtractStrat::Exact] uses ILP.
 #[derive(Debug, Clone)]
 enum ExtractStrat {
+    /// Extract maximum circuit depth (RAM bomb).
     MaxDepth,
+    /// Extract minimum circuit depth.
     MinDepth,
+    /// Extract LUTs up to size `k`.
     LUTCount(usize),
+    /// Extract LUTs up to size `k` and registers with cost ratio `w`.
     LUTCountRegWeighted(usize, u64),
+    /// Disassemble into set of logic gates.
     Disassemble(HashSet<String>),
     #[cfg(feature = "exactness")]
-    Exact,
+    /// Extract LUTs exactly using ILP with timeout in seconds.
+    Exact(u64),
 }
 
 impl ExtractStrat {
@@ -272,6 +295,9 @@ where
     /// The extraction strategy to use.
     extract_strat: ExtractStrat,
 
+    /// The e-graph build strategy to use.
+    build_strat: BuildStrat,
+
     /// If true, do not canonicalize the input expression.
     no_canonicalize: bool,
 
@@ -285,17 +311,8 @@ where
     /// If true, a progress bar will be displayed, else no progress bar will be displayed.
     prog_bar: bool,
 
-    /// The timelimit, in seconds, given to the search.
-    timeout: u64,
-
     /// Produce a report which records extra stats.
     produce_rpt: bool,
-
-    /// The maximum number of enodes in a searched egraph.
-    node_limit: usize,
-
-    /// The maximum number of iterations of rewrites applied to the egraph.
-    iter_limit: usize,
 
     /// The maximum number of nodes to canonicalize
     max_canon_size: usize,
@@ -313,14 +330,12 @@ impl<A: Analysis<LutLang>> std::default::Default for SynthRequest<A> {
             expr: RecExpr::default(),
             rules: Vec::new(),
             extract_strat: ExtractStrat::LUTCount(6),
+            build_strat: BuildStrat::Custom(10, 48000, 32),
             no_canonicalize: false,
             assert_sat: false,
             gen_proof: false,
             prog_bar: true,
-            timeout: 10,
             produce_rpt: false,
-            node_limit: 20_000,
-            iter_limit: 16,
             max_canon_size: MAX_CANON_SIZE,
             canonicalized: false,
             result: None,
@@ -334,14 +349,12 @@ impl<A: Analysis<LutLang> + std::clone::Clone> std::clone::Clone for SynthReques
             expr: self.expr.clone(),
             rules: self.rules.clone(),
             extract_strat: self.extract_strat.clone(),
+            build_strat: self.build_strat.clone(),
             no_canonicalize: self.no_canonicalize,
             assert_sat: self.assert_sat,
             gen_proof: self.gen_proof,
             prog_bar: self.prog_bar,
-            timeout: self.timeout,
             produce_rpt: self.produce_rpt,
-            node_limit: self.node_limit,
-            iter_limit: self.iter_limit,
             max_canon_size: self.max_canon_size,
             canonicalized: self.canonicalized,
             result: None,
@@ -369,11 +382,11 @@ where
         }
     }
 
-    /// Request exact LUT extraction using ILP.
+    /// Request exact LUT extraction using ILP with `timeout` in seconds.
     #[cfg(feature = "exactness")]
-    pub fn with_exactness(self) -> Self {
+    pub fn with_exactness(self, timeout: u64) -> Self {
         Self {
-            extract_strat: ExtractStrat::Exact,
+            extract_strat: ExtractStrat::Exact(timeout),
             ..self
         }
     }
@@ -410,28 +423,37 @@ where
         })
     }
 
-    /// Request with at most `iter_limit` rewrite iterations.
-    pub fn with_iter_limit(self, iter_limit: usize) -> Self {
+    /// Build request limited by `iter_limit` rewrite iterations.
+    pub fn iter_limited(self, iter_limit: usize) -> Self {
         Self {
-            iter_limit,
+            build_strat: BuildStrat::IterLimited(iter_limit),
             result: None,
             ..self
         }
     }
 
-    /// Request with at most `node_limit` nodes.
-    pub fn with_node_limit(self, node_limit: usize) -> Self {
+    /// Build request limited by `node_limit` nodes.
+    pub fn node_limited(self, node_limit: usize) -> Self {
         Self {
-            node_limit,
+            build_strat: BuildStrat::SizeLimited(node_limit),
             result: None,
             ..self
         }
     }
 
-    /// Run exploration for at most `timeout` seconds.
+    /// Build request limited by `timeout` seconds.
     pub fn with_timeout(self, timeout: u64) -> Self {
         Self {
-            timeout,
+            build_strat: BuildStrat::TimeLimited(timeout),
+            result: None,
+            ..self
+        }
+    }
+
+    /// Build request with joint limits.
+    pub fn with_joint_limits(self, timeout: u64, node_limit: usize, iter_limit: usize) -> Self {
+        Self {
+            build_strat: BuildStrat::Custom(timeout, node_limit, iter_limit),
             result: None,
             ..self
         }
@@ -525,25 +547,51 @@ where
             .with_ban_length(1)
             .with_initial_match_limit(960);
 
-        let runner = runner
-            .with_scheduler(bos)
-            .with_time_limit(Duration::from_secs(self.timeout))
-            .with_node_limit(self.node_limit)
-            .with_iter_limit(self.iter_limit);
+        let runner = runner.with_scheduler(bos);
+
+        let runner = match self.build_strat {
+            BuildStrat::TimeLimited(t) => runner
+                .with_time_limit(Duration::from_secs(t))
+                .with_node_limit(usize::MAX)
+                .with_iter_limit(usize::MAX),
+            BuildStrat::SizeLimited(n) => runner
+                .with_node_limit(n)
+                .with_time_limit(Duration::from_secs(31536000))
+                .with_iter_limit(usize::MAX),
+            BuildStrat::IterLimited(n) => runner
+                .with_iter_limit(n)
+                .with_time_limit(Duration::from_secs(31536000))
+                .with_node_limit(usize::MAX),
+            BuildStrat::Custom(t, n, i) => runner
+                .with_time_limit(Duration::from_secs(t))
+                .with_node_limit(n)
+                .with_iter_limit(i),
+        };
 
         let runner = if self.prog_bar {
-            let (mut iter_bar, mut node_bar) = (
-                mp.add(ProgressBar::new(self.iter_limit as u64).with_message("iterations")),
-                mp.add(ProgressBar::new(self.node_limit as u64)),
-            );
-            iter_bar.set_style(
-                ProgressStyle::with_template("[{bar:60.cyan/blue}] {pos}/{len} iterations")
-                    .unwrap(),
-            );
-            node_bar.set_style(
-                ProgressStyle::with_template("[{bar:60.magenta}] {pos}/{len} nodes").unwrap(),
-            );
-            runner.with_hook(move |r| report_progress(r, &mut iter_bar, &mut node_bar))
+            let mut iter_bar = match self.build_strat {
+                BuildStrat::IterLimited(i) | BuildStrat::Custom(_, _, i) => {
+                    let b = mp.add(ProgressBar::new(i as u64).with_message("iterations"));
+                    b.set_style(
+                        ProgressStyle::with_template("[{bar:60.cyan/blue}] {pos}/{len} iterations")
+                            .unwrap(),
+                    );
+                    Some(b)
+                }
+                _ => None,
+            };
+            let mut node_bar = match self.build_strat {
+                BuildStrat::SizeLimited(n) | BuildStrat::Custom(_, n, _) => {
+                    let b = mp.add(ProgressBar::new(n as u64));
+                    b.set_style(
+                        ProgressStyle::with_template("[{bar:60.magenta}] {pos}/{len} nodes")
+                            .unwrap(),
+                    );
+                    Some(b)
+                }
+                _ => None,
+            };
+            runner.with_hook(move |r| report_progress(r, iter_bar.as_mut(), node_bar.as_mut()))
         } else {
             runner
         };
@@ -684,10 +732,10 @@ where
             }
             ExtractStrat::Disassemble(set) => self.greedy_extract_with(GateCostFn::new(set)),
             #[cfg(feature = "exactness")]
-            ExtractStrat::Exact => self.extract_with(|egraph, root| {
+            ExtractStrat::Exact(t) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                canonicalize_expr(e.timeout(172800.0).solve(root))
+                canonicalize_expr(e.timeout(t as f64).solve(root))
             }),
         }
     }
