@@ -11,17 +11,17 @@ use std::{
     path::PathBuf,
 };
 
-/// Tech Re-Mapping with E-Graphs
+/// Technology Mapping Optimization with E-Graphs
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
-    /// If provided, verilog is read from the file over stdin
+    /// Verilog file to read from (or use stdin)
     input: Option<PathBuf>,
 
-    /// If provided, verilog is emitted to the file over stdout
+    /// Verilog file to output to (or use stdout)
     output: Option<PathBuf>,
 
-    /// If provided, output a JSON file to the path with results
+    /// If provided, output a JSON file with result data
     #[arg(long)]
     report: Option<PathBuf>,
 
@@ -29,7 +29,7 @@ struct Args {
     #[arg(short = 'a', long, default_value_t = false)]
     assert_sat: bool,
 
-    /// Do not verify functionality of the output
+    /// Do not verify the functionality of the output
     #[arg(short = 'f', long, default_value_t = false)]
     no_verify: bool,
 
@@ -60,11 +60,11 @@ struct Args {
     #[arg(short = 'v', long, default_value_t = false)]
     verbose: bool,
 
-    /// Extract for min circuit depth
+    /// Extract for minimum circuit depth
     #[arg(long, default_value_t = false)]
     min_depth: bool,
 
-    /// Max fan in size for extracted LUTs
+    /// Max fan in size allowed for extracted LUTs
     #[arg(short = 'k', long, default_value_t = 6)]
     k: usize,
 
@@ -72,7 +72,7 @@ struct Args {
     #[arg(short = 'w', long, default_value_t = 1)]
     reg_weight: u64,
 
-    /// Timeout in seconds for each expression
+    /// Build/extraction timeout in seconds
     #[arg(short = 't', long,
         default_value_t =
         if cfg!(debug_assertions) {
@@ -99,6 +99,8 @@ fn main() -> std::io::Result<()> {
         eprintln!("WARNING: Debug assertions are enabled");
     }
 
+    eprintln!("INFO: E-Pack Technology Mapping Optimization with E-Graphs");
+
     let mut buf = String::new();
 
     let path: Option<PathBuf> = match args.input {
@@ -107,6 +109,7 @@ fn main() -> std::io::Result<()> {
             Some(p)
         }
         None => {
+            eprintln!("INFO: Reading from stdin...");
             stdin().read_to_string(&mut buf)?;
             None
         }
@@ -244,6 +247,7 @@ fn main() -> std::io::Result<()> {
 
     if let Some(p) = args.output {
         std::fs::write(p, module.to_string())?;
+        eprintln!("INFO: Goodbye");
     } else {
         println!("{}", module);
     }

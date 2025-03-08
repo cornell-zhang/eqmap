@@ -49,27 +49,27 @@ Use `--help` to get an overview of all the options the compiler has:
 
 ```
 $ epak --help
-Tech Re-Mapping with E-Graphs
+Technology Mapping Optimization with E-Graphs
 
 Usage: epak [OPTIONS] [INPUT] [OUTPUT]
 
 Arguments:
-  [INPUT]   If provided, verilog is read from the file over stdin
-  [OUTPUT]  If provided, verilog is emitted to the file over stdout
+  [INPUT]   Verilog file to read from (or use stdin)
+  [OUTPUT]  Verilog file to output to (or use stdout)
 
 Options:
-      --report <REPORT>            If provided, output a JSON file to the path with results
+      --report <REPORT>            If provided, output a JSON file with result data
   -a, --assert-sat                 Return an error if the graph does not reach saturation
-  -f, --no-verify                  Do not verify functionality of the output
+  -f, --no-verify                  Do not verify the functionality of the output
   -c, --no-canonicalize            Do not canonicalize the input into LUTs
   -d, --decomp                     Find new decompositions at runtime
       --disassemble <DISASSEMBLE>  Comma separated list of cell types to decompose into
   -r, --no-retime                  Do not use register retiming
   -v, --verbose                    Print explanations (generates a proof and runs slower)
-      --min-depth                  Extract for min circuit depth
+      --min-depth                  Extract for minimum circuit depth
   -k, --k <K>                      Max fan in size for extracted LUTs [default: 6]
   -w, --reg-weight <REG_WEIGHT>    Ratio of register cost to LUT cost [default: 1]
-  -t, --timeout <TIMEOUT>          Timeout in seconds for each expression [default: 10]
+  -t, --timeout <TIMEOUT>          Build/extraction timeout in seconds [default: 10]
   -s, --node-limit <NODE_LIMIT>    Maximum number of nodes in graph [default: 48000]
   -n, --iter-limit <ITER_LIMIT>    Maximum number of rewrite iterations [default: 32]
   -h, --help                       Print help

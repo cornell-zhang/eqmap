@@ -40,7 +40,7 @@ fn simplify_w_proof(s: &str) -> String {
     req.simplify_expr().unwrap().get_expr().to_string()
 }
 
-/// LUT Network Synthesis with E-Graphs
+/// Technology Mapping Optimization with E-Graphs
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -51,7 +51,7 @@ struct Args {
     #[arg(short = 'a', long, default_value_t = false)]
     assert_sat: bool,
 
-    /// Don't verify functionality of the output
+    /// Do not verify the functionality of the output
     #[arg(short = 'f', long, default_value_t = false)]
     no_verify: bool,
 
@@ -86,11 +86,11 @@ struct Args {
     #[arg(short = 'v', long, default_value_t = false)]
     verbose: bool,
 
-    /// Extract for min circuit depth
+    /// Extract for minimum circuit depth
     #[arg(long, default_value_t = false)]
     min_depth: bool,
 
-    /// Max fan in size for LUTs
+    /// Max fan in size allowed for extracted LUTs
     #[arg(short = 'k', long, default_value_t = 4)]
     k: usize,
 
@@ -98,7 +98,7 @@ struct Args {
     #[arg(short = 'w', long, default_value_t = 1)]
     reg_weight: u64,
 
-    /// Timeout in seconds for each expression
+    /// Build/extraction timeout in seconds
     #[arg(short = 't', long,
         default_value_t =
         if cfg!(debug_assertions) {
