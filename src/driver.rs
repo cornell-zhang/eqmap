@@ -442,7 +442,7 @@ where
     }
 
     /// Build request limited by `timeout` seconds.
-    pub fn with_timeout(self, timeout: u64) -> Self {
+    pub fn time_limited(self, timeout: u64) -> Self {
         Self {
             build_strat: BuildStrat::TimeLimited(timeout),
             result: None,
@@ -587,6 +587,21 @@ where
                         ProgressStyle::with_template("[{bar:60.magenta}] {pos}/{len} nodes")
                             .unwrap(),
                     );
+                    Some(b)
+                }
+                _ => None,
+            };
+            let mut time_bar = match self.build_strat {
+                BuildStrat::TimeLimited(t) | BuildStrat::Custom(t, _, _) => {
+                    // eprintln!("Adding a spinner");
+                    let b = ProgressBar::new(t).with_message(format!("doing stuff {t}"));
+                    // b.set_style(
+                    //     ProgressStyle::with_template("{spinner:.dim.bold} cargo: {wide_msg}")
+                    //         .unwrap()
+                    //         .tick_chars("/|\\- "),
+                    // );
+                    b.enable_steady_tick(Duration::from_secs(1));
+                    std::thread::sleep(Duration::from_secs(20));
                     Some(b)
                 }
                 _ => None,
