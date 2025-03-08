@@ -330,7 +330,7 @@ impl<A: Analysis<LutLang>> std::default::Default for SynthRequest<A> {
             expr: RecExpr::default(),
             rules: Vec::new(),
             extract_strat: ExtractStrat::LUTCount(6),
-            build_strat: BuildStrat::Custom(10, 48000, 32),
+            build_strat: BuildStrat::Custom(10, 20_000, 16),
             no_canonicalize: false,
             assert_sat: false,
             gen_proof: false,
