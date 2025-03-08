@@ -123,3 +123,25 @@ module MUX (
 );
   assign Y = S ? A : B;
 endmodule
+
+
+module FDRE #(
+    parameter INIT = 0
+) (
+    input  C,
+    input  CE,
+    input  D,
+    input  R,
+    output Q
+);
+  reg q;
+  always @(posedge C) begin
+    if (CE) begin
+      if (R) begin
+        q <= INIT;
+      end else begin
+        q <= D;
+      end
+    end
+  end
+endmodule

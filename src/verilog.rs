@@ -1239,7 +1239,7 @@ impl fmt::Display for SVModule {
         for signal in self.signals.iter() {
             let indent = " ".repeat(level + 2);
             if !already_decl.contains(&signal.name) {
-                writeln!(f, "{}wire {};", indent, signal.name)?;
+                writeln!(f, "{}wire {};", indent, emit_id(signal.name.clone()))?;
             }
         }
         for instance in self.instances.iter() {
