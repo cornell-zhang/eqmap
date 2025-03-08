@@ -1,4 +1,4 @@
-// RUN: fam %s --report tmp.json >> /dev/null && cat tmp.json | FileCheck %s
+// RUN: epak %s --report tmp.json >> /dev/null && cat tmp.json | FileCheck %s
 
 module mux_4_1 (
     a,

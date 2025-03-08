@@ -5,6 +5,7 @@ LIB="$(realpath $LIB)"
 SIMLIB="$(dirname $0)/../verilog/simlib.v"
 SIMLIB="$(realpath $SIMLIB)"
 MKFILE=$1.mk
+TOOL=epak
 
 # Decide whether to use Vivado or Yosys based on the stem given to Make
 if [ -z $FSTEM ]; then
@@ -12,14 +13,14 @@ if [ -z $FSTEM ]; then
 fi
 
 if [ "$1" == "--help" ] || [ "$2" == "--help" ] || [ "$3" == "--help" ]; then
-    fam --help
+    $TOOL --help
 elif [ ! -f "$1" ]; then
     echo "First argument must be the input file."
-    echo "Usage: $0 <input.v> [fam options]"
+    echo "Usage: $0 <input.v> [$TOOL options]"
     echo "Check that file exists and it is the first argument"
 else
     which yosys > /dev/null || { echo "yosys not found in PATH"; exit 1; }
-    which fam > /dev/null || { echo "fam not found in PATH"; exit 1; }
+    which $TOOL > /dev/null || { echo "$TOOL not found in PATH"; exit 1; }
 
     echo "SRCS=\$(wildcard *.v)" > $MKFILE
     echo "# Set both Yosys and Vivado to use Ultrascale+ Arch" >> $MKFILE
@@ -72,6 +73,6 @@ else
 
 
     make -f $MKFILE $1.$FSTEM 1>&2
-    fam $1.$FSTEM $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} ${16}
+    $TOOL $1.$FSTEM $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} ${16}
     rm -f $1.$FSTEM $MKFILE
 fi

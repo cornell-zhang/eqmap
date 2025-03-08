@@ -1,4 +1,4 @@
-// RUN: fam %s --assert-sat -n 40 -k 4 | FileCheck %s
+// RUN: epak %s --assert-sat -n 40 -k 4 | FileCheck %s
 
 module gate_test (
     a,

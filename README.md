@@ -46,10 +46,10 @@ You can also try to synthesize your own verilog `my_file.v`:
 Use `--help` to get an overview of all the options the compiler has:
 
 ```
-$ fam --help
+$ epak --help
 Tech Re-Mapping with E-Graphs
 
-Usage: fam [OPTIONS] [INPUT] [OUTPUT]
+Usage: epak [OPTIONS] [INPUT] [OUTPUT]
 
 Arguments:
   [INPUT]   If provided, verilog is read from the file over stdin

@@ -1,4 +1,4 @@
-// RUN: fam %s --assert-sat | FileCheck %s
+// RUN: epak %s --assert-sat | FileCheck %s
 
 module add (
     a,

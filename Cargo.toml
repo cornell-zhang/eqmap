@@ -2,7 +2,7 @@
 name = "lut-synth"
 version = "0.5.3"
 edition = "2021"
-default-run = "fam"
+default-run = "epak"
 
 [dependencies]
 bitvec = "1.0.1"
