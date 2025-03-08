@@ -201,7 +201,7 @@ fn main() -> std::io::Result<()> {
 
     #[cfg(feature = "exactness")]
     let req = if args.exact {
-        req.with_exactness(args.timeout)
+        req.with_exactness(args.timeout.unwrap_or(600))
     } else {
         req
     };

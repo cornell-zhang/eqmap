@@ -97,23 +97,16 @@ struct Args {
     reg_weight: u64,
 
     /// Build/extraction timeout in seconds
-    #[arg(short = 't', long,
-        default_value_t =
-        if cfg!(debug_assertions) {
-            30
-        } else {
-            10
-        })
-    ]
-    timeout: u64,
+    #[arg(short = 't', long)]
+    timeout: Option<u64>,
 
     /// Maximum number of nodes in graph
-    #[arg(short = 's', long, default_value_t = 24_000)]
-    node_limit: usize,
+    #[arg(short = 's', long)]
+    node_limit: Option<usize>,
 
     /// Maximum number of rewrite iterations
-    #[arg(short = 'n', long, default_value_t = 32)]
-    iter_limit: usize,
+    #[arg(short = 'n', long)]
+    iter_limit: Option<usize>,
 }
 
 fn main() -> std::io::Result<()> {
@@ -150,10 +143,20 @@ fn main() -> std::io::Result<()> {
         );
     }
 
-    let req = SynthRequest::default()
-        .with_rules(rules)
-        .with_k(args.k)
-        .with_joint_limits(args.timeout, args.node_limit, args.iter_limit);
+    let req = SynthRequest::default().with_rules(rules).with_k(args.k);
+
+    let req = match (args.timeout, args.node_limit, args.iter_limit) {
+        (None, None, None) => req.with_joint_limits(10, 24_000, 32),
+        (Some(t), None, None) => req.time_limited(t),
+        (None, Some(n), None) => req.node_limited(n),
+        (None, None, Some(i)) => req.iter_limited(i),
+        (Some(t), Some(n), Some(i)) => req.with_joint_limits(t, n, i),
+        _ => {
+            return Err(std::io::Error::other(
+                "Invalid build constraints (Use none, one, or three build constraints)",
+            ));
+        }
+    };
 
     let req = if args.assert_sat {
         req.with_asserts()
@@ -186,7 +189,7 @@ fn main() -> std::io::Result<()> {
 
     #[cfg(feature = "exactness")]
     let req = if args.exact {
-        req.with_exactness(args.timeout)
+        req.with_exactness(args.timeout.unwrap_or(600))
     } else {
         req
     };

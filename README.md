@@ -69,9 +69,9 @@ Options:
       --min-depth                  Extract for minimum circuit depth
   -k, --k <K>                      Max fan in size for extracted LUTs [default: 6]
   -w, --reg-weight <REG_WEIGHT>    Ratio of register cost to LUT cost [default: 1]
-  -t, --timeout <TIMEOUT>          Build/extraction timeout in seconds [default: 10]
-  -s, --node-limit <NODE_LIMIT>    Maximum number of nodes in graph [default: 48000]
-  -n, --iter-limit <ITER_LIMIT>    Maximum number of rewrite iterations [default: 32]
+  -t, --timeout <TIMEOUT>          Build/extraction timeout in seconds
+  -s, --node-limit <NODE_LIMIT>    Maximum number of nodes in graph
+  -n, --iter-limit <ITER_LIMIT>    Maximum number of rewrite iterations
   -h, --help                       Print help
   -V, --version                    Print version
 ```
