@@ -884,7 +884,7 @@ impl SVModule {
         };
 
         let fresh_wire = |id: Id, mapping: &mut HashMap<Id, String>| {
-            if let std::collections::hash_map::Entry::Vacant(e) = mapping.entry(id) {
+            if let Entry::Vacant(e) = mapping.entry(id) {
                 e.insert(format!("__{}__", *prim_count.borrow()));
                 *prim_count.borrow_mut() += 1;
             }
