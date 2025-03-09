@@ -88,33 +88,33 @@ endmodule
 // CHECK:   wire c;
 // CHECK:   output y;
 // CHECK:   wire y;
-// CHECK:   wire tmp4;
-// CHECK:   wire tmp9;
+// CHECK:   wire __0__;
+// CHECK:   wire __1__;
 // CHECK:   LUT3 #(
 // CHECK:       .INIT(8'h96)
-// CHECK:   ) __0__ (
+// CHECK:   ) __2__ (
 // CHECK:       .I0(d),
 // CHECK:       .I1(a),
 // CHECK:       .I2(b),
-// CHECK:       .O(tmp4)
+// CHECK:       .O(__0__)
 // CHECK:   );
 // CHECK:   LUT3 #(
 // CHECK:       .INIT(8'h17)
-// CHECK:   ) __1__ (
+// CHECK:   ) __3__ (
 // CHECK:       .I0(d),
 // CHECK:       .I1(a),
 // CHECK:       .I2(b),
-// CHECK:       .O(tmp9)
+// CHECK:       .O(__1__)
 // CHECK:   );
 // CHECK:   LUT6 #(
 // CHECK:       .INIT(64'he8808000fffefee8)
-// CHECK:   ) __2__ (
-// CHECK:       .I0(tmp4),
+// CHECK:   ) __4__ (
+// CHECK:       .I0(__0__),
 // CHECK:       .I1(f),
 // CHECK:       .I2(g),
 // CHECK:       .I3(e),
 // CHECK:       .I4(c),
-// CHECK:       .I5(tmp9),
+// CHECK:       .I5(__1__),
 // CHECK:       .O(y)
 // CHECK:   );
 // CHECK: endmodule

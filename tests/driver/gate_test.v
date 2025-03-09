@@ -95,28 +95,28 @@ endmodule
 // CHECK:   wire c;
 // CHECK:   output y;
 // CHECK:   wire y;
-// CHECK:   wire tmp4;
-// CHECK:   wire tmp7;
+// CHECK:   wire __0__;
+// CHECK:   wire __1__;
 // CHECK:   LUT2 #(
 // CHECK:       .INIT(4'h8)
-// CHECK:   ) __0__ (
+// CHECK:   ) __2__ (
 // CHECK:       .I0(e),
 // CHECK:       .I1(d),
-// CHECK:       .O(tmp4)
+// CHECK:       .O(__0__)
 // CHECK:   );
 // CHECK:   LUT4 #(
 // CHECK:       .INIT(16'hccc5)
-// CHECK:   ) __1__ (
+// CHECK:   ) __3__ (
 // CHECK:       .I0(b),
-// CHECK:       .I1(tmp4),
+// CHECK:       .I1(__0__),
 // CHECK:       .I2(g),
 // CHECK:       .I3(a),
-// CHECK:       .O(tmp7)
+// CHECK:       .O(__1__)
 // CHECK:   );
 // CHECK:   LUT3 #(
 // CHECK:       .INIT(8'h96)
-// CHECK:   ) __2__ (
-// CHECK:       .I0(tmp7),
+// CHECK:   ) __4__ (
+// CHECK:       .I0(__1__),
 // CHECK:       .I1(f),
 // CHECK:       .I2(c),
 // CHECK:       .O(y)

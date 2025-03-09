@@ -26,29 +26,29 @@
 // CHECK:   wire d;
 // CHECK:   output y;
 // CHECK:   wire y;
-// CHECK:   wire tmp5;
-// CHECK:   wire tmp8;
-// CHECK:   LUT3 #(
-// CHECK:       .INIT(8'hca)
-// CHECK:   ) __0__ (
-// CHECK:       .I0(b),
-// CHECK:       .I1(a),
-// CHECK:       .I2(s0),
-// CHECK:       .O(tmp5)
-// CHECK:   );
-// CHECK:   LUT3 #(
-// CHECK:       .INIT(8'hca)
-// CHECK:   ) __1__ (
-// CHECK:       .I0(d),
-// CHECK:       .I1(c),
-// CHECK:       .I2(s0),
-// CHECK:       .O(tmp8)
-// CHECK:   );
+// CHECK:   wire __0__;
+// CHECK:   wire __1__;
 // CHECK:   LUT3 #(
 // CHECK:       .INIT(8'hca)
 // CHECK:   ) __2__ (
-// CHECK:       .I0(tmp8),
-// CHECK:       .I1(tmp5),
+// CHECK:       .I0(b),
+// CHECK:       .I1(a),
+// CHECK:       .I2(s0),
+// CHECK:       .O(__0__)
+// CHECK:   );
+// CHECK:   LUT3 #(
+// CHECK:       .INIT(8'hca)
+// CHECK:   ) __3__ (
+// CHECK:       .I0(d),
+// CHECK:       .I1(c),
+// CHECK:       .I2(s0),
+// CHECK:       .O(__1__)
+// CHECK:   );
+// CHECK:   LUT3 #(
+// CHECK:       .INIT(8'hca)
+// CHECK:   ) __4__ (
+// CHECK:       .I0(__1__),
+// CHECK:       .I1(__0__),
 // CHECK:       .I2(s1),
 // CHECK:       .O(y)
 // CHECK:   );

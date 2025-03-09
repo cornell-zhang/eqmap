@@ -110,32 +110,32 @@ endmodule
 // CHECK:   wire clk;
 // CHECK:   output y;
 // CHECK:   wire y;
-// CHECK:   wire tmp7;
-// CHECK:   wire tmp8;
+// CHECK:   wire __0__;
+// CHECK:   wire __1__;
 // CHECK:   LUT4 #(
 // CHECK:       .INIT(16'hf0ca)
-// CHECK:   ) __0__ (
+// CHECK:   ) __2__ (
 // CHECK:       .I0(d),
 // CHECK:       .I1(c),
 // CHECK:       .I2(s0),
 // CHECK:       .I3(s1),
-// CHECK:       .O(tmp7)
+// CHECK:       .O(__0__)
 // CHECK:   );
 // CHECK:   LUT4 #(
 // CHECK:       .INIT(16'hcaf0)
-// CHECK:   ) __1__ (
+// CHECK:   ) __3__ (
 // CHECK:       .I0(b),
 // CHECK:       .I1(a),
-// CHECK:       .I2(tmp7),
+// CHECK:       .I2(__0__),
 // CHECK:       .I3(s1),
-// CHECK:       .O(tmp8)
+// CHECK:       .O(__1__)
 // CHECK:   );
 // CHECK:   FDRE #(
 // CHECK:       .INIT(1'hx)
-// CHECK:   ) __2__ (
+// CHECK:   ) __4__ (
 // CHECK:       .C(clk),
 // CHECK:       .CE(1'h1),
-// CHECK:       .D(tmp8),
+// CHECK:       .D(__1__),
 // CHECK:       .R(1'h0),
 // CHECK:       .Q(y)
 // CHECK:   );

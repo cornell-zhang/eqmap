@@ -56,172 +56,172 @@
 // CHECK:   wire b7;
 // CHECK:   output y;
 // CHECK:   wire y;
-// CHECK:   wire tmp3;
-// CHECK:   wire tmp6;
-// CHECK:   wire tmp7;
-// CHECK:   wire tmp8;
-// CHECK:   wire tmp11;
-// CHECK:   wire tmp14;
-// CHECK:   wire tmp15;
-// CHECK:   wire tmp16;
-// CHECK:   wire tmp17;
-// CHECK:   wire tmp18;
-// CHECK:   wire tmp21;
-// CHECK:   wire tmp24;
-// CHECK:   wire tmp25;
-// CHECK:   wire tmp26;
-// CHECK:   wire tmp29;
-// CHECK:   wire tmp32;
-// CHECK:   wire tmp33;
-// CHECK:   wire tmp34;
-// CHECK:   wire tmp35;
-// CHECK:   wire tmp36;
-// CHECK:   wire tmp37;
+// CHECK:   wire __0__;
+// CHECK:   wire __1__;
+// CHECK:   wire __2__;
+// CHECK:   wire __3__;
+// CHECK:   wire __4__;
+// CHECK:   wire __5__;
+// CHECK:   wire __6__;
+// CHECK:   wire __7__;
+// CHECK:   wire __8__;
+// CHECK:   wire __9__;
+// CHECK:   wire __10__;
+// CHECK:   wire __11__;
+// CHECK:   wire __12__;
+// CHECK:   wire __13__;
+// CHECK:   wire __14__;
+// CHECK:   wire __15__;
+// CHECK:   wire __16__;
+// CHECK:   wire __17__;
+// CHECK:   wire __18__;
+// CHECK:   wire __19__;
+// CHECK:   wire __20__;
 // CHECK:   LUT2 #(
 // CHECK:       .INIT(4'h6)
-// CHECK:   ) __0__ (
+// CHECK:   ) __21__ (
 // CHECK:       .I0(b0),
 // CHECK:       .I1(a0),
-// CHECK:       .O(tmp3)
+// CHECK:       .O(__0__)
 // CHECK:   );
 // CHECK:   LUT2 #(
 // CHECK:       .INIT(4'h6)
-// CHECK:   ) __1__ (
+// CHECK:   ) __22__ (
 // CHECK:       .I0(b1),
 // CHECK:       .I1(a1),
-// CHECK:       .O(tmp6)
+// CHECK:       .O(__1__)
 // CHECK:   );
 // CHECK:   LUT2 #(
 // CHECK:       .INIT(4'h1)
-// CHECK:   ) __2__ (
-// CHECK:       .I0(tmp6),
-// CHECK:       .I1(tmp3),
-// CHECK:       .O(tmp7)
+// CHECK:   ) __23__ (
+// CHECK:       .I0(__1__),
+// CHECK:       .I1(__0__),
+// CHECK:       .O(__2__)
 // CHECK:   );
 // CHECK:   LUT1 #(
 // CHECK:       .INIT(2'h1)
-// CHECK:   ) __3__ (
-// CHECK:       .I0(tmp7),
-// CHECK:       .O(tmp8)
+// CHECK:   ) __24__ (
+// CHECK:       .I0(__2__),
+// CHECK:       .O(__3__)
 // CHECK:   );
 // CHECK:   LUT2 #(
 // CHECK:       .INIT(4'h6)
-// CHECK:   ) __4__ (
+// CHECK:   ) __25__ (
 // CHECK:       .I0(b2),
 // CHECK:       .I1(a2),
-// CHECK:       .O(tmp11)
+// CHECK:       .O(__4__)
 // CHECK:   );
 // CHECK:   LUT2 #(
 // CHECK:       .INIT(4'h6)
-// CHECK:   ) __5__ (
+// CHECK:   ) __26__ (
 // CHECK:       .I0(b3),
 // CHECK:       .I1(a3),
-// CHECK:       .O(tmp14)
+// CHECK:       .O(__5__)
 // CHECK:   );
 // CHECK:   LUT2 #(
 // CHECK:       .INIT(4'h1)
-// CHECK:   ) __6__ (
-// CHECK:       .I0(tmp14),
-// CHECK:       .I1(tmp11),
-// CHECK:       .O(tmp15)
+// CHECK:   ) __27__ (
+// CHECK:       .I0(__5__),
+// CHECK:       .I1(__4__),
+// CHECK:       .O(__6__)
 // CHECK:   );
 // CHECK:   LUT1 #(
 // CHECK:       .INIT(2'h1)
-// CHECK:   ) __7__ (
-// CHECK:       .I0(tmp15),
-// CHECK:       .O(tmp16)
+// CHECK:   ) __28__ (
+// CHECK:       .I0(__6__),
+// CHECK:       .O(__7__)
 // CHECK:   );
 // CHECK:   LUT2 #(
 // CHECK:       .INIT(4'h1)
-// CHECK:   ) __8__ (
-// CHECK:       .I0(tmp16),
-// CHECK:       .I1(tmp8),
-// CHECK:       .O(tmp17)
+// CHECK:   ) __29__ (
+// CHECK:       .I0(__7__),
+// CHECK:       .I1(__3__),
+// CHECK:       .O(__8__)
 // CHECK:   );
 // CHECK:   LUT1 #(
 // CHECK:       .INIT(2'h1)
-// CHECK:   ) __9__ (
-// CHECK:       .I0(tmp17),
-// CHECK:       .O(tmp18)
+// CHECK:   ) __30__ (
+// CHECK:       .I0(__8__),
+// CHECK:       .O(__9__)
 // CHECK:   );
 // CHECK:   LUT2 #(
 // CHECK:       .INIT(4'h6)
-// CHECK:   ) __10__ (
+// CHECK:   ) __31__ (
 // CHECK:       .I0(b4),
 // CHECK:       .I1(a4),
-// CHECK:       .O(tmp21)
+// CHECK:       .O(__10__)
 // CHECK:   );
 // CHECK:   LUT2 #(
 // CHECK:       .INIT(4'h6)
-// CHECK:   ) __11__ (
+// CHECK:   ) __32__ (
 // CHECK:       .I0(b5),
 // CHECK:       .I1(a5),
-// CHECK:       .O(tmp24)
+// CHECK:       .O(__11__)
 // CHECK:   );
 // CHECK:   LUT2 #(
 // CHECK:       .INIT(4'h1)
-// CHECK:   ) __12__ (
-// CHECK:       .I0(tmp24),
-// CHECK:       .I1(tmp21),
-// CHECK:       .O(tmp25)
+// CHECK:   ) __33__ (
+// CHECK:       .I0(__11__),
+// CHECK:       .I1(__10__),
+// CHECK:       .O(__12__)
 // CHECK:   );
 // CHECK:   LUT1 #(
 // CHECK:       .INIT(2'h1)
-// CHECK:   ) __13__ (
-// CHECK:       .I0(tmp25),
-// CHECK:       .O(tmp26)
+// CHECK:   ) __34__ (
+// CHECK:       .I0(__12__),
+// CHECK:       .O(__13__)
 // CHECK:   );
 // CHECK:   LUT2 #(
 // CHECK:       .INIT(4'h6)
-// CHECK:   ) __14__ (
+// CHECK:   ) __35__ (
 // CHECK:       .I0(b6),
 // CHECK:       .I1(a6),
-// CHECK:       .O(tmp29)
+// CHECK:       .O(__14__)
 // CHECK:   );
 // CHECK:   LUT2 #(
 // CHECK:       .INIT(4'h6)
-// CHECK:   ) __15__ (
+// CHECK:   ) __36__ (
 // CHECK:       .I0(b7),
 // CHECK:       .I1(a7),
-// CHECK:       .O(tmp32)
+// CHECK:       .O(__15__)
 // CHECK:   );
 // CHECK:   LUT2 #(
 // CHECK:       .INIT(4'h1)
-// CHECK:   ) __16__ (
-// CHECK:       .I0(tmp32),
-// CHECK:       .I1(tmp29),
-// CHECK:       .O(tmp33)
+// CHECK:   ) __37__ (
+// CHECK:       .I0(__15__),
+// CHECK:       .I1(__14__),
+// CHECK:       .O(__16__)
 // CHECK:   );
 // CHECK:   LUT1 #(
 // CHECK:       .INIT(2'h1)
-// CHECK:   ) __17__ (
-// CHECK:       .I0(tmp33),
-// CHECK:       .O(tmp34)
+// CHECK:   ) __38__ (
+// CHECK:       .I0(__16__),
+// CHECK:       .O(__17__)
 // CHECK:   );
 // CHECK:   LUT2 #(
 // CHECK:       .INIT(4'h1)
-// CHECK:   ) __18__ (
-// CHECK:       .I0(tmp34),
-// CHECK:       .I1(tmp26),
-// CHECK:       .O(tmp35)
+// CHECK:   ) __39__ (
+// CHECK:       .I0(__17__),
+// CHECK:       .I1(__13__),
+// CHECK:       .O(__18__)
 // CHECK:   );
 // CHECK:   LUT1 #(
 // CHECK:       .INIT(2'h1)
-// CHECK:   ) __19__ (
-// CHECK:       .I0(tmp35),
-// CHECK:       .O(tmp36)
+// CHECK:   ) __40__ (
+// CHECK:       .I0(__18__),
+// CHECK:       .O(__19__)
 // CHECK:   );
 // CHECK:   LUT2 #(
 // CHECK:       .INIT(4'h1)
-// CHECK:   ) __20__ (
-// CHECK:       .I0(tmp36),
-// CHECK:       .I1(tmp18),
-// CHECK:       .O(tmp37)
+// CHECK:   ) __41__ (
+// CHECK:       .I0(__19__),
+// CHECK:       .I1(__9__),
+// CHECK:       .O(__20__)
 // CHECK:   );
 // CHECK:   LUT1 #(
 // CHECK:       .INIT(2'h1)
-// CHECK:   ) __21__ (
-// CHECK:       .I0(tmp37),
+// CHECK:   ) __42__ (
+// CHECK:       .I0(__20__),
 // CHECK:       .O(y)
 // CHECK:   );
 // CHECK: endmodule

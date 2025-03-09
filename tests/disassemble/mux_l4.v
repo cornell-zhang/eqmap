@@ -43,69 +43,68 @@ module mux_4_1 (
       .O (y)
   );
 
-
   // CHECK: NOT #(
-  // CHECK: ) __0__ (
+  // CHECK: ) __10__ (
   // CHECK:     .A(s0),
-  // CHECK:     .Y(tmp2)
+  // CHECK:     .Y(__0__)
   // CHECK: );
   // CHECK: AND2 #(
-  // CHECK: ) __1__ (
+  // CHECK: ) __11__ (
   // CHECK:     .A(b),
-  // CHECK:     .B(tmp2),
-  // CHECK:     .Y(tmp4)
+  // CHECK:     .B(__0__),
+  // CHECK:     .Y(__1__)
   // CHECK: );
   // CHECK: AND2 #(
-  // CHECK: ) __2__ (
+  // CHECK: ) __12__ (
   // CHECK:     .A(s0),
   // CHECK:     .B(a),
-  // CHECK:     .Y(tmp6)
+  // CHECK:     .Y(__2__)
   // CHECK: );
   // CHECK: NOR2 #(
-  // CHECK: ) __3__ (
-  // CHECK:     .A(tmp6),
-  // CHECK:     .B(tmp4),
-  // CHECK:     .Y(tmp7)
+  // CHECK: ) __13__ (
+  // CHECK:     .A(__2__),
+  // CHECK:     .B(__1__),
+  // CHECK:     .Y(__3__)
   // CHECK: );
   // CHECK: AND2 #(
-  // CHECK: ) __4__ (
+  // CHECK: ) __14__ (
   // CHECK:     .A(s1),
-  // CHECK:     .B(tmp7),
-  // CHECK:     .Y(tmp9)
+  // CHECK:     .B(__3__),
+  // CHECK:     .Y(__4__)
   // CHECK: );
   // CHECK: NOR2 #(
-  // CHECK: ) __5__ (
+  // CHECK: ) __15__ (
   // CHECK:     .A(s0),
   // CHECK:     .B(d),
-  // CHECK:     .Y(tmp11)
+  // CHECK:     .Y(__5__)
   // CHECK: );
   // CHECK: NOT #(
-  // CHECK: ) __6__ (
+  // CHECK: ) __16__ (
   // CHECK:     .A(c),
-  // CHECK:     .Y(tmp13)
+  // CHECK:     .Y(__6__)
   // CHECK: );
   // CHECK: AND2 #(
-  // CHECK: ) __7__ (
+  // CHECK: ) __17__ (
   // CHECK:     .A(s0),
-  // CHECK:     .B(tmp13),
-  // CHECK:     .Y(tmp14)
+  // CHECK:     .B(__6__),
+  // CHECK:     .Y(__7__)
   // CHECK: );
   // CHECK: NOR2 #(
-  // CHECK: ) __8__ (
-  // CHECK:     .A(tmp14),
-  // CHECK:     .B(tmp11),
-  // CHECK:     .Y(tmp15)
+  // CHECK: ) __18__ (
+  // CHECK:     .A(__7__),
+  // CHECK:     .B(__5__),
+  // CHECK:     .Y(__8__)
   // CHECK: );
   // CHECK: NOR2 #(
-  // CHECK: ) __9__ (
+  // CHECK: ) __19__ (
   // CHECK:     .A(s1),
-  // CHECK:     .B(tmp15),
-  // CHECK:     .Y(tmp16)
+  // CHECK:     .B(__8__),
+  // CHECK:     .Y(__9__)
   // CHECK: );
   // CHECK: NOR2 #(
-  // CHECK: ) __10__ (
-  // CHECK:     .A(tmp16),
-  // CHECK:     .B(tmp9),
+  // CHECK: ) __20__ (
+  // CHECK:     .A(__9__),
+  // CHECK:     .B(__4__),
   // CHECK:     .Y(y)
   // CHECK: );
 

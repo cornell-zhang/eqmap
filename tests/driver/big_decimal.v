@@ -59,22 +59,22 @@ endmodule
 // CHECK:   wire s0;
 // CHECK:   output y;
 // CHECK:   wire y;
-// CHECK:   wire tmp7;
+// CHECK:   wire __0__;
 // CHECK:   LUT4 #(
 // CHECK:       .INIT(16'hf0ca)
-// CHECK:   ) __0__ (
+// CHECK:   ) __1__ (
 // CHECK:       .I0(d),
 // CHECK:       .I1(b),
 // CHECK:       .I2(s1),
 // CHECK:       .I3(s0),
-// CHECK:       .O(tmp7)
+// CHECK:       .O(__0__)
 // CHECK:   );
 // CHECK:   LUT4 #(
 // CHECK:       .INIT(16'hcaf0)
-// CHECK:   ) __1__ (
+// CHECK:   ) __2__ (
 // CHECK:       .I0(c),
 // CHECK:       .I1(a),
-// CHECK:       .I2(tmp7),
+// CHECK:       .I2(__0__),
 // CHECK:       .I3(s0),
 // CHECK:       .O(y)
 // CHECK:   );
