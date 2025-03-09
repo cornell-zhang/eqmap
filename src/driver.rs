@@ -577,14 +577,13 @@ where
 
         let interrupt = Arc::new(AtomicBool::new(false));
         let interrupt_clone = Arc::clone(&interrupt);
-        ctrlc::set_handler(move || {
+        let _ = ctrlc::set_handler(move || {
             if interrupt_clone.load(Ordering::Acquire) {
                 std::process::exit(130);
             }
 
             interrupt_clone.store(true, Ordering::Release);
-        })
-        .expect("Error setting SIGINT handler");
+        });
         let runner = if self.prog_bar {
             let mut iter_bar = match self.build_strat {
                 BuildStrat::IterLimited(i) | BuildStrat::Custom(_, _, i) => {
