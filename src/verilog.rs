@@ -6,6 +6,7 @@
 */
 
 use std::{
+    cell::RefCell,
     collections::{BTreeMap, HashMap, HashSet, hash_map::Entry},
     fmt,
     path::{Path, PathBuf},
@@ -838,14 +839,6 @@ impl SVModule {
         let expr = LutExprInfo::new(&expr).get_cse();
 
         let mut mapping: HashMap<Id, String> = HashMap::new();
-        let mut programs: HashMap<Id, u64> = HashMap::new();
-        let mut prim_count: usize = 0;
-
-        let mut fresh_prim = || {
-            prim_count += 1;
-            format!("__{}__", prim_count - 1)
-        };
-
         let size = expr.as_ref().len();
 
         // Add output mappings
@@ -871,10 +864,29 @@ impl SVModule {
             }
         }
 
+        let mut prim_count: usize = 0;
+        for (i, l) in expr.as_ref().iter().enumerate() {
+            if !mapping.contains_key(&i.into())
+                && !matches!(l, LutLang::Var(_) | LutLang::Program(_))
+                && i < expr.as_ref().len() - 1
+            {
+                mapping.insert(i.into(), format!("__{}__", prim_count));
+                prim_count += 1;
+            }
+        }
+
+        let mut programs: HashMap<Id, u64> = HashMap::new();
+        let prim_count: RefCell<usize> = RefCell::new(prim_count);
+
+        let fresh_prim = || {
+            *prim_count.borrow_mut() += 1;
+            format!("__{}__", *prim_count.borrow() - 1)
+        };
+
         let fresh_wire = |id: Id, mapping: &mut HashMap<Id, String>| {
             if !mapping.contains_key(&id) {
-                let s = mapping.len();
-                mapping.insert(id, format!("tmp{}", s));
+                mapping.insert(id, format!("__{}__", *prim_count.borrow()));
+                *prim_count.borrow_mut() += 1;
             }
             mapping[&id].clone()
         };
