@@ -203,6 +203,7 @@ impl std::fmt::Display for SynthOutput {
 /// Update a progress bar with the current state of the runner.
 fn report_progress<L, A>(
     runner: &Runner<L, A>,
+    interrupt: &Arc<AtomicBool>,
     iter_bar: Option<&mut ProgressBar>,
     node_bar: Option<&mut ProgressBar>,
 ) -> Result<(), String>
@@ -210,6 +211,10 @@ where
     L: Language,
     A: Analysis<L> + std::default::Default,
 {
+    if interrupt.load(Ordering::Acquire) {
+        return Err("SIGINT Received".to_string());
+    }
+
     if let Some(b) = iter_bar {
         b.inc(1);
     }
@@ -570,6 +575,16 @@ where
                 .with_iter_limit(i),
         };
 
+        let interrupt = Arc::new(AtomicBool::new(false));
+        let interrupt_clone = Arc::clone(&interrupt);
+        ctrlc::set_handler(move || {
+            if interrupt_clone.load(Ordering::Acquire) {
+                std::process::exit(130);
+            }
+
+            interrupt_clone.store(true, Ordering::Release);
+        })
+        .expect("Error setting SIGINT handler");
         let runner = if self.prog_bar {
             let mut iter_bar = match self.build_strat {
                 BuildStrat::IterLimited(i) | BuildStrat::Custom(_, _, i) => {
@@ -593,9 +608,11 @@ where
                 }
                 _ => None,
             };
-            runner.with_hook(move |r| report_progress(r, iter_bar.as_mut(), node_bar.as_mut()))
+            runner.with_hook(move |r| {
+                report_progress(r, &interrupt, iter_bar.as_mut(), node_bar.as_mut())
+            })
         } else {
-            runner
+            runner.with_hook(move |r| report_progress(r, &interrupt, None, None))
         };
 
         // Make a time bar
@@ -615,7 +632,7 @@ where
                 std::thread::spawn(move || {
                     for _ in 0..(t * 2 - 1) {
                         std::thread::sleep(Duration::from_millis(500));
-                        if stop_signal_clone.load(std::sync::atomic::Ordering::Relaxed) {
+                        if stop_signal_clone.load(Ordering::Acquire) {
                             break;
                         }
                         pb_clone.inc(1);
@@ -651,7 +668,7 @@ where
 
         // Clear the progress bar
         if let Some(t) = time_bar {
-            t.0.store(true, Ordering::Relaxed);
+            t.0.store(true, Ordering::Release);
             t.1.finish_and_clear();
         }
         mp.clear().unwrap();
