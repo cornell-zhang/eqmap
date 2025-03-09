@@ -545,29 +545,29 @@ endmodule"
   wire d;
   output y;
   wire y;
-  wire tmp5;
-  wire tmp8;
-  LUT3 #(
-      .INIT(8'hca)
-  ) __0__ (
-      .I0(b),
-      .I1(a),
-      .I2(s0),
-      .O(tmp5)
-  );
-  LUT3 #(
-      .INIT(8'hca)
-  ) __1__ (
-      .I0(d),
-      .I1(c),
-      .I2(s0),
-      .O(tmp8)
-  );
+  wire __0__;
+  wire __1__;
   LUT3 #(
       .INIT(8'hca)
   ) __2__ (
-      .I0(tmp8),
-      .I1(tmp5),
+      .I0(b),
+      .I1(a),
+      .I2(s0),
+      .O(__0__)
+  );
+  LUT3 #(
+      .INIT(8'hca)
+  ) __3__ (
+      .I0(d),
+      .I1(c),
+      .I2(s0),
+      .O(__1__)
+  );
+  LUT3 #(
+      .INIT(8'hca)
+  ) __4__ (
+      .I0(__1__),
+      .I1(__0__),
       .I2(s1),
       .O(y)
   );
@@ -635,40 +635,40 @@ endmodule"
   wire t;
   output y;
   wire y;
-  wire tmp6;
-  wire tmp7;
-  wire tmp8;
-  wire tmp9;
-  wire tmp10;
-  assign tmp6 = 1'b0;
+  wire __0__;
+  wire __1__;
+  wire __2__;
+  wire __3__;
+  wire __4__;
+  assign __0__ = 1'b0;
   MUX #(
-  ) __1__ (
+  ) __6__ (
       .A(t),
-      .B(tmp6),
+      .B(__0__),
       .S(s),
-      .Y(tmp7)
+      .Y(__1__)
   );
   NOT #(
-  ) __2__ (
-      .A(tmp7),
-      .Y(tmp8)
+  ) __7__ (
+      .A(__1__),
+      .Y(__2__)
   );
   NOR2 #(
-  ) __3__ (
+  ) __8__ (
       .A(c),
-      .B(tmp8),
-      .Y(tmp9)
+      .B(__2__),
+      .Y(__3__)
   );
   XOR2 #(
-  ) __4__ (
+  ) __9__ (
       .A(b),
-      .B(tmp9),
-      .Y(tmp10)
+      .B(__3__),
+      .Y(__4__)
   );
   AND2 #(
-  ) __5__ (
+  ) __10__ (
       .A(a),
-      .B(tmp10),
+      .B(__4__),
       .Y(y)
   );
 endmodule"
