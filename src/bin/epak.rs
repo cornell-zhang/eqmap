@@ -25,6 +25,11 @@ struct Args {
     #[arg(long)]
     report: Option<PathBuf>,
 
+    /// If provided, output a condensed JSON file with the e-graph
+    #[cfg(feature = "graph_dumps")]
+    #[arg(long)]
+    dump_graph: Option<PathBuf>,
+
     /// Return an error if the graph does not reach saturation
     #[arg(short = 'a', long, default_value_t = false)]
     assert_sat: bool,
@@ -182,6 +187,12 @@ fn main() -> std::io::Result<()> {
         req.with_report()
     } else {
         req
+    };
+
+    #[cfg(feature = "graph_dumps")]
+    let req = match args.dump_graph {
+        Some(p) => req.with_graph_dump(p),
+        None => req,
     };
 
     let req = if args.min_depth {

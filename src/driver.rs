@@ -323,6 +323,10 @@ where
     /// Produce a report which records extra stats.
     produce_rpt: bool,
 
+    /// Produce a condensed JSON dump of the e-graph
+    #[cfg(feature = "graph_dumps")]
+    dump_egraph: Option<PathBuf>,
+
     /// The maximum number of nodes to canonicalize
     max_canon_size: usize,
 
@@ -348,6 +352,8 @@ impl<A: Analysis<LutLang>> std::default::Default for SynthRequest<A> {
             max_canon_size: MAX_CANON_SIZE,
             canonicalized: false,
             result: None,
+            #[cfg(feature = "graph_dumps")]
+            dump_egraph: None,
         }
     }
 }
@@ -367,6 +373,8 @@ impl<A: Analysis<LutLang> + std::clone::Clone> std::clone::Clone for SynthReques
             max_canon_size: self.max_canon_size,
             canonicalized: self.canonicalized,
             result: None,
+            #[cfg(feature = "graph_dumps")]
+            dump_egraph: self.dump_egraph.clone(),
         }
     }
 }
@@ -472,6 +480,16 @@ where
     pub fn with_report(self) -> Self {
         Self {
             produce_rpt: true,
+            result: None,
+            ..self
+        }
+    }
+
+    /// Collect additional stats with e-graph build.
+    #[cfg(feature = "graph_dumps")]
+    pub fn with_graph_dump(self, p: PathBuf) -> Self {
+        Self {
+            dump_egraph: Some(p),
             result: None,
             ..self
         }
@@ -738,7 +756,6 @@ where
         }
 
         let rpt = if self.produce_rpt {
-            // TODO: Gathering stats should not be this slow
             eprintln!("INFO: Generating report...");
             Some(
                 SynthReport::new(&self.expr, extraction_time.as_secs_f64(), runner, &best)
@@ -857,6 +874,13 @@ where
     let mut result = req
         .simplify_expr()
         .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+
+    #[cfg(feature = "graph_dumps")]
+    if let Some(p) = &req.dump_egraph {
+        eprintln!("INFO: Dumping e-graph...");
+        let mut file = std::fs::File::create(p)?;
+        req.serialize_with_greedy_cost(DepthCostFn, &mut file)?;
+    }
 
     if verbose && result.has_explanation() {
         eprintln!("INFO: Flattened proof");
