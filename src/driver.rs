@@ -5,6 +5,7 @@
 */
 use super::cost::{DepthCostFn, GateCostFn, KLUTCostFn, NegativeCostFn};
 use super::lut::{CircuitStats, LutExprInfo, LutLang, canonicalize_expr, verify_expr};
+#[cfg(feature = "graph_dumps")]
 use super::serialize::serialize_egraph;
 use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
@@ -682,13 +683,6 @@ where
             eprintln!("INFO:\t{:?}", data);
         }
 
-        let _ = crate::serialize::serialize_egraph(
-            &self.result.as_ref().unwrap().egraph,
-            &self.result.as_ref().unwrap().roots,
-            crate::cost::KLUTCostFn::new(6),
-            &mut std::io::stdout(),
-        );
-
         Ok(())
     }
 
@@ -774,6 +768,7 @@ where
     }
 
     /// Serialize the e-graph with an associated cost provided by `c`.
+    #[cfg(feature = "graph_dumps")]
     pub fn serialize_with_greedy_cost<C>(&mut self, c: C, w: &mut impl Write) -> std::io::Result<()>
     where
         C: CostFunction<LutLang>,
