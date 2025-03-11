@@ -45,6 +45,11 @@ struct Args {
     /// Path to input file. If not provided, reads from stdin
     input: Option<PathBuf>,
 
+    /// If provided, output a condensed JSON file with the e-graph
+    #[cfg(feature = "graph_dumps")]
+    #[arg(long)]
+    dump_graph: Option<PathBuf>,
+
     /// Return an error if the graph does not reach saturation
     #[arg(short = 'a', long, default_value_t = false)]
     assert_sat: bool,
@@ -171,6 +176,12 @@ fn main() -> std::io::Result<()> {
     };
 
     let req = if args.verbose { req.with_proof() } else { req };
+
+    #[cfg(feature = "graph_dumps")]
+    let req = match args.dump_graph {
+        Some(p) => req.with_graph_dump(p),
+        None => req,
+    };
 
     let req = if args.min_depth {
         req.with_min_depth()
