@@ -681,6 +681,13 @@ where
             eprintln!("INFO:\t{:?}", data);
         }
 
+        let _ = crate::serialize::serialize_egraph(
+            &self.result.as_ref().unwrap().egraph,
+            &self.result.as_ref().unwrap().roots,
+            crate::cost::KLUTCostFn::new(6),
+            &mut std::io::stdout(),
+        );
+
         Ok(())
     }
 

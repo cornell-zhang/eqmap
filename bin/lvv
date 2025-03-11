@@ -50,7 +50,7 @@ else
     echo "	@echo \"read_verilog \$<\" > \$@" >> $MKFILE
     echo "	@echo \"synth_xilinx -family \$(FAMILY) \$(SYNTH_OPT)\" >> \$@" >> $MKFILE
     echo "	@echo \"clean -purge\" >> \$@" >> $MKFILE
-    echo "	@echo \"splitnets -format _\" >> \$@" >> $MKFILE
+    echo "	@echo \"splitnets -ports -format _\" >> \$@" >> $MKFILE
     echo "	@echo \"write_verilog -simple-lhs \$<.yxil\" >> \$@" >> $MKFILE
     echo "" >> $MKFILE
     echo "# This script synthesizes to AND, NOR, XOR, INV, MUXes" >> $MKFILE

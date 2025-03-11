@@ -15,6 +15,7 @@ pub mod driver;
 pub mod logic;
 pub mod lut;
 pub mod rewrite;
+pub mod serialize;
 pub mod verilog;
 
 #[cfg(test)]
