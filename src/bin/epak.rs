@@ -7,7 +7,7 @@ use lut_synth::{
     verilog::{SVModule, sv_parse_wrapper},
 };
 use std::{
-    io::{Read, stdin},
+    io::{Read, Write, stdin},
     path::PathBuf,
 };
 
@@ -259,7 +259,8 @@ fn main() -> std::io::Result<()> {
     module.append_inputs(&mut new_inputs);
 
     if let Some(p) = args.output {
-        std::fs::write(p, module.to_string())?;
+        let mut file = std::fs::File::create(p)?;
+        write!(file, "{}", module)?;
         eprintln!("INFO: Goodbye");
     } else {
         print!("{}", module);
