@@ -38,7 +38,7 @@ impl Logic {
         }
     }
 
-    /// Returns [true] if the logic is a don't care
+    /// Returns [prim@true] if the logic is a don't care
     pub fn is_dont_care(&self) -> bool {
         matches!(self, Logic::X)
     }

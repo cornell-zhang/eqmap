@@ -83,7 +83,7 @@ where
     rules
 }
 
-/// Returns a list of rules for permuting inputs in LUTs. Each instance of these rules forms a group under composition (https://en.wikipedia.org/wiki/Symmetric_group).
+/// Returns a list of rules for permuting inputs in LUTs. Each instance of these rules forms a group under composition (<https://en.wikipedia.org/wiki/Symmetric_group>).
 /// Each of these groups have k-1 generators.
 pub fn permute_groups() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();

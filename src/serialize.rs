@@ -1,7 +1,7 @@
 /*!
 
   Serialize e-graph to concise JSON format.
-  Based off of https://github.com/egraphs-good/egraph-serialize
+  Based off of <https://github.com/egraphs-good/egraph-serialize>
 
 */
 
