@@ -262,7 +262,7 @@ fn main() -> std::io::Result<()> {
         std::fs::write(p, module.to_string())?;
         eprintln!("INFO: Goodbye");
     } else {
-        println!("{}", module);
+        print!("{}", module);
     }
 
     Ok(())

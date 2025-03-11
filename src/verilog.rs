@@ -1257,6 +1257,6 @@ impl fmt::Display for SVModule {
         for instance in self.instances.iter() {
             writeln!(f, "{}", instance)?;
         }
-        write!(f, "{}endmodule", indent)
+        writeln!(f, "{}endmodule", indent)
     }
 }

@@ -77,7 +77,7 @@ fn main() -> std::io::Result<()> {
 
         let module = SVModule::from_expr(expr, mod_name.clone(), args.output_names.clone())
             .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
-        println!("{}", module);
+        print!("{}", module);
         break;
     }
 

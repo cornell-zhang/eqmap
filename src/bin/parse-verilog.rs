@@ -79,7 +79,7 @@ fn main() -> std::io::Result<()> {
             println!("{}", expr);
         }
     } else {
-        println!("{}", f);
+        print!("{}", f);
     }
 
     Ok(())
