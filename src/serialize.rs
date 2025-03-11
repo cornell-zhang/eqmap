@@ -54,7 +54,7 @@ impl<Cost> SerialEGraph<Cost>
 where
     Cost: Serialize + Default,
 {
-    /// Create a new serializable E-Graph from an E-Graph
+    /// Create a new serializable E-Graph with roots `roots` assigning costs with `model`.
     pub fn new<L, A, M>(egraph: &egg::EGraph<L, A>, roots: &[egg::Id], mut model: M) -> Self
     where
         L: egg::Language + std::fmt::Display,
@@ -103,18 +103,18 @@ where
         }
     }
 
-    /// Write the report of the output to a writer.
+    /// Write the e-graph to a writer.
     pub fn write(&self, w: &mut impl Write) -> std::io::Result<()> {
         serde_json::to_writer_pretty(w, self)?;
         Ok(())
     }
 }
 
-/// Serialize an E-Graph to a writer
+/// Serialize an E-Graph to a writer `w` with `roots` and a cost model `model`.
 pub fn serialize_egraph<L, A, Cost, M>(
     egraph: &egg::EGraph<L, A>,
     roots: &[egg::Id],
-    costs: M,
+    model: M,
     w: &mut impl Write,
 ) -> std::io::Result<()>
 where
@@ -123,6 +123,6 @@ where
     Cost: Serialize + Default,
     M: egg::CostFunction<L, Cost = Cost>,
 {
-    let serial_egraph = SerialEGraph::new(egraph, roots, costs);
+    let serial_egraph = SerialEGraph::new(egraph, roots, model);
     serial_egraph.write(w)
 }

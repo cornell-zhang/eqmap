@@ -5,6 +5,7 @@
 */
 use super::cost::{DepthCostFn, GateCostFn, KLUTCostFn, NegativeCostFn};
 use super::lut::{CircuitStats, LutExprInfo, LutLang, canonicalize_expr, verify_expr};
+use super::serialize::serialize_egraph;
 use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
     RecExpr, RecExprParseError, Rewrite, Runner, StopReason,
@@ -770,6 +771,21 @@ where
             let e = Extractor::new(egraph, c);
             e.find_best(root).1
         })
+    }
+
+    /// Serialize the e-graph with an associated cost provided by `c`.
+    pub fn serialize_with_greedy_cost<C>(&mut self, c: C, w: &mut impl Write) -> std::io::Result<()>
+    where
+        C: CostFunction<LutLang>,
+        <C as CostFunction<LutLang>>::Cost: Serialize + std::default::Default,
+        A: Analysis<LutLang> + std::default::Default,
+    {
+        if self.result.is_none() {
+            self.explore()
+                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+        }
+        let runner = self.result.as_ref().unwrap();
+        serialize_egraph(&runner.egraph, &runner.roots, c, w)
     }
 
     /// Simplify expression with the extraction strategy in request `self`.
