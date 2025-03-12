@@ -1,3 +1,11 @@
+module LUT1 #(
+    parameter INIT = 2'h0
+) (
+    input  I0,
+    output O
+);
+  assign O = INIT[I0];
+endmodule
 
 module LUT2 #(
     parameter INIT = 4'h0
