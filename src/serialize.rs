@@ -7,7 +7,7 @@
 
 use serde::Serialize;
 use std::{
-    collections::{HashMap, hash_map::Entry},
+    collections::{HashMap, HashSet},
     io::Write,
 };
 type Id = usize;
@@ -62,31 +62,33 @@ where
         M: egg::CostFunction<L, Cost = Cost>,
     {
         let mut nodes = HashMap::new();
-        let mut node_names: HashMap<egg::Id, String> = HashMap::new();
         let mut class_data = HashMap::new();
 
+        let mut node_names: HashMap<egg::Id, String> = HashMap::new();
         let mut node_count: usize = 0;
-        let mut node_name = |id, unique| {
-            let name = format!("node{}", node_count);
-            if let Entry::Vacant(e) = node_names.entry(id) {
-                e.insert(name);
-                node_count += 1;
-                node_names[&id].clone()
-            } else if unique {
-                node_count += 1;
-                name
-            } else {
-                node_names[&id].clone()
-            }
-        };
+
+        // Setup class names
+        for class in egraph.classes() {
+            node_names.insert(class.id, format!("node{}", class.id));
+            node_count += 1;
+        }
+
+        let mut defined = HashSet::new();
 
         for class in egraph.classes() {
             for node in class.iter() {
-                let name = node_name(class.id, true);
+                let name = if defined.contains(&class.id) {
+                    let fresh_name = format!("node{}", node_count);
+                    node_count += 1;
+                    fresh_name
+                } else {
+                    defined.insert(class.id);
+                    node_names[&class.id].clone()
+                };
                 let cost = model.cost(node, |_id| M::Cost::default());
                 nodes.insert(
                     name,
-                    Node::new(node, class.id, cost, |id| node_name(id, false)),
+                    Node::new(node, class.id, cost, |id| node_names[&id].clone()),
                 );
             }
             class_data.insert(class.id.into(), format!("{:?}", class.data));
