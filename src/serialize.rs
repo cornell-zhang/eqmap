@@ -6,10 +6,7 @@
 */
 
 use serde::Serialize;
-use std::{
-    collections::{HashMap, HashSet},
-    io::Write,
-};
+use std::{collections::HashMap, io::Write};
 type Id = usize;
 
 /// E-Node that can be serialized
@@ -64,31 +61,13 @@ where
         let mut nodes = HashMap::new();
         let mut class_data = HashMap::new();
 
-        let mut node_names: HashMap<egg::Id, String> = HashMap::new();
-        let mut node_count: usize = 0;
-
-        // Setup class names
         for class in egraph.classes() {
-            node_names.insert(class.id, format!("node{}", class.id));
-            node_count += 1;
-        }
-
-        let mut defined = HashSet::new();
-
-        for class in egraph.classes() {
-            for node in class.iter() {
-                let name = if defined.contains(&class.id) {
-                    let fresh_name = format!("node{}", node_count);
-                    node_count += 1;
-                    fresh_name
-                } else {
-                    defined.insert(class.id);
-                    node_names[&class.id].clone()
-                };
+            for (i, node) in class.iter().enumerate() {
+                let name = format!("{}.{}", class.id, i);
                 let cost = model.cost(node, |_id| M::Cost::default());
                 nodes.insert(
                     name,
-                    Node::new(node, class.id, cost, |id| node_names[&id].clone()),
+                    Node::new(node, class.id, cost, |id| format!("{}.{}", id, 0)),
                 );
             }
             class_data.insert(class.id.into(), format!("{:?}", class.data));
