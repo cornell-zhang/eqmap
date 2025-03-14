@@ -140,7 +140,7 @@ impl SynthOutput {
         &self.expr
     }
 
-    /// Get the explanationation for all output wires
+    /// Get the explanation for all output wires
     pub fn get_expl(&self) -> &Option<Vec<Explanation<LutLang>>> {
         &self.expl
     }
