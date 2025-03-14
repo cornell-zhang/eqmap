@@ -12,7 +12,7 @@ use egg::{
     RecExpr, RecExprParseError, Rewrite, Runner, StopReason,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
@@ -120,7 +120,7 @@ impl SynthReport {
 /// It optionally contains an explanation and a [SynthReport] report.
 pub struct SynthOutput {
     expr: RecExpr<LutLang>,
-    expl: Option<Explanation<LutLang>>,
+    expl: Option<Vec<Explanation<LutLang>>>,
     rpt: Option<SynthReport>,
 }
 
@@ -141,17 +141,45 @@ impl SynthOutput {
     }
 
     /// Get the explanation of the output.
-    pub fn get_expl(&self) -> &Option<Explanation<LutLang>> {
+    pub fn get_expl(&self) -> &Option<Vec<Explanation<LutLang>>> {
         &self.expl
     }
 
     /// Get the proof of the output.
-    pub fn get_proof(&mut self) -> String {
-        if self.has_explanation() {
-            self.expl.as_mut().unwrap().get_flat_string()
-        } else {
-            String::new()
+    pub fn get_proof(&mut self) -> Option<String> {
+        self.expl.as_mut().map(|e| {
+            e.iter_mut().fold("".to_string(), |acc, x| {
+                format!("{}\n{}", acc, x.get_flat_string())
+            })
+        })
+    }
+
+    /// Get an accounting of rules used in the solution.
+    pub fn get_rule_uses(&mut self) -> Option<String> {
+        self.expl.as_ref()?;
+
+        let mut map: BTreeMap<String, usize> = BTreeMap::new();
+
+        let expl_list = self.expl.as_mut().unwrap();
+
+        for expl in expl_list {
+            for t in expl.make_flat_explanation() {
+                if let Some(r) = t.backward_rule {
+                    let name = r.to_string();
+                    let count = map.get(&name).unwrap_or(&0) + 1;
+                    map.insert(name, count);
+                }
+
+                if let Some(r) = t.forward_rule {
+                    let name = r.to_string();
+                    let count = map.get(&name).unwrap_or(&0) + 1;
+                    map.insert(name, count);
+                }
+            }
         }
+        Some(map.iter().fold("".to_string(), |acc, (k, v)| {
+            format!("{}\n\t{}: {}", acc, k, v)
+        }))
     }
 
     /// Get the analysis for an output expression.
@@ -713,7 +741,7 @@ where
         if self.result.is_none() {
             self.explore()?;
         }
-        let runner = self.result.as_mut().unwrap();
+        let runner = self.result.as_ref().unwrap();
 
         // We need to canonicalize the root ID
         let root = runner.egraph.find(runner.roots[0]);
@@ -733,11 +761,6 @@ where
                 extraction_time.as_secs_f64()
             );
         }
-        let expl = if self.gen_proof {
-            runner.explain_equivalence(&self.expr, &best).into()
-        } else {
-            None
-        };
 
         let stop_reason = runner.stop_reason.as_ref().unwrap().clone();
         if self.assert_sat && !matches!(stop_reason, egg::StopReason::Saturated) {
@@ -761,6 +784,12 @@ where
                 SynthReport::new(&self.expr, extraction_time.as_secs_f64(), runner, &best)
                     .contains_gates(self.canonicalized),
             )
+        } else {
+            None
+        };
+
+        let expl = if self.gen_proof {
+            self.get_explanations(&best)?.into()
         } else {
             None
         };
@@ -798,6 +827,49 @@ where
         }
         let runner = self.result.as_ref().unwrap();
         serialize_egraph(&runner.egraph, &runner.roots, c, w)
+    }
+
+    /// Get individual proofs for each wire at the root of `best`.
+    fn get_explanations(
+        &mut self,
+        best: &RecExpr<LutLang>,
+    ) -> Result<Vec<Explanation<LutLang>>, String>
+    where
+        A: Analysis<LutLang> + std::default::Default,
+    {
+        if !self.gen_proof {
+            return Err("Proof generation was not enabled".to_string());
+        }
+
+        if self.result.is_none() {
+            self.explore()?;
+        }
+
+        let runner = self.result.as_mut().unwrap();
+        let root_expr = &self.expr;
+
+        match (
+            root_expr.as_ref().last().unwrap(),
+            best.as_ref().last().unwrap(),
+        ) {
+            (LutLang::Bus(i), LutLang::Bus(j)) => {
+                if i.len() != j.len() {
+                    return Err("Root expression types are mismatched".to_string());
+                }
+
+                let mut v = Vec::new();
+                for (&a, &b) in i.into_iter().zip(j).rev() {
+                    let a_e = LutExprInfo::new(root_expr).clone_subexpression(a).unwrap();
+                    let b_e = LutExprInfo::new(best).clone_subexpression(b).unwrap();
+                    v.push(runner.explain_equivalence(&a_e, &b_e));
+                }
+                Ok(v)
+            }
+            (LutLang::Bus(_), _) | (_, LutLang::Bus(_)) => {
+                Err("Root expression types are mismatched".to_string())
+            }
+            _ => Ok(vec![runner.explain_equivalence(root_expr, best)]),
+        }
     }
 
     /// Simplify expression with the extraction strategy in request `self`.
@@ -883,9 +955,9 @@ where
     }
 
     if verbose && result.has_explanation() {
-        eprintln!("INFO: Flattened proof");
+        eprintln!("INFO: Rule uses in proof");
         eprintln!("INFO: =============");
-        let proof = result.get_proof();
+        let proof = result.get_rule_uses().unwrap();
         let mut linecount = 0;
         for line in proof.lines() {
             eprintln!("INFO:\t{}", line);
@@ -910,7 +982,12 @@ where
         }
         if check.is_not_equiv() {
             match result.get_expl() {
-                Some(e) => eprintln!("ERROR: Failed for explanation {}", e),
+                Some(e) => {
+                    eprintln!("ERROR: Failed. Dumping explanations...");
+                    for expl in e {
+                        eprintln!("{}", expl);
+                    }
+                }
                 None => eprintln!(
                     "ERROR: Failed for unknown reason. Try running with --verbose for an attempted proof"
                 ),

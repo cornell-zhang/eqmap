@@ -877,6 +877,16 @@ impl<'a> LutExprInfo<'a> {
     pub fn is_canonical(&self) -> bool {
         !(self.is_reduntant() || self.contains_gates())
     }
+
+    /// Returns the subexpression rooted at `root`.
+    pub fn clone_subexpression(&self, root: Id) -> Result<RecExpr<LutLang>, String> {
+        let root: usize = root.into();
+        if root >= self.expr.as_ref().len() {
+            return Err("Root id out of bounds".to_string());
+        }
+        let slice = &self.expr.as_ref()[0..root + 1];
+        Ok(RecExpr::from(slice.to_vec()))
+    }
 }
 
 /// Folds a node at `expr[id]` into a new expression in `dest`.
