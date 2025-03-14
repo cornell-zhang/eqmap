@@ -878,7 +878,7 @@ impl<'a> LutExprInfo<'a> {
         !(self.is_reduntant() || self.contains_gates())
     }
 
-    /// Returns the subexpression rooted at `root`.
+    /// Returns a clone of the subexpression rooted at `root`.
     pub fn clone_subexpression(&self, root: Id) -> Result<RecExpr<LutLang>, String> {
         let root: usize = root.into();
         if root >= self.expr.as_ref().len() {

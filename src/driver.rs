@@ -140,13 +140,13 @@ impl SynthOutput {
         &self.expr
     }
 
-    /// Get the explanation of the output.
+    /// Get the explanationation for all output wires
     pub fn get_expl(&self) -> &Option<Vec<Explanation<LutLang>>> {
         &self.expl
     }
 
-    /// Get the proof of the output.
-    pub fn get_proof(&mut self) -> Option<String> {
+    /// Get a compilation of proofs for all output wires
+    pub fn get_proofs(&mut self) -> Option<String> {
         self.expl.as_mut().map(|e| {
             e.iter_mut().fold("".to_string(), |acc, x| {
                 format!("{}\n{}", acc, x.get_flat_string())
@@ -983,7 +983,7 @@ where
         if check.is_not_equiv() {
             match result.get_expl() {
                 Some(e) => {
-                    eprintln!("ERROR: Failed. Dumping explanations...");
+                    eprintln!("ERROR: Exhaustive testing failed. Dumping explanations...");
                     for expl in e {
                         eprintln!("{}", expl);
                     }
