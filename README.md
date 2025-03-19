@@ -19,27 +19,28 @@ A Verilog-to-Verilog tool for superoptimizing FPGA netlists with E-Graphs
     - [indicatif](https://docs.rs/indicatif/latest/indicatif/)
     - [sv-parser](https://docs.rs/sv-parser/latest/sv_parser/)
     - [serde_json](https://docs.rs/serde_json/latest/serde_json/)
+- [Yosys 0.33](https://github.com/YosysHQ/yosys)
 - ILP (only when using Cargo feature `exactness`)
   - [CBC Solver](https://github.com/coin-or/Cbc)
 
-#### Development
+#### For Development
 
 - VSCode
   - [Rust Analyzer Extension](https://rust-analyzer.github.io/)
   - [VerilogHDL Extension](https://marketplace.visualstudio.com/items?itemName=mshr-h.VerilogHDL)
 - RTL Tools
+  - [Verilator](https://github.com/verilator/verilator)
   - [Verible](https://github.com/chipsalliance/verible)
-  - [Yosys](https://github.com/YosysHQ/yosys)
 
 ### Installing & Getting Started
 
-First, install all the prerequisites for building. For basic functionally, you need Rust and Linux or Mac OS.
+First, install all the prerequisites for building. For basic functionality, you will need the Rust toolchain, a Yosys 0.33 install, and access to a Bash shell. Linux is preferred, but MacOS and WSL should work without much trouble.
 
 `cargo build`
 
 `cargo run --release -- tests/verilog/mux_reg.v # Sanity check`
 
-You can also try to synthesize your own verilog `my_file.v`:
+You can also try to synthesize your own verilog module `my_file.v` as long as it has no multi-bit signals:
 
 `source utils/setup.sh # Add tools to path`
 
@@ -97,12 +98,11 @@ Or to get the tools in your PATH:
 
 You can generate most of the documentation with `cargo doc`.
 
-Here is a rough outline of the type system defined by `LutLang`:
+Here is a rough outline of the grammar defined by `LutLang`:
 
 `<LutLang> ::= <Program> | <Node> | BUS <Node> ... <Node>`
 
-It is important to note that there is an implicit coversion from BUS types to Node types. The least significant bit is taken.
-REG expressions trivially result in inconclusive. Sequential logic isn't fully supported yet.
+REG expressions do not work with verification, and sequential logic isn't fully supported yet.
 
 ```
 <Node> ::= <Const> | x | <Input> | NOR <Node> <Node> | MUX <Node> <Node> <Node>

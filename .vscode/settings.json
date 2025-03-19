@@ -2,5 +2,6 @@
     "editor.formatOnSave": true,
     "verilog.languageServer.veribleVerilogLs.enabled": true,
     "verilog.linting.linter": "verilator",
-    "verilog.formatting.verilogHDL.formatter": "verible-verilog-format"
+    "verilog.formatting.verilogHDL.formatter": "verible-verilog-format",
+    "verilog.linting.verilator.arguments": "${workspaceFolder}/verilog/simlib.v"
 }
