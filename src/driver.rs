@@ -285,8 +285,6 @@ enum ExtractStrat {
     Disassemble(HashSet<String>),
     /// Random extraction for fuzzing.
     Random,
-    /// Random extraction with a choice function.
-    Choice(fn(usize, usize) -> usize),
     #[cfg(feature = "exactness")]
     /// Extract LUTs exactly using ILP with timeout in seconds.
     Exact(u64),
@@ -902,10 +900,6 @@ where
             }
             ExtractStrat::Disassemble(set) => self.greedy_extract_with(GateCostFn::new(set)),
             ExtractStrat::Random => self.extract_with(|e, r| RandomExtract::new().extract(e, r)),
-            ExtractStrat::Choice(f) => {
-                self.extract_with(|e, r| RandomExtract::with_choice_func(f).extract(e, r))
-            }
-
             #[cfg(feature = "exactness")]
             ExtractStrat::Exact(t) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP ON");
