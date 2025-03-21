@@ -69,6 +69,10 @@ struct Args {
     #[arg(long, default_value_t = false)]
     min_depth: bool,
 
+    /// Extract randomly
+    #[arg(long, default_value_t = false)]
+    random: bool,
+
     /// Max fan in size allowed for extracted LUTs
     #[arg(short = 'k', long, default_value_t = 6)]
     k: usize,
@@ -197,6 +201,8 @@ fn main() -> std::io::Result<()> {
 
     let req = if args.min_depth {
         req.with_min_depth()
+    } else if args.random {
+        req.with_randomness()
     } else {
         req.with_klut_regw(args.k, args.reg_weight)
     };

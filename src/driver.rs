@@ -4,6 +4,7 @@
 
 */
 use super::cost::{DepthCostFn, GateCostFn, KLUTCostFn, NegativeCostFn};
+use super::fuzz::RandomExtract;
 use super::lut::{CircuitStats, LutExprInfo, LutLang, canonicalize_expr, verify_expr};
 #[cfg(feature = "graph_dumps")]
 use super::serialize::serialize_egraph;
@@ -282,6 +283,10 @@ enum ExtractStrat {
     LUTCountRegWeighted(usize, u64),
     /// Disassemble into set of logic gates.
     Disassemble(HashSet<String>),
+    /// Random extraction for fuzzing.
+    Random,
+    /// Random extraction with a choice function.
+    Choice(fn(usize, usize) -> usize),
     #[cfg(feature = "exactness")]
     /// Extract LUTs exactly using ILP with timeout in seconds.
     Exact(u64),
@@ -448,6 +453,14 @@ where
     pub fn with_max_depth(self) -> Self {
         Self {
             extract_strat: ExtractStrat::MaxDepth,
+            ..self
+        }
+    }
+
+    /// Extract randomly.
+    pub fn with_randomness(self) -> Self {
+        Self {
+            extract_strat: ExtractStrat::Random,
             ..self
         }
     }
@@ -888,6 +901,11 @@ where
                 self.greedy_extract_with(KLUTCostFn::new(k).with_reg_weight(w))
             }
             ExtractStrat::Disassemble(set) => self.greedy_extract_with(GateCostFn::new(set)),
+            ExtractStrat::Random => self.extract_with(|e, r| RandomExtract::new().extract(e, r)),
+            ExtractStrat::Choice(f) => {
+                self.extract_with(|e, r| RandomExtract::with_choice_func(f).extract(e, r))
+            }
+
             #[cfg(feature = "exactness")]
             ExtractStrat::Exact(t) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP ON");
