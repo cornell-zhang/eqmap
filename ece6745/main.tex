@@ -4,6 +4,7 @@
 \usepackage[top=1in, bottom=1in, left=1in, right=1in]{geometry}
 \usepackage{graphicx}
 \usepackage{wrapfig}
+\usepackage{hyperref}
 
 \newcommand{\todo}[1]{\textcolor{red}{TODO:\ #1}}
 
@@ -140,30 +141,32 @@ usefulness of e-graphs for logic synthesis. Moreover, I hope to submit my own
 e-graph work to ICCAD which shows 12\% area savings over vendor tools on FPGA
 applications without increasing circuit depth.
 
-\section{Experiments}\label{sec:experiments}
+\section{Experiment Design}\label{sec:experiments}
+
+Each of the three ideas for experimentation will require a decently large
+collection of Verilog benchmarks. In total, I have a collection of 96 RTL
+benchmarks combined from three academic sources: ISCAS'85, LGSYNTH'91, and
+EPFL\footnote{\href{https://github.com/matth2k/synth-benchmarks}{https://github.com/matth2k/synth-benchmarks}}.
+They are mostly combinational benchmarks, but sequential logic can also be
+tested. In general, I will consider Synopsys Design Compiler as the baseline
+synthesis tool.
+
+\subsection{Equivalence Checking and Program Fuzzing}
+Yosys will act as the baseline verification tool. Depending on the other tools
+we have licenses for (Jasper?), I can also compare their verification
+abilities. In this experiment, I want to test the stability of QoR of place and
+route given small changes in logic synthesis behavior. As a secondary goal, I
+want to test the efficacy of e-graphs for RTL equivalence checking over other
+commerical or open-source tools. These two tasks will require making the
+equivalance checking and fuzzer tool, but this will largely reuse my existing
+e-graph rewriting framework. Then, we will evaluate the verification tools and
+synthesis tools on the fuzzed Verilog. Of course, we can introduce errors as
+part of the fuzzing.
+
+\subsection{Standard Cell Library Development}
 
 Each experiment should describe the motivation, the baseline, the methods, and
 evaluation technique. As well as the state of the art.
-
-0. Equivalence Checking and Fuzzing
-
-2. Standard cell development
-
-3. Re-synthesis
-- For depth
-- For area
-- flip flop area
-
-The proposal should be maybe 2-3 pages. It should be a step towards the
-introduction for the final project report. So you should include a paragraph or
-two about the motivation for the project, a paragraph or two that describes
-your plan for the baseline and alternative design, a paragraph or two that
-describes how you plan to test and evaluate your design, and a few paragraphs
-for the literature review. Your annotated bibliography should go at the end.
-Note -- you must annotate at least three scholarly references, but you do not
-need to annotate every reference. Feel free to include as many references as
-you like. You can find project ideas and more information about the literature
-search in the Project Ideas handout on the Canvas handouts page.
 
 \nocite{*}
 \bibliographystyle{plain-annote}
