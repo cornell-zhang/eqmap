@@ -15,7 +15,7 @@
   articleno  = {23},
   numpages   = {29},
   keywords   = {equality saturation, e-graphs},
-  annote     = {This paper lies the technical foundation needed to use equality-saturation effectively. The authors provide an extensible library for building e-graphs, creating a rewrite rule set, and program extraction. The paper demonstrates the automated reasoning capabilities of equivalence graphs and explains why they are useful for optimizing compilers. In general, this paper spends much of its length elaborating on the low-level implementation details of the union-find data structure and e-graph interface. Egg continues to be supported on GitHub, and the library is hosted as a Rust crate.}
+  annote     = {This paper lies the technical foundation needed to use equality-saturation effectively. The authors provide an extensible library for building e-graphs, creating a rewrite rule set, and program extraction. The paper demonstrates the automated reasoning capabilities of equivalence graphs and explains why they are useful for optimizing compilers. In general, this paper spends much of its length elaborating on the low-level implementation details of the union-find data structure and e-graph interface. It also provides some empirical results on the runtime complexity of growing the e-graph. Egg continues to be supported on GitHub, and the library is hosted as a Rust crate.}
 }
 
 @inproceedings{esyn,
@@ -53,7 +53,7 @@
   keywords  = {compilers, equivalence graph, machine learning for systems, programming languages},
   location  = {Rotterdam, Netherlands},
   series    = {ASPLOS '25},
-  annote    = {This is an annote for the book. It provides a brief summary or evaluation of the source.}
+  annote    = {For program and circuit optimization, an e-graph driven technique simply defers the NP-hardness to the extraction phase. In extraction, heuristics may be re-introduced. The most vanilla extraction option in the egg library is a greedy cost evaluation. There is an ILP (integer linear programming) option, but it is not well supported as it only works for the smallest of e-graphs. Nonetheless, extraction being decoupled from e-graph building allows heuristics to be studied better in isolation. SmoothE improves upon these two extraction options by relaxing the extraction problem to a differentiable optimization problem that can be parallelized to GPUs. It is not integrated with the Rust language, meaning more software engineering work remains to test the real world usefulness of SmoothE.}
 }
 
 
