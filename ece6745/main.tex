@@ -48,6 +48,8 @@ planned ordered from most conservative to furthest reach goal:
               (1) I will adapt my e-graph+Verilog tool to perform RTL equivalence checking and evaluate it against other tools (SAT solvers, verification tools, Jasper).
 
               (2) I will also use my tool to generate random correct or incorrect changes to netlists to test the stability in quality of results through place and route.
+
+              This is my least ambitious plan and is mostly a backup to the next two.
           \end{minipage}
 
     \item Standard Cell Library Development:
@@ -58,7 +60,7 @@ planned ordered from most conservative to furthest reach goal:
               E-graphs afford the adaptability to rapidly re-synthesizing to different cell libraries.
           \end{minipage}
 
-    \item Re-synthesis for Targeted Optimization:
+    \item More Exact Synthesis:
 
           \hspace{2em}\begin{minipage}{0.8\linewidth}
               I will provide a post-synthesis optimization tool that will improve upon the implementation results of Synopsys Design Compiler.
@@ -69,9 +71,10 @@ planned ordered from most conservative to furthest reach goal:
 
 All of these experiments are relatively low cost to start, because I have a lot
 of compiler infrastructure already built up. For instance, I have a custom,
-bare-bones SystemVerilog frontend. In the following sections, I will give the
-background needed to understand equivalence graphs for compiler development as
-well as some more detailed planning.
+bare-bones SystemVerilog frontend. After some initial experiments, I plan to
+choose the one topic which shows the most promise. In the following sections, I
+will give the background needed to understand equivalence graphs for compiler
+development as well as some more detailed planning.
 
 \section{Background}\label{sec:background}
 
@@ -153,20 +156,48 @@ synthesis tool.
 
 \subsection{Equivalence Checking and Program Fuzzing}
 Yosys will act as the baseline verification tool. Depending on the other tools
-we have licenses for (Jasper?), I can also compare their verification
-abilities. In this experiment, I want to test the stability of QoR of place and
-route given small changes in logic synthesis behavior. As a secondary goal, I
-want to test the efficacy of e-graphs for RTL equivalence checking over other
-commerical or open-source tools. These two tasks will require making the
-equivalance checking and fuzzer tool, but this will largely reuse my existing
-e-graph rewriting framework. Then, we will evaluate the verification tools and
-synthesis tools on the fuzzed Verilog. Of course, we can introduce errors as
-part of the fuzzing.
+we have licenses for (Jasper?), I can also compare their verification abilities
+as well. One hypothesis to test is if e-graphs can more quickly or more
+robustly give conclusions to RTL equivalence checking problems. In addition, I
+want to test the stability of QoR of place and route tools given small changes
+in logic synthesis behavior. In other words, can we precisely observe the
+interactions between synthesis and place and route? Can we use formal tools to
+prevent negative interactions between these two phases of design? These
+verification and fuzzing tasks will require writing the equivalance checking
+and fuzzing tools, but this will largely reuse my existing e-graph rewriting
+framework. Then, we will evaluate the verification tools and synthesis tools on
+fuzzed versions of the Verilog benchmark suite. Of course, we can introduce
+errors as part of the fuzzing.
 
 \subsection{Standard Cell Library Development}
 
-Each experiment should describe the motivation, the baseline, the methods, and
-evaluation technique. As well as the state of the art.
+This experiment plans to develop a methodology for measuring the incremental
+improvement of adding more cell types to a standard cell library. This means
+that the baseline will be some restricted cell library, and the results will be
+the incremental improvements in post-synthesis area and timing as new cell
+types are added. The measurements will of course depend on the test cases, so I
+will have to ensure that my benchmark suite is general enough. The hypothesis
+being tested is that e-graphs plus extraction formulate a more adaptable
+compiler architecture without sacrifices in quality. It will also provide
+insight into the trade-off space of standard cell library design.
+
+\subsection{More Exact Synthesis}
+In this experiment, I will develop logic rewriting systems and extraction
+techniques that can achieve better results than Synopsys Design Compiler. In
+the case of FPGA technology mapping, I already have results that show 12\% area
+savings over the vendor tools without degrading timing. Moreover, I already
+have a robust Boolean logic rewriting system that can be extended to standard
+cell design. However, the potential pitfalls come with extraction technique.
+While greedy extraction shows promise for FPGA applications, I have gut
+feelings that the same extraction algorithm will not work as well for ASIC
+design. ASIC cell mapping appears less like a graph covering algorithm, because
+most of the cells have fanin of 1-3. FPGAs, on the other hand, have 6 input
+lookup tables. Nonethless, I could be underestimating the flexibility of
+standard cell design. Perhaps basic greedy extraction algorithms would still
+work for synthesizing to standard cells. Moreover, I anticipate that new
+e-graph extraction algorithms will improve its circuit synthesis abilities.
+Although, developing new extraction algorithms is more pure compilers research
+than EDA research.
 
 \nocite{*}
 \bibliographystyle{plain-annote}
