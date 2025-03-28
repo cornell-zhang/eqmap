@@ -18,7 +18,7 @@ else
         cd overleaf-project
         cat ../files.txt | xargs git add
         git commit -m "sync with GitHub"
-        git push https://git:$OTOK@git.overleaf.com/67e6e83f7fde409aee480653 --force
+        git push https://git:$OTOK@git.overleaf.com/67e6e83f7fde409aee480653
         cd ..
         rm -rf overleaf-project files.txt
         echo "Overleaf project updated successfully."
