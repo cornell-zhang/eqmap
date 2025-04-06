@@ -6,19 +6,34 @@
 % - adaptdecomp
 \todo{explain related work}
 
-\subsection{LUT Packing}\label{sec:relatedwork:packing}
-
-\subsection{LUT Decomposition}\label{sec:relatedwork:decomp}
+\subsection{FPGA Technology Mapping}\label{sec:relatedwork:fpga}
+FPGA technology mapping converts abstract RTL logic into a netlist of lookup
+tables (LUTs). Due to the computational complexity of this problem, most
+implementations avoid restructuring the input logic and are essentially graph
+covering algorithms. Where competing implementations vary, however, is the set
+of heuristics they use to guide optimization. Broadly speaking, FPGA LUT
+packing can be divided into architecture-specific and architecture-nonspecific
+optimizations. Architecture-specific LUT packing encapsulates optimizations
+such as mapping dual-output functions to fractured LUTs~\cite{fraclut} or using
+multiplexers to implement wide functions with more than 6 inputs~\cite{ug574}.
+In contrast, architecture-nonspecific optimizations attempt to eliminate the
+structural bias of the input logic. For instance, FlowMap~\cite{flowmap}
+demonstrates how to mitigate the effects of non-monotone clustering of logic in
+the input netlist.
 
 \subsection{E-Graph Superoptimization}\label{sec:relatedwork:egraph}
-In recent years, e-graphs and equality saturation have enjoyed renewed
-popularity within the compilers field. Equality saturation is useful for
-optimizing compilers, because they defer greedy decisions. Extracting solutions
-from e-graphs can result in more optimal---sometimes provably optimal---program
-transformations. In contrast, traditional compiler pass pipelines suffer from a
-\textit{phase-ordering problem}. In essence, there is almost never an ordering
-of transformation passes that is optimal for all input programs. It is a
-deep-rooted problem in compiler design, but the problem is particularly
+Equivalence graphs (e-graphs) are a data structure originally conceived to
+facilitate automated proof generation~\cite{eggpaper, eqsat}. For example,
+e-graphs can be used to rewrite mathematical expressions~\cite{egraphmath} or
+for automated reasoning about functional programs~\cite{cclemma}. In recent
+years, e-graphs and equality saturation have enjoyed renewed popularity within
+the compilers field. Equality saturation is useful for optimizing compilers,
+because it defers greedy program transformations. Extracting solutions from
+saturated e-graphs can result in more optimal---sometimes provably
+optimal---programs. In contrast, traditional compiler pass pipelines suffer
+from a \textit{phase-ordering problem}. In other words, there is never an
+ordering of transformation passes that is optimal for all input programs. This
+is a deep-rooted problem in compiler design, but the problem is particularly
 consequential for designing dataflow architectures. Several recent works use
 e-graphs to improve upon typical optimizing compiler architecture.
 
