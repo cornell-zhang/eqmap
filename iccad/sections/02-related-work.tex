@@ -1,11 +1,6 @@
 \section{Related Work}\label{sec:relatedwork}
-% Related work
-% - rover
-% - egraphconstraints
+% Related work todo
 % - dsd
-% - adaptdecomp
-\todo{explain related work}
-
 \subsection{FPGA Technology Mapping}\label{sec:relatedwork:fpga}
 FPGA technology mapping converts abstract RTL logic into a netlist of lookup
 tables (LUTs). Due to the computational complexity of this problem, most
@@ -14,12 +9,21 @@ covering algorithms. Where competing implementations vary, however, is the set
 of heuristics they use to guide optimization. Broadly speaking, FPGA LUT
 packing can be divided into architecture-specific and architecture-nonspecific
 optimizations. Architecture-specific LUT packing encapsulates optimizations
-such as mapping dual-output functions to fractured LUTs~\cite{fraclut} or using
-multiplexers to implement wide functions with more than 6 inputs~\cite{ug574}.
-In contrast, architecture-nonspecific optimizations attempt to eliminate the
-structural bias of the input logic. For instance, FlowMap~\cite{flowmap}
-demonstrates how to mitigate the effects of non-monotone clustering of logic in
-the input netlist.
+that reduce routing congestion by more efficiently using intra-CLB routing
+resources. Examples include mapping dual-output functions to fractured
+LUTs~\cite{fraclut} or using dedicated multiplexers to implement functions with
+more than 6 inputs~\cite{ug574}.
+
+In contrast, architecture-nonspecific LUT packing is more general as it
+attempts to mitigate the structural bias of the input logic. As an example,
+AGDMap~\cite{adaptdecomp} decomposes simple logic gates with large fanin to
+enable the exploration of better graph coverings. However, structural bias can
+take on many forms. For instance, FlowMap~\cite{flowmap} cites that the
+non-monotone clustering of logic is the fundamental difficulty of LUT-based
+technology mapping. In other words, a $k$-feasible cut of logic may contain
+subcuts that are \textit{not} $k$-feasible. Overcoming bouts of non-monotone
+clustering requires a more elaborate cut-selection algorithm, and our work lays
+the foundation for a formal, reasoning-based approach to the problem.
 
 \subsection{E-Graph Superoptimization}\label{sec:relatedwork:egraph}
 Equivalence graphs (e-graphs) are a data structure originally conceived to
@@ -30,12 +34,12 @@ years, e-graphs and equality saturation have enjoyed renewed popularity within
 the compilers field. Equality saturation is useful for optimizing compilers,
 because it defers greedy program transformations. Extracting solutions from
 saturated e-graphs can result in more optimal---sometimes provably
-optimal---programs. In contrast, traditional compiler pass pipelines suffer
-from a \textit{phase-ordering problem}. In other words, there is never an
-ordering of transformation passes that is optimal for all input programs. This
-is a deep-rooted problem in compiler design, but the problem is particularly
-consequential for designing dataflow architectures. Several recent works use
-e-graphs to improve upon typical optimizing compiler architecture.
+optimal---programs. In contrast, traditional compilers use a pass pipeline
+architecture which suffers from a \textit{phase-ordering problem}. In other
+words, there is never an ordering of transformation passes that is optimal for
+all input programs. This is a deep-rooted issue in compiler design, but the
+problem is particularly consequential for hardware design. Several recent works
+use e-graphs to improve upon typical optimizing compiler architecture.
 
 SEER~\cite{seer} uses e-graphs to optimize the data-level and pipeline
 parallelism of control flow in high-level synthesis (HLS) programs.
