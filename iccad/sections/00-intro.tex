@@ -2,9 +2,9 @@
 Given the complexity of modern electronic systems, a high degree of automation
 is required to develop custom hardware within sensible timelines. At the
 highest level, FPGA and ASIC design flows can be split into logical synthesis
-and physical synthesis (optimize timing, placement and routing, etc..). This
+and physical synthesis (placement and routing, floorplanning, etc..). This
 division of work produces suboptimal designs, and neither are the individual
-synthesis steps locally optimal on their own. However, logic minimization
+synthesis steps locally optimal on their own. However, circuit minimization
 problems in general are NP-Hard~\cite{logicmin,twolevellogic}, and modern EDA
 flows bring compile times down to the human timescale while maintaining
 acceptable QoR (quality of results).
@@ -13,8 +13,8 @@ With the end of Moore's Law scaling, chip area becomes a tighter constraint,
 and logic synthesis is more of a bottleneck. Hence, future synthesis tools will
 need to expand the design spaces they explore and find more optimal solutions.
 Nonetheless, finding provably optimal circuits is computationally intractable.
-In this paper, we will introduce how FPGA technology mapping can be augmented
-with e-graph data structures to find \textit{more} exact solutions, without
+In this paper, we introduce how FPGA technology mapping can be augmented with
+e-graph data structures to find \textit{more} exact solutions, without
 significantly increasing compile times.
 
 Technology mapping is the hand-off between logical synthesis and physical
@@ -27,25 +27,26 @@ tools approach technology mapping as a graph covering problem~\cite{flowmap,
     daomap, attmap, imap}. In the literature, a group of circuit nodes implemented
 by a $k$-LUT is called a $k$-feasible cut of logic, and the generation of all
 cuts is called cut enumeration. These structural mapping techniques
-fundamentally rely on the topology of the input circuit. Hence, they are prone
-to structural bias.
+fundamentally rely on the topology of the input circuit. In this sense, they
+are prone to \textit{structural bias}.
 
-In contrast, functional mappers attempt to decompose Boolean functionality into
-smaller sub-functions which can be realized by $k$-LUTs. Such mappers are a
-more exact approach, and often use SAT solvers~\cite{satmap,satmap2} to drive
+In contrast, functional mappers attempt to decompose the Boolean functionality
+into smaller sub-functions which can be realized by $k$-LUTs. Such mappers are
+a more exact approach, and often use SAT solvers~\cite{satmap,satmap2} to drive
 synthesis. However, exact synthesis tools cannot be scaled past tens of gates.
 As a consequence, cut enumeration and functional mapping lie on two different
 extremes. The former is faster but limited by the input structure, while the
 latter is unbiased but fundamentally unscalable.
 
 For this reason, we propose an e-graph driven technology mapper than can better
-span the time-QoR spectrum. E-graphs are a data structure which use union-find
-operations to compactly represent abstract equivalence relations. E-graphs are
-useful as an optimizing compiler framework, because terms can be iteratively
-rewritten in a nondestructive fashion. Instead of an optimization pass
-architecture, e-graph driven compilers store all transformed terms in parallel
-and defer selection of the best one. Our work seeks to evaluate the suitability
-of e-graphs for logic synthesis, specifically technology mapping to FPGAs.
+span the time-QoR spectrum. Equivalence graphs, referred to as e-graphs, are a
+data structure which use union-find operations to compactly represent abstract
+equivalence relations. E-graphs are useful as an optimizing compiler framework,
+because terms can be iteratively rewritten in a nondestructive fashion. Whereas
+typical optimizing compilers apply a greedy sequence of transformation passes,
+e-graph driven compilers store all transformed terms in parallel and defer
+selection of the best one. Our work seeks to evaluate the suitability of
+e-graphs for logic synthesis, specifically technology mapping to FPGAs.
 
 We introduce \shortname{}: a tool for repacking FPGA netlists into more compact
 forms---without increasing circuit depth. Our results show many benchmarks, big
@@ -53,13 +54,16 @@ and small, which synthesize to significantly fewer LUTs over vendor EDA tools.
 To that end, our work makes the following contributions:
 
 \begin{itemize}
-    \item We formulate an intermediate language and generating set of e-graph rewrite
-          rules, as well as justify the types of circuit topologies that are reachable
-          under composition.
+    \item We formulate an intermediate language and set of e-graph rewrite rules that can
+          explore a wide range of circuit topologies.
+    \item Upon extraction, \shortname{} can produce a proof of equivalence between the
+          optimized form and original input.
     \item We evaluate our compiler against \nbenchmarks{} benchmarks combined from three
           sources: EPFL~\cite{epflbench}, ISCAS'85~\cite{iscasbench}, and
-          LGSynth'91~\cite{lgsynthbench}.
-    \item \shortname{} is packaged as a Verilog-to-Verilog tool that can be dropped into existing RTL flows.
+          LGSynth'91~\cite{lgsynthbench}. The results show significant improvements in
+          LUT count without increasing circuit depth.
+    \item Finally, \shortname{} is packaged as a Verilog-to-Verilog tool that can be
+          dropped into existing RTL flows.
 \end{itemize}
 
 Before elaborating on our methodology and experimental setup, we first discuss
