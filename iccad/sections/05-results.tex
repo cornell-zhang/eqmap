@@ -23,15 +23,15 @@ optimizations influence CLB usage and timing closure.
     \begin{subfigure}{0.47\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/y33.png}
-        \caption{Distribution of 150 LUTs after synthesis of `i9' with Yosys 0.33}\label{fig:histogram:y33}
+        \caption{Distribution of 128 LUTs after running E-Pack on `i9' synthesized with Yosys 0.33.}\label{fig:histogram:y33}
     \end{subfigure}
     \hfill\vspace{4mm}
     \begin{subfigure}{0.47\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/y47.png}
-        \caption{Distribution of 137 LUTs after synthesis of `i9' with Yosys 0.44}\label{fig:histogram:y44}
+        \caption{Distribution of 137 LUTs after running E-Pack on `i9' synthesized with Yosys 0.47.}\label{fig:histogram:y47}
     \end{subfigure}
-    \caption{Comparison of two initial structures, (a) and (b), and E-Packed structure (c) \todo{regenerate these figs}}\label{fig:histogram}
+    \caption{Comparison of E-Pack's ability to optimize circuits given different starting structures.}\label{fig:histogram}
 \end{figure}
 
 We used an compilation of \nbenchmarks{} combinational benchmarks from three
@@ -56,7 +56,7 @@ in attempts to superoptimize it. Future work will investigate which qualities
 make an RTL synthesis engine work well with our tool versus ones that do not.
 For example, E-Pack optimized Yosys 0.33 netlists
 (Fig.~\ref{fig:histogram:y33}) better than ones provided by Yosys version 0.47
-(Fig.~\ref{fig:histogram:y44}). A future version of \shortname{} should
+(Fig.~\ref{fig:histogram:y47}). A future version of \shortname{} should
 implement new rewrite procedures than can break out of these local minimums on
 their own.
 
