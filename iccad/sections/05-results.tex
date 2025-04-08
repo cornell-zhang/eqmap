@@ -1,17 +1,16 @@
 \section{Results}\label{sec:results}
-For our experiments, we used a Red Hat 8 server with a Intel Xeon Gold 6242
-CPU. Since \shortname{} is written in Rust, it mostly uses the built-in
-functionality of the egg library. The egg e-graph runner was ran in a
+Our experiments were carried out on a Red Hat 8 server hosting a Intel Xeon
+Gold 6242 CPU. Since \shortname{} is written in Rust, it mostly uses the
+built-in functionality of the egg library. The egg e-graph runner was ran in a
 time-limited configuration, meaning there was no limit in the size of the
-e-graph or number of rewrite iterations. The specific time limit for e-graph
-construction was 10 minutes. In most cases, the test circuit saturated the
-e-graph well before this time limit---around 30 seconds. \shortname{} was
-evaluated against circuits from three benchmark suites: EPFL~\cite{epflbench},
-ISCAS'85~\cite{iscasbench}, and LGSynth'91~\cite{lgsynthbench}. However, we
-also included an ALU and pipelined multiplication module to test how our
-compiler behaves with increasing levels of bit-parallelism and pipeline stages.
-Finally, we measure how our mapping optimizations influence CLB usage and
-timing closure.
+e-graph. The specific time limit for e-graph construction was 10 minutes. In
+most cases, the test circuit saturated the e-graph well before this time
+limit---around 30 seconds. \shortname{} was evaluated against circuits from
+three benchmark suites: EPFL~\cite{epflbench}, ISCAS'85~\cite{iscasbench}, and
+LGSynth'91~\cite{lgsynthbench}. However, we also included an ALU and pipelined
+multiplication module to test how our compiler behaves with increasing levels
+of bit-parallelism and register pipelining. Finally, we measure how our mapping
+optimizations influence CLB usage and timing closure.
 
 \subsection{Benchmarking}\label{sec:results:benchmark}
 \begin{table}
@@ -46,12 +45,12 @@ academic sources to test LUT packing ability. Among the combinational
 benchmarks we tested, \shortname{} was able to reduce the LUT count \fmetric{}
 of the time. On average, \shortname{} packed the netlists to \metric{}. The
 results in Table~\ref{tab:results} list all the reduced LUT counts, sorted by
-approximate design size. AMD/Xilinx Vivado 2022~\cite{vivado} was used as the
+approximate design size. AMD/Xilinx Vivado 2024~\cite{vivado} was used as the
 baseline synthesis tool. For the E-Pack flow, Yosys~\cite{yosys} is used to
 generate the initial mapped circuit. At a glance, circuits like `int2float,'
 `c6288,` `adder,' and `square' have the most to gain from \shortname{}. These
-circuits are all arithmetic in nature, and this is a recurring point of
-emphasis throughout the rest of the results.
+circuits are all arithmetic in nature, and this is a common occurrence
+throughout the rest of the results.
 
 One result that is \textit{not} demonstrated by the table is the apparent
 importance of the initial structure inputted to E-Pack. We have not eliminated
@@ -62,7 +61,7 @@ by different tool flows. In short, an overly packed LUT network will fare worse
 in attempts to superoptimize it. Future work will investigate which qualities
 make an RTL synthesis engine work well with our tool versus ones that do not.
 For example, E-Pack optimized Yosys 0.33 netlists
-(Fig.~\ref{fig:histogram:y33}) better than ones provided by Yosys 0.47
+(Fig.~\ref{fig:histogram:y33}) better than ones provided by Yosys version 0.47
 (Fig.~\ref{fig:histogram:y44}). A future version of \shortname{} should
 implement new rewrite procedures than can break out of these local minimums on
 their own.
@@ -85,14 +84,14 @@ their own.
 
 Given that \shortname{} is fundamentally a superoptimization tool, we want to
 provide evidence that significant gains can be found within reasonable time
-bounds. To that end, we empirically studied the marginal gains in QoR as the
-e-graph contains increasingly longer rewrite sequences. Within the e-graph
-infrastructure, this phasing of applying rewrites and rebuilding the union-find
-data structure is known as an \textit{iteration}. As shown in
+bounds. To that end, we empirically studied the marginal gains in QoR as
+increasingly longer rewrite sequences are added to the e-graph. Within the
+e-graph infrastructure, this phasing of applying rewrites and rebuilding the
+union-find data structure is referred to as an \textit{iteration}. As shown in
 Fig.~\ref{fig:marginal:improvement}, nearly all the performance gains are
 discovered within the first 10 iterations---well before equality
 saturation---suggesting that most of the optimizations are relatively local.
-Some notable exception occur, such as `alu4' being reduced in size after the
+Some notable exceptions occur, such as `alu4' being reduced in size after the
 40th iteration. Lastly, the growing runtime of e-graph exploration with each
 iteration should be addressed. The marginal cost of executing an iteration of
 rewrites becomes prohibitive as the e-graph becomes larger.
@@ -110,7 +109,7 @@ Hardware designs with feed forward pipelines provide interesting opportunities
 to apply register retiming and find a higher-level of area optimization. When
 closing timing on FPGA designs, the critical path is often dominated by the
 effects of routing congestion, moreso than ASIC design. Hence, reducing the
-cell count and circuit depth along the delay path is a valid optimization
+cell count and circuit depth along the max delay path is a valid optimization
 strategy for FPGA design. As a caveat, it is important to note that other work
 has also observed the opposite trend~\cite{academicfpga}: decreasing depth too
 much can strain the router. In any case, E-Pack can be utilized to reduce total
@@ -123,15 +122,16 @@ with a varying number of pipeline stages processed with E-Pack.
 
 While the total drop is CLB usage is desirable, the area gains as a percentage
 are modest due to the suboptimality of greedy e-graph extraction. Register
-retiming rewrites, when enabled, vastly increase the design space. More
-importantly, register retiming changes the topology of the stateful
+retiming rewrites vastly increase the design space. Unlike other logic
+rewrites, register retiming changes the topology of the stateful
 elements---i.e. the flip-flops. As a consequence, greedy extraction cannot take
-into account the fanout of flip-flops. It chooses a poor design point with less
-register fanout and a greater total number of registers. The few regressions
-observed in mapping combinational logic (Fig.~\ref{fig:marginal:improvement})
-become more frequent and exacerbated in sequential logic. While these results
-\textit{do} demonstrate that optimizing for CLB count over raw cell count is a
-feasible strategy, a different extraction method will be needed in future work.
+into account the fanout of flip-flops. It can choose a poor design point with
+less register fanout and a greater total number of registers. The few
+regressions observed in mapping combinational logic
+(Fig.~\ref{fig:marginal:improvement}) become more frequent and exacerbated in
+sequential logic. While these results \textit{do} demonstrate that optimizing
+for CLB count over raw cell count is a feasible strategy, a different
+extraction method will be needed in future work.
 
 \subsection{Case Study: Bit-Parallel Designs}\label{sec:results:scalability}
 \begin{table}
@@ -145,22 +145,21 @@ literature, the circuits are relatively small. On average, the designs map to
 470 LUTs with \shortname{}. Among the \nimproved{} improved benchmarks in
 Table~\ref{tab:results}, only three exceed 1000 LUTs. Although this e-graph
 driven technology provides promising results for smaller benchmarks, FPGA
-technology mapping is especially difficult---and thus important---for larger
-designs with tens of thousands of LUTs. Through our case study on bit-parallel
-designs, we demonstrate that \shortname{} performs just as well on large
-designs, achieving area reductions without incurring excessive build times.
+technology mapping is especially difficult---and important---for larger designs
+with tens of thousands of LUTs. Through our case study on bit-parallel designs,
+we demonstrate that \shortname{} performs just as well on large designs,
+achieving area reductions without incurring excessive build times.
 
 To test how \shortname{} scales with increasing numbers of LUTs, we created a
 synthetic ALU benchmark and varied the input and output bit widths from 8 bits
 to 4096 bits. Table~\ref{tab:alu} lists the LUT counts from the initial
-synthesis by Vivado 2022, followed by the packed LUT counts. Even tough the
+synthesis by Vivado 2024, followed by the packed LUT counts. Even though the
 1024-bit, 2048-bit, and 4096-bit ALU designs had up to 15,000 LUTs,
 \shortname{} was able to achieve up to almost 15\% improvement over Vivado
-within 5 minutes of extra build time. While llonger runs lead to slightly
-better improvements, these results demonstrate how \shortname{} can achieve
-area reductions within a short period of time, even when input designs are
-scaled to beyond 10,000 LUTs. In this specific case, \shortname{} can be used
-to audit synthesis tools and perhaps even reverse-engineer adverse behavior.
-Hence, \shortname{} proves to be a practical tool to run after a baseline
-synthesis by Vivado or Yosys to quickly achieve better LUT packing with minimal
-time cost.
+within 5 minutes of extra build time. While longer runs lead to slightly better
+improvements, these results demonstrate how \shortname{} can achieve area
+reductions within a short period of time, even when input designs are scaled to
+beyond 10,000 LUTs. In this specific case, \shortname{} can be used to audit
+synthesis tools and perhaps even reverse-engineer adverse behavior. Hence,
+\shortname{} proves to be a practical tool to run after a baseline synthesis by
+Vivado or Yosys to quickly achieve better LUT packing with minimal time cost.
