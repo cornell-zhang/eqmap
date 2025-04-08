@@ -86,7 +86,7 @@ example, the pseudocode for $k=3$ is written as follows:
 \subsection{Function Composition}\label{sec:rewrites:composition}
 
 Cascaded LUTs can be packed into a single LUT, as long as the size of the cut
-of logic has at most 6 leaf nodes. This is the cruicial observation to LUT
+of logic has at most 6 leaf nodes. This is the crucial observation to LUT
 packing. For instance, a circuit that implements $F(x_0, G(x_1, x_2))$ with two
 2-LUTs can be rewritten as a 3-LUT that implements some $H(x_0, x_1, x_2)$. In
 pseudocode, this would take on the following form:
@@ -164,7 +164,7 @@ define and compute $\texttt{restrict(F, i, j)}$ which maps $F : \Bx{k}
 
 Since rewrite search patterns already match `modulo' e-class, this rule is
 automatically triggered when e-classes are merged. Since LUT symmetry is
-represented in the graph, only one rule is needed for each lut size $k=2$
+represented in the graph, only one rule is needed for each LUT size $k=2$
 through 6.
 
 \subsection{Functional Decomposition}\label{sec:rewrites:decomp}
