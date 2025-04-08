@@ -2,20 +2,15 @@
 % Related work todo
 % - dsd
 \subsection{LUT Packing}\label{sec:relatedwork:fpga}
-FPGA technology mapping converts abstract RTL logic into a netlist of lookup
-tables (LUTs). Due to the computational complexity of this problem, most
-implementations avoid restructuring the input logic and are essentially graph
-covering algorithms. Where competing implementations vary, however, is the set
-of heuristics they use to guide optimization. Broadly speaking, FPGA LUT
-packing can be divided into architecture-specific and architecture-nonspecific
-optimizations. Architecture-specific LUT packing encapsulates optimizations
-that reduce routing congestion by more efficiently using intra-CLB routing
+Broadly speaking, FPGA LUT packing can be divided into architecture-specific
+and architecture-nonspecific optimizations. Architecture-specific LUT packing
+can reduce routing congestion by more efficiently using intra-CLB routing
 resources. Examples include mapping dual-output functions to fractured
 LUTs~\cite{fraclut} or using dedicated multiplexers to implement functions with
 more than 6 inputs~\cite{ug574}.
 
-In contrast, architecture-nonspecific LUT packing is more general as it
-attempts to mitigate the structural bias of the input logic. As an example,
+In contrast, architecture-nonspecific LUT packing is more broad as it attempts
+to mitigate the structural bias of the input logic in general. As an example,
 AGDMap~\cite{adaptdecomp} decomposes simple logic gates with large fanin to
 enable the exploration of better graph coverings. However, structural bias can
 take on many forms. For instance, FlowMap~\cite{flowmap} cites that the
@@ -26,32 +21,19 @@ clustering requires a more elaborate cut-selection algorithm, and our work lays
 the foundation for a formal, reasoning-based approach to the problem.
 
 \subsection{E-Graph Superoptimization}\label{sec:relatedwork:egraph}
-Equivalence graphs (e-graphs) are a data structure originally conceived to
-facilitate automated proof generation~\cite{eggpaper, eqsat}. For example,
-e-graphs can be used to rewrite mathematical expressions~\cite{egraphmath} or
-for automated reasoning about functional programs~\cite{cclemma}. In recent
-years, e-graphs and equality saturation have enjoyed renewed popularity within
-the compilers field. Equality saturation is useful for optimizing compilers,
-because it defers greedy program transformations. Extracting solutions from
-saturated e-graphs can result in more optimal---sometimes provably
-optimal---programs. In contrast, traditional compilers use a pass pipeline
-architecture which suffers from a \textit{phase-ordering problem}. In other
-words, there is never an ordering of transformation passes that is optimal for
-all input programs. This is a deep-rooted issue in compiler design, but the
-problem is particularly consequential for hardware design. Several recent works
-use e-graphs to improve upon typical optimizing compiler architecture.
-
-SEER~\cite{seer} uses e-graphs to optimize the data-level and pipeline
-parallelism of control flow in high-level synthesis (HLS) programs.
-IMpress~\cite{impress} also uses e-graphs at the HLS level, optimizing the
-muliplication of large bit-width integers. At a lower level,
-ROVER~\cite{rover,roverbl,egraphconstraints} rewrites arithmetic data paths at
-the word and bit levels. ROVER straddles the RTL and physical level of
-abstraction, making it more general purpose than IMpredss. In any case, the
-work which is most similar in its goals to ours is E-Syn~\cite{esynth}. E-Syn
-rewrites the Boolean algebra of a circuit using known properties like De
-Morgan's laws and the consensus theorem. Ultimately, E-Syn performs its
-optimizations during technology-independent synthesis steps, whereas
-\shortname{} applies as a post-processing step \textit{after} technology
-mapping. Furthermore, \shortname{}'s rewriting system models the netlist in
-terms of total functions, rather than as expressions over a Boolean algebra.
+In recent years, e-graphs and equality saturation have enjoyed renewed
+popularity within the compilers field. Several recent works use e-graph driven
+superoptimization to improve upon existing EDA tool flows. SEER~\cite{seer}
+uses e-graphs to optimize and parallelize the control flow of high-level
+synthesis (HLS) programs. IMpress~\cite{impress} also uses e-graphs at the HLS
+level, optimizing the datapath of large bit-width multipliers. At a lower
+level, ROVER~\cite{rover,roverbl,egraphconstraints} rewrites arithmetic data
+paths at the word and bit levels. ROVER straddles the RTL and physical level of
+abstraction, making it more general purpose than IMpress. In any case, the work
+which is most similar in its goals to ours is E-Syn~\cite{esynth}. E-Syn uses
+Boolean algebra to rewrite a circuit with known properties like De Morgan's
+laws and the consensus theorem. Ultimately, E-Syn performs its optimizations
+during technology-independent synthesis steps, whereas \shortname{} applies as
+a post-processing step \textit{after} technology mapping. Furthermore,
+\shortname{}'s rewriting system models the netlist in terms of total functions,
+rather than as expressions over a Boolean algebra.
