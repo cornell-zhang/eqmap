@@ -1,7 +1,25 @@
 \section{Background}\label{sec:background}
-\todo{explain background}
+\todo{work in a motivating example for LUT packing and e-graphs to do the rewriting}
 % Logic Synthesis
 
 \subsection{FPGA Technology Mapping}\label{sec:background:fpga}
+FPGA technology mapping converts abstract RTL logic into a netlist of lookup
+tables (LUTs). Due to the computational complexity of LUT packing, most
+implementations avoid restructuring the input logic and are essentially graph
+covering algorithms. Where competing implementations vary, however, is the set
+of heuristics they use to guide optimization.
 
 \subsection{Equivalence Graphs}\label{sec:background:egraph}
+Equivalence graphs (e-graphs) are a data structure originally conceived to
+facilitate automated proof generation~\cite{eggpaper, eqsat}. For example,
+e-graphs can be used to rewrite mathematical expressions~\cite{egraphmath} or
+for automated reasoning about functional programs~\cite{cclemma}.
+
+Equality saturation is useful for optimizing compilers, because it defers
+greedy program transformations. Extracting solutions from saturated e-graphs
+can result in more optimal---sometimes provably optimal---programs. In
+contrast, traditional compilers use a pass pipeline architecture which suffers
+from a \textit{phase-ordering problem}. In other words, there is never an
+ordering of transformation passes that is optimal for all input programs. This
+is a deep-rooted issue in compiler design, but the problem is particularly
+consequential for hardware design.
