@@ -7,10 +7,10 @@ and architecture-nonspecific optimizations. Architecture-specific LUT packing
 can reduce routing congestion by more efficiently using intra-CLB routing
 resources. Examples include mapping dual-output functions to fractured
 LUTs~\cite{fraclut} or using dedicated multiplexers to implement functions with
-more than 6 inputs~\cite{ug574}.
+more than 6 inputs~\cite{ug574}. \todo{mention FF packing}
 
-In contrast, architecture-nonspecific LUT packing is more broad as it attempts
-to mitigate the structural bias of the input logic in general. As an example,
+In contrast, architecture-nonspecific LUT packing is broader as it attempts to
+mitigate the structural bias of the input logic in general. As an example,
 AGDMap~\cite{adaptdecomp} decomposes simple logic gates with large fanin to
 enable the exploration of better graph coverings. However, structural bias can
 take on many forms. For instance, FlowMap~\cite{flowmap} cites that the
