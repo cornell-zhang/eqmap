@@ -3,11 +3,10 @@
   The lut module defines the grammar used to represent LUTs, gates, and principal inputs.
 
 */
-use crate::cost::{GateCostFn, KLUTCostFn};
-
 use super::analysis::LutAnalysis;
 use super::check::{Check, equivalent, inconclusive, not_equivalent};
 use super::cost::DepthCostFn;
+use super::cost::{GateCostFn, KLUTCostFn};
 use super::driver::{Canonical, CircuitLang, EquivCheck, Explanable, Extractable};
 use bitvec::prelude::*;
 use egg::CostFunction;
