@@ -20,12 +20,33 @@ FPGA technology mapping converts abstract RTL logic into a netlist of lookup
 tables (LUTs). Due to the computational complexity of optimal LUT packing, most
 implementations avoid restructuring the input logic and are essentially graph
 covering algorithms. Given a $k$-LUT FPGA architecture, most mappers start by
-enumerating the feasible cuts of logic for each node in the circuit. Where
-competing implementations vary, however, is the set of heuristics they use to
-map logic cuts to LUTs. Cut selection essentially decides the graph covering to
-use. As an example, Fig.~\ref{fig:eg} shows differing results of mapping
-carry-lookahead logic to FPGA LUTs.
-% Flow map uses two passes
+enumerating the feasible cuts of logic for each node in the circuit. Then,
+logic cuts are selected to be used in the circuit covering, which ultimately
+becomes the netlist. Where competing implementations vary, however, is the set
+of heuristics used to extract the best cuts of logic. As an example,
+Fig.~\ref{fig:eg} shows two different results of mapping carry-lookahead logic
+to a 4-LUT FPGA architecture. In Fig.~\ref{fig:eg:bad}, the circuit is
+implemented with four total LUTs. Since the sink LUT is already utilizing all
+four inputs, the ability to combine it with another 4-LUT is non-obvious.
+Fig.~\ref{fig:eg:good} shows how the circuit depth and cell count can both be
+reduced by merging the two 4-LUTs, because they both share the inputs $A_1$ and
+$B_1$. This feature in the circuit topology is referred to in the literature as
+\textit{non-monotone clustering} of logic. In other words, a $k$-feasible cut
+of logic may contain within itself cuts of logic that are the same size or even
+larger. That is, traversing subcuts does not decrease the size monotonically.
+Hence, technology mapping must scrutinize this type of circuit topology in
+order to avoid suboptimal LUT count and depth, adding to tool runtime. It is
+important to note that this problem occurs equally on 6-LUT FPGAs.
+
+No depicted in Fig.~\ref{fig:eg} is the bias that the graph covering has to the
+structure of the input logic. Depending on how the input RTL is written, the
+optimal solution may not be reachable with a cut enumeration algorithm. First,
+notice that both the AND and OR operations in the circuit are commutative and
+associative. A poor grouping of terms can limit the efficacy of the technology
+mapper. In the specific case of Fig.~\ref{fig:eg}, it is important that $C_0$
+is grouped with $A_0 + B_0$ and \textit{not} $A_1 + B_1$. To summarize, optimal
+technology mapping must overcome both the difficulty of cut selection and bias
+to the structure of the input circuit.
 
 \subsection{Equivalence Graphs}\label{sec:background:egraph}
 Equivalence graphs (e-graphs) are a data structure originally conceived to
