@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/zsh
 PWDL=$(pwd)
-IDIR=$(realpath $(dirname $BASH_SOURCE)/..)
+IDIR=$(realpath $(dirname ${(%):-%x})/..)
 cd $IDIR
 
 if cargo build --release --features default,$1,$2,$3,$4; then
