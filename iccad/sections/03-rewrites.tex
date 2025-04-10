@@ -221,11 +221,11 @@ as follows:
 Unlike the other rules, this rule is searched for in both directions.
 Figure~\ref{fig:retiming} illustrates an example of how register retiming can
 compose with LUT rewrite rules to reduce LUT count and register count
-simultaneously. In this case, 3-LUTs implementing 2:1 multiplexers are pushed
-across register boundaries. Since this logic happens to have a 6-LUT packing
-and a two 4-LUT packing, we can explore a circuit topology that may be better
-for timing (Fig.~\ref{fig:retiming:b}) or better for LUT count
-(Fig.~\ref{fig:retiming:c}). To best utilize register retiming, the e-graph
+simultaneously. In this case, the 3-LUTs implementing 2:1 multiplexers are
+pushed across register boundaries. Since this logic happens to have a 6-LUT
+packing and a two 4-LUT packing, we can explore a circuit topology that reduces
+cell count (Fig.~\ref{fig:retiming:c}) or adjusts the delay paths
+(Fig.~\ref{fig:retiming:b}). To best utilize register retiming, the e-graph
 extraction technique must have some sense of timing information. Our e-graph
 extractor is explained in the next section, but it should be noted that in our
 experiments the area of LUTs and registers are weighted equally.
