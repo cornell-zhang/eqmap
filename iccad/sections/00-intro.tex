@@ -12,8 +12,8 @@ acceptable QoR (quality of results).
 With the end of Moore's Law scaling, chip area becomes a tighter constraint,
 and logic synthesis is more of a bottleneck. Hence, future synthesis tools will
 need to expand the design spaces they explore and find more optimal solutions.
-Nonetheless, finding provably optimal circuits is computationally intractable.
-In this paper, we introduce how FPGA technology mapping can be augmented with
+Still, finding provably optimal circuits is computationally intractable. In
+this paper, we introduce how FPGA technology mapping can be augmented with
 e-graph data structures to find \textit{more} exact solutions, without
 significantly increasing compile times.
 
@@ -26,9 +26,9 @@ solution space. Whether the circuit is optimized for latency or area, most FPGA
 tools approach technology mapping as a graph covering problem~\cite{flowmap,
     daomap, attmap, imap}. In the literature, a group of circuit nodes implemented
 by a $k$-LUT is called a $k$-feasible cut of logic, and the generation of all
-cuts is called cut enumeration. These structural mapping techniques
-fundamentally rely on the topology of the input circuit. In this sense, they
-are prone to \textit{structural bias}.
+cuts is called cut enumeration. These structural mapping techniques rely on the
+topology of the input circuit, and hence they are prone to \textit{structural
+    bias}.
 
 In contrast, functional mappers attempt to decompose the Boolean functionality
 into smaller sub-functions which can be realized by $k$-LUTs. Such mappers are
@@ -55,7 +55,7 @@ To that end, our work makes the following contributions:
 
 \begin{itemize}
     \item We formulate an intermediate language and set of e-graph rewrite rules that can
-          explore a wide range of circuit topologies.
+          explore a range of circuit topologies that heuristic approaches miss.
     \item Upon extraction, \shortname{} can produce a proof of equivalence between the
           optimized form and original input.
     \item We evaluate our compiler against \nbenchmarks{} benchmarks combined from three
