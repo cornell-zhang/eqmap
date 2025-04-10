@@ -1,10 +1,3 @@
-\section{Tool Flow}\label{sec:flow}
-
-While constructing the e-graph is the crux of \shortname{}, there are several
-other important components to consider in the full design flow. In order to
-test our hypothesis, \shortname{} must be compatible with existing synthesis
-flows, and the rewritten circuits must be verified.
-
 \begin{figure}
     \begin{subfigure}{0.47\textwidth}
         \centering
@@ -19,6 +12,13 @@ flows, and the rewritten circuits must be verified.
     \end{subfigure}
     \caption{Diagrams of the top-level integration of E-Pack into existing tool flows and internal e-graph driven compiler architecture.}\label{fig:flow}
 \end{figure}
+
+\section{Tool Flow}\label{sec:flow}
+
+While constructing the e-graph is the crux of \shortname{}, there are several
+other important components to consider in the full design flow. In order to
+test our hypothesis, \shortname{} must be compatible with existing synthesis
+flows, and the rewritten circuits must be verified.
 
 \subsection{Extraction}\label{sec:flow:extraction}
 Regardless of whether equality saturation is achieved or not, the quality of

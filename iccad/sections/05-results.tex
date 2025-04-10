@@ -12,7 +12,6 @@ multiplication module to test how our compiler behaves with increasing levels
 of bit-parallelism and register pipelining. Finally, we measure how our mapping
 optimizations influence CLB usage and timing closure.
 
-\subsection{Benchmarking}\label{sec:results:benchmark}
 \begin{table}
     \centering
     \csvautobooktabular{data/results.csv}
@@ -33,6 +32,8 @@ optimizations influence CLB usage and timing closure.
     \end{subfigure}
     \caption{Comparison of E-Pack's ability to optimize circuits given different starting structures.}\label{fig:histogram}
 \end{figure}
+
+\subsection{Benchmarking}\label{sec:results:benchmark}
 
 We used an compilation of \nbenchmarks{} combinational benchmarks from three
 academic sources to test LUT packing ability. Among the combinational
@@ -60,7 +61,6 @@ For example, E-Pack optimized Yosys 0.33 netlists
 implement new rewrite procedures than can break out of these local minimums on
 their own.
 
-\subsection{Marginal Improvement and Cost}\label{sec:results:margin}
 \begin{figure}
     \begin{subfigure}{0.47\textwidth}
         \centering
@@ -75,6 +75,8 @@ their own.
     \end{subfigure}
     \caption{Comparison of gains in QoR against e-graph size and runtime. Running a netlist to equality saturation requires more rewrite iterations, and hence a larger e-graph.}\label{fig:marginal}
 \end{figure}
+
+\subsection{Marginal Improvement and Cost}\label{sec:results:margin}
 
 Given that \shortname{} is fundamentally a superoptimization tool, we want to
 provide evidence that significant gains can be found within reasonable time
@@ -92,12 +94,13 @@ rewrites becomes prohibitive as the e-graph becomes larger.
 Fig.~\ref{fig:marginal:runtime} illustrates that after approximately the 30th
 iteration, the marginal runtime rapidly increases into the 10s of seconds.
 
-\subsection{Case Study: Pipelined Designs}\label{sec:results:retiming}
 \begin{table*}[t]
     \centering
     \csvautobooktabular{data/mult.csv}
     \caption{LUT and flip-flop counts are report post-synthesis, but before placement and routing. CLB counts are reported after placement and routing.}\label{tab:multiply}
 \end{table*}
+
+\subsection{Case Study: Pipelined Designs}\label{sec:results:retiming}
 
 Hardware designs with feed forward pipelines provide interesting opportunities
 to apply register retiming and find a higher-level of area optimization. When
@@ -127,12 +130,13 @@ sequential logic. While these results \textit{do} demonstrate that optimizing
 for CLB count over raw cell count is a feasible strategy, a different
 extraction method will be needed in future work.
 
-\subsection{Case Study: Bit-Parallel Designs}\label{sec:results:scalability}
 \begin{table}
     \centering
     \csvautobooktabular{data/alu.csv}
     \caption{Synthesis results of $n$-bit ALU}\label{tab:alu}
 \end{table}
+
+\subsection{Case Study: Bit-Parallel Designs}\label{sec:results:scalability}
 
 While the academic benchmarks enable direct comparisons to the rest of the
 literature, the circuits are relatively small. On average, the designs map to

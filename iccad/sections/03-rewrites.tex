@@ -189,8 +189,6 @@ In practice, our implementation checks if either of the cofactors $G_{x_0}$ or
 $G_{\overline{x}_0}$ are constant functions or if the cofactors are equivalent
 up to complementation.
 
-\subsection{Register Retiming}\label{sec:rewrites:retiming}
-
 \begin{figure*}[tb]
     \begin{subfigure}{0.31\textwidth}
         \centering
@@ -209,6 +207,8 @@ up to complementation.
     \end{subfigure}
     \caption{Three varying topologies for 4:1 MUX with pipeline register.}\label{fig:retiming}
 \end{figure*}
+
+\subsection{Register Retiming}\label{sec:rewrites:retiming}
 
 Register retiming is a purely structural rule, meaning it can be implemented
 with a simple search and apply pattern. An example for $k=1$ would be written
