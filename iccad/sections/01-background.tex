@@ -1,4 +1,20 @@
 \section{Background}\label{sec:background}
+
+\begin{figure*}[tb]
+    \begin{subfigure}{0.49\textwidth}
+        \centering
+        \includegraphics[width=0.92\textwidth]{img/cla_bad.png}
+        \caption{An implementation that uses four LUTs contains redundancy.}\label{fig:eg:bad}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.49\textwidth}
+        \centering
+        \includegraphics[width=0.92\textwidth]{img/cla_good.png}
+        \caption{The sink cut of logic can expand its cover and reduce the LUT count by one.}\label{fig:eg:good}
+    \end{subfigure}
+    \caption{2-bit CLA (carry-lookahead) demonstrates that non-monotone clustering can map suboptimally to a 4-LUT FPGA.}\label{fig:eg}
+\end{figure*}
+
 \todo{work in a motivating example for LUT packing and e-graphs to do the rewriting}
 % Logic Synthesis
 
