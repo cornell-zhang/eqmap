@@ -50,10 +50,17 @@ technology mapping must overcome both the difficulty of cut selection and bias
 to the structure of the input circuit.
 
 \subsection{Equivalence Graphs}\label{sec:background:egraph}
-Equivalence graphs (e-graphs) are a data structure originally conceived to
-facilitate automated proof generation~\cite{eggpaper, eqsat}. For example,
-e-graphs can be used to rewrite mathematical expressions~\cite{egraphmath} or
-for automated reasoning about functional programs~\cite{cclemma}.
+Equivalence graphs, most commonly referred to as \textit{e-graphs}, are an
+automated reasoning tool built around a union-find data
+structure~\cite{eggpaper, eqsat}. E-graphs are particularly strong at
+equational reasoning. For example, e-graphs can be used to rewrite mathematical
+expressions~\cite{egraphmath} or for automated reasoning about functional
+programs~\cite{cclemma}. Briefly put, e-graphs can drive logic synthesis by
+exploring other circuit topologies. Initially, each circuit node starts alone
+in its equivalence class. Then, a set of rewrite rules is used to grow the
+e-graph with alternative representations. When rewrite rules no longer
+introduce new information into the graph, we say we have reach \textit{equality
+    saturation}.
 
 Equality saturation is useful for optimizing compilers, because it defers
 greedy program transformations. Extracting solutions from saturated e-graphs
@@ -62,4 +69,5 @@ contrast, traditional compilers use a pass pipeline architecture which suffers
 from a \textit{phase-ordering problem}. In other words, there is never an
 ordering of transformation passes that is optimal for all input programs. This
 is a deep-rooted issue in compiler design, but the problem is particularly
-consequential for hardware design.
+consequential for hardware design. The exploratory nature of e-graphs are
+useful for combinatorial problems like LUT-based technology mapping.
