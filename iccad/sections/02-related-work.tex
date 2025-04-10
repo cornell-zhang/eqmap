@@ -1,24 +1,26 @@
 \section{Related Work}\label{sec:relatedwork}
-% Related work todo
-% - dsd
 \subsection{LUT Packing}\label{sec:relatedwork:fpga}
 Broadly speaking, FPGA LUT packing can be divided into architecture-specific
 and architecture-nonspecific optimizations. Architecture-specific LUT packing
 can reduce routing congestion by more efficiently using intra-CLB routing
 resources. Examples include mapping dual-output functions to fractured
 LUTs~\cite{fraclut} or using dedicated multiplexers to implement functions with
-more than 6 inputs~\cite{ug574}. \todo{mention FF packing}
+more than 6 inputs~\cite{ug574}. The rough optimization goal of LUT packing is
+to reduce the number of flip-flops driven across CLB boundaries~\cite{ffpack}.
 
 In contrast, architecture-nonspecific LUT packing is broader as it attempts to
-mitigate the structural bias of the input logic in general. As an example,
-AGDMap~\cite{adaptdecomp} decomposes simple logic gates with large fanin to
-enable the exploration of better graph coverings. However, structural bias can
-take on many forms. For instance, FlowMap~\cite{flowmap} cites that the
-non-monotone clustering of logic is the fundamental difficulty of LUT-based
-technology mapping. In other words, a $k$-feasible cut of logic may contain
-subcuts that are \textit{not} $k$-feasible. Overcoming bouts of non-monotone
-clustering requires a more elaborate cut-selection algorithm, and our work lays
-the foundation for a formal, reasoning-based approach to the problem.
+mitigate the structural bias of the technology mapper in general. As an
+example, AGDMap~\cite{adaptdecomp} decomposes simple logic gates with large
+fanin to enable the exploration of better graph coverings. However, structural
+bias can take on many forms. Finding advantageous decompositions of logic in
+general requires more elaborate algorithms~\cite{dsd} that may not be practical
+for large designs. FlowMap~\cite{flowmap} cites non-monotone clustering of
+logic as the fundamental difficulty that causes bias in LUT-based technology
+mapping. In other words, this is the observation that a $k$-feasible cut of
+logic may contain subcuts that are \textit{not} $k$-feasible. Overcoming bouts
+of non-monotone clustering requires a more elaborate cut-selection algorithm,
+and our work lays the foundation for a formal, reasoning-based approach to the
+problem.
 
 \subsection{E-Graph Superoptimization}\label{sec:relatedwork:egraph}
 In recent years, e-graphs and equality saturation have enjoyed renewed

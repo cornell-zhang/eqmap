@@ -498,3 +498,21 @@
   keywords  = {Table lookup;Field programmable gate arrays;Benchmark testing;Routing;Cost function;Registers;Wires},
   doi       = {10.1109/FPT.2011.6132691}
 }
+
+@inproceedings{ffpack,
+  author    = {Ahmed, Taneem and Kundarewich, Paul D. and Anderson, Jason H. and Taylor, Brad L. and Aggarwal, Rajat},
+  title     = {Architecture-specific packing for virtex-5 FPGAs},
+  year      = {2008},
+  isbn      = {9781595939340},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  url       = {https://doi.org/10.1145/1344671.1344675},
+  doi       = {10.1145/1344671.1344675},
+  abstract  = {We consider packing in the commercial FPGA context and examine the speed, performance and power trade-offs associated with packing in a state-of-the art FPGA -- the Xilinx Virtex-5 FPGA. Two aspects of packing are discussed: 1)packing for general logic blocks, and 2 packing for large IP blocks. Virtex-5 logic blocks contain dual-output 6-input look-up-tables (LUTs). Such LUTs can implement any single logic function requiring no more than 6 inputs, or any two logic functions requiring no more than 5 distinct inputs. The second LUT output is associated with slower speed, and therefore, must be used judiciously. We present placement-based techniques for dual-output LUT packing that lead to improved area-efficiency and power, with minimal performance degradation. We then move on to address packing for large IP blocks, specifically, block RAMs and DSPs. We present a packing optimization that is widely applicable in DSP designs that leads to significantly improved design performance},
+  booktitle = {Proceedings of the 16th International ACM/SIGDA Symposium on Field Programmable Gate Arrays},
+  pages     = {5–13},
+  numpages  = {9},
+  keywords  = {power, placement, performance, packing, optimization, field-programmable gate arrays, FPGAs},
+  location  = {Monterey, California, USA},
+  series    = {FPGA '08}
+}
