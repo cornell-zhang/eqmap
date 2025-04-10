@@ -3,9 +3,12 @@
   The lut module defines the grammar used to represent LUTs, gates, and principal inputs.
 
 */
+use crate::cost::{GateCostFn, KLUTCostFn};
+
 use super::analysis::LutAnalysis;
 use super::check::{Check, equivalent, inconclusive, not_equivalent};
 use super::cost::DepthCostFn;
+use super::driver::{Canonical, CircuitLang, EquivCheck, Explanable, Extractable};
 use bitvec::prelude::*;
 use egg::CostFunction;
 use egg::Id;
@@ -491,6 +494,78 @@ impl LutLang {
         }
     }
 }
+
+impl Explanable for LutLang {
+    fn get_explanations<A>(
+        expr: &RecExpr<Self>,
+        other: &RecExpr<Self>,
+        runner: &mut egg::Runner<Self, A>,
+    ) -> Result<Vec<egg::Explanation<Self>>, String>
+    where
+        A: egg::Analysis<Self>,
+    {
+        match (
+            expr.as_ref().last().unwrap(),
+            other.as_ref().last().unwrap(),
+        ) {
+            (LutLang::Bus(i), LutLang::Bus(j)) => {
+                if i.len() != j.len() {
+                    return Err("Root expression types are mismatched".to_string());
+                }
+
+                let mut v = Vec::new();
+                for (&a, &b) in i.into_iter().zip(j).rev() {
+                    let a_e = LutExprInfo::new(expr).clone_subexpression(a).unwrap();
+                    let b_e = LutExprInfo::new(other).clone_subexpression(b).unwrap();
+                    v.push(runner.explain_equivalence(&a_e, &b_e));
+                }
+                Ok(v)
+            }
+            (LutLang::Bus(_), _) | (_, LutLang::Bus(_)) => {
+                Err("Root expression types are mismatched".to_string())
+            }
+            _ => Ok(vec![runner.explain_equivalence(expr, other)]),
+        }
+    }
+}
+
+impl Extractable for LutLang {
+    fn depth_cost_fn() -> impl CostFunction<Self, Cost = i64> {
+        DepthCostFn
+    }
+
+    fn cell_cost_with_reg_weight_fn(cut_size: usize, k: u64) -> impl CostFunction<Self> {
+        KLUTCostFn::new(cut_size).with_reg_weight(k)
+    }
+
+    fn filter_cost_fn(set: std::collections::HashSet<String>) -> impl CostFunction<Self> {
+        GateCostFn::new(set)
+    }
+}
+
+impl Canonical for LutLang {
+    fn is_canonical(expr: &RecExpr<Self>) -> bool {
+        let info = LutExprInfo::new(expr);
+        info.is_canonical()
+    }
+
+    fn canonicalize(expr: RecExpr<Self>) -> RecExpr<Self> {
+        canonicalize_expr(expr)
+    }
+
+    fn verify(expr: &RecExpr<Self>) -> Result<(), String> {
+        verify_expr(expr)
+    }
+}
+
+impl EquivCheck for LutLang {
+    fn check(expr: &RecExpr<Self>, other: &RecExpr<Self>) -> Check {
+        let info = LutExprInfo::new(expr);
+        info.check(other)
+    }
+}
+
+impl CircuitLang for LutLang {}
 
 /// Given two expressions, concatenate them and find if their roots are structurally equivalent
 pub fn deep_equals(expr: &RecExpr<LutLang>, other: &RecExpr<LutLang>) -> bool {

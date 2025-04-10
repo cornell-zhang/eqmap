@@ -4,13 +4,16 @@ use egg::*;
 use lut_synth::rewrite::dyn_decompositions;
 use lut_synth::{
     analysis::LutAnalysis,
-    driver::{SynthRequest, process_string_expression, simple_reader},
+    driver::{SynthReport, SynthRequest, process_string_expression, simple_reader},
     lut,
+    lut::LutLang,
     rewrite::{all_static_rules, register_retiming},
 };
 use std::path::PathBuf;
 
-fn get_main_runner(s: &str) -> Result<SynthRequest<LutAnalysis>, RecExprParseError<FromOpError>> {
+fn get_main_runner(
+    s: &str,
+) -> Result<SynthRequest<LutLang, LutAnalysis>, RecExprParseError<FromOpError>> {
     let expr: RecExpr<lut::LutLang> = s.parse()?;
     let mut rules = all_static_rules(false);
     rules.append(&mut register_retiming());
@@ -28,14 +31,20 @@ fn get_main_runner(s: &str) -> Result<SynthRequest<LutAnalysis>, RecExprParseErr
 /// parse an expression, simplify it with DSD and at most 4 fan-in, and pretty print it back out
 fn simplify(s: &str) -> String {
     let mut req = get_main_runner(s).unwrap();
-    req.simplify_expr().unwrap().get_expr().to_string()
+    req.simplify_expr::<SynthReport>()
+        .unwrap()
+        .get_expr()
+        .to_string()
 }
 
 #[allow(dead_code)]
 /// parse an expression, simplify it with DSD and at most 4 fan-in, and pretty print it back out
 fn simplify_w_proof(s: &str) -> String {
     let mut req = get_main_runner(s).unwrap().with_proof();
-    req.simplify_expr().unwrap().get_expr().to_string()
+    req.simplify_expr::<SynthReport>()
+        .unwrap()
+        .get_expr()
+        .to_string()
 }
 
 /// Technology Mapping Optimization with E-Graphs
@@ -206,7 +215,12 @@ fn main() -> std::io::Result<()> {
     };
 
     for line in buf.lines() {
-        let result = process_string_expression(line, req.clone(), args.no_verify, args.verbose)?;
+        let result = process_string_expression::<LutLang, LutAnalysis, SynthReport>(
+            line,
+            req.clone(),
+            args.no_verify,
+            args.verbose,
+        )?;
         if !result.is_empty() {
             println!("{}", result);
         }

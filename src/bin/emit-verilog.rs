@@ -4,7 +4,8 @@ use std::{
 };
 
 use clap::Parser;
-use lut_synth::{driver::SynthOutput, verilog::SVModule};
+use egg::RecExpr;
+use lut_synth::{driver::Canonical, lut::LutLang, verilog::SVModule};
 /// Emit a LutLang Expression as a Verilog Netlist
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -66,13 +67,14 @@ fn main() -> std::io::Result<()> {
             continue;
         }
         let expr = line.split("//").next().unwrap();
-        let obj = SynthOutput::new(expr)
+        let expr: RecExpr<LutLang> = expr
+            .parse()
             .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
         let expr = if args.canonicalize {
-            obj.get_analysis().get_canonicalization()
+            LutLang::canonicalize(expr)
         } else {
-            obj.get_expr().clone()
+            expr
         };
 
         let module = SVModule::from_expr(expr, mod_name.clone(), args.output_names.clone())

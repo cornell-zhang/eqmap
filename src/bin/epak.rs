@@ -2,7 +2,9 @@ use clap::Parser;
 #[cfg(feature = "dyn_decomp")]
 use lut_synth::rewrite::dyn_decompositions;
 use lut_synth::{
-    driver::{SynthRequest, process_expression},
+    analysis::LutAnalysis,
+    driver::{SynthReport, SynthRequest, process_expression},
+    lut::LutLang,
     rewrite::{all_static_rules, register_retiming},
     verilog::{SVModule, sv_parse_wrapper},
 };
@@ -231,8 +233,13 @@ fn main() -> std::io::Result<()> {
         .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
     eprintln!("INFO: Building e-graph...");
-    let result =
-        process_expression(expr, req, args.no_verify, args.verbose)?.with_name(f.get_name());
+    let result = process_expression::<LutLang, LutAnalysis, SynthReport>(
+        expr,
+        req,
+        args.no_verify,
+        args.verbose,
+    )?
+    .with_name(f.get_name());
 
     if let Some(p) = args.report {
         let mut writer = std::fs::File::create(p)?;

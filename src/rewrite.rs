@@ -921,7 +921,7 @@ pub mod decomp {
         let mut rules = super::lutpacking_rules();
         rules.append(&mut super::dyn_decompositions(false));
 
-        use crate::driver::SynthRequest;
+        use crate::driver::{SynthReport, SynthRequest};
         let mut req = SynthRequest::default()
             .with_expr(expr)
             .with_rules(rules)
@@ -930,7 +930,11 @@ pub mod decomp {
             .without_progress_bar()
             .with_joint_limits(20, 20_000, 30);
 
-        let ans = req.simplify_expr().unwrap().get_expr().to_string();
+        let ans = req
+            .simplify_expr::<SynthReport>()
+            .unwrap()
+            .get_expr()
+            .to_string();
         assert_eq!(ans, "(LUT 202 s1 s0 (LUT 202 s0 c d))");
     }
 }
