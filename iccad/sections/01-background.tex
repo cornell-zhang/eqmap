@@ -31,12 +31,13 @@ four inputs, the ability to combine it with another 4-LUT is non-obvious.
 Fig.~\ref{fig:eg:good} shows how the circuit depth and cell count can both be
 reduced by merging the two 4-LUTs, because they both share the inputs $A_1$ and
 $B_1$. This feature in the circuit topology is referred to in the literature as
-\textit{non-monotone clustering} of logic. In other words, a $k$-feasible cut
-of logic may contain within itself cuts of logic that are the same size or even
-larger. That is, traversing subcuts does not decrease the size monotonically.
-Hence, technology mapping must scrutinize this type of circuit topology in
-order to avoid suboptimal LUT count and depth, adding to tool runtime. It is
-important to note that this problem occurs equally on 6-LUT FPGAs.
+\textit{non-monotone clustering} of logic~\cite{flowmap}. In other words, a
+$k$-feasible cut of logic may contain within itself cuts of logic that are the
+same size or even larger. That is, traversing subcuts does not decrease the
+size monotonically. Hence, technology mapping must scrutinize this type of
+circuit topology in order to avoid suboptimal LUT count and depth, adding to
+tool runtime. It is important to note that this problem occurs equally on 6-LUT
+FPGAs.
 
 No depicted in Fig.~\ref{fig:eg} is the bias that the graph covering has to the
 structure of the input logic. Depending on how the input RTL is written, the
