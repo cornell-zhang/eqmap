@@ -1,5 +1,3 @@
-\section{Background}\label{sec:background}
-
 \begin{figure*}[tb]
     \begin{subfigure}{0.49\textwidth}
         \centering
@@ -15,12 +13,19 @@
     \caption{2-bit CLA (carry-lookahead) demonstrates that non-monotone clustering can map suboptimally to a 4-LUT FPGA.}\label{fig:eg}
 \end{figure*}
 
+\section{Background}\label{sec:background}
+
 \subsection{FPGA Technology Mapping}\label{sec:background:fpga}
 FPGA technology mapping converts abstract RTL logic into a netlist of lookup
-tables (LUTs). Due to the computational complexity of LUT packing, most
+tables (LUTs). Due to the computational complexity of optimal LUT packing, most
 implementations avoid restructuring the input logic and are essentially graph
-covering algorithms. Where competing implementations vary, however, is the set
-of heuristics they use to guide optimization.
+covering algorithms. Given a $k$-LUT FPGA architecture, most mappers start by
+enumerating the feasible cuts of logic for each node in the circuit. Where
+competing implementations vary, however, is the set of heuristics they use to
+map logic cuts to LUTs. Cut selection essentially decides the graph covering to
+use. As an example, Fig.~\ref{fig:eg} shows differing results of mapping
+carry-lookahead logic to FPGA LUTs.
+% Flow map uses two passes
 
 \subsection{Equivalence Graphs}\label{sec:background:egraph}
 Equivalence graphs (e-graphs) are a data structure originally conceived to
