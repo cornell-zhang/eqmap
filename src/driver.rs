@@ -938,9 +938,8 @@ where
     #[cfg(feature = "graph_dumps")]
     pub fn serialize_with_greedy_cost<C>(&mut self, c: C, w: &mut impl Write) -> std::io::Result<()>
     where
-        C: CostFunction<LutLang>,
-        <C as CostFunction<LutLang>>::Cost: Serialize + std::default::Default,
-        A: Analysis<LutLang> + std::default::Default,
+        C: CostFunction<L>,
+        <C as CostFunction<L>>::Cost: Serialize + std::default::Default,
     {
         if self.result.is_none() {
             self.explore()
@@ -986,7 +985,7 @@ where
             ExtractStrat::Exact(t) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                canonicalize_expr(e.timeout(t as f64).solve(root))
+                L::canonicalize_expr(e.timeout(t as f64).solve(root))
             }),
         }
     }
@@ -1047,7 +1046,7 @@ where
     if let Some(p) = &req.dump_egraph {
         eprintln!("INFO: Dumping e-graph...");
         let mut file = std::fs::File::create(p)?;
-        req.serialize_with_greedy_cost(DepthCostFn, &mut file)?;
+        req.serialize_with_greedy_cost(L::depth_cost_fn(), &mut file)?;
     }
 
     if verbose && result.has_explanation() {
