@@ -470,7 +470,7 @@ impl SVModule {
     }
 
     /// Names output `id` with `name` inside `self`
-    pub fn name_output(&mut self, id: Id, name: String, mapping: &mut HashMap<Id, String>) {
+    fn name_output(&mut self, id: Id, name: String, mapping: &mut HashMap<Id, String>) {
         if let Entry::Vacant(e) = mapping.entry(id) {
             e.insert(name.clone());
         } else {
