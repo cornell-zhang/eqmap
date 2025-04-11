@@ -4,10 +4,8 @@ use std::{
 };
 
 use clap::Parser;
-use lut_synth::{
-    lut::verify_expr,
-    verilog::{SVModule, sv_parse_wrapper},
-};
+use lut_synth::verilog::{SVModule, sv_parse_wrapper};
+use lut_synth::{driver::Canonical, lut::LutLang};
 /// Parse structural verilog into a LutLang Expression
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -65,7 +63,7 @@ fn main() -> std::io::Result<()> {
                 .get_exprs()
                 .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
             for (y, expr) in exprs {
-                verify_expr(&expr)
+                LutLang::verify_expr(&expr)
                     .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
                 eprintln!("{}: {}", y, expr);
                 println!("{}", expr);
@@ -74,7 +72,8 @@ fn main() -> std::io::Result<()> {
             let expr = f
                 .to_single_expr()
                 .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
-            verify_expr(&expr).map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+            LutLang::verify_expr(&expr)
+                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
             eprintln!("{:?}", f.get_outputs());
             println!("{}", expr);
         }

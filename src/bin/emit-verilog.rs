@@ -72,7 +72,7 @@ fn main() -> std::io::Result<()> {
             .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
         let expr = if args.canonicalize {
-            LutLang::canonicalize(expr)
+            LutLang::canonicalize_expr(expr)
         } else {
             expr
         };

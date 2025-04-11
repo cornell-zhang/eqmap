@@ -294,12 +294,13 @@ fn test_incorrect_dsd() {
 
 #[test]
 fn test_greedy_folds() {
+    use lut_synth::driver::Canonical;
     assert_eq!(simplify("(LUT 202 true a b)"), "a");
     assert_eq!(simplify("(LUT 0 a)"), "false");
     assert_eq!(simplify("(LUT 3 a)"), "true");
     assert_eq!(simplify("(LUT 3 a b c)"), "(LUT 1 a b)");
     assert_eq!(
-        lut::canonicalize_expr(
+        LutLang::canonicalize_expr(
             "(LUT 6 true (LUT 6 false (LUT 6 true false)))"
                 .parse()
                 .unwrap()

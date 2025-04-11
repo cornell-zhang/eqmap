@@ -368,7 +368,7 @@ where
     Self: Sized,
 {
     /// Check if `expr` and `other` are equivalent.
-    fn check(expr: &RecExpr<Self>, other: &RecExpr<Self>) -> Check;
+    fn check_expr(expr: &RecExpr<Self>, other: &RecExpr<Self>) -> Check;
 }
 
 /// A trait to represent that a language can be canonicalized.
@@ -377,13 +377,13 @@ where
     Self: Sized,
 {
     /// Returns true if the expression is canonical.
-    fn is_canonical(expr: &RecExpr<Self>) -> bool;
+    fn expr_is_canonical(expr: &RecExpr<Self>) -> bool;
 
     /// Returns a canonicalization of the expression.
-    fn canonicalize(expr: RecExpr<Self>) -> RecExpr<Self>;
+    fn canonicalize_expr(expr: RecExpr<Self>) -> RecExpr<Self>;
 
     /// Verify that the expression does not have any extra syntax errors.
-    fn verify(expr: &RecExpr<Self>) -> Result<(), String>;
+    fn verify_expr(expr: &RecExpr<Self>) -> Result<(), String>;
 }
 
 /// A trait to represent that a language is extractable under the [ExtractStrat] optimization goals.
@@ -815,11 +815,11 @@ where
                 self.expr.as_ref().len()
             );
         } else if !self.no_canonicalize {
-            self.canonicalized = !L::is_canonical(&oexp);
-            self.expr = L::canonicalize(self.expr.clone());
+            self.canonicalized = !L::expr_is_canonical(&oexp);
+            self.expr = L::canonicalize_expr(self.expr.clone());
         }
 
-        if self.gen_proof && L::check(&self.expr, &oexp).is_not_equiv() {
+        if self.gen_proof && L::check_expr(&self.expr, &oexp).is_not_equiv() {
             return Err(format!(
                 "Folding the initial expression had an error: {}",
                 self.expr
@@ -1026,7 +1026,7 @@ where
     R: Report<L>,
 {
     if !no_verify {
-        L::verify(&expr).map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+        L::verify_expr(&expr).map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
     }
 
     if cfg!(debug_assertions) {
@@ -1068,7 +1068,7 @@ where
     if no_verify {
         eprintln!("INFO: Skipping functionality tests...");
     } else {
-        let check = L::check(&expr, simplified);
+        let check = L::check_expr(&expr, simplified);
         if check.is_inconclusive() && verbose {
             eprintln!("WARNING: Functionality verification inconclusive");
         }

@@ -24,8 +24,9 @@ mod tests {
     use std::collections::HashMap;
 
     use analysis::LutAnalysis;
+    use driver::Canonical;
     use egg::{Analysis, Language, RecExpr};
-    use lut::{LutExprInfo, LutLang, verify_expr};
+    use lut::{LutExprInfo, LutLang};
     use verilog::{SVModule, SVPrimitive, sv_parse_wrapper};
 
     use super::*;
@@ -153,7 +154,7 @@ mod tests {
         expr.add(lut.clone());
         assert!(lut.verify_rec(&expr).is_err());
         assert!(lut.get_program(&expr).is_err());
-        assert!(verify_expr(&expr).is_err());
+        assert!(LutLang::verify_expr(&expr).is_err());
     }
 
     fn get_struct_verilog() -> String {
