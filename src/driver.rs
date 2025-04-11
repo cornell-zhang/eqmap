@@ -26,10 +26,13 @@ use std::{
 
 const MAX_CANON_SIZE: usize = 30000;
 
+/// A trait to facilitate the generation of text-based reports on output ciruits.
+/// For E-Pack, this includes things like LUT count and circuit-depth.
 pub trait Report<L: Language>
 where
     Self: Serialize + Sized,
 {
+    /// Create a new [Report] comparing a pre-optimized `input` and a post-optimized `output`.
     fn new<A>(
         input: &RecExpr<L>,
         output: &RecExpr<L>,
@@ -39,6 +42,7 @@ where
     where
         A: Analysis<L>;
 
+    /// Rewrite the module name of the [Report].
     fn with_name(self, name: &str) -> Self;
 }
 
@@ -155,7 +159,7 @@ impl Report<LutLang> for SynthReport {
 }
 
 /// The output of a [SynthRequest] run.
-/// It optionally contains an explanation and a [SynthReport] report.
+/// It optionally contains an explanation and a [Report].
 pub struct SynthOutput<L, R>
 where
     L: Language,
@@ -358,48 +362,58 @@ impl ExtractStrat {
     }
 }
 
-// TODO: traits
-// canonical
-// extractable
-// equivCheck
-
+/// A trait to represent that a language has some form of equivalence-checking in the form of a [Check]
 pub trait EquivCheck
 where
     Self: Sized,
 {
+    /// Check if `expr` and `other` are equivalent.
     fn check(expr: &RecExpr<Self>, other: &RecExpr<Self>) -> Check;
 }
 
+/// A trait to represent that a language can be canonicalized.
 pub trait Canonical
 where
     Self: Sized,
 {
+    /// Returns true if the expression is canonical.
     fn is_canonical(expr: &RecExpr<Self>) -> bool;
 
+    /// Returns a canonicalization of the expression.
     fn canonicalize(expr: RecExpr<Self>) -> RecExpr<Self>;
 
+    /// Verify that the expression does not have any extra syntax errors.
     fn verify(expr: &RecExpr<Self>) -> Result<(), String>;
 }
 
+/// A trait to represent that a language is extractable under the [ExtractStrat] optimization goals.
 pub trait Extractable
 where
     Self: Language,
 {
+    /// Returns the depth cost function for the language.
     fn depth_cost_fn() -> impl CostFunction<Self, Cost = i64>;
 
+    /// Returns the area cost function for the language, only selecting cells with fewer than `cut_size` inputs.
+    /// Additionally, registers have a parameterized weight `k`.
     fn cell_cost_with_reg_weight_fn(cut_size: usize, k: u64) -> impl CostFunction<Self>;
 
+    /// Returns the area cost function for the language, only selecting cells with fewer than `cut_size` inputs.
     fn cell_cost_fn(cut_size: usize) -> impl CostFunction<Self> {
         Self::cell_cost_with_reg_weight_fn(cut_size, 1)
     }
 
+    /// Returns a cost function used for extracting only certain types nodes.
     fn filter_cost_fn(set: HashSet<String>) -> impl CostFunction<Self>;
 }
 
+/// A trait to represent that an expression is not be best explained by relating its roots.
+/// As an example, explanations of [LutLang::Bus] are not useful.
 pub trait Explanable
 where
     Self: Language,
 {
+    /// Get a list of explanations for the relevant sub-terms in `expr` and `other` using the egraph in `runnner`.
     fn get_explanations<A>(
         expr: &RecExpr<Self>,
         other: &RecExpr<Self>,
@@ -409,6 +423,7 @@ where
         A: Analysis<Self>;
 }
 
+/// An alias to all the traits needed to be implemented in order to use the [SynthRequest] API.
 pub trait CircuitLang:
     Language
     + Explanable
@@ -421,8 +436,8 @@ pub trait CircuitLang:
 }
 
 /// A request to explore and extract an expression.
-/// The request can be configured with various option
-/// before dedicating to a particular expression.
+/// The request can be configured with various options
+/// before dedicating to a particular input and compilation strategy.
 pub struct SynthRequest<L, A>
 where
     L: Language,
@@ -517,7 +532,7 @@ where
     L: CircuitLang,
     A: Analysis<L> + Default,
 {
-    /// Request greedy extraction of LUTs up to size `k`.
+    /// Request greedy extraction of cells/LUTs with at most `k` inputs.
     pub fn with_k(self, k: usize) -> Self {
         Self {
             extract_strat: ExtractStrat::LUTCount(k),
@@ -525,7 +540,7 @@ where
         }
     }
 
-    /// Request greedy extraction of LUTs up to size `k` and registers with weight `w`.
+    /// Request greedy extraction of cells/LUTs with at most `k` inputs and registers with weight `w`.
     pub fn with_klut_regw(self, k: usize, w: u64) -> Self {
         Self {
             extract_strat: ExtractStrat::LUTCountRegWeighted(k, w),
@@ -558,7 +573,7 @@ where
         }
     }
 
-    /// Extract by disassembling into logic gates.
+    /// Extract by disassembling into basic logic gates. The exact list can be found at [ExtractStrat::WHITELIST_STR].
     pub fn with_disassembler(self) -> Self {
         Self {
             extract_strat: ExtractStrat::from_gate_set(ExtractStrat::WHITELIST_STR).unwrap(),
@@ -566,7 +581,7 @@ where
         }
     }
 
-    /// Extract by disassembling into logic gates in the `list`.
+    /// Extract by disassembling into logic gates in the `list`. Elements in the list must be matched against elements in [ExtractStrat::WHITELIST_STR].
     pub fn with_disassembly_into(self, list: &str) -> Result<Self, String> {
         Ok(Self {
             extract_strat: ExtractStrat::from_gate_set(list)?,
@@ -947,7 +962,7 @@ where
         L::get_explanations(root_expr, best, runner)
     }
 
-    /// Simplify expression with the extraction strategy in request `self`.
+    /// Simplify expression with the extraction strategy set in `self`.
     pub fn simplify_expr<R>(&mut self) -> Result<SynthOutput<L, R>, String>
     where
         R: Report<L>,
@@ -997,7 +1012,7 @@ pub fn simple_reader(cmd: Option<String>, input_file: Option<PathBuf>) -> std::i
     Ok(buf)
 }
 
-/// Compile a [LutLang] expression using a baseline request `req`.
+/// Compile a [CircuitLang] expression using a baseline request `req`.
 /// The output expression is returned as a [SynthOutput]. Everything else goes to stderr.
 pub fn process_expression<L, A, R>(
     expr: RecExpr<L>,
@@ -1078,7 +1093,7 @@ where
     Ok(result)
 }
 
-/// Compile a [LutLang] expression from a line of text using a baseline request `req`.
+/// Compile a [CircuitLang] expression from a line of text using a baseline request `req`.
 /// The output expression is returned as a [SynthOutput]. Everything else goes to stderr.
 pub fn process_string_expression<L, A, R>(
     line: &str,
