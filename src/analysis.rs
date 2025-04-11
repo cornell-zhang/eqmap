@@ -4,7 +4,6 @@
   In most respects, the analysis enforces some level of consistency when rewrite rules are applied.
   For example, we should not be merging programs with non-programs.
   This analysis can also assist in constant propagation and pruning nodes.
-  There is more work to be done in [LutAnalysis::modify] to handle pruning.
 
 */
 
