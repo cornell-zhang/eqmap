@@ -16,9 +16,11 @@ pub struct KLUTCostFn {
 }
 
 impl KLUTCostFn {
-    const DEF_REG_COST: u64 = 1;
+    /// The default cost of a register
+    pub const DEF_REG_COST: u64 = 1;
 
     /// Returns a new cost function with the given `k` value.
+    /// Registers have a default weight of [Self::DEF_REG_COST].
     pub fn new(k: usize) -> Self {
         if k < 1 || k > LutLang::MAX_LUT_SIZE {
             panic!("k must be between 1 and {}", LutLang::MAX_LUT_SIZE);
@@ -97,7 +99,7 @@ impl CostFunction<LutLang> for DepthCostFn {
     }
 }
 
-/// This takes the negative of the cost function and returns a new cost function
+/// This takes the negative of the cost function and returns a new cost function.
 /// This will cause a RAM bomb whenever there is a cycle in the e-graph (which is often)
 pub struct NegativeCostFn<C> {
     c: C,
