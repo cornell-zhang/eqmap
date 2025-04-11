@@ -411,7 +411,7 @@ where
     fn filter_cost_fn(set: HashSet<String>) -> impl CostFunction<Self>;
 }
 
-/// A trait to represent that an expression is not be best explained by relating its roots.
+/// A trait to represent that an expression is not best explained by relating its roots.
 /// As an example, explanations of [LutLang::Bus] are not useful.
 pub trait Explanable
 where
