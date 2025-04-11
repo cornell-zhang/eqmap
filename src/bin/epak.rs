@@ -233,13 +233,8 @@ fn main() -> std::io::Result<()> {
         .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
     eprintln!("INFO: Building e-graph...");
-    let result = process_expression::<LutLang, LutAnalysis, SynthReport>(
-        expr,
-        req,
-        args.no_verify,
-        args.verbose,
-    )?
-    .with_name(f.get_name());
+    let result = process_expression::<_, _, SynthReport>(expr, req, args.no_verify, args.verbose)?
+        .with_name(f.get_name());
 
     if let Some(p) = args.report {
         let mut writer = std::fs::File::create(p)?;

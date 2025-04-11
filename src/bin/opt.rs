@@ -215,7 +215,7 @@ fn main() -> std::io::Result<()> {
     };
 
     for line in buf.lines() {
-        let result = process_string_expression::<LutLang, LutAnalysis, SynthReport>(
+        let result = process_string_expression::<_, _, SynthReport>(
             line,
             req.clone(),
             args.no_verify,
