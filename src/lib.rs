@@ -9,6 +9,7 @@ TODO: overview, tutorial, testing, research papers
 */
 
 pub mod analysis;
+pub mod asic;
 pub mod check;
 pub mod cost;
 pub mod driver;
