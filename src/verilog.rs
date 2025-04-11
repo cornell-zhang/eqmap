@@ -177,7 +177,7 @@ fn emit_id(id: String) -> String {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Represents a signal declaration in the verilog
-pub struct SVSignal {
+struct SVSignal {
     /// The bitwidth of the signal
     bw: usize,
     /// The decl name of the signal
@@ -198,7 +198,7 @@ impl SVSignal {
 
 /// The [SVPrimitive] struct represents a primitive instance within a netlist.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SVPrimitive {
+struct SVPrimitive {
     /// The name of the primitive
     pub prim: String,
     /// The name of the instance
@@ -398,21 +398,21 @@ impl fmt::Display for SVPrimitive {
 /// Represents the connectivity of a Verilog module.
 pub struct SVModule {
     /// The file name of the module
-    pub fname: Option<String>,
+    fname: Option<String>,
     /// The name of the module
-    pub name: String,
+    name: String,
     /// All nets declared by the module (including inputs and outputs)
-    pub signals: Vec<SVSignal>,
+    signals: Vec<SVSignal>,
     /// All primitive instances in the module
-    pub instances: Vec<SVPrimitive>,
+    instances: Vec<SVPrimitive>,
     /// All input signals to the module
-    pub inputs: Vec<SVSignal>,
+    inputs: Vec<SVSignal>,
     /// All output signals from the module
-    pub outputs: Vec<SVSignal>,
+    outputs: Vec<SVSignal>,
     /// Returns the index of the primitive instance that drives a particular net
-    pub driving_module: HashMap<String, usize>,
+    driving_module: HashMap<String, usize>,
     /// Sequential and hence needs a clk
-    pub clk: bool,
+    clk: bool,
 }
 
 impl SVModule {
@@ -444,7 +444,7 @@ impl SVModule {
     }
 
     /// Append a list of primitive instances to the module
-    pub fn append_insts(&mut self, insts: &mut Vec<SVPrimitive>) {
+    fn append_insts(&mut self, insts: &mut Vec<SVPrimitive>) {
         let new_index = self.instances.len();
         for (i, inst) in insts.iter().enumerate() {
             for (signal, _port) in inst.outputs.iter() {
@@ -455,17 +455,17 @@ impl SVModule {
     }
 
     /// Append a list of inputs to the module
-    pub fn append_inputs(&mut self, inputs: &mut Vec<SVSignal>) {
+    fn append_inputs(&mut self, inputs: &mut Vec<SVSignal>) {
         self.inputs.append(inputs);
     }
 
     /// Append a list of outputs to the module
-    pub fn append_outputs(&mut self, outputs: &mut Vec<SVSignal>) {
+    fn append_outputs(&mut self, outputs: &mut Vec<SVSignal>) {
         self.outputs.append(outputs);
     }
 
     /// Append a list of net declarations to the module
-    pub fn append_signals(&mut self, outputs: &mut Vec<SVSignal>) {
+    fn append_signals(&mut self, outputs: &mut Vec<SVSignal>) {
         self.signals.append(outputs);
     }
 
@@ -491,7 +491,7 @@ impl SVModule {
     }
 
     /// Get the driving primitive for a signal
-    pub fn get_driving_primitive<'a>(&'a self, signal: &'a str) -> Result<&'a SVPrimitive, String> {
+    fn get_driving_primitive<'a>(&'a self, signal: &'a str) -> Result<&'a SVPrimitive, String> {
         match self.driving_module.get(signal) {
             Some(idx) => Ok(&self.instances[*idx]),
             None => Err(format!(
@@ -1214,6 +1214,17 @@ impl SVModule {
         }
         Ok(())
     }
+
+    /// For each input in `other` that is not present in `self`, add it to the list of signals.
+    /// It will remain undriven intentionally.
+    pub fn append_inputs_from_module(&mut self, other: &Self) {
+        for l in &other.inputs {
+            if self.inputs.iter().any(|x| x == l) {
+                continue;
+            }
+            self.append_inputs(&mut vec![l.clone()]);
+        }
+    }
 }
 
 impl fmt::Display for SVModule {
@@ -1259,4 +1270,68 @@ impl fmt::Display for SVModule {
         }
         writeln!(f, "{}endmodule", indent)
     }
+}
+
+#[test]
+fn test_primitive_connections() {
+    let mut prim = SVPrimitive::new_lut(4, "_0_".to_string(), 1);
+    assert!(prim.add_signal("I8".to_string(), "a".to_string()).is_err());
+    assert!(prim.add_signal("I0".to_string(), "a".to_string()).is_ok());
+    assert!(prim.add_signal("I0".to_string(), "a".to_string()).is_err());
+    assert!(prim.add_signal("Y".to_string(), "b".to_string()).is_ok());
+    assert!(prim.add_signal("Y".to_string(), "b".to_string()).is_err());
+    assert!(prim.add_signal("bad".to_string(), "a".to_string()).is_err());
+}
+
+#[test]
+fn test_parse_verilog() {
+    let module = "module mux_4_1 (
+            a,
+            b,
+            c,
+            d,
+            s0,
+            s1,
+            y
+        );
+          input a;
+          wire a;
+          input b;
+          wire b;
+          input c;
+          wire c;
+          input d;
+          wire d;
+          input s0;
+          wire s0;
+          input s1;
+          wire s1;
+          output y;
+          wire y;
+          LUT6 #(
+              .INIT(64'hf0f0ccccff00aaaa)
+          ) _0_ (
+              .I0(d),
+              .I1(c),
+              .I2(a),
+              .I3(b),
+              .I4(s1),
+              .I5(s0),
+              .O (y)
+          );
+        endmodule"
+        .to_string();
+    let ast = sv_parse_wrapper(&module, None).unwrap();
+    let module = SVModule::from_ast(&ast);
+    assert!(module.is_ok());
+    let module = module.unwrap();
+    assert_eq!(module.instances.len(), 1);
+    assert_eq!(module.inputs.len(), 6);
+    assert_eq!(module.outputs.len(), 1);
+    assert_eq!(module.name, "mux_4_1");
+    let instance = module.instances.first().unwrap();
+    assert_eq!(instance.prim, "LUT6");
+    assert_eq!(instance.name, "_0_");
+    assert_eq!(instance.attributes.len(), 1);
+    assert_eq!(instance.attributes["INIT"], "64'hf0f0ccccff00aaaa");
 }

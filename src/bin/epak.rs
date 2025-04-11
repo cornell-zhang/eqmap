@@ -250,13 +250,7 @@ fn main() -> std::io::Result<()> {
 
     // Unused inputs from the original module are lost upon conversion to a LutLang expression so
     // they must be readded to the module here.
-    let mut new_inputs = f
-        .inputs
-        .clone()
-        .into_iter()
-        .filter(|i| !module.inputs.contains(i))
-        .collect();
-    module.append_inputs(&mut new_inputs);
+    module.append_inputs_from_module(&f);
 
     if let Some(p) = args.output {
         let mut file = std::fs::File::create(p)?;

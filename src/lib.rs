@@ -27,7 +27,7 @@ mod tests {
     use driver::Canonical;
     use egg::{Analysis, Language, RecExpr};
     use lut::{LutExprInfo, LutLang};
-    use verilog::{SVModule, SVPrimitive, sv_parse_wrapper};
+    use verilog::{SVModule, sv_parse_wrapper};
 
     use super::*;
 
@@ -319,24 +319,6 @@ endmodule\n"
     }
 
     #[test]
-    fn test_parse_verilog() {
-        let module = get_struct_verilog();
-        let ast = sv_parse_wrapper(&module, None).unwrap();
-        let module = SVModule::from_ast(&ast);
-        assert!(module.is_ok());
-        let module = module.unwrap();
-        assert_eq!(module.instances.len(), 1);
-        assert_eq!(module.inputs.len(), 6);
-        assert_eq!(module.outputs.len(), 1);
-        assert_eq!(module.name, "mux_4_1");
-        let instance = module.instances.first().unwrap();
-        assert_eq!(instance.prim, "LUT6");
-        assert_eq!(instance.name, "_0_");
-        assert_eq!(instance.attributes.len(), 1);
-        assert_eq!(instance.attributes["INIT"], "64'hf0f0ccccff00aaaa");
-    }
-
-    #[test]
     fn test_constant_verilog() {
         let module = get_const_verilog();
         let ast = sv_parse_wrapper(&module, None).unwrap();
@@ -402,7 +384,7 @@ endmodule\n"
         let module = SVModule::from_ast(&ast)
             .unwrap()
             .with_fname("mux_4_1".to_string());
-        assert!(module.name == "mux_4_1");
+        assert!(module.get_name() == "mux_4_1");
         let expr = module.to_expr().unwrap();
         assert_eq!(
             expr.to_string(),
@@ -677,17 +659,6 @@ endmodule\n"
 endmodule\n"
             .to_string();
         assert_eq!(module.to_string(), golden);
-    }
-
-    #[test]
-    fn test_primitive_connections() {
-        let mut prim = SVPrimitive::new_lut(4, "_0_".to_string(), 1);
-        assert!(prim.add_signal("I8".to_string(), "a".to_string()).is_err());
-        assert!(prim.add_signal("I0".to_string(), "a".to_string()).is_ok());
-        assert!(prim.add_signal("I0".to_string(), "a".to_string()).is_err());
-        assert!(prim.add_signal("Y".to_string(), "b".to_string()).is_ok());
-        assert!(prim.add_signal("Y".to_string(), "b".to_string()).is_err());
-        assert!(prim.add_signal("bad".to_string(), "a".to_string()).is_err());
     }
 
     #[test]
