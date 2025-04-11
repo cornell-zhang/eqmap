@@ -1095,8 +1095,8 @@ impl Extractable for LutLang {
         DepthCostFn
     }
 
-    fn cell_cost_with_reg_weight_fn(cut_size: usize, k: u64) -> impl CostFunction<Self> {
-        KLUTCostFn::new(cut_size).with_reg_weight(k)
+    fn cell_cost_with_reg_weight_fn(cut_size: usize, w: u64) -> impl CostFunction<Self> {
+        KLUTCostFn::new(cut_size).with_reg_weight(w)
     }
 
     fn filter_cost_fn(set: std::collections::HashSet<String>) -> impl CostFunction<Self> {

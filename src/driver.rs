@@ -322,10 +322,10 @@ enum ExtractStrat {
     MaxDepth,
     /// Extract minimum circuit depth.
     MinDepth,
-    /// Extract LUTs up to size `k`.
-    LUTCount(usize),
-    /// Extract LUTs up to size `k` and registers with cost ratio `w`.
-    LUTCountRegWeighted(usize, u64),
+    /// Extract Cells/LUTs with at most `k` inputs.
+    CellCount(usize),
+    /// Extract Cells/LUTs with at most `k` inputs as well as registers with cost ratio `w`.
+    CellCountRegWeighted(usize, u64),
     /// Disassemble into set of logic gates.
     Disassemble(HashSet<String>),
     #[cfg(feature = "exactness")]
@@ -333,28 +333,29 @@ enum ExtractStrat {
     Exact(u64),
 }
 
+/// The list of gates that must be reachable by the disassembling rewrite rule system.
+pub const GATE_WHITELIST_STR: &str = "MUX,AND2,OR2,XOR2,NOT,INV,REG,NAND2,NOR2";
+
+/// The list of gates that must be reachable by the disassembling rewrite rule system.
+pub const GATE_WHITELIST: [&str; 9] = [
+    "MUX", "AND2", "OR2", "XOR2", "NOT", "INV", "REG", "NAND2", "NOR2",
+];
+
 impl ExtractStrat {
-    const WHITELIST_STR: &'static str = "MUX,AND2,OR2,XOR2,NOT,INV,REG,NAND2,NOR2";
-
-    const WHITELIST: &'static [&'static str] = &[
-        "MUX", "AND2", "OR2", "XOR2", "NOT", "INV", "REG", "NAND2", "NOR2",
-    ];
-
     /// Create an extraction strategy from a comma-separated list of gates.
     /// For example, `list` can be `"MUX,AND2,NOT"`.
     pub fn from_gate_set(list: &str) -> Result<Self, String> {
         if list.is_empty() || list == "all" {
-            return Self::from_gate_set(Self::WHITELIST_STR);
+            return Self::from_gate_set(GATE_WHITELIST_STR);
         }
 
         // list is a comma-deliminted string
         let gates: HashSet<String> = list.split(',').map(|s| s.to_string()).collect();
         for gate in &gates {
-            if !Self::WHITELIST.contains(&gate.as_str()) {
+            if !GATE_WHITELIST.contains(&gate.as_str()) {
                 return Err(format!(
                     "Gate {} is not in the whitelist {}",
-                    gate,
-                    Self::WHITELIST_STR
+                    gate, GATE_WHITELIST_STR
                 ));
             }
         }
@@ -386,7 +387,9 @@ where
     fn verify_expr(expr: &RecExpr<Self>) -> Result<(), String>;
 }
 
-/// A trait to represent that a language is extractable under the [ExtractStrat] optimization goals.
+/// A trait to represent that a language is extractable under the [SynthRequest] optimization goals.
+/// In short, three main cost functions are needed to cover all extraction strategies:
+/// one for depth, one for cell count, and one for filtering/disassembly.
 pub trait Extractable
 where
     Self: Language,
@@ -395,10 +398,11 @@ where
     fn depth_cost_fn() -> impl CostFunction<Self, Cost = i64>;
 
     /// Returns the area cost function for the language, only selecting cells with fewer than `cut_size` inputs.
-    /// Additionally, registers have a parameterized weight `k`.
-    fn cell_cost_with_reg_weight_fn(cut_size: usize, k: u64) -> impl CostFunction<Self>;
+    /// Additionally, registers have a parameterized weight `w`.
+    fn cell_cost_with_reg_weight_fn(cut_size: usize, w: u64) -> impl CostFunction<Self>;
 
     /// Returns the area cost function for the language, only selecting cells with fewer than `cut_size` inputs.
+    /// In this case, registers have weight 1.
     fn cell_cost_fn(cut_size: usize) -> impl CostFunction<Self> {
         Self::cell_cost_with_reg_weight_fn(cut_size, 1)
     }
@@ -490,7 +494,7 @@ impl<L: Language, A: Analysis<L>> std::default::Default for SynthRequest<L, A> {
         Self {
             expr: RecExpr::default(),
             rules: Vec::new(),
-            extract_strat: ExtractStrat::LUTCount(6),
+            extract_strat: ExtractStrat::CellCount(6),
             build_strat: BuildStrat::Custom(10, 20_000, 16),
             no_canonicalize: false,
             assert_sat: false,
@@ -535,7 +539,7 @@ where
     /// Request greedy extraction of cells/LUTs with at most `k` inputs.
     pub fn with_k(self, k: usize) -> Self {
         Self {
-            extract_strat: ExtractStrat::LUTCount(k),
+            extract_strat: ExtractStrat::CellCount(k),
             ..self
         }
     }
@@ -543,7 +547,7 @@ where
     /// Request greedy extraction of cells/LUTs with at most `k` inputs and registers with weight `w`.
     pub fn with_klut_regw(self, k: usize, w: u64) -> Self {
         Self {
-            extract_strat: ExtractStrat::LUTCountRegWeighted(k, w),
+            extract_strat: ExtractStrat::CellCountRegWeighted(k, w),
             ..self
         }
     }
@@ -573,15 +577,15 @@ where
         }
     }
 
-    /// Extract by disassembling into basic logic gates. The exact list can be found at [ExtractStrat::WHITELIST_STR].
+    /// Extract by disassembling into basic logic gates. The exact list can be found at [GATE_WHITELIST].
     pub fn with_disassembler(self) -> Self {
         Self {
-            extract_strat: ExtractStrat::from_gate_set(ExtractStrat::WHITELIST_STR).unwrap(),
+            extract_strat: ExtractStrat::from_gate_set(GATE_WHITELIST_STR).unwrap(),
             ..self
         }
     }
 
-    /// Extract by disassembling into logic gates in the `list`. Elements in the list must be matched against elements in [ExtractStrat::WHITELIST_STR].
+    /// Extract by disassembling into logic gates in the `list`. Elements in the list must be matched against elements in [GATE_WHITELIST].
     pub fn with_disassembly_into(self, list: &str) -> Result<Self, String> {
         Ok(Self {
             extract_strat: ExtractStrat::from_gate_set(list)?,
@@ -973,8 +977,8 @@ where
                 eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");
                 self.greedy_extract_with(NegativeCostFn::new(L::depth_cost_fn()))
             }
-            ExtractStrat::LUTCount(k) => self.greedy_extract_with(L::cell_cost_fn(k)),
-            ExtractStrat::LUTCountRegWeighted(k, w) => {
+            ExtractStrat::CellCount(k) => self.greedy_extract_with(L::cell_cost_fn(k)),
+            ExtractStrat::CellCountRegWeighted(k, w) => {
                 self.greedy_extract_with(L::cell_cost_with_reg_weight_fn(k, w))
             }
             ExtractStrat::Disassemble(set) => self.greedy_extract_with(L::filter_cost_fn(set)),
