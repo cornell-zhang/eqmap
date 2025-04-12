@@ -54,6 +54,13 @@ pub struct Comparison<T> {
     after: T,
 }
 
+impl<T> Comparison<T> {
+    /// Create a new [Comparison] struct.
+    pub fn new(before: T, after: T) -> Self {
+        Self { before, after }
+    }
+}
+
 /// The many stats associated with a synthesis run.
 #[derive(Debug, Serialize)]
 pub struct SynthReport {
@@ -257,6 +264,14 @@ where
             serde_json::to_writer_pretty(w, rpt)?;
         }
         Ok(())
+    }
+
+    /// Write the report of the output to a string.
+    pub fn write_report_to_string(&self) -> Result<String, std::io::Error> {
+        match &self.rpt {
+            Some(rpt) => Ok(serde_json::to_string_pretty(rpt)?),
+            None => Ok(String::new()),
+        }
     }
 
     /// Add a name to the synthesis report.

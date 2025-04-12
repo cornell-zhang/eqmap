@@ -1,10 +1,11 @@
 /*!
 
-  TODO: ASIC docs
+  Module for ASIC technology mapping.
 
 */
 
 use super::check::Check;
+use super::driver::Comparison;
 use super::driver::Report;
 use super::driver::{Canonical, CircuitLang, EquivCheck, Explanable, Extractable};
 use egg::{
@@ -170,36 +171,56 @@ impl Analysis<CellLang> for CellAnalysis {
     fn make(_egraph: &mut EGraph<CellLang, Self>, _enode: &CellLang) -> Self::Data {}
 }
 
+#[derive(Debug, Serialize)]
+struct CircuitStats {
+    /// AST size of the circuit
+    ast_size: usize,
+}
+
 /// An empty report struct for synthesizing CellLang
 #[derive(Debug, Serialize)]
 pub struct CellRpt {
     /// The name of the module
     name: String,
+    /// Comparison of the original and mapped circuit
+    stats: Comparison<CircuitStats>,
 }
 
 impl CellRpt {
     /// Create a new report
-    pub fn new(name: String) -> Self {
-        Self { name }
+    fn new(name: String, before: CircuitStats, after: CircuitStats) -> Self {
+        Self {
+            name,
+            stats: Comparison::new(before, after),
+        }
     }
 }
 
 impl Report<CellLang> for CellRpt {
     fn new<A>(
-        _input: &RecExpr<CellLang>,
-        _output: &RecExpr<CellLang>,
+        input: &RecExpr<CellLang>,
+        output: &RecExpr<CellLang>,
         _extract_time: f64,
         _runner: &egg::Runner<CellLang, A>,
     ) -> Result<Self, String>
     where
         A: Analysis<CellLang>,
     {
-        Ok(CellRpt::new("top".to_string()))
+        Ok(CellRpt::new(
+            "top".to_string(),
+            CircuitStats {
+                ast_size: input.len(),
+            },
+            CircuitStats {
+                ast_size: output.len(),
+            },
+        ))
     }
 
     fn with_name(self, name: &str) -> Self {
         Self {
             name: name.to_string(),
+            ..self
         }
     }
 }

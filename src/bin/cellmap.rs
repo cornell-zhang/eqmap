@@ -182,3 +182,13 @@ fn simple_tests() {
     assert_eq!(simplify("(INV a)"), "(INV_X1 a)");
     assert_eq!(simplify("(AND a true)"), "a");
 }
+
+#[test]
+fn cell_rpt() {
+    let mut req = get_main_runner("(INV a)").unwrap().with_report();
+    let result = req.simplify_expr::<CellRpt>().unwrap();
+    let rpt = result.write_report_to_string();
+    assert!(rpt.is_ok());
+    let rpt = rpt.unwrap();
+    assert!(rpt.contains("name"));
+}
