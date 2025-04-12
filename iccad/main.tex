@@ -28,8 +28,6 @@
 
 \lstset{style=mystyle}
 
-\newcommand{\fixme}[1]{\textcolor{red}{#1}}
-\newcommand{\todo}[1]{\textcolor{red}{TODO:\ #1}}
 \newcommand{\fullname}{Simultaneous FPGA LUT Packing and Remapping using E-Graphs}
 \newcommand{\shortname}{E-Pack}
 \newcommand{\metric}{12\% fewer LUTs}
@@ -40,9 +38,12 @@
 \newcommand{\Bk}{\mathbb{Z}_{2}^{k}}
 \newcommand{\Bx}[1]{\mathbb{Z}_{2}^{#1}}
 
+\newcommand{\fixme}[1]{\textcolor{red}{#1}}
+\newcommand{\todo}[1]{\textcolor{red}{TODO:\ #1}}
+\newcommand{\zz}[1]{\textcolor{blue}{[\small zz: ~#1]}}
+
 % enable page numbers
 % \settopmatter{printfolios=true}
-
 
 \begin{document}
 
@@ -54,14 +55,14 @@
     FPGA technology mapping is a well-studied problem and has been an area of
     interest in EDA tool design for decades. In most respects, the computational
     complexity of technology mapping is understood, and heuristic algorithms have
-    been successfully employed to mitigate compile times while maintaining high QoR
-    (quality of results). As transistor scaling comes to an end within the coming
-    years, logic synthesis tools will become more of a bottleneck in the design of
-    high performance accelerators. As a solution, we introduce E-Pack, an e-graph
+    been successfully employed to mitigate compile times while maintaining high
+    quality of results. \fixme{As transistor scaling comes to an end within the coming
+        years}, \zz{tech scaling is slowed down but coming to an end in the next few years} logic synthesis tools will \fixme{become more of a bottleneck} in the design of
+    \fixme{high performance} accelerators. \zz{rewrite -- see my comment in intro; we don't address performance issue here} \zz{Message we want to convey -- our study shows that even though the packing/mapping problem has been extensively studied, there is still substantial room for improvement, even for commercial tools} As a solution, we introduce E-Pack, an e-graph
     driven compiler that can better span the wide gap between SAT-based
     exact synthesis and heuristic cut enumeration techniques. We show that E-Pack
     can synthesize circuits with \metric{} on average---without ever
-    increasing circuit depth. We also provide an empirical analysis of the runtime
+    increasing circuit depth. \zz{emphasize the improvement is over state-of-the-art commercial and open-source tools} We also provide an empirical analysis of the runtime
     of E-Pack and show that it is still practical for large designs. Finally, we
     demonstrate that our compiler infrastructure is reusable, and future work can
     use our compiler for RTL equivalence checking or auditing the QoR of synthesis
