@@ -179,4 +179,6 @@ fn main() -> std::io::Result<()> {
 #[test]
 fn simple_tests() {
     assert_eq!(simplify("(AND a b)"), "(INV_X1 (NAND2_X1 a b))");
+    assert_eq!(simplify("(INV a)"), "(INV_X1 a)");
+    assert_eq!(simplify("(AND a true)"), "a");
 }
