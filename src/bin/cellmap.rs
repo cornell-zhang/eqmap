@@ -1,9 +1,45 @@
 use clap::Parser;
+use egg::{FromOpError, RecExpr, RecExprParseError};
 use lut_synth::{
-    asic::{CellLang, CellRpt, asic_rewrites},
+    asic::{CellAnalysis, CellLang, CellRpt, asic_rewrites},
     driver::{SynthRequest, process_string_expression, simple_reader},
 };
 use std::path::PathBuf;
+
+fn get_main_runner(
+    s: &str,
+) -> Result<SynthRequest<CellLang, CellAnalysis>, RecExprParseError<FromOpError>> {
+    let expr: RecExpr<CellLang> = s.parse()?;
+    let rules = asic_rewrites();
+
+    Ok(SynthRequest::default()
+        .with_expr(expr)
+        .with_rules(rules)
+        .with_k(4)
+        .with_asserts()
+        .without_progress_bar()
+        .with_joint_limits(20, 20_000, 30))
+}
+
+#[allow(dead_code)]
+/// parse an expression, simplify it with DSD and at most 4 fan-in, and pretty print it back out
+fn simplify(s: &str) -> String {
+    let mut req = get_main_runner(s).unwrap();
+    req.simplify_expr::<CellRpt>()
+        .unwrap()
+        .get_expr()
+        .to_string()
+}
+
+#[allow(dead_code)]
+/// parse an expression, simplify it with DSD and at most 4 fan-in, and pretty print it back out
+fn simplify_w_proof(s: &str) -> String {
+    let mut req = get_main_runner(s).unwrap().with_proof();
+    req.simplify_expr::<CellRpt>()
+        .unwrap()
+        .get_expr()
+        .to_string()
+}
 
 /// ASIC Technology Mapping Optimization with E-Graphs
 #[derive(Parser, Debug)]
@@ -138,4 +174,9 @@ fn main() -> std::io::Result<()> {
         }
     }
     Ok(())
+}
+
+#[test]
+fn simple_tests() {
+    assert_eq!(simplify("(AND a b)"), "(INV_X1 (NAND2_X1 a b))");
 }

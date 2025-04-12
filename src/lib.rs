@@ -25,6 +25,7 @@ mod tests {
     use std::collections::HashMap;
 
     use analysis::LutAnalysis;
+    use asic::CellLang;
     use driver::Canonical;
     use egg::{Analysis, Language, RecExpr};
     use lut::{LutExprInfo, LutLang};
@@ -840,5 +841,18 @@ endmodule\n"
         let stats = info.get_circuit_stats();
         assert_eq!(stats.depth, 1);
         assert_eq!(stats.lut_count, 1);
+    }
+
+    #[test]
+    fn test_celllang() {
+        let expr: RecExpr<CellLang> = "(LUT 202 s a b)".parse().unwrap();
+        assert!(CellLang::verify_expr(&expr).is_err());
+        let expr: RecExpr<CellLang> = "(MUX s a b)".parse().unwrap();
+        assert!(CellLang::verify_expr(&expr).is_ok());
+        let expr: RecExpr<CellLang> = "(AND s a b)".parse().unwrap();
+        assert!(CellLang::verify_expr(&expr).is_err());
+        let expr: RecExpr<CellLang> = "(AND a b)".parse().unwrap();
+        assert!(CellLang::verify_expr(&expr).is_ok());
+        assert!(matches!(expr.as_ref().last().unwrap(), CellLang::And(_)));
     }
 }
