@@ -231,6 +231,12 @@ pub enum PrimitiveType {
     AOI22,
     OAI211,
     OAI22,
+    LUT1,
+    LUT2,
+    LUT3,
+    LUT4,
+    LUT5,
+    LUT6,
 }
 
 impl PrimitiveType {
@@ -243,11 +249,16 @@ impl PrimitiveType {
             Self::NOR2 | Self::NOR => 2,
             Self::XOR2 | Self::XOR => 2,
             Self::XNOR2 | Self::XNOR => 2,
-            Self::NOT | Self::INV => 1,
+            Self::NOT | Self::INV | Self::LUT1 => 1,
             Self::MUX | Self::MUXF7 | Self::MUXF8 | Self::MUXF9 => 3,
             Self::AND4 | Self::NAND4 | Self::OR4 | Self::NOR4 | Self::XOR4 | Self::XNOR4 => 4,
             Self::AOI21 | Self::OAI21 => 3,
             Self::AOI211 | Self::AOI22 | Self::OAI211 | Self::OAI22 => 4,
+            Self::LUT2 => 2,
+            Self::LUT3 => 3,
+            Self::LUT4 => 4,
+            Self::LUT5 => 5,
+            Self::LUT6 => 6,
         }
     }
 
@@ -284,6 +295,30 @@ impl PrimitiveType {
                 "B".to_string(),
                 "C1".to_string(),
                 "C2".to_string(),
+            ],
+            Self::LUT1 => vec!["I0".to_string()],
+            Self::LUT2 => vec!["I0".to_string(), "I1".to_string()],
+            Self::LUT3 => vec!["I0".to_string(), "I1".to_string(), "I2".to_string()],
+            Self::LUT4 => vec![
+                "I0".to_string(),
+                "I1".to_string(),
+                "I2".to_string(),
+                "I3".to_string(),
+            ],
+            Self::LUT5 => vec![
+                "I0".to_string(),
+                "I1".to_string(),
+                "I2".to_string(),
+                "I3".to_string(),
+                "I4".to_string(),
+            ],
+            Self::LUT6 => vec![
+                "I0".to_string(),
+                "I1".to_string(),
+                "I2".to_string(),
+                "I3".to_string(),
+                "I4".to_string(),
+                "I5".to_string(),
             ],
         }
     }
@@ -330,6 +365,12 @@ impl FromStr for PrimitiveType {
             "AOI22" => Ok(Self::AOI22),
             "OAI211" => Ok(Self::OAI211),
             "OAI22" => Ok(Self::OAI22),
+            "LUT1" => Ok(Self::LUT1),
+            "LUT2" => Ok(Self::LUT2),
+            "LUT3" => Ok(Self::LUT3),
+            "LUT4" => Ok(Self::LUT4),
+            "LUT5" => Ok(Self::LUT5),
+            "LUT6" => Ok(Self::LUT6),
             _ => Err(format!("Unknown primitive type {}", s)),
         }
     }
