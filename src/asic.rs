@@ -51,13 +51,7 @@ impl CellLang {
     pub fn get_drive_strength(&self) -> Option<usize> {
         match self {
             CellLang::Cell(s, _) => match s.as_str().split_once("_X") {
-                Some((_, strength)) => {
-                    if let Ok(strength) = strength.parse::<usize>() {
-                        Some(strength)
-                    } else {
-                        None
-                    }
-                }
+                Some((_, strength)) => strength.parse::<usize>().ok(),
                 None => None,
             },
             _ => None,
