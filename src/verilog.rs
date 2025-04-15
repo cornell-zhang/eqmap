@@ -16,6 +16,7 @@ use std::{
 use egg::{Id, Language, RecExpr};
 use sv_parser::{Identifier, Locate, NodeEvent, RefNode, unwrap_node};
 
+use super::asic::CellLang;
 use super::logic::{Logic, dont_care};
 use super::lut::{LutExprInfo, LutLang};
 
@@ -249,6 +250,49 @@ impl PrimitiveType {
             Self::AOI211 | Self::AOI22 | Self::OAI211 | Self::OAI22 => 4,
         }
     }
+
+    /// Get the list of inputs for the primitive
+    pub fn get_input_list(&self) -> Vec<String> {
+        match self {
+            Self::AND | Self::NAND | Self::OR | Self::NOR | Self::XOR | Self::XNOR => {
+                vec!["A".to_string(), "B".to_string()]
+            }
+            Self::INV | Self::NOT => vec!["A".to_string()],
+            Self::AND2 | Self::NAND2 | Self::OR2 | Self::NOR2 | Self::XOR2 | Self::XNOR2 => {
+                vec!["A1".to_string(), "A2".to_string()]
+            }
+            Self::AND4 | Self::NAND4 | Self::OR4 | Self::NOR4 | Self::XOR4 | Self::XNOR4 => {
+                vec![
+                    "A1".to_string(),
+                    "A2".to_string(),
+                    "A3".to_string(),
+                    "A4".to_string(),
+                ]
+            }
+            Self::MUX | Self::MUXF7 | Self::MUXF8 | Self::MUXF9 => {
+                vec!["A".to_string(), "B".to_string(), "S".to_string()]
+            }
+            Self::AOI21 | Self::OAI21 => vec!["A".to_string(), "B1".to_string(), "B2".to_string()],
+            Self::AOI22 | Self::OAI22 => vec![
+                "A1".to_string(),
+                "A2".to_string(),
+                "B1".to_string(),
+                "B2".to_string(),
+            ],
+            Self::AOI211 | Self::OAI211 => vec![
+                "A".to_string(),
+                "B".to_string(),
+                "C1".to_string(),
+                "C2".to_string(),
+            ],
+        }
+    }
+
+    /// Get the name of the output port for the primitive type
+    pub fn get_output(&self) -> String {
+        // TODO(matth2k): Implement this for all primitive types
+        "ZN".to_string()
+    }
 }
 
 impl FromStr for PrimitiveType {
@@ -337,6 +381,11 @@ impl SVPrimitive {
         Ok(())
     }
 
+    /// The name of the signal the primitive is driving
+    pub fn get_output_name(&self) -> Option<String> {
+        self.outputs.keys().next().cloned()
+    }
+
     /// Returns true if all the inputs are connected
     pub fn fully_driven(&self) -> bool {
         self.inputs.len() == self.n_inputs
@@ -374,7 +423,13 @@ impl SVPrimitive {
     }
 
     /// Create a new unconnected gate primitive with instance name `name`
-    pub fn new_gate(gate: String, name: String) -> Result<Self, String> {
+    pub fn new_gate(logic: PrimitiveType, name: String) -> Self {
+        let n_inputs: usize = logic.get_num_inputs();
+        Self::new(logic.to_string(), name, n_inputs)
+    }
+
+    /// Create a new unconnected gate primitive with instance name `name`
+    pub fn new_gate_from_string(gate: String, name: String) -> Result<Self, String> {
         // All names should take form <LOGIC>_<DRIVE> or <LOGIC>
         let logic = gate.split_once('_');
         let logic = match logic {
@@ -382,9 +437,7 @@ impl SVPrimitive {
             None => gate.as_str(),
         };
         let logic: PrimitiveType = logic.parse()?;
-
-        let n_inputs: usize = logic.get_num_inputs();
-        Ok(Self::new(gate, name, n_inputs))
+        Ok(Self::new_gate(logic, name))
     }
 
     /// Create a new constant with name `name` and drive `signal` with it
@@ -417,8 +470,8 @@ impl SVPrimitive {
         prim
     }
 
-    /// Add an input connection
-    fn connect_input(&mut self, port: String, signal: String) -> Result<(), String> {
+    /// Connect `signal` to `port` on the primitive
+    pub fn connect_input(&mut self, port: String, signal: String) -> Result<(), String> {
         match self.inputs.insert(port.clone(), signal) {
             Some(d) => Err(format!(
                 "Port {} is already driven on instance {} of {} by {}",
@@ -517,12 +570,55 @@ trait VerilogEmission
 where
     Self: Language + std::fmt::Display,
 {
-    fn verilog_primitive(
+    fn get_gate_type(&self) -> Option<PrimitiveType>;
+
+    fn get_verilog_primitive(
         &self,
         lookup: impl Fn(&Id) -> Option<String>,
         fresh_prim_name: impl Fn() -> String,
         fresh_signal_name: impl Fn() -> String,
     ) -> Result<SVPrimitive, String>;
+}
+
+impl VerilogEmission for CellLang {
+    fn get_gate_type(&self) -> Option<PrimitiveType> {
+        match self {
+            CellLang::And(_) => Some(PrimitiveType::AND),
+            CellLang::Or(_) => Some(PrimitiveType::OR),
+            CellLang::Inv(_) => Some(PrimitiveType::INV),
+            CellLang::Cell(s, _) => match PrimitiveType::from_str(s.as_str()) {
+                Ok(x) => Some(x),
+                Err(_) => None,
+            },
+            _ => None,
+        }
+    }
+
+    fn get_verilog_primitive(
+        &self,
+        lookup: impl Fn(&Id) -> Option<String>,
+        fresh_prim_name: impl Fn() -> String,
+        fresh_signal_name: impl Fn() -> String,
+    ) -> Result<SVPrimitive, String> {
+        match self {
+            CellLang::And(_) | CellLang::Or(_) | CellLang::Inv(_) | CellLang::Cell(_, _) => {
+                let inputs = self.children();
+                let gate_type = self
+                    .get_gate_type()
+                    .expect("CellLang gates should have a primitive type");
+                let port_list = gate_type.get_input_list();
+                let mut prim = SVPrimitive::new_gate(gate_type.clone(), fresh_prim_name());
+                for (input, port) in inputs.iter().zip(port_list) {
+                    let signal = lookup(input)
+                        .ok_or(format!("Could not find signal {} in the module", input))?;
+                    prim.connect_input(port, signal)?;
+                }
+                prim.connect_output(gate_type.get_output(), fresh_signal_name())?;
+                Ok(prim)
+            }
+            _ => Err("Verilog emission not implemented for this language".to_string()),
+        }
+    }
 }
 
 impl SVModule {
@@ -753,7 +849,7 @@ impl SVModule {
                     }
 
                     if Self::is_gate_prim(&mod_name) {
-                        cur_insts.push(SVPrimitive::new_gate(mod_name, inst_name)?);
+                        cur_insts.push(SVPrimitive::new_gate_from_string(mod_name, inst_name)?);
                         continue;
                     }
 
@@ -933,6 +1029,20 @@ impl SVModule {
         Ok(modules.pop().unwrap())
     }
 
+    fn insert_instance(&mut self, inst: SVPrimitive) -> Result<(), String> {
+        if !inst.fully_connected() {
+            return Err(format!(
+                "Primitive {} is not fully connected before inserting into module",
+                inst.name
+            ));
+        }
+        let signal = inst.get_output_name().unwrap();
+        self.signals.push(SVSignal::new(1, signal.clone()));
+        self.driving_module.insert(signal, self.instances.len());
+        self.instances.push(inst);
+        Ok(())
+    }
+
     /// Constructs a verilog module out of a [LutLang] expression.
     /// The module will be named `mod_name` and the outputs will be named from right to left with `outputs`.
     /// The default names for the outputs are `y0`, `y1`, etc. `outputs[0]` names the rightmost signal in a bus.
@@ -1072,7 +1182,8 @@ impl SVModule {
                 LutLang::And([a, b]) | LutLang::Xor([a, b]) | LutLang::Nor([a, b]) => {
                     let sname = fresh_wire(id.into(), &mut mapping);
                     let pname = fresh_prim();
-                    let mut inst = SVPrimitive::new_gate(node.get_prim_name().unwrap(), pname)?;
+                    let mut inst =
+                        SVPrimitive::new_gate_from_string(node.get_prim_name().unwrap(), pname)?;
                     inst.connect_input("A".to_string(), mapping[a].clone())?;
                     inst.connect_input("B".to_string(), mapping[b].clone())?;
                     inst.connect_output("Y".to_string(), sname.clone())?;
@@ -1085,7 +1196,8 @@ impl SVModule {
                 LutLang::Not([a]) => {
                     let sname = fresh_wire(id.into(), &mut mapping);
                     let pname = fresh_prim();
-                    let mut inst = SVPrimitive::new_gate(node.get_prim_name().unwrap(), pname)?;
+                    let mut inst =
+                        SVPrimitive::new_gate_from_string(node.get_prim_name().unwrap(), pname)?;
                     inst.connect_input("A".to_string(), mapping[a].clone())?;
                     inst.connect_output("Y".to_string(), sname.clone())?;
                     module.signals.push(SVSignal::new(1, sname.clone()));
@@ -1097,7 +1209,8 @@ impl SVModule {
                 LutLang::Mux([s, a, b]) => {
                     let sname = fresh_wire(id.into(), &mut mapping);
                     let pname = fresh_prim();
-                    let mut inst = SVPrimitive::new_gate(node.get_prim_name().unwrap(), pname)?;
+                    let mut inst =
+                        SVPrimitive::new_gate_from_string(node.get_prim_name().unwrap(), pname)?;
                     inst.connect_input("A".to_string(), mapping[a].clone())?;
                     inst.connect_input("B".to_string(), mapping[b].clone())?;
                     inst.connect_input("S".to_string(), mapping[s].clone())?;
@@ -1459,4 +1572,26 @@ fn test_parse_verilog() {
     assert_eq!(instance.name, "_0_");
     assert_eq!(instance.attributes.len(), 1);
     assert_eq!(instance.attributes["INIT"], "64'hf0f0ccccff00aaaa");
+}
+
+#[test]
+fn test_cellang_emission() {
+    let expr: RecExpr<CellLang> = "(AND a b)".parse().unwrap();
+    let prim = expr.last().unwrap().get_verilog_primitive(
+        |x| {
+            if *x == Id::from(0) {
+                Some("a".to_string())
+            } else {
+                Some("b".to_string())
+            }
+        },
+        || "and_inst".to_string(),
+        || "y".to_string(),
+    );
+    assert!(prim.is_ok());
+    let prim = prim.unwrap();
+    assert_eq!(
+        prim.to_string(),
+        "  AND #(\n  ) and_inst (\n      .A(a),\n      .B(b),\n      .ZN(y)\n  );"
+    );
 }

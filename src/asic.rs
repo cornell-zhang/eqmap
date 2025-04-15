@@ -21,7 +21,7 @@ define_language! {
         Const(bool),
         Var(Symbol),
         "AND" = And([Id; 2]),
-        "OR" = Xor([Id; 2]),
+        "OR" = Or([Id; 2]),
         "INV" = Inv([Id; 1]),
         Cell(Symbol, Vec<Id>), // or Box<[Id]>?
     }
