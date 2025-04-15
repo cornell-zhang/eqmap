@@ -41,7 +41,7 @@ benchmarks we tested, \shortname{} was able to reduce the LUT count \fmetric{}
 of the time. On average, \shortname{} packed the netlists to \metric{}. The
 results in Table~\ref{tab:results} list all the reduced LUT counts, sorted by
 approximate design size. AMD/Xilinx Vivado 2024~\cite{vivado} was used as the
-baseline synthesis tool. For the E-Pack flow, Yosys~\cite{yosys} is used to
+baseline synthesis tool. For the E-Pack flow, Yosys~\cite{yosys} was used to
 generate the initial mapped circuit. At a glance, circuits like `int2float,'
 `c6288,` `adder,' and `square' have the most to gain from \shortname{}. These
 circuits are all arithmetic in nature, and this is a common occurrence
@@ -154,7 +154,7 @@ to 4096 bits. Table~\ref{tab:alu} lists the LUT counts from the initial
 synthesis by Vivado 2024, followed by the packed LUT counts. Even though the
 1024-bit, 2048-bit, and 4096-bit ALU designs had up to 15,000 LUTs,
 \shortname{} was able to achieve up to almost 15\% improvement over Vivado
-within 10 minutes of extra build time. While longer runs lead to slightly better
+within 5 minutes of extra build time. While longer runs lead to slightly better
 improvements, these results demonstrate how \shortname{} can achieve area
 reductions within a short period of time, even when input designs are scaled to
 beyond 10,000 LUTs. In this specific case, \shortname{} can be used to audit
