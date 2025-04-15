@@ -855,4 +855,41 @@ endmodule\n"
         assert!(CellLang::verify_expr(&expr).is_ok());
         assert!(matches!(expr.as_ref().last().unwrap(), CellLang::And(_)));
     }
+
+    #[test]
+    fn test_emit_celllang() {
+        let expr: RecExpr<CellLang> = "(NOR2_X1 b (NAND2_X1 a false))".parse().unwrap();
+        let module = SVModule::from_cells(expr, "gate_list".to_string(), Vec::new());
+        assert!(module.is_ok());
+        let module = module.unwrap();
+        let golden = "module gate_list (
+    b,
+    a,
+    y
+);
+  input b;
+  wire b;
+  input a;
+  wire a;
+  output y;
+  wire y;
+  wire __0__;
+  wire __1__;
+  assign __0__ = 1'b0;
+  NAND2_X1 #(
+  ) __3__ (
+      .A1(a),
+      .A2(__0__),
+      .ZN(__1__)
+  );
+  NOR2_X1 #(
+  ) __4__ (
+      .A1(b),
+      .A2(__1__),
+      .ZN(y)
+  );
+endmodule\n"
+            .to_string();
+        assert_eq!(module.to_string(), golden);
+    }
 }
