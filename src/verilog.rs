@@ -586,10 +586,7 @@ impl VerilogEmission for CellLang {
             CellLang::And(_) => Some(PrimitiveType::AND),
             CellLang::Or(_) => Some(PrimitiveType::OR),
             CellLang::Inv(_) => Some(PrimitiveType::INV),
-            CellLang::Cell(s, _) => match PrimitiveType::from_str(s.as_str()) {
-                Ok(x) => Some(x),
-                Err(_) => None,
-            },
+            CellLang::Cell(s, _) => PrimitiveType::from_str(s.as_str()).ok(),
             _ => None,
         }
     }
