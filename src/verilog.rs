@@ -10,9 +10,10 @@ use std::{
     collections::{BTreeMap, HashMap, HashSet, hash_map::Entry},
     fmt,
     path::{Path, PathBuf},
+    str::FromStr,
 };
 
-use egg::{Id, RecExpr};
+use egg::{Id, Language, RecExpr};
 use sv_parser::{Identifier, Locate, NodeEvent, RefNode, unwrap_node};
 
 use super::logic::{Logic, dont_care};
@@ -196,13 +197,115 @@ impl SVSignal {
     }
 }
 
+#[allow(missing_docs)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PrimitiveType {
+    AND,
+    NAND,
+    OR,
+    NOR,
+    XOR,
+    XNOR,
+    NOT,
+    INV,
+    AND2,
+    NAND2,
+    OR2,
+    NOR2,
+    XOR2,
+    XNOR2,
+    AND4,
+    NAND4,
+    OR4,
+    NOR4,
+    XOR4,
+    XNOR4,
+    MUX,
+    MUXF7,
+    MUXF8,
+    MUXF9,
+    AOI21,
+    OAI21,
+    AOI211,
+    AOI22,
+    OAI211,
+    OAI22,
+}
+
+impl PrimitiveType {
+    /// Return the number of inputs of the primitive of this type
+    pub fn get_num_inputs(&self) -> usize {
+        match self {
+            Self::AND2 | Self::AND => 2,
+            Self::NAND2 | Self::NAND => 2,
+            Self::OR2 | Self::OR => 2,
+            Self::NOR2 | Self::NOR => 2,
+            Self::XOR2 | Self::XOR => 2,
+            Self::XNOR2 | Self::XNOR => 2,
+            Self::NOT | Self::INV => 1,
+            Self::MUX | Self::MUXF7 | Self::MUXF8 | Self::MUXF9 => 3,
+            Self::AND4 | Self::NAND4 | Self::OR4 | Self::NOR4 | Self::XOR4 | Self::XNOR4 => 4,
+            Self::AOI21 | Self::OAI21 => 3,
+            Self::AOI211 | Self::AOI22 | Self::OAI211 | Self::OAI22 => 4,
+        }
+    }
+}
+
+impl FromStr for PrimitiveType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "AND" => Ok(Self::AND),
+            "NAND" => Ok(Self::NAND),
+            "OR" => Ok(Self::OR),
+            "NOR" => Ok(Self::NOR),
+            "XOR" => Ok(Self::XOR),
+            "XNOR" => Ok(Self::XNOR),
+            "NOT" => Ok(Self::NOT),
+            "INV" => Ok(Self::INV),
+            "AND2" => Ok(Self::AND2),
+            "NAND2" => Ok(Self::NAND2),
+            "OR2" => Ok(Self::OR2),
+            "NOR2" => Ok(Self::NOR2),
+            "XOR2" => Ok(Self::XOR2),
+            "XNOR2" => Ok(Self::XNOR2),
+            "AND4" => Ok(Self::AND4),
+            "NAND4" => Ok(Self::NAND4),
+            "OR4" => Ok(Self::OR4),
+            "NOR4" => Ok(Self::NOR4),
+            "XOR4" => Ok(Self::XOR4),
+            "XNOR4" => Ok(Self::XNOR4),
+            "MUX" => Ok(Self::MUX),
+            "MUXF7" => Ok(Self::MUXF7),
+            "MUXF8" => Ok(Self::MUXF8),
+            "MUXF9" => Ok(Self::MUXF9),
+            "AOI21" => Ok(Self::AOI21),
+            "OAI21" => Ok(Self::OAI21),
+            "AOI211" => Ok(Self::AOI211),
+            "AOI22" => Ok(Self::AOI22),
+            "OAI211" => Ok(Self::OAI211),
+            "OAI22" => Ok(Self::OAI22),
+            _ => Err(format!("Unknown primitive type {}", s)),
+        }
+    }
+}
+
+impl fmt::Display for PrimitiveType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 /// The [SVPrimitive] struct represents a primitive instance within a netlist.
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct SVPrimitive {
+pub struct SVPrimitive {
     /// The name of the primitive
-    pub prim: String,
+    prim: String,
     /// The name of the instance
-    pub name: String,
+    name: String,
+    /// Number of inputs when this primitive is fully connected
+    n_inputs: usize,
     /// Maps input ports to their signal driver
     /// E.g. (I0, a) means I0 is driven by signal a.
     inputs: BTreeMap<String, String>,
@@ -210,105 +313,112 @@ struct SVPrimitive {
     /// E.g. (y, O) means signal y is driven by output O.
     outputs: BTreeMap<String, String>,
     /// Stores arguments to module parameters as well as any other attribute
-    pub attributes: BTreeMap<String, String>,
+    attributes: BTreeMap<String, String>,
 }
 
 impl SVPrimitive {
-    /// Create a new unconnected LUT primitive with size `k`, instance name `name`, and program `program`
-    pub fn new_lut(k: usize, name: String, program: u64) -> Self {
-        let mut attributes = BTreeMap::new();
-        attributes.insert("INIT".to_string(), init_format(program, k).unwrap());
-        SVPrimitive {
-            prim: format!("{}{}", LUT_ROOT, k),
-            name,
-            inputs: BTreeMap::new(),
-            outputs: BTreeMap::new(),
-            attributes,
-        }
+    /// Read an attribute from the primitive
+    pub fn get_attribute(&self, key: &str) -> Option<&String> {
+        self.attributes.get(key)
     }
 
-    /// Create a new unconnected FDRE primitive with instance name `name`
-    pub fn new_reg(name: String) -> Self {
-        let mut attributes = BTreeMap::new();
-        attributes.insert("INIT".to_string(), "1'hx".to_string());
-        SVPrimitive {
-            prim: REG_NAME.to_string(),
-            name,
-            inputs: BTreeMap::new(),
-            outputs: BTreeMap::new(),
-            attributes,
-        }
+    /// Set an attribute on the primitive
+    pub fn set_attribute(&mut self, key: String, val: String) -> Option<String> {
+        self.attributes.insert(key, val)
     }
 
-    /// Create a new unconnected gate primitive with instance name `name`
-    pub fn new_gate(gate: String, name: String) -> Self {
+    /// Drive `signal` with named `port` of the primitive
+    pub fn connect_output(&mut self, port: String, signal: String) -> Result<(), String> {
+        if !self.outputs.is_empty() {
+            let (y, o) = self.outputs.first_key_value().unwrap();
+            return Err(format!("Signal {} is already driven by {}", y, o));
+        }
+        self.outputs.insert(signal, port);
+        Ok(())
+    }
+
+    /// Returns true if all the inputs are connected
+    pub fn fully_driven(&self) -> bool {
+        self.inputs.len() == self.n_inputs
+    }
+
+    /// Returns true if all the inputs *and* outputs are connected
+    pub fn fully_connected(&self) -> bool {
+        self.fully_driven() && !self.outputs.is_empty()
+    }
+
+    /// Create a unconnected primitive `prim` with instance name `name` and `n_inputs` inputs
+    pub fn new(prim: String, name: String, n_inputs: usize) -> Self {
         SVPrimitive {
-            prim: gate,
+            prim,
             name,
+            n_inputs,
             inputs: BTreeMap::new(),
             outputs: BTreeMap::new(),
             attributes: BTreeMap::new(),
         }
     }
 
-    /// Create a new constant with name `name`
+    /// Create a new unconnected LUT primitive with size `k`, instance name `name`, and program `program`
+    pub fn new_lut(k: usize, name: String, program: u64) -> Self {
+        let mut prim = Self::new(format!("{}{}", LUT_ROOT, k), name, k);
+        prim.set_attribute("INIT".to_string(), init_format(program, k).unwrap());
+        prim
+    }
+
+    /// Create a new unconnected FDRE primitive with instance name `name`
+    pub fn new_reg(name: String) -> Self {
+        let mut prim = Self::new(REG_NAME.to_string(), name, 1);
+        prim.set_attribute("INIT".to_string(), "1'hx".to_string());
+        prim
+    }
+
+    /// Create a new unconnected gate primitive with instance name `name`
+    pub fn new_gate(gate: String, name: String) -> Result<Self, String> {
+        // All names should take form <LOGIC>_<DRIVE> or <LOGIC>
+        let logic = gate.split_once('_');
+        let logic = match logic {
+            Some((l, _)) => l,
+            None => gate.as_str(),
+        };
+        let logic: PrimitiveType = logic.parse()?;
+
+        let n_inputs: usize = logic.get_num_inputs();
+        Ok(Self::new(gate, name, n_inputs))
+    }
+
+    /// Create a new constant with name `name` and drive `signal` with it
     pub fn new_const(val: Logic, signal: String, name: String) -> Self {
-        let mut output: BTreeMap<String, String> = BTreeMap::new();
-        output.insert(signal, "Y".to_string());
-        let mut attributes: BTreeMap<String, String> = BTreeMap::new();
-        attributes.insert("VAL".to_string(), val.as_str().to_string());
-        SVPrimitive {
-            prim: "CONST".to_string(),
-            name,
-            inputs: BTreeMap::new(),
-            outputs: output,
-            attributes,
-        }
+        let mut prim = Self::new("CONST".to_string(), name, 0);
+        prim.connect_output("Y".to_string(), signal).unwrap();
+        prim.set_attribute("VAL".to_string(), val.as_str().to_string());
+        prim
     }
 
     /// Create an unconnnected instance to represent ground
     pub fn new_gnd(name: String) -> Self {
-        let mut attributes: BTreeMap<String, String> = BTreeMap::new();
-        attributes.insert("VAL".to_string(), "1'b0".to_string());
-        SVPrimitive {
-            prim: "CONST".to_string(),
-            name,
-            inputs: BTreeMap::new(),
-            outputs: BTreeMap::new(),
-            attributes,
-        }
+        let mut prim = Self::new("CONST".to_string(), name, 0);
+        prim.set_attribute("VAL".to_string(), "1'b0".to_string());
+        prim
     }
 
     /// Create an unconnnected instance to represent logical 1
     pub fn new_vcc(name: String) -> Self {
-        let mut attributes: BTreeMap<String, String> = BTreeMap::new();
-        attributes.insert("VAL".to_string(), "1'b1".to_string());
-        SVPrimitive {
-            prim: "CONST".to_string(),
-            name,
-            inputs: BTreeMap::new(),
-            outputs: BTreeMap::new(),
-            attributes,
-        }
+        let mut prim = Self::new("CONST".to_string(), name, 0);
+        prim.set_attribute("VAL".to_string(), "1'b1".to_string());
+        prim
     }
 
     /// Create a new wire assignment with name `name` driven by `driver`
     pub fn new_wire(driver: String, signal: String, name: String) -> Self {
-        let mut output: BTreeMap<String, String> = BTreeMap::new();
-        output.insert(signal, "Y".to_string());
-        let mut attributes: BTreeMap<String, String> = BTreeMap::new();
-        attributes.insert("VAL".to_string(), driver);
-        SVPrimitive {
-            prim: "WIRE".to_string(),
-            name,
-            inputs: BTreeMap::new(),
-            outputs: output,
-            attributes,
-        }
+        let mut prim = Self::new("WIRE".to_string(), name, 0);
+        prim.connect_output("Y".to_string(), signal).unwrap();
+        prim.set_attribute("VAL".to_string(), driver);
+        prim
     }
 
     /// Add an input connection
-    fn add_input(&mut self, port: String, signal: String) -> Result<(), String> {
+    fn connect_input(&mut self, port: String, signal: String) -> Result<(), String> {
         match self.inputs.insert(port.clone(), signal) {
             Some(d) => Err(format!(
                 "Port {} is already driven on instance {} of {} by {}",
@@ -318,24 +428,12 @@ impl SVPrimitive {
         }
     }
 
-    /// Add an output connection
-    fn add_output(&mut self, port: String, signal: String) -> Result<(), String> {
-        match self.outputs.insert(signal.clone(), port) {
-            Some(d) => Err(format!(
-                "Port {} is already driven on instance {} of {} by {}",
-                signal, self.name, self.prim, d
-            )),
-            None => Ok(()),
-        }
-    }
-
     /// Create an IO connection to the primitive based on port name. This is based on the Xilinx port naming conventions.
-    pub fn add_signal(&mut self, port: String, signal: String) -> Result<(), String> {
+    pub fn connect_signal(&mut self, port: String, signal: String) -> Result<(), String> {
         match port.as_str() {
-            "I" | "I0" | "I1" | "I2" | "I3" | "I4" | "I5" | "D" | "A" | "B" | "S" => {
-                self.add_input(port, signal)
-            }
-            "O" | "Y" | "Q" | "G" | "P" => self.add_output(port, signal),
+            "I" | "I0" | "I1" | "I2" | "I3" | "I4" | "I5" | "D" | "A" | "B" | "S" | "A1" | "A2"
+            | "A3" | "B1" | "B2" | "B3" | "C1" | "C2" | "C3" => self.connect_input(port, signal),
+            "O" | "Y" | "Q" | "G" | "P" | "Z" | "ZN" => self.connect_output(port, signal),
             "C" | "CE" | "R" => Ok(()),
             _ => Err(format!("Unknown port name {}", port)),
         }
@@ -413,6 +511,18 @@ pub struct SVModule {
     driving_module: HashMap<String, usize>,
     /// Sequential and hence needs a clk
     clk: bool,
+}
+
+trait VerilogEmission
+where
+    Self: Language + std::fmt::Display,
+{
+    fn verilog_primitive(
+        &self,
+        lookup: impl Fn(&Id) -> Option<String>,
+        fresh_prim_name: impl Fn() -> String,
+        fresh_signal_name: impl Fn() -> String,
+    ) -> Result<SVPrimitive, String>;
 }
 
 impl SVModule {
@@ -536,10 +646,7 @@ impl SVModule {
     }
 
     fn is_gate_prim(name: &str) -> bool {
-        matches!(
-            name,
-            "AND2" | "NOR2" | "XOR2" | "NOT" | "INV" | "MUX" | "MUXF7" | "MUXF8" | "MUXF9"
-        )
+        PrimitiveType::from_str(name).is_ok()
     }
 
     fn is_assign_prim(name: &str) -> bool {
@@ -646,7 +753,7 @@ impl SVModule {
                     }
 
                     if Self::is_gate_prim(&mod_name) {
-                        cur_insts.push(SVPrimitive::new_gate(mod_name, inst_name));
+                        cur_insts.push(SVPrimitive::new_gate(mod_name, inst_name)?);
                         continue;
                     }
 
@@ -701,7 +808,7 @@ impl SVModule {
                             cur_insts
                                 .last_mut()
                                 .unwrap()
-                                .add_signal(port_name, arg_name.unwrap())?;
+                                .connect_signal(port_name, arg_name.unwrap())?;
                         }
                         None => {
                             // Ignore clock enable and reset signals,
@@ -724,7 +831,7 @@ impl SVModule {
                                 cur_insts
                                     .last_mut()
                                     .unwrap()
-                                    .add_signal(port_name.clone(), arg_name.clone())?;
+                                    .connect_signal(port_name.clone(), arg_name.clone())?;
 
                                 // Create the constant
                                 let literal = unwrap_node!(arg, PrimaryLiteral);
@@ -933,8 +1040,8 @@ impl SVModule {
                     let sname = fresh_wire(id.into(), &mut mapping);
                     let pname = fresh_prim();
                     let mut inst = SVPrimitive::new_reg(pname);
-                    inst.add_input("D".to_string(), mapping[d].clone())?;
-                    inst.add_output("Q".to_string(), sname.clone())?;
+                    inst.connect_input("D".to_string(), mapping[d].clone())?;
+                    inst.connect_output("Q".to_string(), sname.clone())?;
                     module.signals.push(SVSignal::new(1, sname.clone()));
                     module
                         .driving_module
@@ -947,9 +1054,9 @@ impl SVModule {
                     let pname = fresh_prim();
                     let mut inst = SVPrimitive::new_lut(l.len() - 1, pname, programs[&l[0]]);
                     for (i, c) in l[1..].iter().rev().enumerate() {
-                        inst.add_input(format!("I{}", i), mapping[c].clone())?;
+                        inst.connect_input(format!("I{}", i), mapping[c].clone())?;
                     }
-                    inst.add_output("O".to_string(), sname.clone())?;
+                    inst.connect_output("O".to_string(), sname.clone())?;
                     module.signals.push(SVSignal::new(1, sname.clone()));
                     module
                         .driving_module
@@ -965,10 +1072,10 @@ impl SVModule {
                 LutLang::And([a, b]) | LutLang::Xor([a, b]) | LutLang::Nor([a, b]) => {
                     let sname = fresh_wire(id.into(), &mut mapping);
                     let pname = fresh_prim();
-                    let mut inst = SVPrimitive::new_gate(node.get_prim_name().unwrap(), pname);
-                    inst.add_input("A".to_string(), mapping[a].clone())?;
-                    inst.add_input("B".to_string(), mapping[b].clone())?;
-                    inst.add_output("Y".to_string(), sname.clone())?;
+                    let mut inst = SVPrimitive::new_gate(node.get_prim_name().unwrap(), pname)?;
+                    inst.connect_input("A".to_string(), mapping[a].clone())?;
+                    inst.connect_input("B".to_string(), mapping[b].clone())?;
+                    inst.connect_output("Y".to_string(), sname.clone())?;
                     module.signals.push(SVSignal::new(1, sname.clone()));
                     module
                         .driving_module
@@ -978,9 +1085,9 @@ impl SVModule {
                 LutLang::Not([a]) => {
                     let sname = fresh_wire(id.into(), &mut mapping);
                     let pname = fresh_prim();
-                    let mut inst = SVPrimitive::new_gate(node.get_prim_name().unwrap(), pname);
-                    inst.add_input("A".to_string(), mapping[a].clone())?;
-                    inst.add_output("Y".to_string(), sname.clone())?;
+                    let mut inst = SVPrimitive::new_gate(node.get_prim_name().unwrap(), pname)?;
+                    inst.connect_input("A".to_string(), mapping[a].clone())?;
+                    inst.connect_output("Y".to_string(), sname.clone())?;
                     module.signals.push(SVSignal::new(1, sname.clone()));
                     module
                         .driving_module
@@ -990,11 +1097,11 @@ impl SVModule {
                 LutLang::Mux([s, a, b]) => {
                     let sname = fresh_wire(id.into(), &mut mapping);
                     let pname = fresh_prim();
-                    let mut inst = SVPrimitive::new_gate(node.get_prim_name().unwrap(), pname);
-                    inst.add_input("A".to_string(), mapping[a].clone())?;
-                    inst.add_input("B".to_string(), mapping[b].clone())?;
-                    inst.add_input("S".to_string(), mapping[s].clone())?;
-                    inst.add_output("Y".to_string(), sname.clone())?;
+                    let mut inst = SVPrimitive::new_gate(node.get_prim_name().unwrap(), pname)?;
+                    inst.connect_input("A".to_string(), mapping[a].clone())?;
+                    inst.connect_input("B".to_string(), mapping[b].clone())?;
+                    inst.connect_input("S".to_string(), mapping[s].clone())?;
+                    inst.connect_output("Y".to_string(), sname.clone())?;
                     module.signals.push(SVSignal::new(1, sname.clone()));
                     module
                         .driving_module
@@ -1275,12 +1382,30 @@ impl fmt::Display for SVModule {
 #[test]
 fn test_primitive_connections() {
     let mut prim = SVPrimitive::new_lut(4, "_0_".to_string(), 1);
-    assert!(prim.add_signal("I8".to_string(), "a".to_string()).is_err());
-    assert!(prim.add_signal("I0".to_string(), "a".to_string()).is_ok());
-    assert!(prim.add_signal("I0".to_string(), "a".to_string()).is_err());
-    assert!(prim.add_signal("Y".to_string(), "b".to_string()).is_ok());
-    assert!(prim.add_signal("Y".to_string(), "b".to_string()).is_err());
-    assert!(prim.add_signal("bad".to_string(), "a".to_string()).is_err());
+    assert!(
+        prim.connect_signal("I8".to_string(), "a".to_string())
+            .is_err()
+    );
+    assert!(
+        prim.connect_signal("I0".to_string(), "a".to_string())
+            .is_ok()
+    );
+    assert!(
+        prim.connect_signal("I0".to_string(), "a".to_string())
+            .is_err()
+    );
+    assert!(
+        prim.connect_signal("Y".to_string(), "b".to_string())
+            .is_ok()
+    );
+    assert!(
+        prim.connect_signal("Y".to_string(), "b".to_string())
+            .is_err()
+    );
+    assert!(
+        prim.connect_signal("bad".to_string(), "a".to_string())
+            .is_err()
+    );
 }
 
 #[test]
