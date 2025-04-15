@@ -9,12 +9,13 @@ general are NP-Hard~\cite{logicmin,twolevellogic}, and modern EDA flows bring
 compile times down to the human timescale while maintaining acceptable quality
 of results (QoR).
 
-\fixme{With the end of Moore's Law scaling, chip area becomes a tighter constraint, and logic synthesis is more of a bottleneck}. \zz{rewrite -- Denard scaling is dead; Moore Law not done yet; chip area is not really a critical constraint (power is); also it's a stretch to say logic synthesis is a bottleneck; it's still a critical stage for sure} Hence, future synthesis tools will
-need to expand the design spaces they explore and find more optimal solutions.
-Still, finding provably optimal circuits is computationally intractable. In
-this paper, we introduce how FPGA technology mapping can be augmented with
-e-graph data structures to find \textit{more} exact solutions, without
-significantly increasing compile times.
+With the end of Dennard scaling and Moore's Law fading, the quality of logic
+synthesis becomes more important. Hence, future synthesis tools will need to
+expand the design spaces they explore and find more optimal solutions. Still,
+finding provably optimal circuits is computationally intractable. In this
+paper, we introduce how FPGA technology mapping can be augmented with e-graph
+data structures to find \textit{more} exact solutions, without significantly
+increasing compile times.
 
 Technology mapping is the hand-off between logic synthesis and physical design.
 It converts the abstract Boolean logic into a network of circuit elements that
