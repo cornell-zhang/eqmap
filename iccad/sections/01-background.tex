@@ -17,7 +17,7 @@
 
 \subsection{FPGA Technology Mapping}\label{sec:background:fpga}
 FPGA technology mapping converts abstract RTL logic into a netlist of lookup
-tables (LUTs). Due to the computational complexity of optimal LUT packing, most
+tables. Due to the computational complexity of optimal LUT packing, most
 implementations avoid restructuring the input logic and are essentially graph
 covering algorithms. Given a $k$-LUT FPGA architecture, most mappers start by
 enumerating the feasible cuts of logic for each node in the circuit. Then,
@@ -49,8 +49,8 @@ is grouped with $A_0 + B_0$ and \textit{not} $A_1 + B_1$. To summarize, optimal
 technology mapping must overcome both the difficulty of cut selection and bias
 to the structure of the input circuit.
 
-\subsection{Equivalence Graphs}\label{sec:background:egraph}
-Equivalence graphs, most commonly referred to as \textit{e-graphs}, are an
+\subsection{Equality Graphs}\label{sec:background:egraph}
+Equality graphs, most commonly referred to as \textit{e-graphs}, are an
 automated reasoning tool built around a union-find data
 structure~\cite{eggpaper, eqsat}. E-graphs are particularly strong at
 equational reasoning. For example, e-graphs can be used to rewrite mathematical
