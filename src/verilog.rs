@@ -328,6 +328,19 @@ impl PrimitiveType {
         // TODO(matth2k): Implement this for all primitive types
         "ZN".to_string()
     }
+
+    /// Returns true if the primitive is a k-LUT
+    pub fn is_lut(&self) -> bool {
+        match self {
+            Self::LUT1 | Self::LUT2 | Self::LUT3 | Self::LUT4 | Self::LUT5 | Self::LUT6 => true,
+            _ => false,
+        }
+    }
+
+    /// Returns true if the primitive is not a LUT
+    pub fn is_gate(&self) -> bool {
+        !self.is_lut()
+    }
 }
 
 impl FromStr for PrimitiveType {
@@ -800,7 +813,7 @@ impl SVModule {
     }
 
     fn is_gate_prim(name: &str) -> bool {
-        PrimitiveType::from_str(name).is_ok()
+        PrimitiveType::from_str(name).is_ok_and(|p| p.is_gate())
     }
 
     fn is_assign_prim(name: &str) -> bool {
@@ -1722,7 +1735,7 @@ fn test_parse_verilog() {
 
 #[test]
 fn test_cellang_emission() {
-    let expr: RecExpr<CellLang> = "(AND a b)".parse().unwrap();
+    let expr: RecExpr<CellLang> = "(AND2_X1 a b)".parse().unwrap();
     let prim = expr.last().unwrap().get_verilog_primitive(
         |x| {
             if *x == Id::from(0) {
@@ -1738,6 +1751,6 @@ fn test_cellang_emission() {
     let prim = prim.unwrap().unwrap();
     assert_eq!(
         prim.to_string(),
-        "  AND #(\n  ) and_inst (\n      .A(a),\n      .B(b),\n      .ZN(y)\n  );"
+        "  AND2_X1 #(\n  ) and_inst (\n      .A1(a),\n      .A2(b),\n      .ZN(y)\n  );"
     );
 }
