@@ -31,12 +31,14 @@ topology of the input circuit, and hence they are prone to \textit{structural
 
 In contrast, functional mappers attempt to decompose the Boolean functionality
 into smaller sub-functions which can be realized by $k$-LUTs. Such mappers are
-a more exact approach, and often use SAT solvers~\cite{satmap,satmap2} to drive
-synthesis. \zz{there are older papers we should cite on boolean matching}
-However, exact synthesis tools cannot be scaled past tens of gates. As a
-consequence, cut enumeration and functional mapping lie on two different
-extremes. The former is faster but limited by the input structure, while the
-latter is unbiased but fundamentally unscalable.
+a more exact approach, and often use SAT solvers to drive
+synthesis~\cite{satmap,satmap2}. Other works employ Boolean matching to speedup
+of technology mapping by identifying known Boolean
+structures~\cite{boolmatch,fastboolmatch}. However, exact synthesis tools
+cannot be scaled past tens of gates. As a consequence, cut enumeration and
+functional mapping lie on two different extremes. The former is faster but
+limited by the input structure, while the latter is unbiased but fundamentally
+unscalable.
 
 For this reason, we propose an e-graph driven technology mapper than can better
 span the time-QoR spectrum. Equality graphs, referred to as e-graphs, are a
