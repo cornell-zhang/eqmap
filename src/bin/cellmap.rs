@@ -3,6 +3,7 @@ use egg::{FromOpError, RecExpr, RecExprParseError};
 use lut_synth::{
     asic::{CellAnalysis, CellLang, CellRpt, asic_rewrites},
     driver::{SynthRequest, process_string_expression, simple_reader},
+    verilog::SVModule,
 };
 use std::path::PathBuf;
 
@@ -77,6 +78,10 @@ struct Args {
     /// Print explanations (this generates a proof and runs longer)
     #[arg(short = 'v', long, default_value_t = false)]
     verbose: bool,
+
+    /// Output Verilog
+    #[arg(long, default_value_t = false)]
+    verilog: bool,
 
     /// Extract for minimum circuit depth
     #[arg(long, default_value_t = false)]
@@ -170,7 +175,18 @@ fn main() -> std::io::Result<()> {
             args.verbose,
         )?;
         if !result.is_empty() {
-            println!("{}", result);
+            if args.verilog {
+                let module = SVModule::from_cells(
+                    result.get_expr().to_owned(),
+                    "top".to_string(),
+                    Vec::new(),
+                );
+                let module =
+                    module.map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+                println!("{}", module);
+            } else {
+                println!("{}", result);
+            }
         }
     }
     Ok(())

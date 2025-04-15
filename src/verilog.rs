@@ -428,6 +428,16 @@ impl SVPrimitive {
         Self::new(logic.to_string(), name, n_inputs)
     }
 
+    /// Create a new unconnected gate primitive with instance name `name` and `drive_strength`
+    pub fn new_gate_with_strength(
+        logic: PrimitiveType,
+        name: String,
+        drive_strength: usize,
+    ) -> Self {
+        let n_inputs: usize = logic.get_num_inputs();
+        Self::new(format!("{}_X{}", logic, drive_strength), name, n_inputs)
+    }
+
     /// Create a new unconnected gate primitive with instance name `name`
     pub fn new_gate_from_string(gate: String, name: String) -> Result<Self, String> {
         // All names should take form <LOGIC>_<DRIVE> or <LOGIC>
@@ -577,7 +587,7 @@ where
         lookup: impl Fn(&Id) -> Option<String>,
         fresh_prim_name: impl Fn() -> String,
         fresh_signal_name: impl Fn() -> String,
-    ) -> Result<SVPrimitive, String>;
+    ) -> Result<Option<SVPrimitive>, String>;
 }
 
 impl VerilogEmission for CellLang {
@@ -586,7 +596,10 @@ impl VerilogEmission for CellLang {
             CellLang::And(_) => Some(PrimitiveType::AND),
             CellLang::Or(_) => Some(PrimitiveType::OR),
             CellLang::Inv(_) => Some(PrimitiveType::INV),
-            CellLang::Cell(s, _) => PrimitiveType::from_str(s.as_str()).ok(),
+            CellLang::Cell(s, _) => match s.as_str().split_once('_') {
+                Some((l, _)) => PrimitiveType::from_str(l).ok(),
+                None => PrimitiveType::from_str(s.as_str()).ok(),
+            },
             _ => None,
         }
     }
@@ -596,7 +609,7 @@ impl VerilogEmission for CellLang {
         lookup: impl Fn(&Id) -> Option<String>,
         fresh_prim_name: impl Fn() -> String,
         fresh_signal_name: impl Fn() -> String,
-    ) -> Result<SVPrimitive, String> {
+    ) -> Result<Option<SVPrimitive>, String> {
         match self {
             CellLang::And(_) | CellLang::Or(_) | CellLang::Inv(_) | CellLang::Cell(_, _) => {
                 let inputs = self.children();
@@ -604,16 +617,23 @@ impl VerilogEmission for CellLang {
                     .get_gate_type()
                     .expect("CellLang gates should have a primitive type");
                 let port_list = gate_type.get_input_list();
-                let mut prim = SVPrimitive::new_gate(gate_type.clone(), fresh_prim_name());
+                // TODO(matth2k): Carry through drive strength
+                let mut prim =
+                    SVPrimitive::new_gate_with_strength(gate_type.clone(), fresh_prim_name(), 1);
                 for (input, port) in inputs.iter().zip(port_list) {
                     let signal = lookup(input)
                         .ok_or(format!("Could not find signal {} in the module", input))?;
                     prim.connect_input(port, signal)?;
                 }
                 prim.connect_output(gate_type.get_output(), fresh_signal_name())?;
-                Ok(prim)
+                Ok(Some(prim))
             }
-            _ => Err("Verilog emission not implemented for this language".to_string()),
+            CellLang::Const(b) => Ok(Some(SVPrimitive::new_const(
+                Logic::from(*b),
+                fresh_signal_name(),
+                fresh_prim_name(),
+            ))),
+            _ => Ok(None),
         }
     }
 }
@@ -1026,7 +1046,7 @@ impl SVModule {
         Ok(modules.pop().unwrap())
     }
 
-    fn insert_instance(&mut self, inst: SVPrimitive) -> Result<(), String> {
+    fn insert_instance(&mut self, inst: SVPrimitive) -> Result<String, String> {
         if !inst.fully_connected() {
             return Err(format!(
                 "Primitive {} is not fully connected before inserting into module",
@@ -1035,9 +1055,101 @@ impl SVModule {
         }
         let signal = inst.get_output_name().unwrap();
         self.signals.push(SVSignal::new(1, signal.clone()));
-        self.driving_module.insert(signal, self.instances.len());
+        self.driving_module
+            .insert(signal.clone(), self.instances.len());
         self.instances.push(inst);
-        Ok(())
+        Ok(signal)
+    }
+
+    fn insert_input(&mut self, var: String) -> Result<String, String> {
+        let sname = var;
+        if sname.contains("\n") || sname.contains(",") || sname.contains(";") {
+            return Err("Input cannot span multiple lines or contain delimiters".to_string());
+        }
+        if sname.contains("tmp") {
+            return Err("'tmp' is a reserved keyword".to_string());
+        }
+        if sname.contains(CLK) {
+            return Err(format!("'{}' is a reserved keyword", CLK));
+        }
+        if sname.contains("input") {
+            return Err("'input' is a reserved keyword".to_string());
+        }
+        let signal = SVSignal::new(1, sname.clone());
+        self.signals.push(signal.clone());
+        self.inputs.push(signal);
+
+        // TODO(matth2k): Check if input directly drives an output
+
+        // if mapping.contains_key(&id.into()) {
+        //     let output = mapping[&id.into()].clone();
+        //     let wire = SVPrimitive::new_wire(sname.clone(), output.clone(), fresh_prim());
+        //     module
+        //         .driving_module
+        //         .insert(output.clone(), module.instances.len());
+        //     module.instances.push(wire);
+        //     module.signals.push(SVSignal::new(1, output));
+        // }
+
+        Ok(sname)
+    }
+
+    /// Constructs a verilog module out of a [LutLang] expression.
+    /// The module will be named `mod_name` and the outputs will be named from right to left with `outputs`.
+    /// The default names for the outputs are `y0`, `y1`, etc. `outputs[0]` names the rightmost signal in a bus.
+    pub fn from_cells(
+        expr: RecExpr<CellLang>,
+        mod_name: String,
+        outputs: Vec<String>,
+    ) -> Result<Self, String> {
+        let mut module = SVModule::new(mod_name);
+
+        let mut mapping: HashMap<Id, String> = HashMap::new();
+
+        // Add output mapping
+        module.name_output(
+            (expr.len() - 1).into(),
+            outputs.first().unwrap_or(&"y".to_string()).to_string(),
+            &mut mapping,
+        );
+
+        let mut prim_count: usize = 0;
+        for (i, l) in expr.as_ref().iter().enumerate() {
+            if !mapping.contains_key(&i.into())
+                && !matches!(l, CellLang::Var(_))
+                && i < expr.as_ref().len() - 1
+            {
+                mapping.insert(i.into(), format!("__{}__", prim_count));
+                prim_count += 1;
+            }
+        }
+
+        let prim_count: RefCell<usize> = RefCell::new(prim_count);
+
+        let fresh_prim = || {
+            *prim_count.borrow_mut() += 1;
+            format!("__{}__", *prim_count.borrow() - 1)
+        };
+
+        for (id, node) in expr.as_ref().iter().enumerate() {
+            let fresh_wire = || {
+                mapping.get(&id.into()).cloned().unwrap_or_else(|| {
+                    *prim_count.borrow_mut() += 1;
+                    format!("__{}__", *prim_count.borrow() - 1)
+                })
+            };
+            if let Some(prim) =
+                node.get_verilog_primitive(|x| mapping.get(x).cloned(), fresh_prim, fresh_wire)?
+            {
+                let sname = module.insert_instance(prim)?;
+                mapping.insert(id.into(), sname);
+            } else if let CellLang::Var(v) = node {
+                let sname = module.insert_input(v.to_string())?;
+                mapping.insert(id.into(), sname);
+            }
+        }
+
+        Ok(module)
     }
 
     /// Constructs a verilog module out of a [LutLang] expression.
@@ -1184,11 +1296,7 @@ impl SVModule {
                     inst.connect_input("A".to_string(), mapping[a].clone())?;
                     inst.connect_input("B".to_string(), mapping[b].clone())?;
                     inst.connect_output("Y".to_string(), sname.clone())?;
-                    module.signals.push(SVSignal::new(1, sname.clone()));
-                    module
-                        .driving_module
-                        .insert(sname.clone(), module.instances.len());
-                    module.instances.push(inst);
+                    module.insert_instance(inst)?;
                 }
                 LutLang::Not([a]) => {
                     let sname = fresh_wire(id.into(), &mut mapping);
@@ -1586,7 +1694,7 @@ fn test_cellang_emission() {
         || "y".to_string(),
     );
     assert!(prim.is_ok());
-    let prim = prim.unwrap();
+    let prim = prim.unwrap().unwrap();
     assert_eq!(
         prim.to_string(),
         "  AND #(\n  ) and_inst (\n      .A(a),\n      .B(b),\n      .ZN(y)\n  );"

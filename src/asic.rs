@@ -46,6 +46,23 @@ impl CellLang {
             _ => Ok(()),
         }
     }
+
+    /// Get the drive strength of a cell
+    pub fn get_drive_strength(&self) -> Option<usize> {
+        match self {
+            CellLang::Cell(s, _) => match s.as_str().split_once("_X") {
+                Some((_, strength)) => {
+                    if let Ok(strength) = strength.parse::<usize>() {
+                        Some(strength)
+                    } else {
+                        None
+                    }
+                }
+                None => None,
+            },
+            _ => None,
+        }
+    }
 }
 
 /// A cost function that extracts a circuit with the least depth
