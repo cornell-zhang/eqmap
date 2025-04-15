@@ -331,10 +331,10 @@ impl PrimitiveType {
 
     /// Returns true if the primitive is a k-LUT
     pub fn is_lut(&self) -> bool {
-        match self {
-            Self::LUT1 | Self::LUT2 | Self::LUT3 | Self::LUT4 | Self::LUT5 | Self::LUT6 => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            Self::LUT1 | Self::LUT2 | Self::LUT3 | Self::LUT4 | Self::LUT5 | Self::LUT6
+        )
     }
 
     /// Returns true if the primitive is not a LUT
