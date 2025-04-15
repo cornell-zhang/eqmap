@@ -14,7 +14,6 @@ use egg::{
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::collections::{BTreeMap, HashSet};
-use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
@@ -212,7 +211,7 @@ where
         })
     }
 
-    fn get_rule_uses_rec(map: &mut BTreeMap<String, usize>, expl: &[Rc<TreeTerm<L>>]) {
+    fn get_rule_uses_rec(map: &mut BTreeMap<String, usize>, expl: &[std::rc::Rc<TreeTerm<L>>]) {
         for t in expl {
             if let Some(r) = t.backward_rule {
                 let name = r.to_string();
