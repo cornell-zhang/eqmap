@@ -86,28 +86,6 @@ example, the pseudocode for $k=3$ is written as follows:
     where F'(x0, x1) := F(x0, x1, false)
 \end{lstlisting}
 
-\subsection{Function Composition}\label{sec:rewrites:composition}
-
-Cascaded LUTs can be packed into a single LUT, as long as the size of the cut
-of logic has at most 6 leaf nodes. This is the crucial observation to LUT
-packing. For instance, a circuit that implements $F(x_0, G(x_1, x_2))$ with two
-2-LUTs can be rewritten as a 3-LUT that implements some $H(x_0, x_1, x_2)$. In
-pseudocode, this would take on the following form:
-
-\begin{lstlisting}
-(LUT F x0 (LUT G x1 x2)) => (LUT H x0 x1 x2)
-    where H(x0, x1, x2) := F(x0, G(x1, x2))
-\end{lstlisting}
-
-The search patterns \texttt{x0}, \texttt{x1} and \texttt{x1} can match any
-node. They are not necessarily principal inputs, and hence can be outputs from
-other LUTs. As a consequence, this rule can be chained together many times in
-different orders to pack a sub-circuit into a single LUT. As demonstrated in
-the next section, we can write this rule for one specific input position,
-without loss of generality. Therefore, we only need to sweep over the size of
-the two LUTs in the search pattern. In total, there are $6*6 = 36$ LUT packing
-rules. When the cut of logic is larger than 6 leaves, the rule exits gracefully
-and do not interfere with reaching equality saturation.
 \subsection{LUT Symmetries}\label{sec:rewrites:symmetry}
 
 The semantics of LUTs should not depend on the order of their inputs. If two
@@ -147,6 +125,29 @@ that every other rewrite rule can now be defined for one input position,
 without loss of generality. This reduces the total number of rewrite rules,
 making it easier to rationalize about the rule system and which types of
 optimizations are reachable.
+
+\subsection{Function Composition}\label{sec:rewrites:composition}
+
+Cascaded LUTs can be packed into a single LUT, as long as the size of the cut
+of logic has at most 6 leaf nodes. This is the crucial observation to LUT
+packing. For instance, a circuit that implements $F(x_0, G(x_1, x_2))$ with two
+2-LUTs can be rewritten as a 3-LUT that implements some $H(x_0, x_1, x_2)$. In
+pseudocode, this would take on the following form:
+
+\begin{lstlisting}
+(LUT F x0 (LUT G x1 x2)) => (LUT H x0 x1 x2)
+    where H(x0, x1, x2) := F(x0, G(x1, x2))
+\end{lstlisting}
+
+The search patterns \texttt{x0}, \texttt{x1} and \texttt{x1} can match any
+node. They are not necessarily principal inputs, and hence can be outputs from
+other LUTs. As a consequence, this rule can be chained together many times in
+different orders to pack a sub-circuit into a single LUT. As a consequence of
+the previous rule, we can write compositions for one specific input position,
+without loss of generality. Therefore, we only need to sweep over the size of
+the two LUTs in the search pattern. In total, there are $6*6 = 36$ LUT packing
+rules. When the cut of logic is larger than 6 leaves, the rule exits gracefully
+and do not interfere with reaching equality saturation.
 
 \subsection{LUTs with Domain Restrictions}\label{sec:rewrites:restrict}
 

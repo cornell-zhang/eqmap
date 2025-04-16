@@ -35,10 +35,11 @@ level, optimizing the datapath of large bit-width multipliers. At a lower
 level, ROVER~\cite{rover,roverbl,egraphconstraints} rewrites arithmetic data
 paths at the word and bit levels. ROVER straddles the RTL and physical level of
 abstraction, making it more general purpose than IMpress. In any case, the work
-which is most similar in its goals to ours is E-Syn~\cite{esynth}. E-Syn uses
-Boolean algebra to rewrite a circuit with known properties like De Morgan's
-laws and the consensus theorem. Ultimately, E-Syn performs its optimizations
-during technology-independent synthesis steps, whereas \shortname{} applies as
-a post-processing step \textit{after} technology mapping. Furthermore,
+which is most similar in its goals to ours is E-Syn~\cite{esynth}.
+\todo{explain more clearly the difference} E-Syn uses Boolean algebra to
+rewrite a circuit with known properties like De Morgan's laws and the consensus
+theorem. Ultimately, E-Syn performs its optimizations during
+technology-independent synthesis steps, whereas \shortname{} applies as a
+post-processing step \textit{after} technology mapping. Furthermore,
 \shortname{}'s rewriting system models the netlist in terms of total functions,
 rather than as expressions over a Boolean algebra.
