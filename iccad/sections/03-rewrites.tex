@@ -139,16 +139,16 @@ pseudocode, this would take on the following form:
 The search patterns \texttt{x0}, \texttt{x1} and \texttt{x1} can match any
 node. They are not necessarily principal inputs, and hence can be outputs from
 other LUTs. As a consequence, this rule can be chained together many times in
-different orders to pack a sub-circuit into a single LUT. As a consequence of
-the previous rule, we can write compositions for one specific input position,
+different orders to pack a sub-circuit into a single LUT. As an example, this
+rule would match the two 4-LUTs in Fig.~\ref{fig:eg:bad} and combine them into
+the single 4-LUT in Fig.~\ref{fig:eg:good}. Since the previous rule captures
+LUT symmetry, we can write compositions for one specific input position,
 without loss of generality. Therefore, we only need to sweep over the size of
 the two LUTs in the search pattern. In total, there are $6*6 = 36$ LUT packing
 rules. When the cut of logic is larger than 6 leaves, the rule exits gracefully
-and do not interfere with reaching equality saturation.
+and does not interfere with reaching equality saturation.
 
 \subsection{LUTs with Domain Restrictions}\label{sec:rewrites:restrict}
-
-\zz{we could use an example here. Fig 1 is currently only used in the background. Ideally we want to refer to it (or a different example) again when we discuss some of the rewrite rules}
 
 \textbf{Definition:} A lookup table \texttt{(LUT F x0 x1 \ldots)} is \textit{restricted} if $\llbracket \texttt{xi} \rrbracket = \llbracket \texttt{xj} \rrbracket$ for some $ i, j \in \{0, \ldots, k-1\}, \; i \neq j$.
 In other words, the domain of the LUT is restricted.
@@ -158,7 +158,7 @@ notions of equality. Whenever a new equivalence is found between two of the
 inputs to a $k$-LUT, it can be rewritten with a $(k-1)$-LUT. We simply need to
 define and compute $\texttt{restrict(F, i, j)}$ which maps $F : \Bx{k}
     \rightarrow \B$ to the domain-restricted $F \vert_{x_i = x_j} : \Bx{k-1}
-    \rightarrow \B$. In pseudocode, the rewrite rule can be rewritten as follows:
+    \rightarrow \B$. In pseudocode, the rewrite rule can be written as follows:
 
 \begin{lstlisting}
 (LUT F x0 x1 x1) => (LUT F' x0 x1)
@@ -166,9 +166,11 @@ define and compute $\texttt{restrict(F, i, j)}$ which maps $F : \Bx{k}
 \end{lstlisting}
 
 Since rewrite search patterns already match `modulo' e-class, this rule is
-automatically triggered when e-classes are merged. Since LUT symmetry is
-represented in the graph, only one rule is needed for each LUT size $k=2$
-through 6.
+automatically triggered when e-classes are merged. For instance, if the e-graph
+proved in Fig.~\ref{fig:eg} that $A_i = B_i$ then all the LUTs would shrink by
+one input---causing the next wave of rewrites to fire. Again, only one rule is
+needed for each LUT size $k=2$ through 6, because LUT symmetry is represented
+in the graph.
 
 \begin{figure*}[tb]
     \begin{subfigure}{0.31\textwidth}
