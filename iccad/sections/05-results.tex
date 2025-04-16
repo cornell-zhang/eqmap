@@ -16,22 +16,22 @@ optimizations influence CLB usage and timing closure.
 \begin{table}
     \centering
     \csvautobooktabular{data/results.csv}
-    \caption{Results of \nimproved{} improved benchmarks from ISCAS'85~\cite{iscasbench}, LGSynth'91~\cite{lgsynthbench}, and EPFL~\cite{epflbench}}\label{tab:results}
+    \caption{Results of \nimproved{} improved benchmarks from ISCAS'85~\cite{iscasbench}, LGSynth'91~\cite{lgsynthbench}, and EPFL~\cite{epflbench}. The percent improvements use Vivado as the baseline.}\label{tab:results}
 \end{table}
 
 \begin{figure}
     \begin{subfigure}{0.47\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/y33.pdf}
-        \caption{Distribution of 128 LUTs after running \shortname{} on `i9' synthesized with Yosys 0.33.}\label{fig:histogram:y33}
+        \caption{Distribution of LUTs when using EqMap + Yosys 0.33.}\label{fig:histogram:y33}
     \end{subfigure}
     \hfill\vspace{4mm}
     \begin{subfigure}{0.47\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/y47.pdf}
-        \caption{Distribution of 137 LUTs after running \shortname{} on `i9' synthesized with Yosys 0.47.}\label{fig:histogram:y47}
+        \caption{Distribution of LUTs when using EqMap + Yosys 0.47.}\label{fig:histogram:y47}
     \end{subfigure}
-    \caption{Comparison of \shortname{}'s ability to optimize circuits given different starting structures.}\label{fig:histogram}
+    \caption{Yosys 0.47 maps `i9' with fewer LUTs than Yosys 0.33. However, remapping with EqMap causes the inverse trend.}\label{fig:histogram}
 \end{figure}
 
 \subsection{Benchmarking}\label{sec:results:benchmark}
