@@ -37,7 +37,7 @@ synthesis~\cite{satmap,satmap2}. Other works employ Boolean matching to speedup
 of technology mapping by identifying known Boolean
 structures~\cite{boolmatch,fastboolmatch}. However, exact synthesis tools
 cannot be scaled past tens of gates. As a consequence, cut enumeration and
-functional mapping lie on two different extremes. The former is faster but
+functional mapping lie on two different extremes. The former is fast but
 limited by the input structure, while the latter is unbiased but fundamentally
 unscalable.
 
@@ -47,7 +47,7 @@ data structure which use union-find operations to compactly represent abstract
 equivalence relations~\cite{eggpaper}. Whereas typical optimizing compilers
 apply a greedy sequence of transformation passes, e-graphs rewrite terms
 iteratively in a nondestructive fashion. Our work seeks to evaluate the
-suitability of e-graphs for logic synthesis, specifically fpr technology
+suitability of e-graphs for logic synthesis, specifically for technology
 mapping to FPGAs. By using the output mappings of RTL synthesis tools as an
 initial solution, we can use e-graphs to incrementally explore more compact
 circuit topologies.
