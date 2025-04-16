@@ -1,4 +1,4 @@
-Module,,LUT Count,
+Module,LUT Count,,
 ,EqMap,Vivado 2024,Yosys 0.33
 mem\_ctrl,10566\quad(-9.35\%),11697,11101
 div,5050\quad(-64.62\%),14337,5319
