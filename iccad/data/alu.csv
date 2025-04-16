@@ -1,5 +1,5 @@
 ALU Bit Width,,LUT Count,
- ,Vivado,E-Pack,\% Improvement 
+ ,Vivado,EqMap,\% Improvement
 8,14,14,0.00\%
 16,30,30,0.00\%
 ...,...,...,0.00\%

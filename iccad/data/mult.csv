@@ -1,5 +1,5 @@
 × Num. Stages,LUTs,,,FFs,,,CLBs,,
- ,Initial,E-Pack,\% Difference,Initial,E-Pack,\% Difference,Initial,E-Pack,\% Difference
+ ,Initial,EqMap,\% Difference,Initial,EqMap,\% Difference,Initial,EqMap,\% Difference
 1,982,912,-7.13\%,32,32,0\%,148,146,-1.35\%
 2,971,907,-6.59\%,96,118,+22.91\%,137,137,0\%
 4,1041,931,-10.57\%,224,326,+45.54\%,147,138,-6.12\%
