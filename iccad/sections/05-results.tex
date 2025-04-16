@@ -23,15 +23,15 @@ optimizations influence CLB usage and timing closure.
     \begin{subfigure}{0.47\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/y33.pdf}
-        \caption{Distribution of 128 LUTs after running E-Pack on `i9' synthesized with Yosys 0.33.}\label{fig:histogram:y33}
+        \caption{Distribution of 128 LUTs after running \shortname{} on `i9' synthesized with Yosys 0.33.}\label{fig:histogram:y33}
     \end{subfigure}
     \hfill\vspace{4mm}
     \begin{subfigure}{0.47\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/y47.pdf}
-        \caption{Distribution of 137 LUTs after running E-Pack on `i9' synthesized with Yosys 0.47.}\label{fig:histogram:y47}
+        \caption{Distribution of 137 LUTs after running \shortname{} on `i9' synthesized with Yosys 0.47.}\label{fig:histogram:y47}
     \end{subfigure}
-    \caption{Comparison of E-Pack's ability to optimize circuits given different starting structures.}\label{fig:histogram}
+    \caption{Comparison of \shortname{}'s ability to optimize circuits given different starting structures.}\label{fig:histogram}
 \end{figure}
 
 \subsection{Benchmarking}\label{sec:results:benchmark}
@@ -42,21 +42,21 @@ benchmarks we tested, \shortname{} was able to reduce the LUT count \fmetric{}
 of the time. On average, \shortname{} packed the netlists to \metric{}. The
 results in Table~\ref{tab:results} list all the reduced LUT counts, sorted by
 approximate design size. AMD/Xilinx Vivado 2024~\cite{vivado} was used as the
-baseline synthesis tool. For the E-Pack flow, Yosys~\cite{yosys} was used to
-generate the initial mapped circuit. At a glance, circuits like `int2float,'
+baseline synthesis tool. For the \shortname{} flow, Yosys~\cite{yosys} was used
+to generate the initial mapped circuit. At a glance, circuits like `int2float,'
 `c6288,` `adder,' and `square' have the most to gain from \shortname{}. These
 circuits are all arithmetic in nature, and this is a common occurrence
 throughout the rest of the results.
 
 One result that is \textit{not} demonstrated by the table is the apparent
-importance of the initial structure inputted to E-Pack. We have not eliminated
-all sources of structural bias, and hence our superoptimization tool still
-occasionally gets stuck at a local minimum. Fig.~\ref{fig:histogram}
+importance of the initial structure inputted to \shortname{}. We have not
+eliminated all sources of structural bias, and hence our superoptimization tool
+still occasionally gets stuck at a local minimum. Fig.~\ref{fig:histogram}
 illustrates the issue by depicting the different distributions of $k$-LUT usage
 by different tool flows. In short, an overly packed LUT network will fare worse
 in attempts to superoptimize it. Future work will investigate which qualities
 make an RTL synthesis engine work well with our tool versus ones that do not.
-For example, E-Pack optimized Yosys 0.33 netlists
+For example, \shortname{} optimized Yosys 0.33 netlists
 (Fig.~\ref{fig:histogram:y33}) better than ones provided by Yosys version 0.47
 (Fig.~\ref{fig:histogram:y47}). A future version of \shortname{} should
 implement new rewrite procedures than can break out of these local minimums on
@@ -111,13 +111,13 @@ effects of routing congestion, more so than ASIC design. Hence, reducing the
 cell count and circuit depth along the max delay path is a valid optimization
 strategy for FPGA design. As a caveat, it is important to note that other work
 has also observed the opposite trend~\cite{academicfpga}: decreasing depth too
-much can strain the router. In any case, E-Pack can be utilized to reduce total
+much can strain the router. In any case, \shortname{} can be utilized to reduce total
 CLB usage. To elaborate, every CLB in the Ultrascale+ architecture contains 1
 slice, which itself contains 8 LUTs and 16 flip-flops~\cite{ug574}.
 Intuitively, a design that maps to CLBs efficiently will contain more
 flip-flops than LUTs due to this 2:1 ratio. To test this hypothesis,
 Table~\ref{tab:multiply} shows the results of a 32-bit pipelined multiplier
-with a varying number of pipeline stages processed with E-Pack.
+with a varying number of pipeline stages processed with \shortname{}.
 
 While the total drop is CLB usage is desirable, the area gains as a percentage
 are modest due to the suboptimality of greedy e-graph extraction. Register

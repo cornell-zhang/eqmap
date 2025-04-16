@@ -29,7 +29,7 @@
 \lstset{style=mystyle}
 
 \newcommand{\fullname}{Simultaneous FPGA LUT Packing and Remapping using E-Graphs}
-\newcommand{\shortname}{E-Pack}
+\newcommand{\shortname}{EqMap}
 \newcommand{\metric}{12\% fewer LUTs}
 \newcommand{\fmetric}{44\%}
 \newcommand{\nimproved}{42}
@@ -58,11 +58,11 @@
     been successfully employed to mitigate compile times while adequate quality of
     results. Even though the problem has been extensively studied, our results show
     there is still substantial room for improvement, even for commercial tools. As
-    a solution, we introduce E-Pack, an e-graph driven compiler that can better
+    a solution, we introduce \shortname{}, an e-graph driven compiler that can better
     span the wide gap between SAT-based exact synthesis and heuristic cut
-    enumeration techniques. We show that E-Pack can synthesize circuits with
+    enumeration techniques. We show that \shortname{} can synthesize circuits with
     \metric{} on average over the vendor tools---without ever increasing circuit
-    depth. We also provide an empirical analysis of the runtime of E-Pack and show
+    depth. We also provide an empirical analysis of the runtime of \shortname{} and show
     that it is still practical for large designs. Finally, we demonstrate that our
     compiler infrastructure is reusable, and future work can use our compiler for
     RTL equivalence checking or auditing the QoR of synthesis tools.
@@ -75,7 +75,6 @@
 \input{sections/04-toolflow}
 \input{sections/05-results}
 \input{sections/06-conclusion}
-
 % MISC TODOS:
 % Weave Fig. 2 into the text
 
