@@ -44,31 +44,28 @@ unscalable.
 For this reason, we propose an e-graph driven technology mapper than can better
 span the time-QoR spectrum. Equality graphs, referred to as e-graphs, are a
 data structure which use union-find operations to compactly represent abstract
-equivalence relations~\cite{eggpaper}. E-graphs are useful for program
-optimization, because terms can be iteratively rewritten in a nondestructive
-fashion. Whereas typical optimizing compilers apply a greedy sequence of
-transformation passes, e-graph driven compilers store all transformed terms in
-parallel and defer selection of the best one. Our work seeks to evaluate the
-suitability of e-graphs for logic synthesis, specifically technology mapping to
-FPGAs.
+equivalence relations~\cite{eggpaper}. Whereas typical optimizing compilers
+apply a greedy sequence of transformation passes, e-graphs rewrite terms
+iteratively in a nondestructive fashion. Our work seeks to evaluate the
+suitability of e-graphs for logic synthesis, specifically fpr technology
+mapping to FPGAs. By using the output mappings of RTL synthesis tools as an
+initial solution, we can use e-graphs to incrementally explore more compact
+circuit topologies.
 
-\zz{we need to properly introduce packing before bringing up repacking. With the current writing, it's unclear how we perform tech mapping and packing}
-We introduce \shortname{}: a tool for repacking FPGA netlists into more compact
-forms---without increasing circuit depth. Our results show many benchmarks, big
-and small, which synthesize to significantly fewer LUTs over vendor EDA tools.
-To that end, our work makes the following contributions:
+To that end, we propose \shortname{}: a tool for repacking FPGA netlists into
+more compact forms---without increasing circuit depth. Our results show many
+benchmarks, big and small, which synthesize to significantly fewer LUTs over
+vendor EDA tools. To that end, our work makes the following contributions:
 
 \begin{itemize}
     \item We formulate an intermediate language and set of e-graph rewrite rules that can
-          explore a range of circuit topologies that heuristic approaches miss.
-    \item Upon extraction, \shortname{} can produce a proof of equivalence between the
-          optimized form and original input.
+          explore circuit topologies that heuristic approaches miss.
     \item We evaluate our compiler against \nbenchmarks{} benchmarks combined from three
           sources: EPFL~\cite{epflbench}, ISCAS'85~\cite{iscasbench}, and
-          LGSynth'91~\cite{lgsynthbench}. The results show significant improvements in
-          LUT count without increasing circuit depth.
+          LGSynth'91~\cite{lgsynthbench}. The results show improvements in LUT count
+          without significant increases to compile time.
     \item Finally, \shortname{} is packaged as a Verilog-to-Verilog tool that can be
-          dropped into existing RTL flows. \todo{mention speed not an issue}
+          dropped into existing RTL flows.
 \end{itemize}
 
 Before elaborating on our methodology and experimental setup, we first discuss
