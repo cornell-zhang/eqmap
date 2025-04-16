@@ -39,15 +39,15 @@ circuit topology in order to avoid suboptimal LUT count and depth, adding to
 tool runtime. It is important to note that this problem occurs equally on 6-LUT
 FPGAs.
 
-No depicted in Fig.~\ref{fig:eg} is the bias that the graph covering has to the
-structure of the input logic. Depending on how the input RTL is written, the
-optimal solution may not be reachable with a cut enumeration algorithm. First,
-notice that both the AND and OR operations in the circuit are commutative and
-associative. A poor grouping of terms can limit the efficacy of the technology
-mapper. In the specific case of Fig.~\ref{fig:eg}, it is important that $C_0$
-is grouped with $A_0 + B_0$ and \textit{not} $A_1 + B_1$. To summarize, optimal
-technology mapping must overcome both the difficulty of cut selection and bias
-to the structure of the input circuit.
+As an example, Fig.~\ref{fig:eg} demonstrates how the graph covering procedure
+can be biased towards the structure of the input logic. Depending on how the
+input RTL is written, the optimal solution may not be reachable with a cut
+enumeration algorithm. First, notice that both the AND and OR operations in the
+circuit are commutative and associative. A poor grouping of terms can limit the
+efficacy of the technology mapper. In the specific case of Fig.~\ref{fig:eg},
+it is important that $C_0$ is grouped with $A_0 + B_0$ and \textit{not} $A_1 +
+    B_1$. To summarize, optimal technology mapping must overcome both the
+difficulty of cut selection and bias to the structure of the input circuit.
 
 \subsection{Equality Graphs}\label{sec:background:egraph}
 Equality graphs, most commonly referred to as \textit{e-graphs}, are an

@@ -68,9 +68,10 @@ example, the rule takes on the following form in pseudocode for $k=3$:
 On the left of \texttt{=>} is the \textit{search pattern}. The right-hand side
 of the rule is the \textit{application}. One rule is instantiated for each LUT
 size $k =1$ through 6. One should notice that LUTs which are constant functions
-are also handled by this rule. Since this rule is computationally expensive, it
-is applied greedily as a pre-processing step before the e-graph is built. None
-of the other rewrite rules create degenerate LUTs, so this has no impact on
+are also handled by this rule. \todo{explain that we are eliminating terms that
+    are not useful to rewrite} Since this rule is computationally expensive, it is
+applied greedily as a pre-processing step before the e-graph is built. None of
+the other rewrite rules create degenerate LUTs, so this has no impact on
 results.
 
 \subsection{Partial Application}\label{sec:rewrites:application}
