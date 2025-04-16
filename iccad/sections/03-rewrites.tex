@@ -20,12 +20,11 @@ into the structure of our rewrite rules under composition.
 
 \subsection{\texttt{LutLang} Representation}\label{sec:rewrites:lutlang}
 
-\zz{we only need to talk about the implementation details in the evaluation section. Also avoid giving reviewers the false impression that we developed a full-featured verilog frontend from scratch}
-\fixme{Our compiler has a Verilog frontend} for the sake of converting netlists to our
-internal format, called \texttt{LutLang}, which is compatible with e-graph
-structures. When printed to text, \texttt{LutLang} takes on a Lisp-like syntax
-and our rewrite rules are written in such style. As an example, a 2-LUT
-cascaded into a 3-LUT is written as follows:
+Input Verilog netlists are converted to our internal format, called
+\texttt{LutLang}, which is compatible with e-graph structures. When printed to
+text, \texttt{LutLang} takes on a Lisp-like syntax and our rewrite rules are
+written in such style. As an example, a 2-LUT cascaded into a 3-LUT is written
+as follows:
 
 \begin{lstlisting}
 (LUT G x2 x3 (LUT F x0 x1))
@@ -33,15 +32,13 @@ cascaded into a 3-LUT is written as follows:
 
 \texttt{G} and \texttt{F} are the truth-tables of the LUTs.
 We also call them the \textit{program} or \textit{function} interchangeably.
-Since $k \leq 6$, truth tables are stored as 64-bit integers, but we analyze them as total functions from $\Bk \rightarrow \B$.
+Since $k \leq 6$, truth tables are stored as 64-bit integers, but we analyze them as total functions $F: \Bk \rightarrow \B$.
 To clarify notation, $\mathbb{Z}_2 = \mathbb{Z}/2\mathbb{Z} = \mathbb{B} = \{0,1\}$.
-To that end, the semantics of a LUT is simply applying its boolean \zz{Boolean} inputs to the function:
+To that end, the denotational semantics $\llbracket \cdot \rrbracket : \texttt{LutLang} \rightarrow \mathbb{Z}_2$ of a LUT is simply applying its Boolean inputs to the function:
 
 \begin{equation}
     \llbracket \texttt{(LUT F x0 x1)} \rrbracket = F(\llbracket \texttt{x0} \rrbracket, \llbracket \texttt{x1} \rrbracket)
 \end{equation}
-
-\zz{clarify the meaning of $\llbracket$ $\rrbracket$}
 
 \begin{figure}
     \centering
