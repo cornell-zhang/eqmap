@@ -20,7 +20,8 @@ into the structure of our rewrite rules under composition.
 
 \subsection{\texttt{LutLang} Representation}\label{sec:rewrites:lutlang}
 
-Our compiler has a Verilog frontend for the sake of converting netlists to our
+\zz{we only need to talk about the implementation details in the evaluation section. Also avoid giving reviewers the false impression that we developed a full-featured verilog frontend from scratch}
+\fixme{Our compiler has a Verilog frontend} for the sake of converting netlists to our
 internal format, called \texttt{LutLang}, which is compatible with e-graph
 structures. When printed to text, \texttt{LutLang} takes on a Lisp-like syntax
 and our rewrite rules are written in such style. As an example, a 2-LUT
@@ -34,11 +35,13 @@ cascaded into a 3-LUT is written as follows:
 We also call them the \textit{program} or \textit{function} interchangeably.
 Since $k \leq 6$, truth tables are stored as 64-bit integers, but we analyze them as total functions from $\Bk \rightarrow \B$.
 To clarify notation, $\mathbb{Z}_2 = \mathbb{Z}/2\mathbb{Z} = \mathbb{B} = \{0,1\}$.
-To that end, the semantics of a LUT is simply applying its boolean inputs to the function:
+To that end, the semantics of a LUT is simply applying its boolean \zz{Boolean} inputs to the function:
 
 \begin{equation}
     \llbracket \texttt{(LUT F x0 x1)} \rrbracket = F(\llbracket \texttt{x0} \rrbracket, \llbracket \texttt{x1} \rrbracket)
 \end{equation}
+
+\zz{clarify the meaning of $\llbracket$ $\rrbracket$}
 
 \begin{figure}
     \centering
@@ -146,6 +149,8 @@ making it easier to rationalize about the rule system and which types of
 optimizations are reachable.
 
 \subsection{LUTs with Domain Restrictions}\label{sec:rewrites:restrict}
+
+\zz{we could use an example here. Fig 1 is currently only used in the background. Ideally we want to refer to it (or a different example) again when we discuss some of the rewrite rules}
 
 \textbf{Definition:} A lookup table \texttt{(LUT F x0 x1 \ldots)} is \textit{restricted} if $\llbracket \texttt{xi} \rrbracket = \llbracket \texttt{xj} \rrbracket$ for some $ i, j \in \{0, \ldots, k-1\}, \; i \neq j$.
 In other words, the domain of the LUT is restricted.
