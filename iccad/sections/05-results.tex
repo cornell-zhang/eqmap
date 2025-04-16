@@ -4,9 +4,10 @@ Gold 6242 CPU. Since \shortname{} is written in Rust, it mostly uses the
 built-in functionality of the egg library. The egg e-graph runner was ran in a
 time-limited configuration, meaning there was no limit in the size of the
 e-graph. The specific time limit for e-graph construction was 10 minutes. In
-most cases, the test circuit saturated the e-graph well before this time
-limit---around 30 seconds. \shortname{} was evaluated against circuits from
-three benchmark suites: EPFL~\cite{epflbench}, ISCAS'85~\cite{iscasbench}, and
+most cases \zz{can we be more specific, how many exactly finish within 30 sec},
+the test circuit saturated the e-graph well before this time limit---around 30
+seconds. \shortname{} was evaluated against circuits from three benchmark
+suites: EPFL~\cite{epflbench}, ISCAS'85~\cite{iscasbench}, and
 LGSynth'91~\cite{lgsynthbench}. However, we also included an ALU and pipelined
 multiplication module to test how our compiler behaves with increasing levels
 of bit-parallelism and register pipelining. Finally, we measure how our mapping
@@ -102,6 +103,7 @@ iteration, the marginal runtime rapidly increases into the 10s of seconds.
 
 \subsection{Case Study: Pipelined Designs}\label{sec:results:retiming}
 
+\zz{Our evaluation on retiming and sequential logic is very weak. Maybe we should consider only focusing on comb logic in this paper. If not, we need to clarify why we are not testing more complex sequential circuits}
 Hardware designs with feed forward pipelines provide interesting opportunities
 to apply register retiming and find a higher-level of area optimization. When
 closing timing on FPGA designs, the critical path is often dominated by the
