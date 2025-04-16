@@ -150,8 +150,10 @@ and does not interfere with reaching equality saturation.
 
 \subsection{LUTs with Domain Restrictions}\label{sec:rewrites:restrict}
 
-\textbf{Definition:} A lookup table \texttt{(LUT F x0 x1 \ldots)} is \textit{restricted} if $\llbracket \texttt{xi} \rrbracket = \llbracket \texttt{xj} \rrbracket$ for some $ i, j \in \{0, \ldots, k-1\}, \; i \neq j$.
-In other words, the domain of the LUT is restricted.
+\textbf{Definition:} A lookup table \texttt{(LUT F x0 x1 \ldots)} is
+\textit{restricted} if $\llbracket \texttt{xi} \rrbracket = \llbracket \texttt{xj} \rrbracket$
+for some $ i, j \in \{0, \ldots, k-1\}, \; i \neq j$. In other words, the
+domain of the LUT is restricted.
 
 The main advantage of using e-graphs is the compact way in which it represents
 notions of equality. Whenever a new equivalence is found between two of the
