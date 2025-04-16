@@ -55,17 +55,18 @@
     FPGA technology mapping is a well-studied problem and has been an area of
     interest in EDA tool design for decades. In most respects, the computational
     complexity of technology mapping is understood, and heuristic algorithms have
-    been successfully employed to mitigate compile times while adequate quality of
-    results. Even though the problem has been extensively studied, our results show
-    there is still substantial room for improvement, even for commercial tools. As
-    a solution, we introduce \shortname{}, an e-graph driven compiler that can better
-    span the wide gap between SAT-based exact synthesis and heuristic cut
-    enumeration techniques. We show that \shortname{} can synthesize circuits with
-    \metric{} on average over the vendor tools---without ever increasing circuit
-    depth. We also provide an empirical analysis of the runtime of \shortname{} and show
-    that it is still practical for large designs. Finally, we demonstrate that our
-    compiler infrastructure is reusable, and future work can use our compiler for
-    RTL equivalence checking or auditing the QoR of synthesis tools.
+    been successfully employed to mitigate compile times. Even with an extensive
+    body of research on technology mapping, our experiments show there is still
+    substantial room for improvement in the quality of results, even for commercial
+    tools. As a solution, we introduce \shortname{}, an e-graph driven compiler
+    that can better span the wide gap between SAT-based exact synthesis and
+    heuristic cut enumeration techniques. We show that \shortname{} can synthesize
+    circuits with \metric{} on average over the vendor tools---without ever
+    increasing circuit depth. We also provide an empirical analysis of the runtime
+    of \shortname{} and show that it is still practical for large designs. Finally,
+    we demonstrate that our compiler infrastructure is reusable, and future work
+    can use our compiler for RTL equivalence checking or auditing the QoR of
+    synthesis tools.
 \end{abstract}
 
 \input{sections/00-intro}
