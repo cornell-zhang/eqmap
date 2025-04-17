@@ -59,6 +59,7 @@ sections, I will give the literature review needed to understand equality
 graphs for superoptimization as well as ASIC technology mapping in general.
 
 \section{Literature Review}\label{sec:background}
+
 \subsection{E-Graphs}\label{sec:background:egraph}
 
 Equality graphs, most commonly referred to as \textit{e-graphs}, are an
@@ -71,13 +72,9 @@ prototypical example for e-graphs involves the rewriting of arithmetic
 expressions. For instance, one relation conveyed in Fig.~\ref{fig:egraph} is
 that \texttt{a << 1} is equal to \texttt{a * 2}. To convey equality, the
 anchoring nodes \texttt{<<} and \texttt{*} are grouped in the same e-class (the
-dotted box). The children of the operators are the e-classes for \texttt{a},
-\texttt{2}, and \texttt{1}. It is typical that constants and variables are leaf
-nodes that live in an e-class alone. However, it is important to note that the
-destination of edges is always an e-class and not a node. With this
-illustration, it hopefully becomes clear why e-graphs are strong at equational
-reasoning. The next section will explain how we can build an optimizing
-compiler out of this design.
+dotted box). However, it is important to note that the destination of edges is
+always an e-class and not a node. With this illustration, it hopefully becomes
+clear why e-graphs are strong at equational reasoning.
 
 \begin{wrapfigure}{r}{0.47\textwidth}
     \centering
@@ -85,53 +82,33 @@ compiler out of this design.
     \caption{An e-graph with 5 e-classes and 6 e-nodes.}\label{fig:egraph}
 \end{wrapfigure}
 
-E-graphs cannot reason on their own: one needs to define the notions of
-equality unique to their problem domain. Continuing with the example of
-computer arithmetic, we can declare arithmetic properties, like commutativity,
-associativity, and distributivity, with \textit{rewrite rules}. For example,
-the syntax \texttt{?a + ?b => ?b + ?a} would encode commutativity as a rewrite
-rule. The left-hand side denotes a pattern to search for in the e-graph, and
-the right side encodes the application of the rule. If the right-hand side of a
-rule already exists in the e-graph, its e-class will be merged with the e-class
-matched from the left-hand side. Otherwise, the application is inserted as a
-new node in the e-class. It is important that rewrite rules are atomic. If a
-rule can be broken down into multiple smaller rules, they should. This way you
-can better rationalize what types of expression topologies are reachable by
-your e-graph.
+To give some practical examples, e-graphs have been used to rewrite
+mathematical expressions~\cite{egraphmath} or for automated reasoning about
+functional programs~\cite{cclemma}. In the case of EDA software, e-graphs can
+drive logic synthesis by exploring other circuit topologies. Initially, each
+circuit node starts alone in its equivalence class. Then, a set of rewrite
+rules is used to grow the e-graph with alternative representations. When
+rewrite rules no longer introduce new information into the graph, we say we
+have reached \textit{equality saturation}.
 
-When using e-graphs to drive a compiler, you place your starting
-expression/circuit in an empty e-graph, and each node starts alone in its
-e-class. Then, you use the collection of rewrite rules to grow and build the
-e-graph with alternative representations. When rewrite rules no longer
-introduce new information into the graph, we say we have reach \textit{equality
-    saturation}. In many cases, such as Boolean circuits, it is not possible to
-fully saturated the e-graph. Instead, a time limit or size limit is reached.
-Once the e-graph is built, all that is left is to extract the best rewriting of
-the expression. This of course is the NP-hard part. There are several research
-projects on e-graph extraction~\cite{smoothe,sparsextract}, but they are beyond
-the scope of this course project. However, previous work on FPGA technology
-mapping has demonstrated that fast, greedy extraction algorithms can be used
-and still find area and circuit depth improvements.
+Of course, optimizing technology mapping for area is still an NP-hard problem.
+E-graphs defer the difficult problem of finding the `best' circuit into a phase
+called \textit{extraction}. This is where heuristics are re-introduced. There
+are several research projects on e-graph
+extraction~\cite{smoothe,sparsextract}, but they are beyond the scope of this
+course project. However, previous work on FPGA technology mapping has
+demonstrated that fast, greedy extraction algorithms can be used and still find
+area and circuit depth improvements. Previous work~\cite{esyn} has demonstrated
+the usefulness of e-graphs for logic synthesis. Moreover, I hope to submit my
+own e-graph work to ICCAD which shows 12\% area savings over vendor tools on
+FPGA applications without increasing circuit depth.
 
-In the end, e-graph driven compilers are less heuristic than conventional
-compiler architectures, because they transform terms non-destructively. Typical
-optimizing compilers are broken down into a pass pipeline, and the quality of
-results is sensitive to the ordering of these optimization passes. Optimizing
-compilers built around passes will never be able to generalize to all programs,
-but in practice the results are adequate for software. In the hardware domain,
-the rules of economies of scale apply and Moore's law scaling is over. Finding
-an optimal design point within tight design constraints is paramount. As a
-solution, e-graphs are a more formal and more optimal approach to problems in
-electronic design automation. Previous work~\cite{esyn} has demonstrated the
-usefulness of e-graphs for logic synthesis. Moreover, I hope to submit my own
-e-graph work to ICCAD which shows 12\% area savings over vendor tools on FPGA
-applications without increasing circuit depth.
-
+\pagebreak
 \section{Baseline Compiler Design}\label{sec:baseline}
 
 \begin{wrapfigure}{r}{0.47\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{img/egraph.pdf}
+    \includegraphics[width=0.44\textwidth]{img/egraph.pdf}
     \caption{The compilation steps internal to \shortname{} Verilog tool.}\label{fig:flow:egraph}
 \end{wrapfigure}
 

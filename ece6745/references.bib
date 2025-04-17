@@ -76,3 +76,39 @@
   keywords   = {e-graphs, equality saturation, extraction, treewidth},
   annote     = {This work re-conceptualizes e-graphs for the sake of understanding the complexity of extraction. The authors attempt to measure the extent to which e-graphs are more "tree-like" or "path-like." This quality is dependent on the specific instance of the e-graph problem, and consequently it impacts the difficulty of extraction. In short, this paper proposes an extraction technique specific to sparse e-graphs. As an aside, the paper also comments on the complexity of extraction in general, suggesting that some problem domains will be inherently impossible to generalize to with extraction heuristics. }
 }
+
+@inproceedings{egraphmath,
+  author    = {Briggs, Ian and Panchekha, Pavel},
+  title     = {Synthesizing mathematical identities with e-graphs},
+  year      = {2022},
+  isbn      = {9781450392709},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  url       = {https://doi.org/10.1145/3520308.3534506},
+  doi       = {10.1145/3520308.3534506},
+  abstract  = {Identities compactly describe properties of a mathematical expression and can be leveraged into faster and more accurate function implementations. However, identities must currently be discovered manually, which requires a lot of expertise. We propose a two-phase synthesis and deduplication pipeline that discovers these identities automatically. In the synthesis step, a set of rewrite rules is composed, using an e-graph, to discover candidate identities. However, most of these candidates are duplicates, which a secondary de-duplication step discards using integer linear programming and another e-graph. Applied to a set of 61 benchmarks, the synthesis phase generates 7215 candidate identities which the de-duplication phase then reduces down to 125 core identities.},
+  booktitle = {Proceedings of the 1st ACM SIGPLAN International Symposium on E-Graph Research, Applications, Practices, and Human-Factors},
+  pages     = {1-6},
+  numpages  = {6},
+  keywords  = {synthesis, e-graphs, approximation theory},
+  location  = {San Diego, CA, USA},
+  series    = {EGRAPHS 2022}
+}
+
+@article{cclemma,
+  author     = {Kurashige, Cole and Ji, Ruyi and Giridharan, Aditya and Barbone, Mark and Noor, Daniel and Itzhaky, Shachar and Jhala, Ranjit and Polikarpova, Nadia},
+  title      = {CCLemma: E-Graph Guided Lemma Discovery for Inductive Equational Proofs},
+  year       = {2024},
+  issue_date = {August 2024},
+  publisher  = {Association for Computing Machinery},
+  address    = {New York, NY, USA},
+  volume     = {8},
+  number     = {ICFP},
+  url        = {https://doi.org/10.1145/3674653},
+  doi        = {10.1145/3674653},
+  journal    = {Proc. ACM Program. Lang.},
+  month      = aug,
+  articleno  = {264},
+  numpages   = {27},
+  keywords   = {Automated Theorem Proving, Equational Reasoning, Lemma Synthesis, Synthesis, Verification}
+}
