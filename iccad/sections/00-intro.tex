@@ -41,16 +41,16 @@ functional mapping lie on two different extremes. The former is fast but
 limited by the input structure, while the latter is unbiased but fundamentally
 unscalable.
 
-For this reason, we propose an \textit{e-graph driven} technology mapper to
-better span the time-QoR spectrum. Equality graphs, most commonly referred to
-as e-graphs, are a data structure which use union-find operations to reason
-about abstract equivalence relations~\cite{eggpaper}. By using the output
-mappings of RTL synthesis as an initial solution, we can use e-graphs to
-incrementally find more compact circuit topologies. Whereas typical optimizing
-compilers apply a greedy sequence of transformation passes, e-graphs rewrite
-terms iteratively in a nondestructive fashion. To reiterate, our work seeks to
-evaluate the suitability of e-graphs for logic synthesis, specifically for
-technology mapping to FPGAs.
+For this reason, we propose a technology mapper which uses \textit{e-graphs} as
+a way to better span the time-QoR spectrum. Equality graphs, referred to as
+e-graphs, are a data structure which use union-find operations to reason about
+abstract equivalence relations~\cite{eggpaper}. By using the output mappings of
+RTL synthesis as an initial solution, we can use e-graphs to incrementally find
+more compact circuit topologies. Whereas typical optimizing compilers apply a
+greedy sequence of transformation passes, e-graphs rewrite terms iteratively in
+a nondestructive fashion. In summary, our work seeks to evaluate the
+suitability of e-graphs for logic synthesis, specifically for technology
+mapping to FPGAs.
 
 To that end, we propose \shortname{}: a tool for repacking FPGA netlists into
 more compact forms---without increasing circuit depth. Our results show many
