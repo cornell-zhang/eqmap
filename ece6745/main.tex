@@ -5,6 +5,8 @@
 \usepackage{graphicx}
 \usepackage{wrapfig}
 \usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{multirow}
 
 \newcommand{\todo}[1]{\textcolor{red}{TODO:\ #1}}
 \newcommand{\shortname}{EqMap}
@@ -151,6 +153,35 @@ work for synthesizing to standard cells. Moreover, I anticipate that new
 e-graph extraction algorithms will improve its circuit synthesis abilities.
 Although, developing new extraction algorithms is more pure compilers research
 than EDA research.
+
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{cl}
+        \toprule
+        \textbf{Property}                 & \textbf{Rules}                                         \\ \midrule
+        \multirow{2}{*}{Short-Circuit}    & \texttt{(OR a true) => true}                           \\
+                                          & \texttt{(AND a false) => false}                        \\ \midrule
+        \multirow{2}{*}{Annulment}        & \texttt{(OR a false) => a}                             \\
+                                          & \texttt{(AND a true) => a}                             \\ \midrule
+        \multirow{2}{*}{Commutativity}    & \texttt{(OR a b) => (OR b a)}                          \\
+                                          & \texttt{(AND a b) => (AND b a)}                        \\ \midrule
+        \multirow{2}{*}{Associativity}    & \texttt{(OR (OR a b) c) => (OR a (OR b c))}            \\
+                                          & \texttt{(AND (AND a b) c) => (AND a (AND b c))}        \\ \midrule
+        \multirow{2}{*}{Distributivity}   & \texttt{(OR a (AND b c)) <=> (AND (OR a b) (OR a c))}  \\
+                                          & \texttt{(AND a (OR b c)) <=> (OR (AND a b) (AND a c))} \\ \midrule
+        \multirow{2}{*}{Complement}       & \texttt{(OR a (INV a)) => true}                        \\
+                                          & \texttt{(AND a (INV a)) => false}                      \\ \midrule
+        \multirow{2}{*}{De Morgan's Laws} & \texttt{(INV (AND a b)) <=> (OR (INV a) (INV b))}      \\
+                                          & \texttt{(INV (OR a b)) <=> (AND (INV a) (INV b))}      \\ \midrule
+        \multirow{2}{*}{Indempotence}     & \texttt{(OR a a) => a}                                 \\
+                                          & \texttt{(AND a a) => a}                                \\ \midrule
+        \multirow{2}{*}{Absorption}       & \texttt{(OR a (AND a b)) => a}                         \\
+                                          & \texttt{(AND a (OR a b)) => a}                         \\ \midrule
+        Negation                          & \texttt{a => (INV (INV a))}                            \\
+        \bottomrule
+    \end{tabular}
+    \caption{Example of Rules in a Table}
+\end{table}
 
 \begin{wrapfigure}{r}{0.47\textwidth}
     \centering
