@@ -77,6 +77,12 @@ their own.
     \caption{Comparison of gains in QoR against e-graph size and runtime. Running a netlist to equality saturation requires more rewrite iterations, and hence a larger e-graph.}\label{fig:marginal}
 \end{figure}
 
+\begin{table*}[t]
+    \centering
+    \csvautobooktabular{data/mult.csv}
+    \caption{LUT and flip-flop counts are report post-synthesis, but before placement and routing. CLB counts are reported after placement and routing with Vivado 2024.}\label{tab:multiply}
+\end{table*}
+
 \subsection{Marginal Improvement and Cost}\label{sec:results:margin}
 
 Given that \shortname{} is fundamentally a superoptimization tool, we want to
@@ -93,13 +99,7 @@ Some notable exceptions occur, such as `alu4' being reduced in size after the
 iteration should be addressed. The marginal cost of executing an iteration of
 rewrites becomes prohibitive as the e-graph becomes larger.
 Fig.~\ref{fig:marginal:runtime} illustrates that after approximately the 30th
-iteration, the marginal runtime rapidly increases into the 10s of seconds.
-
-\begin{table*}[t]
-    \centering
-    \csvautobooktabular{data/mult.csv}
-    \caption{LUT and flip-flop counts are report post-synthesis, but before placement and routing. CLB counts are reported after placement and routing with Vivado 2024.}\label{tab:multiply}
-\end{table*}
+iteration, the marginal cost in compile time rapidly increases.
 
 \subsection{Case Study: Pipelined Designs}\label{sec:results:retiming}
 
@@ -132,12 +132,6 @@ sequential logic. While these results \textit{do} demonstrate that optimizing
 for CLB count over raw cell count is a feasible strategy, a different
 extraction method will be needed in future work.
 
-\begin{table}
-    \centering
-    \csvautobooktabular{data/alu.csv}
-    \caption{Synthesis results of $n$-bit ALU}\label{tab:alu}
-\end{table}
-
 \subsection{Case Study: Bit-Parallel Designs}\label{sec:results:scalability}
 
 While the academic benchmarks enable direct comparisons to the rest of the
@@ -163,3 +157,9 @@ beyond 10,000 LUTs. In this specific case, \shortname{} can be used to audit
 synthesis tools and perhaps even reverse-engineer adverse behavior. Hence,
 \shortname{} proves to be a practical tool to run after a baseline synthesis by
 Vivado or Yosys to quickly achieve better LUT packing with minimal time cost.
+
+\begin{table}
+    \centering
+    \csvautobooktabular{data/alu.csv}
+    \caption{Synthesis results of $n$-bit ALU}\label{tab:alu}
+\end{table}
