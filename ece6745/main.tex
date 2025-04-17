@@ -54,11 +54,12 @@ the real challenge may lie in the extraction algorithm. For this reason, I will
 also consider optimizing for delay if that proves to be more feasible than
 optimizing for area. All of these experiments were relatively low cost to
 start, because I have a lot of compiler infrastructure already built up. For
-instance, I have a custom, bare-bones SystemVerilog frontend. In the following
+instance, I have a custom, bare-bones Verilog frontend. In the following
 sections, I will give the literature review needed to understand equality
 graphs for superoptimization as well as ASIC technology mapping in general.
 
 \section{Literature Review}\label{sec:background}
+\subsection{E-Graphs}\label{sec:background:egraph}
 
 Equality graphs, most commonly referred to as \textit{e-graphs}, are an
 automated reasoning tool built around a union-find data
@@ -126,42 +127,20 @@ usefulness of e-graphs for logic synthesis. Moreover, I hope to submit my own
 e-graph work to ICCAD which shows 12\% area savings over vendor tools on FPGA
 applications without increasing circuit depth.
 
-\section{Experiment Design}\label{sec:experiments}
+\section{Baseline Compiler Design}\label{sec:baseline}
 
-Each of the three ideas for experimentation will require a decently large
-collection of Verilog benchmarks. In total, I have a collection of 96 RTL
-benchmarks combined from three academic sources: ISCAS'85, LGSYNTH'91, and
+\begin{wrapfigure}{r}{0.47\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/egraph.pdf}
+    \caption{The compilation steps internal to \shortname{} Verilog tool.}\label{fig:flow:egraph}
+\end{wrapfigure}
+
+In total, I have a collection of 96 RTL benchmarks combined from three academic
+sources: ISCAS'85, LGSYNTH'91, and
 EPFL\footnote{\href{https://github.com/matth2k/synth-benchmarks}{https://github.com/matth2k/synth-benchmarks}}.
 They are mostly combinational benchmarks, but sequential logic can also be
 tested. In general, I will consider Synopsys Design Compiler as the baseline
 synthesis tool.
-
-\subsection{Equivalence Checking and Program Fuzzing}
-Yosys will act as the baseline verification tool. Depending on the other tools
-we have licenses for (Jasper?), I can also compare their verification abilities
-as well. One hypothesis to test is if e-graphs can more quickly or more
-robustly give conclusions to RTL equivalence checking problems. In addition, I
-want to test the stability of QoR of place and route tools given small changes
-in logic synthesis behavior. In other words, can we precisely observe the
-interactions between synthesis and place and route? Can we use formal tools to
-prevent negative interactions between these two phases of design? These
-verification and fuzzing tasks will require writing the equivalance checking
-and fuzzing tools, but this will largely reuse my existing e-graph rewriting
-framework. Then, we will evaluate the verification tools and synthesis tools on
-fuzzed versions of the Verilog benchmark suite. Of course, we can introduce
-errors as part of the fuzzing.
-
-\subsection{Standard Cell Library Development}
-
-This experiment plans to develop a methodology for measuring the incremental
-improvement of adding more cell types to a standard cell library. This means
-that the baseline will be some restricted cell library, and the results will be
-the incremental improvements in post-synthesis area and timing as new cell
-types are added. The measurements will of course depend on the test cases, so I
-will have to ensure that my benchmark suite is general enough. The hypothesis
-being tested is that e-graphs plus extraction formulate a more adaptable
-compiler architecture without sacrifices in quality. It will also provide
-insight into the trade-off space of standard cell library design.
 
 \subsection{More Exact Synthesis}
 In this experiment, I will develop logic rewriting systems and extraction
