@@ -7,6 +7,7 @@
 \usepackage{hyperref}
 
 \newcommand{\todo}[1]{\textcolor{red}{TODO:\ #1}}
+\newcommand{\shortname}{EqMap}
 
 \title{ECE6745 Project Proposal}
 \author{Matthew Hofmann}
@@ -30,60 +31,36 @@ tools, it is possible to better study the suboptimality of the EDA tool stack.
 Several of the heuristics used in core EDA algorithms were invented decades
 ago, and increases in compute capacity in the modern era afford us a more
 formal and exploratory approach to optimizing digital logic. In this project, I
-use the automated reasoning capabilities of equivalence graphs (e-graphs) to
-more precisely explore optimal designs points in the PPA (power, performance,
-area) trade-off space. With my results, I demonstrate that e-graph driven
-compilers can better span the wide gap between SAT-based, exact synthesis and
-fully heuristic algorithms.
+use the automated reasoning capabilities of equality graphs (e-graphs) to more
+precisely explore optimal designs points in the PPA (power, performance, area)
+trade-off space. With my results, I demonstrate that e-graph driven compilers
+can better span the wide gap between SAT-based, exact synthesis and fully
+heuristic algorithms.
 
 \section{Introduction}\label{sec:intro}
 
-In the last 6 months, I have started a project that uses e-graphs to
-superoptimize FPGA netlists. In that amount of time, I have some pretty
-compelling results. Across 96 academic benchmarks, my tool, called E-Pack,
-reduces FPGA LUT count by 12\% on average over vendor tools. My current results
-are for FPGAs, but I am optimistic that my compiler infrastructure can be
-re-used for ASIC design as a course project. In total, I have three experiments
-planned ordered from most conservative to furthest reach goal:
+Over the length of this course project, I have developed a tool which uses
+e-graphs to superoptimize ASIC technology mapping. Besides developing the core
+optimization and mapping framework, I have developed a Verilog parser and
+emitter to be able to test my technique against existing RTL tools. In short, I
+will be comparing against Synopsys Design Compiler. Across 96 RTL benchmarks,
+my tool, called \shortname{}, should be able to more exactly synthesize
+combinational logic to standard cells. My goal is roughly 10\% area savings
+without increasing the circuit depth.
 
-\begin{enumerate}
-    \item Equivalence Checking and Program Fuzzing:
-
-          \hspace{2em}\begin{minipage}{0.8\linewidth}
-              (1) I will adapt my e-graph driven tools to perform RTL equivalence checking and evaluate it against other tools (SAT solvers, verification tools, Jasper).
-
-              (2) I will also use my tool to generate random correct or incorrect changes to netlists to test the stability in quality of results through place and route.
-
-              This is my least ambitious plan and is mostly a backup to the next two.
-          \end{minipage}
-
-    \item Standard Cell Library Development:
-
-          \hspace{2em}\begin{minipage}{0.8\linewidth}
-              I will develop a methodology to measure the incremental advantage of adding more standard cells to a library.
-              I will seek to quantify how much area or delay can be saved by introducing a new cell type into a library. This will of course require many benchmarks and re-synthesis of netlists.
-              E-graphs afford the adaptability to rapidly re-synthesizing to different cell libraries.
-          \end{minipage}
-
-    \item More Exact Synthesis:
-
-          \hspace{2em}\begin{minipage}{0.8\linewidth}
-              I will provide a post-synthesis optimization tool that will improve upon the implementation results of Synopsys Design Compiler.
-              E-graphs can certainly explore improved circuit topologies, but the real challenge will be creating an extraction algorithm that can improve upon the starting point given by Synopsys DC.
-              Optimizing for delay may be more feasible than optimizing for area.
-          \end{minipage}
-\end{enumerate}
-
-All of these experiments are relatively low cost to start, because I have a lot
-of compiler infrastructure already built up. For instance, I have a custom,
-bare-bones SystemVerilog frontend. After some initial experiments, I plan to
-choose the one topic which shows the most promise. In the following sections, I
-will give the background needed to understand equivalence graphs for compiler
-development as well as some more detailed planning.
+I am optimistic tat my tool can outperform Synopsys on small designs, because
+e-graphs can explore circuit topologies that heuristic methods cannot. However,
+the real challenge may lie in the extraction algorithm. For this reason, I will
+also consider optimizing for delay if that proves to be more feasible than
+optimizing for area. All of these experiments were relatively low cost to
+start, because I have a lot of compiler infrastructure already built up. For
+instance, I have a custom, bare-bones SystemVerilog frontend. In the following
+sections, I will give the literature review needed to understand equality
+graphs for superoptimization as well as ASIC technology mapping in general.
 
 \section{Literature Review}\label{sec:background}
 
-Equivalence graphs, most commonly referred to as \textit{e-graphs}, are an
+Equality graphs, most commonly referred to as \textit{e-graphs}, are an
 automated reasoning tool built around a union-find data
 structure~\cite{eggpaper}. An e-graph is essentially a directed graph with two
 extra features: (1) nodes are grouped together into \textit{e-classes} and (2)
