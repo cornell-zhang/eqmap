@@ -129,32 +129,18 @@ cell counts.
 
 \section{Baseline Compiler Design}\label{sec:baseline}
 
-In total, I have a collection of 96 RTL benchmarks combined from three academic
-sources: ISCAS'85, LGSYNTH'91, and
-EPFL\footnote{\href{https://github.com/matth2k/synth-benchmarks}{https://github.com/matth2k/synth-benchmarks}}.
-They are mostly combinational benchmarks, but sequential logic can also be
-tested. In general, I will consider Synopsys Design Compiler as the baseline
-synthesis tool.
+In the initial design of the compiler, I have developed a logic rewriting
+system and an extraction technique that can potentially achieve lower area than
+Synopsys Design Compiler. In the case of FPGA technology mapping, I already
+have results that show 12\% area savings over the vendor tools without
+degrading timing. While greedy extraction shows promise for FPGA applications,
+it may be that the same extraction algorithm will be less optimal for ASIC
+design. Nonetheless, I anticipate that future work on e-graph extraction
+algorithms will improve the circuit synthesis abilities without having to
+update the rewriting system. Although, developing new extraction algorithms is
+more pure compilers research than EDA research.
 
-\subsection{More Exact Synthesis}
-In this experiment, I will develop logic rewriting systems and extraction
-techniques that can achieve better results than Synopsys Design Compiler. In
-the case of FPGA technology mapping, I already have results that show 12\% area
-savings over the vendor tools without degrading timing. Moreover, I already
-have a robust Boolean logic rewriting system that can be extended to standard
-cell design. However, the potential pitfalls come with extraction technique.
-While greedy extraction shows promise for FPGA applications, I have gut
-feelings that the same extraction algorithm will not work as well for ASIC
-design. ASIC cell mapping appears less like a graph covering algorithm, because
-most of the cells have fanin of 1-3. FPGAs, on the other hand, have 6 input
-lookup tables. Nonethless, I could be underestimating the flexibility of
-standard cell design. Perhaps basic greedy extraction algorithms would still
-work for synthesizing to standard cells. Moreover, I anticipate that new
-e-graph extraction algorithms will improve its circuit synthesis abilities.
-Although, developing new extraction algorithms is more pure compilers research
-than EDA research.
-
-\begin{table}[h!]
+\begin{table}
     \centering
     \begin{tabular}{cl}
         \toprule
