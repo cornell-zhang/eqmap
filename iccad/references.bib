@@ -542,3 +542,23 @@
   keywords  = {Boolean functions;Runtime;Algorithm design and analysis;Heuristic algorithms;Libraries;Data structures;Partitioning algorithms},
   doi       = {10.1109/FPT.2013.6718374}
 }
+
+@article{wiremap,
+  author     = {Jang, Stephen and Chan, Billy and Chung, Kevin and Mishchenko, Alan},
+  title      = {WireMap: FPGA Technology Mapping for Improved Routability and Enhanced LUT Merging},
+  year       = {2009},
+  issue_date = {June 2009},
+  publisher  = {Association for Computing Machinery},
+  address    = {New York, NY, USA},
+  volume     = {2},
+  number     = {2},
+  issn       = {1936-7406},
+  url        = {https://doi.org/10.1145/1534916.1534924},
+  doi        = {10.1145/1534916.1534924},
+  abstract   = {This article presents a new technology mapper, WireMap. The mapper uses an edge flow heuristic to improve the routability of a mapped design. The heuristic is applied during the iterative mapping optimization to reduce the total number of pin-to-pin connections (or edges). On academic benchmark (ISCAS, MCNC, and ITC designs), the average edge reduction of 9.3\% is achieved while maintaining depth and LUT count compared to state-of-the-art technology mapping. Placing and routing the resulting netlists leads to an 8.5\% reduction in the total wirelength, a 6.0\% reduction in minimum channel width, and a 2.3\% reduction in critical path delay. This technique is applied in the Xilinx ISE Design tool to evaluate its effect on industrial Virtex5 circuits. In a set of 20 large designs, we find the edge reduction is 6.8\% while total wirelength measured in the placer is reduced by 3.6\%. Applying WireMap has an additional advantage of reducing an average number of inputs of LUTs without increasing the total LUT count and depth. The percentages of 5- and 6-LUTs in a typical design are reduced, while the percentages of 2-, 3-, and 4-LUTs are increased. These smaller LUTs can be merged into pairs and implemented using the dual-output LUT structure found in commercial FPGAs. For academic benchmarks, WireMap leads to 9.4\% fewer dual-output LUTs after merging. For the industrial designs, WireMap leads to 6.3\% fewer dual-output Virtex5 LUTs.},
+  journal    = {ACM Trans. Reconfigurable Technol. Syst.},
+  month      = jun,
+  articleno  = {14},
+  numpages   = {24},
+  keywords   = {technology mapping, edge flow, cut enumeration, area flow, FPGA}
+}
