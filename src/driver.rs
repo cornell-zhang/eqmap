@@ -643,7 +643,7 @@ where
         }
     }
 
-    /// Build request with joint limits.
+    /// Build request with joint limits. If any of the three limits are hit, building is stopped.
     pub fn with_joint_limits(self, timeout: u64, node_limit: usize, iter_limit: usize) -> Self {
         Self {
             build_strat: BuildStrat::Custom(timeout, node_limit, iter_limit),

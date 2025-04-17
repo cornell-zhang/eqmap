@@ -122,7 +122,7 @@ fn main() -> std::io::Result<()> {
     let req = SynthRequest::default().with_rules(rules).with_k(args.k);
 
     let req = match (args.timeout, args.node_limit, args.iter_limit) {
-        (None, None, None) => req.with_joint_limits(10, 24_000, 32),
+        (None, None, None) => req.with_joint_limits(2, 20_000, 9),
         (Some(t), None, None) => req.time_limited(t),
         (None, Some(n), None) => req.node_limited(n),
         (None, None, Some(i)) => req.iter_limited(i),
