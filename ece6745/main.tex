@@ -262,14 +262,22 @@ simply counts the number of cells required to implement a logic function.
     \caption{The cost function is defined recursively. The \texttt{INV}, \texttt{AND}, \texttt{OR} node types are purely for logic rewriting, and hence have a cost of infinity to faciliate filtering these choices out of extraction.}\label{fig:cost}
 \end{figure}
 
-\subsection{Emitting to Verilog}\label{sec:baseline:backend}
+\subsection{Verilog Integration}\label{sec:baseline:backend}
+
+In order to run meaningful experiments with \shortname{}, I needed to be able
+to interface with existing RTL tool flows.
 
 \subsection{Testing}\label{sec:baseline:testing}
 
 In the development of this tool, I used a varied testing strategy on both the
 software development front and the circuit verification front. For the project
-to be successfuly, it is very important to abstract the components of the
-compiler wisely and test them .
+to be successful, it is very important to abstract the components of the
+compiler wisely and test them rigorously. This enforces some level of
+self-consistency in how the layers of the compiler integrate with each other.
+Still, end-to-end testing is still required to capture the demands of the end
+application---having a working Verilog-to-Verilog compiler. Hence, there is
+nearly as much testing code as there is compiler code. The full list of testing
+strategies is itemized below:
 
 \begin{itemize}
     \item Software Testing
@@ -281,7 +289,7 @@ compiler wisely and test them .
                     checked for abnormalities.
               \item I self-enforce 80\% code coverage by line on my code.
           \end{itemize}
-    \item Verification
+    \item Circuit Verification
           \begin{itemize}
               \item The intermediate language is its own statically typed data structure. A mini
                     linter is built around it to check for syntax errors.
@@ -294,9 +302,6 @@ compiler wisely and test them .
           \end{itemize}
 \end{itemize}
 
-\subsection{End to End Integration}\label{sec:baseline:flow}
-
-\pagebreak
 \nocite{*}
 \bibliographystyle{plain-annote}
 \bibliography{references}
