@@ -206,8 +206,8 @@ using rewrite rules to match to syntactical elements in the logic. For example,
 the rule \texttt{(INV (AND a b)) => (NAND\_X1 a b)} denotes the logic function
 of \texttt{NAND\_X1} and hence declares what portions of the graph it can
 cover. Combining cell mapping with the rules from
-Sec.~\ref{sec:baseline:rewriting} means that the e-graph is reasoning about
-logic rewriting and covering with standard cells simultaneously. Hence, the
+Sec.~\ref{sec:baseline:rewriting} means that the e-graph will reason about
+logic rewriting and mapping to standard cells simultaneously. Hence, the
 e-graph can reason about many alternative mappings in parallel. Of course, the
 primary tradeoff is the memory and execution time needed to build the e-graph.
 In any case, Table~\ref{tab:cells} contains an incomplete list of standard
@@ -238,18 +238,19 @@ cells and their logic functions in terms of the EqMap intermediate language.
 \end{wrapfigure}
 
 \subsection{Standard Cell Extraction}\label{sec:baseline:extraction}
-Ideally, the e-graph would be built until rewrites no longer introduce new
-terms into the graph. In the literature, this is called \textit{equality
-    saturation}. In practice, equality saturation is not required to capture the
-majority of the optimization potential. The quality of results are more so
-dependent on the extraction technique used. As explained in
+Ideally, the e-graph is grown until rewrites no longer introduce new terms into
+the graph. In the literature, this is called \textit{equality saturation}. In
+practice, equality saturation takes too long, and empirically it is not
+required to capture the majority of the optimization potential. The quality of
+results are more so dependent on the extraction technique used. As explained in
 Sec.~\ref{sec:background:egraph}, \textit{extraction} is the process of
 selecting the ``best'' circuit from the e-graph. Given that e-graph can easily
 contain hundreds of thousands of e-nodes across tens of thousands of e-classes,
 a greedy extraction algorithm is the most pragmatic. The greedy extractor
 iterates over the e-classes, updating the cost of the cheapest e-node until the
 database of costs no longer change. In the baseline compiler, the cost model
-simply counts the number of cells required to implement a logic function.
+simply counts the number of cells required to implement a logic function. For a
+circuit node \texttt{x}, its cost is defined as follows:
 
 \begin{figure}[h]
     \[
@@ -265,7 +266,28 @@ simply counts the number of cells required to implement a logic function.
 \subsection{Verilog Integration}\label{sec:baseline:backend}
 
 In order to run meaningful experiments with \shortname{}, I needed to be able
-to interface with existing RTL tool flows.
+to interface with existing RTL tool flows. This means building some sort of
+Verilog compiler from scratch. A half-baked attempt may use a separate tool to
+convert the Verilog to a more primitive format---perhaps an and-inverter graph
+(AIG). However, if we want a high performance tool it is very important that
+all compilation stages stay in DRAM. For example, some verilog test cases are
+50,000 lines of code. If we have multiple stages of serialization and parsing,
+the performance of the compiler is doomed.
+
+As a starting point, I use the \texttt{sv-parser} Rust crate. This parses the
+Verilog and returns an abstract syntax tree (AST). Obviously, reusing a
+full-featured Verilog parser is a tremendous amount of work saved. Nonetheless,
+an AST is still far from having a compiled Verilog circuit. The AST simply
+represents the structure of the input language, not the digial circuit itself.
+All that is to say that compiling from an AST data structure is still a lot of
+work. In total, I have around 2,000 lines of code dedicated to Verilog
+compilation and emission. The entire codebase is creeping into 10,000 lines of
+code. Fig.~\ref{fig:flow:egraph} shows the core steps of the compiler. First,
+Verilog is compiled to the intermediate representation defined in
+Sec.~\ref{sec:baseline:rewriting}. Then, the e-graph is generated with the
+rewrite rules. Finally, the `best' circuit is extracted with the cost function
+from Fig.~\ref{fig:cost} and it is coverted back to Verilog. This enables
+nearly seamless integration with other RTL-based tool flows.
 
 \subsection{Testing}\label{sec:baseline:testing}
 
@@ -283,24 +305,28 @@ strategies is itemized below:
     \item Software Testing
           \begin{itemize}
               \item Unit tests are written with the Rust Cargo tools in mind (\texttt{cargo test}).
-              \item 36 end-to-end regression tests are ran with the full tool flow.
-              \item Both of these test types are have a GitHub CI workflow.
+              \item 36 end-to-end regression tests are ran with the full Verilog tool flow.
+              \item Both of these test types are checked in a GitHub CI workflow.
               \item Results for 99 Verilog benchmarks are continually recorded and new commits are
                     checked for abnormalities.
               \item I self-enforce 80\% code coverage by line on my code.
           \end{itemize}
     \item Circuit Verification
           \begin{itemize}
-              \item The intermediate language is its own statically typed data structure. A mini
-                    linter is built around it to check for syntax errors.
+              \item The intermediate language is its own statically typed data structure. A
+                    mini-linter is built around it to check for syntax errors.
               \item The compiler performs exhaustive testing of combinational logic. Although, this
                     is only feasible for small circuits.
-              \item Yosys's equivalence checking abilities are used to verify the correctness of
-                    the Verilog output against the original Verilog input.
+              \item Yosys RTL equivalence checking is used as a third party source to verify the
+                    correctness of the Verilog output against the original Verilog input.
               \item The e-graph can produce a proof of the rewrite sequence that relates the
                     optimized and original form of the Verilog.
           \end{itemize}
 \end{itemize}
+
+Since building out the compiler is the first priority, very little evaluation
+was performed. However, I can report the examples of compiling one example: a
+2-bit carry lookahead unit.
 
 \nocite{*}
 \bibliographystyle{plain-annote}
