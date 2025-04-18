@@ -7,6 +7,7 @@
 \usepackage{hyperref}
 \usepackage{booktabs}
 \usepackage{multirow}
+\usepackage{amsmath}
 
 \newcommand{\todo}[1]{\textcolor{red}{TODO:\ #1}}
 \newcommand{\shortname}{EqMap}
@@ -229,7 +230,30 @@ cells and their logic functions in terms of the EqMap intermediate language.
     \caption{An incomplete table of cells defined as rewrite rules}\label{tab:cells}
 \end{table}
 
-\subsection{Extraction}\label{sec:baseline:backend}
+\subsection{Standard Cell Extraction}\label{sec:baseline:backend}
+Ideally, the e-graph would be built until rewrites no longer introduce new
+terms into the graph. In the literature, this is called \textit{equality
+    saturation}. In practice, equality saturation is not required to capture the
+majority of the optimization potential. The quality of results are more so
+dependent on the extraction technique used. As explained in
+Sec.~\ref{sec:background:egraph}, \textit{extraction} is the process of
+selecting the ``best'' circuit from the e-graph. Given that e-graph can easily
+contain hundreds of thousands of e-nodes across tens of thousands of e-classes,
+a greedy extraction algorithm is the most pragmatic. The greedy extractor
+iterates over the e-classes, updating the cost of the cheapest e-node until the
+database of costs no longer change. In the baseline compiler, the cost model
+simply counts the number of cells required to implement a logic function.
+
+\begin{figure}[h]
+    \[
+        F(\texttt{x}) = \begin{cases}
+            0                                         & \text{if \texttt{x} is an \texttt{Input} or \texttt{Const}}        \\
+            1 + \sum_{\texttt{c} \in C} F(\texttt{c}) & \text{if \texttt{x} is a standard cell with a set of children } C, \\
+            \infty                                    & \text{if \texttt{x} is a not a \texttt{StdCell}}.
+        \end{cases}
+    \]
+    \caption{The cost function is defined recursively. The \texttt{INV}, \texttt{AND}, \texttt{OR} node types are purely for logic rewriting, and hence have a cost of infinity to faciliate filtering these choices out of extraction.}\label{fig:cost}
+\end{figure}
 
 \subsection{Emitting to Verilog}\label{sec:baseline:backend}
 
