@@ -3,15 +3,15 @@ Our experiments were carried out on a Red Hat 8 server hosting a Intel Xeon
 Gold 6242 CPU. Since \shortname{} is written in Rust, it mostly uses the
 built-in functionality of the egg library. The egg e-graph runner was ran in a
 time-limited configuration, meaning there was no limit in the size of the
-e-graph. The specific time limit for e-graph construction was 10 minutes. In
-most cases \zz{can we be more specific, how many exactly finish within 30 sec},
-the test circuit saturated the e-graph well before this time limit---around 30
-seconds. \shortname{} was evaluated against circuits from three benchmark
-suites: EPFL~\cite{epflbench}, ISCAS'85~\cite{iscasbench}, and
-LGSynth'91~\cite{lgsynthbench}. However, we also included an ALU and pipelined
-multiplication module to test how our compiler behaves with increasing levels
-of bit-parallelism and register pipelining. Finally, we measure how our mapping
-optimizations influence CLB usage and timing closure.
+e-graph. Regardless, the median time to saturate a design was 9 seconds.
+However, the far majority of results are reached within 20 rewrite iterations,
+and this on average takes only 3 seconds. As for the benchmarks, \shortname{}
+was evaluated against circuits from three test suites: EPFL~\cite{epflbench},
+ISCAS'85~\cite{iscasbench}, and LGSynth'91~\cite{lgsynthbench}. However, we
+also included an ALU and pipelined multiplication module to test how our
+compiler behaves with increasing levels of bit-parallelism and register
+pipelining. Finally, we measure how our mapping optimizations influence CLB
+usage and timing closure.
 
 \begin{table}
     \centering
