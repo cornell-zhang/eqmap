@@ -143,11 +143,11 @@ work should be reusable in the future.
 \subsection{Boolean Logic Rewriting}\label{sec:baseline:rewriting}
 In any case, we can begin to break down the components of the \shortname{}
 compiler. First, we need to define the intermediate representation of the
-combinational logic that will be rewritten. We can use Backus-Naur form (BNF)
+combinational logic that will be rewritten. We can use Backus-Naur form
+(BNF)\footnote{\href{https://en.wikipedia.org/wiki/Backus\%E2\%80\%93Naur\_form}{https://en.wikipedia.org/wiki/Backus-Naur\_form}}
 to very consisely define the grammar of our intermediate representation of
 Boolean logic:
 
-\pagebreak
 \begin{verbatim}
 <Const> ::= false | true
 
@@ -199,10 +199,37 @@ more into the axiomatization of Boolean algebras
 
 \subsection{Mapping to Gates}\label{sec:baseline:mapping}
 
-Now that the compiler can reason about Boolean logic, it needs to know how to
-cover the logic with standard cells. We can do this in an ad-hoc fashion by
-just declaring more rewrite rules that match to syntactical elements in the
-logic.
+Now that the compiler can reason about Boolean logic, it also needs to know how
+to cover the logic with standard cells. We can do this in an ad-hoc fashion by
+using rewrite rules to match to syntactical elements in the logic. For example,
+the rule \texttt{(INV (AND a b)) => (NAND\_X1 a b)} denotes the logic function
+of \texttt{NAND\_X1} and hence declares what portions of the graph it can
+cover. Combining cell mapping with the rules from
+Sec.~\ref{sec:baseline:rewriting} means that the e-graph is reasoning about
+logic rewriting and covering with standard cells simultaneously. Hence, the
+e-graph can reason about many alternative mappings in parallel. Of course, the
+primary tradeoff is the memory and execution time needed to build the e-graph.
+In any case, Table~\ref{tab:cells} contains an incomplete list of standard
+cells and their logic functions in terms of the EqMap intermediate language.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Logic Function}                       & \textbf{Standard Cell}                                             \\ \midrule
+        \texttt{(INV a)}                              & \texttt{INV\_X1}, \texttt{INV\_X2}, \texttt{INV\_X4}, \ldots       \\
+        \texttt{(INV (AND a b))}                      & \texttt{NAND2\_X1}, \texttt{NAND2\_X2}, \texttt{NAND2\_X4}, \ldots \\
+        \texttt{(INV (OR a b))}                       & \texttt{NOR2\_X1}, \texttt{NOR2\_X2}, \texttt{NOR2\_X4}, \ldots    \\
+        \texttt{(INV (AND (AND a b) (AND c d)))}      & \texttt{NAND4\_X1}, \texttt{NAND4\_X2}, \texttt{NAND4\_X4}, \ldots \\
+        \texttt{(OR (AND b (INV a)) (AND a (INV b)))} & \texttt{XOR2\_X1}, \texttt{XOR2\_X2}, \texttt{XOR2\_X4}, \ldots    \\
+        \texttt{(INV (OR (AND a b) c))}               & \texttt{AOI21\_X1}, \texttt{AOI21\_X2}, \texttt{AOI21\_X4}, \ldots \\
+        \texttt{(INV (AND (OR a b) c))}               & \texttt{OAI21\_X1}, \texttt{OAI21\_X2}, \texttt{OAI21\_X4}, \ldots \\
+        \bottomrule
+    \end{tabular}
+    \caption{An incomplete table of cells defined as rewrite rules}\label{tab:cells}
+\end{table}
+
+\subsection{Extraction}\label{sec:baseline:backend}
 
 \subsection{Emitting to Verilog}\label{sec:baseline:backend}
 
