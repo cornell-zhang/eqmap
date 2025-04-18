@@ -12,7 +12,7 @@
 \newcommand{\todo}[1]{\textcolor{red}{TODO:\ #1}}
 \newcommand{\shortname}{EqMap}
 
-\title{ECE6745 Project Proposal}
+\title{ECE6745 Project -- ASIC Technology Mapping with E-Graphs}
 \author{Matthew Hofmann}
 \date{\today}
 
@@ -230,7 +230,14 @@ cells and their logic functions in terms of the EqMap intermediate language.
     \caption{An incomplete table of cells defined as rewrite rules}\label{tab:cells}
 \end{table}
 
-\subsection{Standard Cell Extraction}\label{sec:baseline:backend}
+\begin{wrapfigure}{r}{0.47\textwidth}
+    \vspace{-1cm}
+    \centering
+    \includegraphics[width=0.44\textwidth]{img/celllang.pdf}
+    \caption{The compilation steps internal to \shortname{} Verilog tool.}\label{fig:flow:egraph}
+\end{wrapfigure}
+
+\subsection{Standard Cell Extraction}\label{sec:baseline:extraction}
 Ideally, the e-graph would be built until rewrites no longer introduce new
 terms into the graph. In the literature, this is called \textit{equality
     saturation}. In practice, equality saturation is not required to capture the
@@ -257,11 +264,37 @@ simply counts the number of cells required to implement a logic function.
 
 \subsection{Emitting to Verilog}\label{sec:baseline:backend}
 
-\begin{wrapfigure}{r}{0.47\textwidth}
-    \centering
-    \includegraphics[width=0.44\textwidth]{img/celllang.pdf}
-    \caption{The compilation steps internal to \shortname{} Verilog tool.}\label{fig:flow:egraph}
-\end{wrapfigure}
+\subsection{Testing}\label{sec:baseline:testing}
+
+In the development of this tool, I used a varied testing strategy on both the
+software development front and the circuit verification front. For the project
+to be successfuly, it is very important to abstract the components of the
+compiler wisely and test them .
+
+\begin{itemize}
+    \item Software Testing
+          \begin{itemize}
+              \item Unit tests are written with the Rust Cargo tools in mind (\texttt{cargo test}).
+              \item 36 end-to-end regression tests are ran with the full tool flow.
+              \item Both of these test types are have a GitHub CI workflow.
+              \item Results for 99 Verilog benchmarks are continually recorded and new commits are
+                    checked for abnormalities.
+              \item I self-enforce 80\% code coverage by line on my code.
+          \end{itemize}
+    \item Verification
+          \begin{itemize}
+              \item The intermediate language is its own statically typed data structure. A mini
+                    linter is built around it to check for syntax errors.
+              \item The compiler performs exhaustive testing of combinational logic. Although, this
+                    is only feasible for small circuits.
+              \item Yosys's equivalence checking abilities are used to verify the correctness of
+                    the Verilog output against the original Verilog input.
+              \item The e-graph can produce a proof of the rewrite sequence that relates the
+                    optimized and original form of the Verilog.
+          \end{itemize}
+\end{itemize}
+
+\subsection{End to End Integration}\label{sec:baseline:flow}
 
 \pagebreak
 \nocite{*}
