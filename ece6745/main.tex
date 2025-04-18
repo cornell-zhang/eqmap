@@ -140,7 +140,34 @@ algorithms will improve the circuit synthesis abilities without having to
 update the rewriting system. Although, developing new extraction algorithms is
 more pure compilers research than EDA research.
 
-\begin{table}
+In any case, we can begin to break down the components of the \shortname{}
+compiler. First, we need to define the intermediate representation of the
+combinational logic that will be rewritten. We can use Backus-Naur form (BNF)
+to very consisely define the grammar of our intermediate representation of
+Boolean logic:
+
+\pagebreak
+\begin{verbatim}
+<Const> ::= false | true
+
+<Input> ::= <String>
+
+<StdCell> ::= NAND_X1 | NOR_X1 | XOR2_X1 | ...
+
+<Node> ::= <Const> | <Input> | (INV <Node>) | (AND <Node> <Node>) | (OR <Node> <Node>)
+           | (<StdCell> <Node> <Node>) | (<StdCell> <Node> <Node> <Node>) | ...
+\end{verbatim}
+
+Given this very simple language, we can represent any Boolean circuit we want.
+For example, we could represent a 2:1 multiplexer with the following syntax:
+\texttt{(OR (AND a s) (AND b (INV s)))}. Given this language with formal
+semantics, we can write all the properties of Boolean algebras as rewrite
+rules. Table.~\ref{tab:rules} shows that there are 19 logic rewriting rules in
+total. For more information on the completeness of these rules, one should read
+more into the axiomatization of Boolean algebras
+\footnote{\href{https://en.wikipedia.org/wiki/Boolean\_algebra\_(structure)\#Axiomatics}{https://en.wikipedia.org/wiki/Boolean\_algebra\_(structure)\#Axiomatics}}.
+
+\begin{table}[h]
     \centering
     \begin{tabular}{cl}
         \toprule
@@ -166,7 +193,7 @@ more pure compilers research than EDA research.
         Negation                          & \texttt{a => (INV (INV a))}                            \\
         \bottomrule
     \end{tabular}
-    \caption{Example of Rules in a Table}
+    \caption{Rules of a Boolean algebra for EqMap}\label{tab:rules}
 \end{table}
 
 \begin{wrapfigure}{r}{0.47\textwidth}
