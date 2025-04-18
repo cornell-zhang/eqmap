@@ -103,34 +103,28 @@ iteration, the marginal cost in compile time rapidly increases.
 
 \subsection{Case Study: Pipelined Designs}\label{sec:results:retiming}
 
-\zz{Our evaluation on retiming and sequential logic is very weak. Maybe we should consider only focusing on comb logic in this paper. If not, we need to clarify why we are not testing more complex sequential circuits}
 Hardware designs with feed forward pipelines provide interesting opportunities
-to apply register retiming and find a higher-level of area optimization. When
-closing timing on FPGA designs, the critical path is often dominated by the
-effects of routing congestion, more so than ASIC design. Hence, reducing the
-cell count and circuit depth along the max delay path is a valid optimization
-strategy for FPGA design. As a caveat, it is important to note that other work
-has also observed the opposite trend~\cite{academicfpga}: decreasing depth too
-much can strain the router. In any case, \shortname{} can be utilized to reduce total
-CLB usage. To elaborate, every CLB in the Ultrascale+ architecture contains 1
-slice, which itself contains 8 LUTs and 16 flip-flops~\cite{ug574}.
-Intuitively, a design that maps to CLBs efficiently will contain more
-flip-flops than LUTs due to this 2:1 ratio. To test this hypothesis,
-Table~\ref{tab:multiply} shows the results of a 32-bit pipelined multiplier
-with a varying number of pipeline stages processed with \shortname{}.
+to find a higher-level of area optimization. When closing timing on FPGA
+designs, the critical path is often dominated by the effects of routing
+congestion, more so than ASIC design. Hence, reducing the cell count and
+circuit depth along the max delay path is a valid optimization strategy for
+FPGA design. As a caveat, it is important to note that other work has also
+observed the opposite trend~\cite{academicfpga}: decreasing depth too much can
+strain the router. In any case, \shortname{} can be utilized to reduce total
+CLB usage. To test this hypothesis, our compiler was used to optimize a 32-bit
+integer multiplier with a varying number of pipeline stages. The data in
+Table~\ref{tab:multiply} clearly shows that as the number of pipeline stages
+increases, some inefficiency in technology mapping is accumulated. \shortname{}
+is able to pack the LUTs into roughly the same amount of logic as the single
+stage design.
 
-While the total drop is CLB usage is desirable, the area gains as a percentage
-are modest due to the suboptimality of greedy e-graph extraction. Register
-retiming rewrites vastly increase the design space. Unlike other logic
-rewrites, register retiming changes the topology of the stateful
-elements---i.e. the flip-flops. As a consequence, greedy extraction cannot take
-into account the fanout of flip-flops. It can choose a poor design point with
-less register fanout and a greater total number of registers. The few
-regressions observed in mapping combinational logic
-(Fig.~\ref{fig:marginal:improvement}) become more frequent and exacerbated in
-sequential logic. While these results \textit{do} demonstrate that optimizing
-for CLB count over raw cell count is a feasible strategy, a different
-extraction method will be needed in future work.
+While the total drop in CLB usage is desirable, we anticipate that more exact
+extraction techniques would find even greater area reductions. Unlike other
+logic rewrites, register retiming changes the topology of the stateful
+elements---i.e. the flip-flops. Consequently, greedy extraction cannot take
+into account the fanout these stateful elements. While these results
+\textit{do} demonstrate that optimizing for CLB count over raw cell count is a
+feasible strategy, a different extraction method will be needed.
 
 \subsection{Case Study: Bit-Parallel Designs}\label{sec:results:scalability}
 
