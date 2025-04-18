@@ -137,9 +137,10 @@ degrading timing. While greedy extraction shows promise for FPGA applications,
 it may be that the same extraction algorithm will be less optimal for ASIC
 design. Nonetheless, I anticipate that future work on e-graph extraction
 algorithms will improve the circuit synthesis abilities without having to
-update the rewriting system. Although, developing new extraction algorithms is
-more pure compilers research than EDA research.
+update the rewriting system. Hence, the logic rewriting system proposed in this
+work should be reusable in the future.
 
+\subsection{Boolean Logic Rewriting}\label{sec:baseline:rewriting}
 In any case, we can begin to break down the components of the \shortname{}
 compiler. First, we need to define the intermediate representation of the
 combinational logic that will be rewritten. We can use Backus-Naur form (BNF)
@@ -195,6 +196,15 @@ more into the axiomatization of Boolean algebras
     \end{tabular}
     \caption{Rules of a Boolean algebra for EqMap}\label{tab:rules}
 \end{table}
+
+\subsection{Mapping to Gates}\label{sec:baseline:mapping}
+
+Now that the compiler can reason about Boolean logic, it needs to know how to
+cover the logic with standard cells. We can do this in an ad-hoc fashion by
+just declaring more rewrite rules that match to syntactical elements in the
+logic.
+
+\subsection{Emitting to Verilog}\label{sec:baseline:backend}
 
 \begin{wrapfigure}{r}{0.47\textwidth}
     \centering
