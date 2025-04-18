@@ -124,8 +124,8 @@ Lily~\cite{areamap} takes into account the connectivity of a circuit in order
 to reduce area dedicated to routing signals. Another is example is
 how~\cite{powermap} maps cells while taking into account signal transition
 probabilities in order to minimize power. Recent developments include works
-that use more approximate methods to drive synthsis. For example,
-ALS~\cite{approxmap} uses reinforncement learning to do a form of `lossy' logic
+that use more approximate methods to drive synthesis. For example,
+ALS~\cite{approxmap} uses reinforcement learning to do a form of `lossy' logic
 synthesis. In my project, I will mostly perform area optimization by tracking
 cell counts.
 
@@ -147,7 +147,7 @@ In any case, we can begin to break down the components of the \shortname{}
 compiler. First, we need to define the intermediate representation of the
 combinational logic that will be rewritten. We can use Backus-Naur form
 (BNF)\footnote{\href{https://en.wikipedia.org/wiki/Backus\%E2\%80\%93Naur\_form}{https://en.wikipedia.org/wiki/Backus-Naur\_form}}
-to very consisely define the grammar of our intermediate representation of
+to very concisely define the grammar of our intermediate representation of
 Boolean logic:
 
 \begin{verbatim}
@@ -189,7 +189,7 @@ more into the axiomatization of Boolean algebras
                                           & \texttt{(AND a (INV a)) => false}                      \\ \midrule
         \multirow{2}{*}{De Morgan's Laws} & \texttt{(INV (AND a b)) <=> (OR (INV a) (INV b))}      \\
                                           & \texttt{(INV (OR a b)) <=> (AND (INV a) (INV b))}      \\ \midrule
-        \multirow{2}{*}{Indempotence}     & \texttt{(OR a a) => a}                                 \\
+        \multirow{2}{*}{Idempotence}      & \texttt{(OR a a) => a}                                 \\
                                           & \texttt{(AND a a) => a}                                \\ \midrule
         \multirow{2}{*}{Absorption}       & \texttt{(OR a (AND a b)) => a}                         \\
                                           & \texttt{(AND a (OR a b)) => a}                         \\ \midrule
@@ -210,7 +210,7 @@ cover. Combining cell mapping with the rules from
 Sec.~\ref{sec:baseline:rewriting} means that the e-graph will reason about
 logic rewriting and mapping to standard cells simultaneously. Hence, the
 e-graph can reason about many alternative mappings in parallel. Of course, the
-primary tradeoff is the memory and execution time needed to build the e-graph.
+primary trade-off is the memory and execution time needed to build the e-graph.
 In any case, Table~\ref{tab:cells} contains an incomplete list of standard
 cells and their logic functions in terms of the EqMap intermediate language.
 
@@ -261,7 +261,7 @@ circuit node \texttt{x}, its cost is defined as follows:
             \infty                                    & \text{if \texttt{x} is a not a \texttt{StdCell}}.
         \end{cases}
     \]
-    \caption{The cost function is defined recursively. The \texttt{INV}, \texttt{AND}, \texttt{OR} node types are purely for logic rewriting, and hence have a cost of infinity to faciliate filtering these choices out of extraction.}\label{fig:cost}
+    \caption{The cost function is defined recursively. The \texttt{INV}, \texttt{AND}, \texttt{OR} node types are purely for logic rewriting, and hence have a cost of infinity to facilitate filtering these choices out of extraction.}\label{fig:cost}
 \end{figure}
 
 \subsection{Verilog Integration}\label{sec:baseline:backend}
@@ -271,7 +271,7 @@ to interface with existing RTL tool flows. This means building some sort of
 Verilog compiler from scratch. A half-baked attempt may use a separate tool to
 convert the Verilog to a more primitive format---perhaps an and-inverter graph
 (AIG). However, if we want a high performance tool it is very important that
-all compilation stages stay in DRAM. For example, some verilog test cases are
+all compilation stages stay in DRAM. For example, some Verilog test cases are
 50,000 lines of code. If we have multiple stages of serialization and parsing,
 the performance of the compiler is doomed.
 
@@ -279,7 +279,7 @@ As a starting point, I use the \texttt{sv-parser} Rust crate. This parses the
 Verilog and returns an abstract syntax tree (AST). Obviously, reusing a
 full-featured Verilog parser is a tremendous amount of work saved. Nonetheless,
 an AST is still far from having a compiled Verilog circuit. The AST simply
-represents the structure of the input language, not the digial circuit itself.
+represents the structure of the input language, not the digital circuit itself.
 All that is to say that compiling from an AST data structure is still a lot of
 work. In total, I have around 2,000 lines of code dedicated to Verilog
 compilation and emission. The entire codebase is creeping into 10,000 lines of
@@ -287,7 +287,7 @@ code. Fig.~\ref{fig:flow:egraph} shows the core steps of the compiler. First,
 Verilog is compiled to the intermediate representation defined in
 Sec.~\ref{sec:baseline:rewriting}. Then, the e-graph is generated with the
 rewrite rules. Finally, the `best' circuit is extracted with the cost function
-from Fig.~\ref{fig:cost} and it is coverted back to Verilog. This enables
+from Fig.~\ref{fig:cost} and it is converted back to Verilog. This enables
 nearly seamless integration with other RTL-based tool flows.
 
 \begin{figure}[h]
