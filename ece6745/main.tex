@@ -8,6 +8,7 @@
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{amsmath}
+\usepackage{subcaption}
 
 \newcommand{\todo}[1]{\textcolor{red}{TODO:\ #1}}
 \newcommand{\shortname}{EqMap}
@@ -289,6 +290,20 @@ rewrite rules. Finally, the `best' circuit is extracted with the cost function
 from Fig.~\ref{fig:cost} and it is coverted back to Verilog. This enables
 nearly seamless integration with other RTL-based tool flows.
 
+\begin{figure}[h]
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/gates.pdf}
+        \caption{The result when mapping a 2-bit CLA to gates of fan-in 2}\label{fig:test:gates}
+    \end{subfigure}\vspace{0.5cm}
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/cells.pdf}
+        \caption{EqMap reduces the cell count from 10 to 6 when OAI cells are introduced}\label{fig:test:cells}
+    \end{subfigure}
+    \caption{Diagrams of the top-level integration of \shortname{} into existing tool flows and internal e-graph driven compiler architecture.}\label{fig:flow}
+\end{figure}
+
 \subsection{Testing}\label{sec:baseline:testing}
 
 In the development of this tool, I used a varied testing strategy on both the
@@ -325,8 +340,12 @@ strategies is itemized below:
 \end{itemize}
 
 Since building out the compiler is the first priority, very little evaluation
-was performed. However, I can report the examples of compiling one example: a
-2-bit carry lookahead unit.
+was performed at this point. However, I can report the results of compiling one
+example: a 2-bit carry lookahead unit. Part of the advantage of EqMap is the
+flexibility of choosing which library to map to. For example,
+Fig.~\ref{fig:test:cells} shows the advantage of introducing OAI and AOI cells
+into the library. The mapping uses four less cells than
+Fig.~\ref{fig:test:gates}.
 
 \nocite{*}
 \bibliographystyle{plain-annote}
