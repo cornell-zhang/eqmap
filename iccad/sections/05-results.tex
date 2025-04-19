@@ -15,8 +15,8 @@ optimizations influence CLB usage and timing closure.
 
 \begin{table}
     \centering
-    \csvautobooktabular{data/results.csv}
     \caption{Results of \nimproved{} improved benchmarks from ISCAS'85, LGSynth'91, and EPFL. The percent improvements use Vivado as the baseline.}\label{tab:results}
+    \csvautobooktabular{data/results.csv}
 \end{table}
 
 \begin{figure}
@@ -79,8 +79,8 @@ their own.
 
 \begin{table*}[t]
     \centering
-    \csvautobooktabular{data/mult.csv}
     \caption{Post-implementation results of pipelined multiplication circuit optimized with EqMap. Yosys 0.33 + EqMap is used for synthesis, and Vivado 2024 is used for placement and routing.}\label{tab:multiply}
+    \csvautobooktabular{data/mult.csv}
 \end{table*}
 
 \subsection{Marginal Improvement and Cost}\label{sec:results:margin}
@@ -157,6 +157,6 @@ Vivado or Yosys to quickly achieve better LUT packing with minimal time cost.
 
 \begin{table}
     \centering
-    \csvautobooktabular{data/alu.csv}
     \caption{EqMap synthesis results of $n$-bit ALU}\label{tab:alu}
+    \csvautobooktabular{data/alu.csv}
 \end{table}
