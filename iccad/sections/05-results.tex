@@ -16,7 +16,7 @@ optimizations influence CLB usage and timing closure.
 \begin{table}
     \centering
     \csvautobooktabular{data/results.csv}
-    \caption{Results of \nimproved{} improved benchmarks from ISCAS'85~\cite{iscasbench}, LGSynth'91~\cite{lgsynthbench}, and EPFL~\cite{epflbench}. The percent improvements use Vivado as the baseline.}\label{tab:results}
+    \caption{Results of \nimproved{} improved benchmarks from ISCAS'85, LGSynth'91, and EPFL. The percent improvements use Vivado as the baseline.}\label{tab:results}
 \end{table}
 
 \begin{figure}
@@ -66,21 +66,21 @@ their own.
     \begin{subfigure}{0.47\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/improvement.pdf}
-        \caption{Marginal improvement versus iteration count. The labels mark the equality saturation point.}\label{fig:marginal:improvement}
+        \caption{Marginal improvement versus iteration count. The labels mark equality saturation.}\label{fig:marginal:improvement}
     \end{subfigure}
     \hfill\vspace{4mm}
     \begin{subfigure}{0.47\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/runtime_derivative.pdf}
-        \caption{Marginal increase in runtime versus iteration count. Later iterations consume more time as the graph is larger.}\label{fig:marginal:runtime}
+        \caption{Marginal increase in run time versus iteration count. Later iterations consume more time as the e-graph is larger.}\label{fig:marginal:runtime}
     \end{subfigure}
-    \caption{Comparison of gains in QoR against e-graph size and runtime. Running a netlist to equality saturation requires more rewrite iterations, and hence a larger e-graph.}\label{fig:marginal}
+    \caption{Comparison of marginal gain in QoR against e-graph size and runtime. In most cases, exploring a circuit to equality saturation is not necessary.}\label{fig:marginal}
 \end{figure}
 
 \begin{table*}[t]
     \centering
     \csvautobooktabular{data/mult.csv}
-    \caption{LUT and flip-flop counts are report post-synthesis, but before placement and routing. CLB counts are reported after placement and routing with Vivado 2024.}\label{tab:multiply}
+    \caption{Post-implementation results of pipelined multiplication circuit optimized with EqMap. Yosys 0.33 + EqMap is used for synthesis, and Vivado 2024 is used for placement and routing.}\label{tab:multiply}
 \end{table*}
 
 \subsection{Marginal Improvement and Cost}\label{sec:results:margin}
@@ -105,18 +105,21 @@ iteration, the marginal cost in compile time rapidly increases.
 
 Hardware designs with feed forward pipelines provide interesting opportunities
 to find a higher-level of area optimization. When closing timing on FPGA
-designs, the critical path is often dominated by the effects of routing
-congestion, more so than ASIC design. Hence, reducing the cell count and
-circuit depth along the max delay path is a valid optimization strategy for
-FPGA design. As a caveat, it is important to note that other work has also
-observed the opposite trend~\cite{academicfpga}: decreasing depth too much can
-strain the router. In any case, \shortname{} can be utilized to reduce total
-CLB usage. To test this hypothesis, our compiler was used to optimize a 32-bit
+designs, the critical path is often dominated by routing, more so than ASIC
+design. Hence, reducing the cell count and circuit depth along the max delay
+path is a valid optimization strategy for FPGA design. As a caveat, it is
+important to note that other work has also observed the opposite
+trend~\cite{academicfpga}: decreasing depth too much can strain the router. In
+any case, \shortname{} can be utilized to reduce total CLB usage in pipelined
+designs. To test this hypothesis, our compiler was used to optimize a 32-bit
 integer multiplier with a varying number of pipeline stages. The data in
 Table~\ref{tab:multiply} clearly shows that as the number of pipeline stages
 increases, some inefficiency in technology mapping is accumulated. \shortname{}
 is able to pack the LUTs into roughly the same amount of logic as the single
-stage design---without increasing the number of flip-flops.
+stage design---without increasing the number of flip-flops. While our current
+technique only works for acyclic designs, we wanted to add an additional case
+study on pipelined logic to demonstrate the potential of extending our approach
+beyond just combinational logic.
 
 While the total drop in CLB usage is desirable, we anticipate that more exact
 extraction techniques would find even greater area reductions. Unlike other
@@ -155,5 +158,5 @@ Vivado or Yosys to quickly achieve better LUT packing with minimal time cost.
 \begin{table}
     \centering
     \csvautobooktabular{data/alu.csv}
-    \caption{Synthesis results of $n$-bit ALU}\label{tab:alu}
+    \caption{EqMap synthesis results of $n$-bit ALU}\label{tab:alu}
 \end{table}
