@@ -18,7 +18,10 @@
 While constructing the e-graph is the crux of \shortname{}, there are several
 other important components to consider in the full design flow. In order to
 test our hypothesis, \shortname{} must be compatible with existing synthesis
-flows, and the rewritten circuits must be verified.
+flows, and the rewritten circuits must be verified. Fig.~\ref{fig:flow}
+provides an overview on both the integration with existing RTL flows and the
+internal compiler architecture. The following sections will describe each step
+in more detail.
 
 \subsection{Extraction}\label{sec:flow:extraction}
 Regardless of whether equality saturation is achieved or not, the quality of
