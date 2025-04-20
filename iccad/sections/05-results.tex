@@ -11,7 +11,7 @@ EPFL~\cite{epflbench}, ISCAS'85~\cite{iscasbench}, and
 LGSynth'91~\cite{lgsynthbench}. However, we also included an ALU and pipelined
 multiplication module to test how our compiler behaves with increasing levels
 of bit-parallelism and register pipelining. Finally, we measure how our mapping
-optimizations influence CLB usage and timing closure.
+optimizations influence CLB usage.
 
 \begin{table}
     \centering
@@ -45,8 +45,8 @@ approximate design size. AMD/Xilinx Vivado 2024~\cite{vivado} was used as the
 baseline synthesis tool. For the \shortname{} flow, Yosys~\cite{yosys} was used
 to generate the initial mapped circuit. At a glance, circuits like `int2float,'
 `c6288,` `adder,' and `square' have the most to gain from \shortname{}. These
-circuits are all arithmetic in nature, and this is a common occurrence
-throughout the rest of the results.
+circuits are all arithmetic in nature, and this pattern continues throughout
+the rest of the results.
 
 One result that is \textit{not} demonstrated by the table is the apparent
 importance of the initial structure inputted to \shortname{}. We have not
@@ -117,17 +117,17 @@ Table~\ref{tab:multiply} clearly shows that as the number of pipeline stages
 increases, some inefficiency in technology mapping is accumulated. \shortname{}
 is able to pack the LUTs into roughly the same amount of logic as the single
 stage design---without increasing the number of flip-flops. While our current
-technique only works for acyclic designs, we wanted to add an additional case
-study on pipelined logic to demonstrate the potential of extending our approach
-beyond just combinational logic.
+technique only supports acyclic designs, we wanted to add an additional case
+study on pipelined logic to prove the potential of extending our approach
+beyond combinational logic.
 
 While the total drop in CLB usage is desirable, we anticipate that more exact
 extraction techniques would find even greater area reductions. Unlike other
 logic rewrites, register retiming changes the topology of the stateful
 elements---i.e. the flip-flops. Consequently, greedy extraction cannot take
-into account the fanout these stateful elements. While these results
-\textit{do} demonstrate that optimizing for CLB count over raw cell count is a
-feasible strategy, a different extraction method will be needed.
+into account the fanout these flip-flops. While these results \textit{do}
+demonstrate that optimizing for CLB count over raw cell count is a feasible
+strategy, a different extraction method will be needed.
 
 \subsection{Case Study: Bit-Parallel Designs}\label{sec:results:scalability}
 
