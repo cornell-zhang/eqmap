@@ -241,7 +241,7 @@ fn main() -> std::io::Result<()> {
 
     eprintln!("INFO: Writing output to Verilog...");
     let output_names: Vec<String> = f.get_outputs().iter().map(|x| x.to_string()).collect();
-    let mut module = SVModule::from_expr(
+    let mut module = SVModule::from_luts(
         result.get_expr().to_owned(),
         f.get_name().to_string(),
         output_names,

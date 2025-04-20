@@ -290,7 +290,7 @@ endmodule\n"
     #[test]
     fn test_assignment_emission() {
         let expr: RecExpr<LutLang> = "d".parse().unwrap();
-        let module = SVModule::from_expr(expr, "passthru".to_string(), vec!["y".to_string()]);
+        let module = SVModule::from_luts(expr, "passthru".to_string(), vec!["y".to_string()]);
         assert!(module.is_ok());
         let module = module.unwrap();
         assert_eq!(module.to_string(), get_assignment_verilog());
@@ -299,7 +299,7 @@ endmodule\n"
     #[test]
     fn test_duplicate_assignment() {
         let expr: RecExpr<LutLang> = "(BUS d d)".parse().unwrap();
-        let module = SVModule::from_expr(expr, "passthru".to_string(), vec![]);
+        let module = SVModule::from_luts(expr, "passthru".to_string(), vec![]);
         assert!(module.is_ok());
         let module = module.unwrap();
         let correct = "module passthru (
@@ -506,7 +506,7 @@ endmodule\n"
         let mux: RecExpr<LutLang> = "(LUT 202 s1 (LUT 202 s0 a b) (LUT 202 s0 c d))"
             .parse()
             .unwrap();
-        let module = SVModule::from_expr(mux, "mux_4_1".to_string(), Vec::new());
+        let module = SVModule::from_luts(mux, "mux_4_1".to_string(), Vec::new());
         assert!(module.is_ok());
         let module = module.unwrap();
         let golden = "module mux_4_1 (
@@ -566,7 +566,7 @@ endmodule\n"
     #[test]
     fn test_emit_reg() {
         let reg: RecExpr<LutLang> = "(REG a)".parse().unwrap();
-        let module = SVModule::from_expr(reg, "my_reg".to_string(), Vec::new());
+        let module = SVModule::from_luts(reg, "my_reg".to_string(), Vec::new());
         assert!(module.is_ok());
         let module = module.unwrap();
         let golden = "module my_reg (
@@ -599,7 +599,7 @@ endmodule\n"
         let expr: RecExpr<LutLang> = "(AND a (XOR b (NOR c (NOT (MUX s t false)))))"
             .parse()
             .unwrap();
-        let module = SVModule::from_expr(expr, "gate_list".to_string(), Vec::new());
+        let module = SVModule::from_luts(expr, "gate_list".to_string(), Vec::new());
         assert!(module.is_ok());
         let module = module.unwrap();
         let golden = "module gate_list (

@@ -77,7 +77,7 @@ fn main() -> std::io::Result<()> {
             expr
         };
 
-        let module = SVModule::from_expr(expr, mod_name.clone(), args.output_names.clone())
+        let module = SVModule::from_luts(expr, mod_name.clone(), args.output_names.clone())
             .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
         print!("{}", module);
         break;

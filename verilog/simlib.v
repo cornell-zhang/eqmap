@@ -159,9 +159,9 @@ endmodule
 
 module INV (
     input  A,
-    output Y
+    output ZN
 );
-  assign Y = ~A;
+  assign ZN = ~A;
 endmodule
 
 module MUX (
