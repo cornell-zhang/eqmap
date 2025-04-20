@@ -237,6 +237,8 @@ pub enum PrimitiveType {
     LUT4,
     LUT5,
     LUT6,
+    VCC,
+    GND,
 }
 
 impl PrimitiveType {
@@ -259,6 +261,7 @@ impl PrimitiveType {
             Self::LUT4 => 4,
             Self::LUT5 => 5,
             Self::LUT6 => 6,
+            Self::VCC | Self::GND => 0,
         }
     }
 
@@ -320,13 +323,23 @@ impl PrimitiveType {
                 "I4".to_string(),
                 "I5".to_string(),
             ],
+            Self::VCC | Self::GND => vec![],
         }
     }
 
     /// Get the name of the output port for the primitive type
     pub fn get_output(&self) -> String {
-        // TODO(matth2k): Implement this for all primitive types
-        "ZN".to_string()
+        match self {
+            Self::AND | Self::NAND | Self::OR | Self::NOR | Self::XOR | Self::XNOR | Self::NOT => {
+                "Y".to_string()
+            }
+            Self::LUT1 | Self::LUT2 | Self::LUT3 | Self::LUT4 | Self::LUT5 | Self::LUT6 => {
+                "O".to_string()
+            }
+            Self::VCC => "P".to_string(),
+            Self::GND => "G".to_string(),
+            _ => "ZN".to_string(),
+        }
     }
 
     /// Returns true if the primitive is a k-LUT
@@ -347,44 +360,51 @@ impl FromStr for PrimitiveType {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "AND" => Ok(Self::AND),
-            "NAND" => Ok(Self::NAND),
-            "OR" => Ok(Self::OR),
-            "NOR" => Ok(Self::NOR),
-            "XOR" => Ok(Self::XOR),
-            "XNOR" => Ok(Self::XNOR),
-            "NOT" => Ok(Self::NOT),
-            "INV" => Ok(Self::INV),
-            "AND2" => Ok(Self::AND2),
-            "NAND2" => Ok(Self::NAND2),
-            "OR2" => Ok(Self::OR2),
-            "NOR2" => Ok(Self::NOR2),
-            "XOR2" => Ok(Self::XOR2),
-            "XNOR2" => Ok(Self::XNOR2),
-            "AND4" => Ok(Self::AND4),
-            "NAND4" => Ok(Self::NAND4),
-            "OR4" => Ok(Self::OR4),
-            "NOR4" => Ok(Self::NOR4),
-            "XOR4" => Ok(Self::XOR4),
-            "XNOR4" => Ok(Self::XNOR4),
-            "MUX" => Ok(Self::MUX),
-            "MUXF7" => Ok(Self::MUXF7),
-            "MUXF8" => Ok(Self::MUXF8),
-            "MUXF9" => Ok(Self::MUXF9),
-            "AOI21" => Ok(Self::AOI21),
-            "OAI21" => Ok(Self::OAI21),
-            "AOI211" => Ok(Self::AOI211),
-            "AOI22" => Ok(Self::AOI22),
-            "OAI211" => Ok(Self::OAI211),
-            "OAI22" => Ok(Self::OAI22),
-            "LUT1" => Ok(Self::LUT1),
-            "LUT2" => Ok(Self::LUT2),
-            "LUT3" => Ok(Self::LUT3),
-            "LUT4" => Ok(Self::LUT4),
-            "LUT5" => Ok(Self::LUT5),
-            "LUT6" => Ok(Self::LUT6),
-            _ => Err(format!("Unknown primitive type {}", s)),
+        match s.split_once('_') {
+            Some((l, _)) => match l {
+                "INV" => Ok(Self::INV),
+                "MUX" => Ok(Self::MUX),
+                "AND2" => Ok(Self::AND2),
+                "NAND2" => Ok(Self::NAND2),
+                "OR2" => Ok(Self::OR2),
+                "NOR2" => Ok(Self::NOR2),
+                "XOR2" => Ok(Self::XOR2),
+                "XNOR2" => Ok(Self::XNOR2),
+                "AND4" => Ok(Self::AND4),
+                "NAND4" => Ok(Self::NAND4),
+                "OR4" => Ok(Self::OR4),
+                "NOR4" => Ok(Self::NOR4),
+                "XOR4" => Ok(Self::XOR4),
+                "XNOR4" => Ok(Self::XNOR4),
+                "AOI21" => Ok(Self::AOI21),
+                "OAI21" => Ok(Self::OAI21),
+                "AOI211" => Ok(Self::AOI211),
+                "AOI22" => Ok(Self::AOI22),
+                "OAI211" => Ok(Self::OAI211),
+                "OAI22" => Ok(Self::OAI22),
+                _ => Err(format!("Unknown primitive type {}", l)),
+            },
+            None => match s {
+                "AND" => Ok(Self::AND),
+                "NAND" => Ok(Self::NAND),
+                "OR" => Ok(Self::OR),
+                "NOR" => Ok(Self::NOR),
+                "XOR" => Ok(Self::XOR),
+                "XNOR" => Ok(Self::XNOR),
+                "NOT" => Ok(Self::NOT),
+                "INV" => Ok(Self::INV),
+                "MUX" => Ok(Self::MUX),
+                "MUXF7" => Ok(Self::MUXF7),
+                "MUXF8" => Ok(Self::MUXF8),
+                "MUXF9" => Ok(Self::MUXF9),
+                "LUT1" => Ok(Self::LUT1),
+                "LUT2" => Ok(Self::LUT2),
+                "LUT3" => Ok(Self::LUT3),
+                "LUT4" => Ok(Self::LUT4),
+                "LUT5" => Ok(Self::LUT5),
+                "LUT6" => Ok(Self::LUT6),
+                _ => Err(format!("Unknown primitive type {}", s)),
+            },
         }
     }
 }
@@ -583,6 +603,7 @@ impl fmt::Display for SVPrimitive {
             }
         }
         writeln!(f, "{}) {} (", indent, self.name)?;
+        // TODO(matth2k): refactor as "is clocked"
         if self.prim.as_str() == REG_NAME {
             let indent = " ".repeat(level + 4);
             writeln!(f, "{}.C({}),", indent, CLK)?;
@@ -650,10 +671,7 @@ impl VerilogEmission for CellLang {
             CellLang::And(_) => Some(PrimitiveType::AND),
             CellLang::Or(_) => Some(PrimitiveType::OR),
             CellLang::Inv(_) => Some(PrimitiveType::INV),
-            CellLang::Cell(s, _) => match s.as_str().split_once('_') {
-                Some((l, _)) => PrimitiveType::from_str(l).ok(),
-                None => PrimitiveType::from_str(s.as_str()).ok(),
-            },
+            CellLang::Cell(s, _) => PrimitiveType::from_str(s.as_str()).ok(),
             _ => None,
         }
     }
@@ -1133,18 +1151,6 @@ impl SVModule {
         self.signals.push(signal.clone());
         self.inputs.push(signal);
 
-        // TODO(matth2k): Check if input directly drives an output
-
-        // if mapping.contains_key(&id.into()) {
-        //     let output = mapping[&id.into()].clone();
-        //     let wire = SVPrimitive::new_wire(sname.clone(), output.clone(), fresh_prim());
-        //     module
-        //         .driving_module
-        //         .insert(output.clone(), module.instances.len());
-        //     module.instances.push(wire);
-        //     module.signals.push(SVSignal::new(1, output));
-        // }
-
         Ok(sname)
     }
 
@@ -1199,6 +1205,17 @@ impl SVModule {
                 mapping.insert(id.into(), sname);
             } else if let CellLang::Var(v) = node {
                 let sname = module.insert_input(v.to_string())?;
+
+                // Check if input directly drives an output
+                if mapping.contains_key(&id.into()) {
+                    let output = mapping[&id.into()].clone();
+                    let wire = SVPrimitive::new_wire(sname.clone(), output.clone(), fresh_prim());
+                    module
+                        .driving_module
+                        .insert(output.clone(), module.instances.len());
+                    module.instances.push(wire);
+                    module.signals.push(SVSignal::new(1, output));
+                }
                 mapping.insert(id.into(), sname);
             }
         }
@@ -1417,75 +1434,76 @@ impl SVModule {
             return Ok(map[signal]);
         }
 
-        let id =
-            match self.get_driving_primitive(signal) {
-                Ok(primitive) => {
-                    if Self::is_gate_prim(primitive.prim.as_str()) {
-                        // Update the mapping
-                        let mut subexpr: HashMap<&'a str, Id> = HashMap::new();
-                        for (port, signal) in primitive.inputs.iter() {
-                            subexpr.insert(port, self.get_expr(signal, expr, map)?);
+        let id = match self.get_driving_primitive(signal) {
+            Ok(primitive) => {
+                if Self::is_gate_prim(primitive.prim.as_str()) {
+                    // Update the mapping
+                    let mut subexpr: HashMap<&'a str, Id> = HashMap::new();
+                    for (port, signal) in primitive.inputs.iter() {
+                        subexpr.insert(port, self.get_expr(signal, expr, map)?);
+                    }
+                    match primitive.prim.as_str() {
+                        "AND" | "AND2" => Ok(expr.add(LutLang::And([subexpr["A"], subexpr["B"]]))),
+                        "NOR" | "NOR2" => Ok(expr.add(LutLang::Nor([subexpr["A"], subexpr["B"]]))),
+                        "XOR" | "XOR2" => Ok(expr.add(LutLang::Xor([subexpr["A"], subexpr["B"]]))),
+                        "MUX" => {
+                            Ok(expr.add(LutLang::Mux([subexpr["S"], subexpr["A"], subexpr["B"]])))
                         }
-                        match primitive.prim.as_str() {
-                            "AND2" => Ok(expr.add(LutLang::And([subexpr["A"], subexpr["B"]]))),
-                            "NOR2" => Ok(expr.add(LutLang::Nor([subexpr["A"], subexpr["B"]]))),
-                            "XOR2" => Ok(expr.add(LutLang::Xor([subexpr["A"], subexpr["B"]]))),
-                            "MUX" => Ok(expr.add(LutLang::Mux([
-                                subexpr["S"],
-                                subexpr["A"],
-                                subexpr["B"],
-                            ]))),
-                            "MUXF7" | "MUXF8" | "MUXF9" => Ok(expr.add(LutLang::Mux([
-                                subexpr["S"],
-                                subexpr["I1"],
-                                subexpr["I0"],
-                            ]))),
-                            "NOT" => Ok(expr.add(LutLang::Not([subexpr["A"]]))),
-                            "INV" => Ok(expr.add(LutLang::Not([subexpr["I"]]))),
-                            _ => Err(format!("Unsupported gate primitive {}", primitive.prim)),
+                        "MUXF7" | "MUXF8" | "MUXF9" => {
+                            Ok(
+                                expr.add(LutLang::Mux([
+                                    subexpr["S"],
+                                    subexpr["I1"],
+                                    subexpr["I0"],
+                                ])),
+                            )
                         }
-                    } else if Self::is_reg_prim(primitive.prim.as_str()) {
-                        let d = primitive.inputs.first_key_value().unwrap().1;
-                        let d = self.get_expr(d, expr, map)?;
-                        Ok(expr.add(LutLang::Reg([d])))
-                    } else if Self::is_assign_prim(primitive.prim.as_str()) {
-                        let val = primitive.attributes.get("VAL").unwrap();
-                        if primitive.prim.as_str() == "CONST" {
-                            let val = val.parse::<Logic>()?;
-                            if val.is_dont_care() {
-                                Ok(expr.add(LutLang::DC))
-                            } else {
-                                Ok(expr.add(LutLang::Const(val.unwrap())))
-                            }
+                        "NOT" => Ok(expr.add(LutLang::Not([subexpr["A"]]))),
+                        "INV" => Ok(expr.add(LutLang::Not([subexpr["I"]]))),
+                        _ => Err(format!("Unsupported gate primitive {}", primitive.prim)),
+                    }
+                } else if Self::is_reg_prim(primitive.prim.as_str()) {
+                    let d = primitive.inputs.first_key_value().unwrap().1;
+                    let d = self.get_expr(d, expr, map)?;
+                    Ok(expr.add(LutLang::Reg([d])))
+                } else if Self::is_assign_prim(primitive.prim.as_str()) {
+                    let val = primitive.attributes.get("VAL").unwrap();
+                    if primitive.prim.as_str() == "CONST" {
+                        let val = val.parse::<Logic>()?;
+                        if val.is_dont_care() {
+                            Ok(expr.add(LutLang::DC))
                         } else {
-                            self.get_expr(val.as_str(), expr, map)
+                            Ok(expr.add(LutLang::Const(val.unwrap())))
                         }
                     } else {
-                        let mut subexpr: Vec<Id> = vec![];
-                        let program = primitive.attributes.get("INIT").ok_or(format!(
-                            "Only {} and {} primitives are supported. INIT not found.",
-                            LUT_ROOT, REG_NAME
-                        ))?;
-                        let program: u64 = init_parser(program)?;
-                        subexpr.push(expr.add(LutLang::Program(program)));
-                        for input in (0..primitive.inputs.len()).rev().map(|x| format!("I{}", x)) {
-                            let driver = primitive.inputs.get(&input).ok_or(format!(
-                                "Expected {} on {} to be driven.",
-                                input, LUT_ROOT
-                            ))?;
-                            subexpr.push(self.get_expr(driver, expr, map)?);
-                        }
-                        Ok(expr.add(LutLang::Lut(subexpr.into())))
+                        self.get_expr(val.as_str(), expr, map)
                     }
-                }
-                Err(e) => {
-                    if self.is_an_input(signal) {
-                        Ok(expr.add(LutLang::Var(signal.into())))
-                    } else {
-                        Err(e)
+                } else {
+                    let mut subexpr: Vec<Id> = vec![];
+                    let program = primitive.attributes.get("INIT").ok_or(format!(
+                        "Only {} and {} primitives are supported. INIT not found.",
+                        LUT_ROOT, REG_NAME
+                    ))?;
+                    let program: u64 = init_parser(program)?;
+                    subexpr.push(expr.add(LutLang::Program(program)));
+                    for input in (0..primitive.inputs.len()).rev().map(|x| format!("I{}", x)) {
+                        let driver = primitive
+                            .inputs
+                            .get(&input)
+                            .ok_or(format!("Expected {} on {} to be driven.", input, LUT_ROOT))?;
+                        subexpr.push(self.get_expr(driver, expr, map)?);
                     }
+                    Ok(expr.add(LutLang::Lut(subexpr.into())))
                 }
-            }?;
+            }
+            Err(e) => {
+                if self.is_an_input(signal) {
+                    Ok(expr.add(LutLang::Var(signal.into())))
+                } else {
+                    Err(e)
+                }
+            }
+        }?;
 
         map.insert(signal, id);
         Ok(id)

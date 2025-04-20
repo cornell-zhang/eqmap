@@ -357,16 +357,16 @@ enum ExtractStrat {
 }
 
 /// The list of gates that must be reachable by the disassembling rewrite rule system.
-pub const GATE_WHITELIST_STR: &str = "MUX,AND2,OR2,XOR2,NOT,INV,REG,NAND2,NOR2";
+pub const GATE_WHITELIST_STR: &str = "MUX,AND,OR,XOR,NOT,INV,REG,NAND,NOR";
 
 /// The list of gates that must be reachable by the disassembling rewrite rule system.
 pub const GATE_WHITELIST: [&str; 9] = [
-    "MUX", "AND2", "OR2", "XOR2", "NOT", "INV", "REG", "NAND2", "NOR2",
+    "MUX", "AND", "OR", "XOR", "NOT", "INV", "REG", "NAND", "NOR",
 ];
 
 impl ExtractStrat {
     /// Create an extraction strategy from a comma-separated list of gates.
-    /// For example, `list` can be `"MUX,AND2,NOT"`.
+    /// For example, `list` can be `"MUX,AND,NOT"`.
     pub fn from_gate_set(list: &str) -> Result<Self, String> {
         if list.is_empty() || list == "all" {
             return Self::from_gate_set(GATE_WHITELIST_STR);

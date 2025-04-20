@@ -54,7 +54,7 @@ module \$xor (
 
   generate
     if (A_SIGNED || B_SIGNED || A_WIDTH > 1 || B_WIDTH > 1 || Y_WIDTH > 1) begin : BLOCK1
-      XOR2 #(
+      XOR #(
           .A_SIGNED(A_SIGNED),
           .B_SIGNED(B_SIGNED),
           .A_WIDTH (A_WIDTH),
@@ -66,7 +66,7 @@ module \$xor (
           .Y(Y)
       );
     end else begin : BLOCK2
-      XOR2 _TECHMAP_REPLACE_ (
+      XOR _TECHMAP_REPLACE_ (
           .A(A),
           .B(B),
           .Y(Y)
@@ -95,7 +95,7 @@ module \$and (
 
   generate
     if (A_SIGNED || B_SIGNED || A_WIDTH > 1 || B_WIDTH > 1 || Y_WIDTH > 1) begin : BLOCK1
-      AND2 #(
+      AND #(
           .A_SIGNED(A_SIGNED),
           .B_SIGNED(B_SIGNED),
           .A_WIDTH (A_WIDTH),
@@ -107,7 +107,7 @@ module \$and (
           .Y(Y)
       );
     end else begin : BLOCK2
-      AND2 _TECHMAP_REPLACE_ (
+      AND _TECHMAP_REPLACE_ (
           .A(A),
           .B(B),
           .Y(Y)
@@ -180,7 +180,7 @@ module \$or (
           .Y(Y)
       );
     end else begin : BLOCK2
-      NOR2 _TECHMAP_REPLACE_INV (
+      NOR _TECHMAP_REPLACE_INV (
           .A(A),
           .B(B),
           .Y(_TECHMAP_REPLACE_.inv)
@@ -212,7 +212,7 @@ module \$xnor (
 
   generate
     if (A_SIGNED || B_SIGNED || A_WIDTH > 1 || B_WIDTH > 1 || Y_WIDTH > 1) begin : BLOCK1
-      XNOR2 #(
+      XNOR #(
           .A_SIGNED(A_SIGNED),
           .B_SIGNED(B_SIGNED),
           .A_WIDTH (A_WIDTH),
@@ -224,7 +224,7 @@ module \$xnor (
           .Y(Y)
       );
     end else begin : BLOCK2
-      XOR2 _TECHMAP_REPLACE_INV (
+      XOR _TECHMAP_REPLACE_INV (
           .A(A),
           .B(B),
           .Y(_TECHMAP_REPLACE_.inv)

@@ -1,4 +1,4 @@
-// RUN: epak %s --disassemble NOR2,INV,AND2 -s 140000 2>>/dev/null | FileCheck %s
+// RUN: epak %s --disassemble NOR,INV,AND -s 140000 2>>/dev/null | FileCheck %s
 
 module mux_4_1 (
     b,
@@ -48,31 +48,31 @@ module mux_4_1 (
   // CHECK:     .A(s0),
   // CHECK:     .Y(__0__)
   // CHECK: );
-  // CHECK: AND2 #(
+  // CHECK: AND #(
   // CHECK: ) __11__ (
   // CHECK:     .A(b),
   // CHECK:     .B(__0__),
   // CHECK:     .Y(__1__)
   // CHECK: );
-  // CHECK: AND2 #(
+  // CHECK: AND #(
   // CHECK: ) __12__ (
   // CHECK:     .A(s0),
   // CHECK:     .B(a),
   // CHECK:     .Y(__2__)
   // CHECK: );
-  // CHECK: NOR2 #(
+  // CHECK: NOR #(
   // CHECK: ) __13__ (
   // CHECK:     .A(__2__),
   // CHECK:     .B(__1__),
   // CHECK:     .Y(__3__)
   // CHECK: );
-  // CHECK: AND2 #(
+  // CHECK: AND #(
   // CHECK: ) __14__ (
   // CHECK:     .A(s1),
   // CHECK:     .B(__3__),
   // CHECK:     .Y(__4__)
   // CHECK: );
-  // CHECK: NOR2 #(
+  // CHECK: NOR #(
   // CHECK: ) __15__ (
   // CHECK:     .A(s0),
   // CHECK:     .B(d),
@@ -83,25 +83,25 @@ module mux_4_1 (
   // CHECK:     .A(c),
   // CHECK:     .Y(__6__)
   // CHECK: );
-  // CHECK: AND2 #(
+  // CHECK: AND #(
   // CHECK: ) __17__ (
   // CHECK:     .A(s0),
   // CHECK:     .B(__6__),
   // CHECK:     .Y(__7__)
   // CHECK: );
-  // CHECK: NOR2 #(
+  // CHECK: NOR #(
   // CHECK: ) __18__ (
   // CHECK:     .A(__7__),
   // CHECK:     .B(__5__),
   // CHECK:     .Y(__8__)
   // CHECK: );
-  // CHECK: NOR2 #(
+  // CHECK: NOR #(
   // CHECK: ) __19__ (
   // CHECK:     .A(s1),
   // CHECK:     .B(__8__),
   // CHECK:     .Y(__9__)
   // CHECK: );
-  // CHECK: NOR2 #(
+  // CHECK: NOR #(
   // CHECK: ) __20__ (
   // CHECK:     .A(__9__),
   // CHECK:     .B(__4__),

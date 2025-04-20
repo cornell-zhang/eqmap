@@ -109,6 +109,47 @@ module XOR2 (
   assign Y = A ^ B;
 endmodule
 
+module AND (
+    input  A,
+    input  B,
+    output Y
+);
+  assign Y = A & B;
+endmodule
+
+module NAND (
+    input  A,
+    input  B,
+    output Y
+);
+  assign Y = ~(A & B);
+endmodule
+
+
+module NOR (
+    input  A,
+    input  B,
+    output Y
+);
+  assign Y = ~(A | B);
+endmodule
+
+module OR (
+    input  A,
+    input  B,
+    output Y
+);
+  assign Y = A | B;
+endmodule
+
+module XOR (
+    input  A,
+    input  B,
+    output Y
+);
+  assign Y = A ^ B;
+endmodule
+
 module NOT (
     input  A,
     output Y

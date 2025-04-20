@@ -444,7 +444,7 @@ endmodule\n"
           wire b;
           output y;
           wire y;
-          AND2 _0_ (
+          AND _0_ (
               .A(a),
               .B(b),
               .Y(y)
@@ -471,19 +471,19 @@ endmodule\n"
         wire tmp1;
         wire tmp2;
 
-        AND2 _0_ (
+        AND _0_ (
             .A(1'd1),
             .B(1'h01),
             .Y(tmp1)
         );
 
-        AND2 _1_ (
+        AND _1_ (
             .A(1'b00),
             .B(1'd0),
             .Y(tmp2)
         );
 
-        AND2 _2_ (
+        AND _2_ (
             .A(tmp1),
             .B(tmp2),
             .Y(y)
@@ -640,19 +640,19 @@ endmodule\n"
       .A(__1__),
       .Y(__2__)
   );
-  NOR2 #(
+  NOR #(
   ) __8__ (
       .A(c),
       .B(__2__),
       .Y(__3__)
   );
-  XOR2 #(
+  XOR #(
   ) __9__ (
       .A(b),
       .B(__3__),
       .Y(__4__)
   );
-  AND2 #(
+  AND #(
   ) __10__ (
       .A(a),
       .B(__4__),

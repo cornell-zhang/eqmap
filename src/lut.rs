@@ -483,10 +483,10 @@ impl LutLang {
     /// Returns the Verilog primitive name for a node type
     pub fn get_prim_name(&self) -> Option<String> {
         match self {
-            LutLang::Nor(_) => Some("NOR2".to_string()),
+            LutLang::Nor(_) => Some("NOR".to_string()),
             LutLang::Mux(_) => Some("MUX".to_string()),
-            LutLang::And(_) => Some("AND2".to_string()),
-            LutLang::Xor(_) => Some("XOR2".to_string()),
+            LutLang::And(_) => Some("AND".to_string()),
+            LutLang::Xor(_) => Some("XOR".to_string()),
             LutLang::Not(_) => Some("NOT".to_string()),
             LutLang::Lut(l) => Some(format!("LUT{}", l.len() - 1)),
             _ => None,

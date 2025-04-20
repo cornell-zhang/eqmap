@@ -1,5 +1,5 @@
 
-// RUN: epak %s --disassemble INV,AND2 -s 80000 -n 40 -t 2 2>>/dev/null | FileCheck %s
+// RUN: epak %s --disassemble INV,AND -s 80000 -n 40 -t 2 2>>/dev/null | FileCheck %s
 
 module full_adder (
     a,

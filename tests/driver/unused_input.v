@@ -14,7 +14,7 @@ module dropped_input (
   wire c;
   output y;
   wire y;
-  AND2 _0_ (
+  AND _0_ (
       .A(a),
       .B(b),
       .Y(y)

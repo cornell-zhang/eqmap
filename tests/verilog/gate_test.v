@@ -39,7 +39,7 @@ module gate_test (
   wire tmp1;
   output y;
   wire y;
-  AND2 _05_ (
+  AND _05_ (
       .A(d),
       .B(e),
       .Y(_00_)
@@ -52,7 +52,7 @@ module gate_test (
       .A(_02_),
       .Y(_03_)
   );
-  NOR2 _08_ (
+  NOR _08_ (
       .A(a),
       .B(g),
       .Y(_02_)
@@ -75,7 +75,7 @@ module gate_test (
       .S(s1),
       .Y(y)
   );
-  XOR2 _12_ (
+  XOR _12_ (
       .A(c),
       .B(f),
       .Y(_04_)

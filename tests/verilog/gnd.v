@@ -20,17 +20,17 @@ module gnd (
   assign dc = 1'hx;
   GND GND (.G(g));
   VCC VCC (.P(v));
-  AND2 AND_G (
+  AND AND_G (
       .A(d),
       .B(g),
       .Y(y0)
   );
-  AND2 AND_V (
+  AND AND_V (
       .A(d),
       .B(v),
       .Y(y1)
   );
-  AND2 AND_DC (
+  AND AND_DC (
       .A(d),
       .B(dc),
       .Y(y2)
