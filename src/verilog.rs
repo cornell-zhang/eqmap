@@ -367,7 +367,7 @@ impl PrimitiveType {
 
     /// Returns true if the primitive is not a LUT
     pub fn is_gate(&self) -> bool {
-        !self.is_lut()
+        !self.is_lut() && !matches!(self, Self::VCC | Self::GND | Self::FDRE)
     }
 }
 
@@ -526,8 +526,19 @@ impl SVPrimitive {
 
         // Special cases
         let mut prim = Self::new(logic.to_string(), name, n_inputs);
-        if logic == PrimitiveType::FDRE {
-            prim.set_attribute("INIT".to_string(), "1'hx".to_string());
+        match logic {
+            PrimitiveType::VCC => {
+                prim.set_attribute("VAL".to_string(), "1'b1".to_string());
+                return prim;
+            }
+            PrimitiveType::GND => {
+                prim.set_attribute("VAL".to_string(), "1'b0".to_string());
+                return prim;
+            }
+            PrimitiveType::FDRE => {
+                prim.set_attribute("INIT".to_string(), "1'hx".to_string());
+            }
+            _ => {}
         }
         prim
     }
@@ -990,8 +1001,12 @@ impl SVModule {
         PrimitiveType::from_str(name).is_ok_and(|p| p.is_gate())
     }
 
+    fn is_const_prim(name: &str) -> bool {
+        matches!(name, "CONST" | "VCC" | "GND")
+    }
+
     fn is_assign_prim(name: &str) -> bool {
-        matches!(name, "CONST" | "WIRE")
+        Self::is_const_prim(name) || matches!(name, "WIRE")
     }
 
     /// From a parsed verilog ast, create a new module and fill it with its primitives and connections.
@@ -1517,7 +1532,7 @@ impl SVModule {
                     Ok(expr.add(LutLang::Reg([d])))
                 } else if Self::is_assign_prim(primitive.prim.as_str()) {
                     let val = primitive.attributes.get("VAL").unwrap();
-                    if primitive.prim.as_str() == "CONST" {
+                    if Self::is_const_prim(primitive.prim.as_str()) {
                         let val = val.parse::<Logic>()?;
                         if val.is_dont_care() {
                             Ok(expr.add(LutLang::DC))
