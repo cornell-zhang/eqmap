@@ -719,7 +719,7 @@ impl VerilogEmission for CellLang {
     }
 
     fn get_output_ids(expr: &RecExpr<Self>) -> Vec<Id> {
-        if expr.len() == 0 {
+        if expr.is_empty() {
             return vec![];
         }
         vec![(expr.len() - 1).into()]
@@ -790,7 +790,7 @@ impl VerilogEmission for LutLang {
     }
 
     fn get_output_ids(expr: &RecExpr<Self>) -> Vec<Id> {
-        if expr.len() == 0 {
+        if expr.is_empty() {
             return vec![];
         }
 
