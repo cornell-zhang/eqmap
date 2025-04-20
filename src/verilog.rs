@@ -418,6 +418,9 @@ impl FromStr for PrimitiveType {
                 "LUT4" => Ok(Self::LUT4),
                 "LUT5" => Ok(Self::LUT5),
                 "LUT6" => Ok(Self::LUT6),
+                "VCC" => Ok(Self::VCC),
+                "GND" => Ok(Self::GND),
+                "FDRE" => Ok(Self::FDRE),
                 _ => Err(format!("Unknown primitive type {}", s)),
             },
         }
@@ -961,18 +964,14 @@ impl SVModule {
     }
 
     fn is_lut_prim(name: &str) -> Option<usize> {
-        match name.strip_prefix(LUT_ROOT) {
-            Some(x) => match x.parse::<usize>() {
-                Ok(x) => {
-                    if x > 6 {
-                        panic!("Only support LUTs up to size 6");
-                    } else {
-                        Some(x)
-                    }
-                }
-                Err(_) => panic!("Could not parse LUT size"),
-            },
-            None => None,
+        match PrimitiveType::from_str(name) {
+            Ok(PrimitiveType::LUT1) => Some(1),
+            Ok(PrimitiveType::LUT2) => Some(2),
+            Ok(PrimitiveType::LUT3) => Some(3),
+            Ok(PrimitiveType::LUT4) => Some(4),
+            Ok(PrimitiveType::LUT5) => Some(5),
+            Ok(PrimitiveType::LUT6) => Some(6),
+            _ => None,
         }
     }
 
@@ -984,7 +983,7 @@ impl SVModule {
     }
 
     fn is_reg_prim(name: &str) -> bool {
-        name == REG_NAME
+        PrimitiveType::from_str(name).is_ok_and(|p| matches!(p, PrimitiveType::FDRE))
     }
 
     fn is_gate_prim(name: &str) -> bool {
@@ -1089,24 +1088,8 @@ impl SVModule {
                         continue;
                     }
 
-                    if Self::is_reg_prim(&mod_name) {
-                        cur_insts.push(SVPrimitive::new_reg(inst_name));
-                        continue;
-                    }
-
-                    if Self::is_gate_prim(&mod_name) {
-                        cur_insts.push(SVPrimitive::new_gate_from_string(mod_name, inst_name)?);
-                        continue;
-                    }
-
-                    // Xilinx has a module named GND for constants
-                    if mod_name == "GND" {
-                        cur_insts.push(SVPrimitive::new_gnd(inst_name));
-                        continue;
-                    }
-
-                    if mod_name == "VCC" {
-                        cur_insts.push(SVPrimitive::new_vcc(inst_name));
+                    if let Ok(p) = PrimitiveType::from_str(&mod_name) {
+                        cur_insts.push(SVPrimitive::new_gate(p, inst_name));
                         continue;
                     }
 
