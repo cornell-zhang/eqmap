@@ -1,22 +1,22 @@
 \section{E-Graph Construction}\label{sec:rewrites}
-As an overview, an e-graph is built by accumulating new equivalence relations
-through the iterative rewriting of terms. Rewrite rules define the equivalence
-relations in full generality by designating a search pattern of terms to
-rewrite. This prompts the creation of a grammar that can represent the
-structure of electronic circuits and lends itself well to pattern matching. As
-an example, one can write De Morgan's laws as rewrite rule:
+As an overview, an e-graph is built by accumulating new equivalences through
+the iterative rewriting of terms. Rewrite rules define the equivalence
+relations in full generality by defining search patterns of terms to rewrite.
+This prompts the creation of a grammar that can represent the structure of
+digital circuits and lends itself well to pattern matching. As an example, one
+can define De Morgan's laws as rewrite rule:
 
 \begin{lstlisting}
 (NOT (AND x y)) => (OR (NOT x) (NOT y))
 \end{lstlisting}
 
-The left-hand side is the search pattern, and the right-hand side describes how
-to apply the rewrite to the pattern. Rewrites must be merged back into the
+On the left of \texttt{=>} is the \textit{search pattern}. The right-hand side
+of the rule is the \textit{application}. Rewrites must be merged back into the
 union-find data structure, so this is an iterative process. In the following
 subsections, we will define our netlist representation, \texttt{LutLang}, and
 the accompanying equivalence relations. Formalizing the meaning of FPGA
-netlists is critical to both ensuring correctness and finding deeper insight
-into the structure of our rewrite rules under composition.
+netlists is critical to both verification and finding deeper insight into the
+structure of our rewrite rules under composition.
 
 \subsection{\texttt{LutLang} Representation}\label{sec:rewrites:lutlang}
 
@@ -54,7 +54,7 @@ such that $F_{x_i} = F_{\overline{x}_i}$ for some input position $i \in \{ 0, \l
 The output of a degenerate LUT is not dependent on one of its inputs. Hence, it
 can be rewritten into a LUT which uses fewer inputs. This rule is applied by
 computing the Shannon expansions of LUTs and checking for equivalence. As an
-example, the rule takes on the following form in pseudocode for $k=3$:
+example, the rule takes on the following form for $k=3$:
 
 \begin{lstlisting}
 (LUT F x0 x1 x2) => (LUT F' x0 x1)
@@ -62,13 +62,11 @@ example, the rule takes on the following form in pseudocode for $k=3$:
     where F'(x0, x1) := F(x0, x1, true)
 \end{lstlisting}
 
-On the left of \texttt{=>} is the \textit{search pattern}. The right-hand side
-of the rule is the \textit{application}. One rule is instantiated for each LUT
-size $k =1$ through 6. One should notice that LUTs which are constant functions
-are also handled by this rule. Since this rule is computationally expensive, it
-is applied greedily as a pre-processing step before the e-graph is built. None
-of the other rewrite rules create degenerate LUTs, so this has no impact on
-results.
+One rule is instantiated for each LUT size $k =1$ through 6. One should notice
+that LUTs which are constant functions are also handled by this rule. Since
+this rule is computationally expensive, it is applied greedily as a
+pre-processing step before the e-graph is built. None of the other rewrite
+rules create degenerate LUTs, so this has no impact on results.
 
 \subsection{Partial Application}\label{sec:rewrites:application}
 A LUT with a constant input can be partially evaluated to a LUT with one less
@@ -118,10 +116,10 @@ program $F$, we need exactly as many rules as it takes to generate $F \odot
 generate $S_k$~\cite{sgroup}. Therefore, we can insert an e-graph rewrite rule
 for each adjacent transposition. In total, there are $\sum_{k=2}^{6} (k-1) =
     15$ rules to encapsulate symmetry for every LUT size. The second consequence is
-that every other rewrite rule can now be defined for one input position,
-without loss of generality. This reduces the total number of rewrite rules,
-making it easier to rationalize about the rule system and which types of
-optimizations are reachable.
+that every other rewrite rule can be defined for one input position, without
+loss of generality. This reduces the total number of rewrite rules, making it
+easier to rationalize about the rule system and which types of optimizations
+are reachable.
 
 \subsection{Function Composition}\label{sec:rewrites:composition}
 
