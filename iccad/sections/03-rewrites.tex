@@ -139,13 +139,13 @@ The search patterns \texttt{x0}, \texttt{x1} and \texttt{x1} can match any
 node. They are not necessarily principal inputs, and hence can be outputs from
 other LUTs. As a consequence, this rule can be chained together many times in
 different orders to pack a sub-circuit into a single LUT. As an example, this
-rule would match the two 4-LUTs in Fig.~\ref{fig:eg:bad} and combine them into
-the single 4-LUT in Fig.~\ref{fig:eg:good}. Since the previous rule captures
-LUT symmetry, we can write compositions for one specific input position,
-without loss of generality. Therefore, we only need to sweep over the size of
-the two LUTs in the search pattern. In total, there are $6 \cdot 6 = 36$ LUT
-packing rules. When the cut of logic is larger than 6 leaves, the rule exits
-gracefully and does not interfere with reaching equality saturation.
+rule would match the 3-LUT and 4-LUT in Fig.~\ref{fig:eg:bad} and combine them
+into the single 4-LUT in Fig.~\ref{fig:eg:good}. Since the previous rule
+captures LUT symmetry, we can write compositions for one specific input
+position, without loss of generality. Therefore, we only need to sweep over the
+size of the two LUTs in the search pattern. In total, there are $6 \cdot 6 =
+    36$ LUT packing rules. When the cut of logic is larger than 6 leaves, the rule
+exits gracefully and does not interfere with reaching equality saturation.
 
 \subsection{LUTs with Domain Restrictions}\label{sec:rewrites:restrict}
 
