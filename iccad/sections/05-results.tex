@@ -10,8 +10,8 @@ rewriting, and this on average takes only 3 seconds. As for the benchmarks,
 EPFL~\cite{epflbench}, ISCAS'85~\cite{iscasbench}, and
 LGSynth'91~\cite{lgsynthbench}. However, we also included an ALU and pipelined
 multiplication module to test how our compiler behaves with increasing levels
-of bit-parallelism and register pipelining. Finally, we measure how our mapping
-optimizations influence CLB usage.
+of bit-parallelism and register pipelining. Finally, we measure how our
+remapping optimizations influence CLB usage.
 
 \begin{table}
     \centering
@@ -115,7 +115,7 @@ designs. To test this hypothesis, our compiler was used to optimize a 32-bit
 integer multiplier with a varying number of pipeline stages. The data in
 Table~\ref{tab:multiply} clearly shows that as the number of pipeline stages
 increases, some inefficiency in technology mapping is accumulated. \shortname{}
-is able to pack the LUTs into roughly the same amount of logic as the single
+is able to repack the LUTs into roughly the same amount of logic as the single
 stage design---without increasing the number of flip-flops. While our current
 technique only supports acyclic designs, we wanted to add an additional case
 study on pipelined logic to prove the potential of extending our approach

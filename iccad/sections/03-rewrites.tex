@@ -126,9 +126,9 @@ are reachable.
 
 Cascaded LUTs can be packed into a single LUT, as long as the size of the cut
 of logic has at most 6 leaf nodes. This is the crucial observation to LUT
-mapping. For instance, a circuit that implements $F(x_0, G(x_1, x_2))$ with two
-2-LUTs can be rewritten as a 3-LUT that implements some $H(x_0, x_1, x_2)$. In
-pseudocode, this would take on the following form:
+remapping. For instance, a circuit that implements $F(x_0, G(x_1, x_2))$ with
+two 2-LUTs can be rewritten as a 3-LUT that implements some $H(x_0, x_1, x_2)$.
+In pseudocode, this would take on the following form:
 
 \begin{lstlisting}
 (LUT F x0 (LUT G x1 x2)) => (LUT H x0 x1 x2)
