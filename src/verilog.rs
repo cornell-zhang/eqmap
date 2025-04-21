@@ -1495,7 +1495,7 @@ impl SVModule {
                             } else if let Some(i) = subexpr.get("I") {
                                 Ok(expr.add(LutLang::Not([*i])))
                             } else {
-                                Err(format!("Expected A or I in NOT primitive"))
+                                Err("Expected A or I as input to NOT primitive".to_string())
                             }
                         }
                         _ => Err(format!("Unsupported gate primitive {}", primitive.prim)),
