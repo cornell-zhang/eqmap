@@ -542,6 +542,12 @@ impl SVPrimitive {
         self.set_attribute("INIT".to_string(), init_format(val, k).unwrap());
     }
 
+    /// Sets the INIT attribute for a LUT primitive
+    pub fn set_init(&mut self, val: u64) {
+        let k = self.n_inputs;
+        self.set_attribute("INIT".to_string(), init_format(val, k).unwrap());
+    }
+
     /// Create a new unconnected LUT primitive with size `k`, instance name `name`, and program `program`
     pub fn new_lut(k: usize, name: String, program: u64) -> Self {
         let mut prim = Self::new(format!("{}{}", LUT_ROOT, k), name, k);
