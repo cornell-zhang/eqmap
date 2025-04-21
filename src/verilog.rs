@@ -1489,9 +1489,15 @@ impl SVModule {
                                 ])),
                             )
                         }
-                        "NOT" | "INV" => Ok(expr.add(LutLang::Not([*subexpr
-                            .get("A")
-                            .unwrap_or(subexpr.get("I").unwrap())]))),
+                        "NOT" | "INV" => {
+                            if let Some(a) = subexpr.get("A") {
+                                Ok(expr.add(LutLang::Not([*a])))
+                            } else if let Some(i) = subexpr.get("I") {
+                                Ok(expr.add(LutLang::Not([*i])))
+                            } else {
+                                Err(format!("Expected A or I in NOT primitive"))
+                            }
+                        }
                         _ => Err(format!("Unsupported gate primitive {}", primitive.prim)),
                     }
                 } else if Self::is_reg_prim(primitive.prim.as_str()) {
