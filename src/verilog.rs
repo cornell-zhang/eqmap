@@ -917,6 +917,68 @@ where
     }
 }
 
+impl VerilogParsing for CellLang {
+    fn get_expr<'a>(
+        signal: &'a str,
+        module: &'a SVModule,
+        expr: &mut RecExpr<CellLang>,
+        map: &mut HashMap<&'a str, Id>,
+    ) -> Result<Id, String> {
+        if map.contains_key(signal) {
+            return Ok(map[signal]);
+        }
+
+        let id = match module.get_driving_primitive(signal) {
+            Ok(primitive) => {
+                if primitive.is_gate() {
+                    // Update the mapping
+                    let subexpr = Self::map_inputs(primitive, module, expr, map)?;
+                    let logic = primitive.get_logic().unwrap();
+                    let ids: Vec<Id> = logic
+                        .get_input_list()
+                        .iter()
+                        .map(|x| subexpr[x.as_str()])
+                        .collect();
+                    match logic {
+                        PrimitiveType::AND => Ok(expr.add(CellLang::And([ids[0], ids[1]]))),
+                        PrimitiveType::OR => Ok(expr.add(CellLang::Or([ids[0], ids[1]]))),
+                        PrimitiveType::INV | PrimitiveType::NOT => {
+                            Ok(expr.add(CellLang::Inv([ids[0]])))
+                        }
+                        _ => {
+                            Ok(expr.add(CellLang::Cell(primitive.name.clone().into(), ids.into())))
+                        }
+                    }
+                } else if primitive.is_assign() {
+                    let val = primitive.attributes.get("VAL").unwrap();
+                    if primitive.is_const() {
+                        let val = val.parse::<Logic>()?;
+                        if val.is_dont_care() {
+                            Err("Cannot use dont care in CellLang".to_string())
+                        } else {
+                            Ok(expr.add(CellLang::Const(val.unwrap())))
+                        }
+                    } else {
+                        Self::get_expr(val.as_str(), module, expr, map)
+                    }
+                } else {
+                    Err(format!("Unsupported gate primitive {}", primitive.prim))
+                }
+            }
+            Err(e) => {
+                if module.is_an_input(signal) {
+                    Ok(expr.add(CellLang::Var(signal.into())))
+                } else {
+                    Err(e)
+                }
+            }
+        }?;
+
+        map.insert(signal, id);
+        Ok(id)
+    }
+}
+
 impl VerilogParsing for LutLang {
     fn get_expr<'a>(
         signal: &'a str,
