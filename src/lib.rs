@@ -462,6 +462,40 @@ endmodule\n"
     }
 
     #[test]
+    fn test_cell_parse() {
+        let module = "module my_cell (
+            a,
+            b,
+            c,
+            y
+        );
+          input a;
+          wire a;
+          input b;
+          wire b;
+          input c;
+          wire c;
+          output y;
+          wire y;
+          AOI21_X1 _0_ (
+              .A(a),
+              .B1(b),
+              .B2(c),
+              .Y(y)
+          );
+        endmodule"
+            .to_string();
+        let ast = sv_parse_wrapper(&module, None).unwrap();
+        let module = SVModule::from_ast(&ast);
+        assert!(module.is_ok());
+        let module = module.unwrap();
+        assert_eq!(
+            module.to_expr::<CellLang>().unwrap().to_string(),
+            "(AOI21_X1 a b c)".to_string()
+        );
+    }
+
+    #[test]
     fn test_constant_parse() {
         let module = "module my_gates (
             y

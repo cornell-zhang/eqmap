@@ -505,7 +505,7 @@ impl SVPrimitive {
 
     /// Create a unconnected primitive `prim` with instance name `name` and `n_inputs` inputs
     pub fn new(prim: String, name: String, n_inputs: usize) -> Self {
-        SVPrimitive {
+        let mut prim = SVPrimitive {
             prim: prim.clone(),
             logic: PrimitiveType::from_str(prim.as_str()).ok(),
             name,
@@ -513,7 +513,27 @@ impl SVPrimitive {
             inputs: BTreeMap::new(),
             outputs: BTreeMap::new(),
             attributes: BTreeMap::new(),
+        };
+
+        if let Some(l) = prim.logic.clone() {
+            match l {
+                PrimitiveType::VCC => {
+                    prim.set_attribute("VAL".to_string(), "1'b1".to_string());
+                    return prim;
+                }
+                PrimitiveType::GND => {
+                    prim.set_attribute("VAL".to_string(), "1'b0".to_string());
+                    return prim;
+                }
+                PrimitiveType::FDRE => {
+                    prim.set_attribute("INIT".to_string(), "1'hx".to_string());
+                }
+                _ => {}
+            }
+            prim.n_inputs = l.get_num_inputs();
         }
+
+        prim
     }
 
     /// Sets the INIT attribute for a LUT primitive
@@ -609,15 +629,24 @@ impl SVPrimitive {
     }
 
     fn is_gate(&self) -> bool {
-        PrimitiveType::from_str(&self.prim).is_ok_and(|p| p.is_gate())
+        match &self.logic {
+            Some(logic) => logic.is_gate(),
+            None => PrimitiveType::from_str(&self.prim).is_ok_and(|p| p.is_gate()),
+        }
     }
 
     fn is_lut(&self) -> bool {
-        PrimitiveType::from_str(&self.prim).is_ok_and(|p| p.is_lut())
+        match &self.logic {
+            Some(logic) => logic.is_lut(),
+            None => PrimitiveType::from_str(&self.prim).is_ok_and(|p| p.is_lut()),
+        }
     }
 
     fn is_reg(&self) -> bool {
-        PrimitiveType::from_str(&self.prim).is_ok_and(|p| p.is_reg())
+        match &self.logic {
+            Some(logic) => logic.is_reg(),
+            None => PrimitiveType::from_str(&self.prim).is_ok_and(|p| p.is_reg()),
+        }
     }
 
     fn is_const(&self) -> bool {
@@ -934,18 +963,24 @@ impl VerilogParsing for CellLang {
                     // Update the mapping
                     let subexpr = Self::map_inputs(primitive, module, expr, map)?;
                     let logic = primitive.get_logic().unwrap();
-                    let ids: Vec<Id> = logic
+                    let ids: Vec<Result<Id, String>> = logic
                         .get_input_list()
                         .iter()
-                        .map(|x| subexpr[x.as_str()])
+                        .map(|x| {
+                            subexpr.get(x.as_str()).cloned().ok_or(format!(
+                                "Missing input {} on {} {}",
+                                x, logic, primitive.name
+                            ))
+                        })
                         .collect();
+                    let ids = ids.into_iter().collect::<Result<Vec<Id>, String>>()?;
                     match logic {
                         PrimitiveType::AND => Ok(expr.add(CellLang::And([ids[0], ids[1]]))),
                         PrimitiveType::OR => Ok(expr.add(CellLang::Or([ids[0], ids[1]]))),
                         PrimitiveType::INV | PrimitiveType::NOT => {
                             Ok(expr.add(CellLang::Inv([ids[0]])))
                         }
-                        _ => Ok(expr.add(CellLang::Cell(primitive.name.clone().into(), ids))),
+                        _ => Ok(expr.add(CellLang::Cell(primitive.prim.clone().into(), ids))),
                     }
                 } else if primitive.is_assign() {
                     let val = primitive.attributes.get("VAL").unwrap();
@@ -960,7 +995,7 @@ impl VerilogParsing for CellLang {
                         Self::get_expr(val.as_str(), module, expr, map)
                     }
                 } else {
-                    Err(format!("Unsupported gate primitive {}", primitive.prim))
+                    Err(format!("Unsupported cell primitive {}", primitive.prim))
                 }
             }
             Err(e) => {
@@ -994,21 +1029,27 @@ impl VerilogParsing for LutLang {
                     // Update the mapping
                     let subexpr = Self::map_inputs(primitive, module, expr, map)?;
                     let logic = primitive.get_logic().unwrap();
-                    let mut ids: Vec<Id> = if matches!(logic, PrimitiveType::INV) {
+                    let ids: Vec<Result<Id, String>> = if matches!(logic, PrimitiveType::INV) {
                         if let Some(a) = subexpr.get("A") {
-                            vec![*a]
+                            vec![Ok(*a)]
                         } else if let Some(i) = subexpr.get("I") {
-                            vec![*i]
+                            vec![Ok(*i)]
                         } else {
-                            return Err("Expected A or I as input to NOT primitive".to_string());
+                            vec![Err("Expected A or I as input to NOT primitive".to_string())]
                         }
                     } else {
                         logic
                             .get_input_list()
                             .iter()
-                            .map(|x| subexpr[x.as_str()])
+                            .map(|x| {
+                                subexpr.get(x.as_str()).cloned().ok_or(format!(
+                                    "Missing input {} on {} {}",
+                                    x, logic, primitive.name
+                                ))
+                            })
                             .collect()
                     };
+                    let mut ids = ids.into_iter().collect::<Result<Vec<Id>, String>>()?;
                     match logic {
                         PrimitiveType::AND | PrimitiveType::AND2 => {
                             Ok(expr.add(LutLang::And([ids[0], ids[1]])))
@@ -1285,7 +1326,7 @@ impl SVModule {
                     }
 
                     if let Ok(p) = PrimitiveType::from_str(&mod_name) {
-                        cur_insts.push(SVPrimitive::new_gate(p, inst_name));
+                        cur_insts.push(SVPrimitive::new(mod_name, inst_name, p.get_num_inputs()));
                         continue;
                     }
 
