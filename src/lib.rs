@@ -901,9 +901,10 @@ endmodule\n"
             PrimitiveType::AOI22.get_input_list(),
             vec!["A1", "A2", "B1", "B2"]
         );
+        // LUT input list is backwards relative to the IR
         assert_eq!(
             PrimitiveType::LUT6.get_input_list(),
-            vec!["I0", "I1", "I2", "I3", "I4", "I5"]
+            vec!["I5", "I4", "I3", "I2", "I1", "I0"]
         );
     }
 
