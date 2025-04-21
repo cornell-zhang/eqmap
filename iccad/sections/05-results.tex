@@ -36,7 +36,7 @@ optimizations influence CLB usage.
 
 \subsection{Benchmarking}\label{sec:results:benchmark}
 
-We used an compilation of \nbenchmarks{} combinational benchmarks from three
+We used a compilation of \nbenchmarks{} combinational benchmarks from three
 academic sources to test LUT packing ability. Among the combinational
 benchmarks we tested, \shortname{} was able to reduce the LUT count \fmetric{}
 of the time. On average, \shortname{} packed the netlists to \metric{}. The
@@ -125,7 +125,7 @@ While the drop in CLB usage is desirable, we anticipate that more exact
 extraction techniques would find even greater area reductions. Unlike other
 logic rewrites, register retiming changes the topology of the stateful
 elements---i.e. the flip-flops. Consequently, greedy extraction cannot take
-into account the fanout these flip-flops. While these results \textit{do}
+into account the fan-out these flip-flops. While these results \textit{do}
 demonstrate that optimizing for CLB count over raw cell count is a feasible
 strategy, a different extraction method will be needed.
 

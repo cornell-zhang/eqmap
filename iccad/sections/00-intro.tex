@@ -20,8 +20,8 @@ increasing compile times.
 Technology mapping is the hand-off between logic synthesis and physical design.
 It converts the abstract Boolean logic into a network of circuit elements that
 belong to the target cell library. For FPGAs, the primary target cell is the
-lookup table (LUT). Since every $k$-LUT can be re-programmed to satisfy any $k$
-input boolean function, FPGA technology mapping has an unmistakably large
+lookup table (LUT). Since every $k$-LUT can be reprogrammed to satisfy any $k$
+input Boolean function, FPGA technology mapping has an unmistakably large
 solution space. Whether the circuit is optimized for latency or area, most FPGA
 tools approach technology mapping as a graph covering problem~\cite{flowmap,
     daomap, attmap, imap}. In the literature, a group of circuit nodes implemented
@@ -33,8 +33,8 @@ topology of the input circuit, and hence they are prone to \textit{structural
 In contrast, functional mappers attempt to decompose the Boolean functionality
 into smaller sub-functions which can be realized by $k$-LUTs. Such mappers are
 a more exact approach, and often use SAT solvers to drive
-synthesis~\cite{satmap,satmap2}. Other works employ Boolean matching to speedup
-of technology mapping by identifying known Boolean
+synthesis~\cite{satmap,satmap2}. Other works employ Boolean matching to speed
+up technology mapping by identifying known Boolean
 structures~\cite{boolmatch,fastboolmatch}. However, exact synthesis tools
 cannot be scaled past tens of gates. As a consequence, cut enumeration and
 functional mapping lie on two different extremes. The former is fast but
@@ -43,7 +43,7 @@ unscalable.
 
 For this reason, we propose a technology mapper which uses \textit{e-graphs} as
 a way to better span the time-QoR spectrum. Equality graphs, referred to as
-e-graphs, are a data structure which use union-find operations to reason about
+e-graphs, are data structures which use union-find operations to reason about
 abstract equivalence relations~\cite{eggpaper}. By using the output mappings of
 RTL synthesis as an initial solution, we can use e-graphs to incrementally find
 more compact circuit topologies. Whereas typical optimizing compilers apply a
