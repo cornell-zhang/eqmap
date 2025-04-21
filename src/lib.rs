@@ -380,14 +380,14 @@ endmodule\n"
     }
 
     #[test]
-    fn test_verilog_to_lut_expr() {
+    fn test_verilog_to_expr() {
         let module = get_struct_verilog();
         let ast = sv_parse_wrapper(&module, None).unwrap();
         let module = SVModule::from_ast(&ast)
             .unwrap()
             .with_fname("mux_4_1".to_string());
         assert!(module.get_name() == "mux_4_1");
-        let expr = module.to_lut_expr().unwrap();
+        let expr: RecExpr<LutLang> = module.to_expr().unwrap();
         assert_eq!(
             expr.to_string(),
             "(LUT 17361601744336890538 s0 s1 b a c d)".to_string()

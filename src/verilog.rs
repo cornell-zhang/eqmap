@@ -1714,8 +1714,11 @@ impl SVModule {
         Ok(expr)
     }
 
-    /// Convert the module to a [LutLang] expression
-    pub fn to_lut_expr(&self) -> Result<RecExpr<LutLang>, String> {
+    /// Convert the module to a [Language] expression
+    pub fn to_expr<L>(&self) -> Result<RecExpr<L>, String>
+    where
+        L: VerilogParsing,
+    {
         if let Err(s) = self.contains_cycles() {
             return Err(format!(
                 "Cannot convert module with feedback on signal {}",
