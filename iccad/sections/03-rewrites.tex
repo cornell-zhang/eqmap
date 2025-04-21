@@ -126,7 +126,7 @@ are reachable.
 
 Cascaded LUTs can be packed into a single LUT, as long as the size of the cut
 of logic has at most 6 leaf nodes. This is the crucial observation to LUT
-packing. For instance, a circuit that implements $F(x_0, G(x_1, x_2))$ with two
+mapping. For instance, a circuit that implements $F(x_0, G(x_1, x_2))$ with two
 2-LUTs can be rewritten as a 3-LUT that implements some $H(x_0, x_1, x_2)$. In
 pseudocode, this would take on the following form:
 
@@ -231,7 +231,7 @@ Figure~\ref{fig:retiming} illustrates an example of how register retiming can
 compose with LUT rewrite rules to reduce LUT count and register count
 simultaneously. In this case, the 3-LUTs implementing 2:1 multiplexers are
 pushed across register boundaries. Since this logic happens to have a 6-LUT
-packing and a two 4-LUT packing, we can explore a circuit topology that reduces
+mapping and a two 4-LUT mapping, we can explore a circuit topology that reduces
 cell count (Fig.~\ref{fig:retiming:c}) or adjusts the delay paths
 (Fig.~\ref{fig:retiming:b}). To best utilize register retiming, the e-graph
 extraction technique must have some sense of timing information. Our e-graph
