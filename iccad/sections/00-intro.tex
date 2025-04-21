@@ -3,19 +3,19 @@ Given the complexity of modern electronic systems, a high degree of automation
 is required to develop custom hardware within sensible timelines. At the
 highest level, FPGA and ASIC design flows can be split into logic synthesis and
 physical design (e.g., floorplanning placement and routing). This division of
-work produces suboptimal designs, and neither are the individual synthesis
-steps locally optimal on their own. However, circuit minimization problems in
-general are NP-Hard~\cite{logicmin,twolevellogic}, and modern EDA flows bring
-compile times down to the human timescale while maintaining acceptable quality
-of results (QoR).
+work produces suboptimal designs. Moreover, neither are the individual
+synthesis steps locally optimal on their own. However, circuit minimization
+problems in general are NP-hard~\cite{logicmin,twolevellogic}, and modern EDA
+flows bring compile times down to the human timescale while maintaining
+acceptable quality of results (QoR).
 
 With the end of Dennard scaling and Moore's Law fading, the quality of logic
 synthesis becomes more important. Hence, future synthesis tools will need to
 expand the design spaces they explore and find more optimal solutions. Still,
 finding provably optimal circuits is computationally intractable. In this
-paper, we introduce how FPGA technology mapping can be augmented with e-graph
-data structures to find \textit{more} exact solutions, without significantly
-increasing compile times.
+paper, we introduce a way to augment FPGA technology mapping with e-graph data
+structures in order to find \textit{more} exact solutions, without
+significantly increasing compile times.
 
 Technology mapping is the hand-off between logic synthesis and physical design.
 It converts the abstract Boolean logic into a network of circuit elements that
