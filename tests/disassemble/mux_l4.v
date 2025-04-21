@@ -44,67 +44,77 @@ module mux_4_1 (
   );
 
   // CHECK: NOT #(
-  // CHECK: ) __10__ (
+  // CHECK: ) __12__ (
   // CHECK:     .A(s0),
   // CHECK:     .Y(__0__)
   // CHECK: );
   // CHECK: AND #(
-  // CHECK: ) __11__ (
+  // CHECK: ) __13__ (
   // CHECK:     .A(b),
   // CHECK:     .B(__0__),
   // CHECK:     .Y(__1__)
   // CHECK: );
   // CHECK: AND #(
-  // CHECK: ) __12__ (
-  // CHECK:     .A(s0),
-  // CHECK:     .B(a),
+  // CHECK: ) __14__ (
+  // CHECK:     .A(a),
+  // CHECK:     .B(s0),
   // CHECK:     .Y(__2__)
   // CHECK: );
   // CHECK: NOR #(
-  // CHECK: ) __13__ (
+  // CHECK: ) __15__ (
   // CHECK:     .A(__2__),
   // CHECK:     .B(__1__),
   // CHECK:     .Y(__3__)
   // CHECK: );
-  // CHECK: AND #(
-  // CHECK: ) __14__ (
-  // CHECK:     .A(s1),
-  // CHECK:     .B(__3__),
-  // CHECK:     .Y(__4__)
-  // CHECK: );
-  // CHECK: NOR #(
-  // CHECK: ) __15__ (
-  // CHECK:     .A(s0),
-  // CHECK:     .B(d),
-  // CHECK:     .Y(__5__)
-  // CHECK: );
   // CHECK: NOT #(
   // CHECK: ) __16__ (
-  // CHECK:     .A(c),
-  // CHECK:     .Y(__6__)
+  // CHECK:     .A(__3__),
+  // CHECK:     .Y(__4__)
   // CHECK: );
   // CHECK: AND #(
   // CHECK: ) __17__ (
+  // CHECK:     .A(s1),
+  // CHECK:     .B(__4__),
+  // CHECK:     .Y(__5__)
+  // CHECK: );
+  // CHECK: NOT #(
+  // CHECK: ) __18__ (
+  // CHECK:     .A(d),
+  // CHECK:     .Y(__6__)
+  // CHECK: );
+  // CHECK: NOR #(
+  // CHECK: ) __19__ (
   // CHECK:     .A(s0),
   // CHECK:     .B(__6__),
   // CHECK:     .Y(__7__)
   // CHECK: );
-  // CHECK: NOR #(
-  // CHECK: ) __18__ (
-  // CHECK:     .A(__7__),
-  // CHECK:     .B(__5__),
+  // CHECK: AND #(
+  // CHECK: ) __20__ (
+  // CHECK:     .A(c),
+  // CHECK:     .B(s0),
   // CHECK:     .Y(__8__)
   // CHECK: );
   // CHECK: NOR #(
-  // CHECK: ) __19__ (
-  // CHECK:     .A(s1),
-  // CHECK:     .B(__8__),
+  // CHECK: ) __21__ (
+  // CHECK:     .A(__8__),
+  // CHECK:     .B(__7__),
   // CHECK:     .Y(__9__)
   // CHECK: );
   // CHECK: NOR #(
-  // CHECK: ) __20__ (
-  // CHECK:     .A(__9__),
-  // CHECK:     .B(__4__),
+  // CHECK: ) __22__ (
+  // CHECK:     .A(s1),
+  // CHECK:     .B(__9__),
+  // CHECK:     .Y(__10__)
+  // CHECK: );
+  // CHECK: NOR #(
+  // CHECK: ) __23__ (
+  // CHECK:     .A(__10__),
+  // CHECK:     .B(__5__),
+  // CHECK:     .Y(__11__)
+  // CHECK: );
+  // CHECK: NOT #(
+  // CHECK: ) __24__ (
+  // CHECK:     .A(__11__),
   // CHECK:     .Y(y)
   // CHECK: );
 
