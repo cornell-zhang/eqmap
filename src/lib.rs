@@ -29,7 +29,7 @@ mod tests {
     use driver::Canonical;
     use egg::{Analysis, Language, RecExpr};
     use lut::{LutExprInfo, LutLang};
-    use verilog::{SVModule, sv_parse_wrapper};
+    use verilog::{PrimitiveType, SVModule, sv_parse_wrapper};
 
     use super::*;
 
@@ -502,6 +502,41 @@ endmodule\n"
     }
 
     #[test]
+    fn test_double_inverter() {
+        let module = "module dinv (
+            d,
+            y
+        );
+          input d;
+          wire d;
+          output y;
+          wire y;
+          wire __0__;
+
+          NOT _1_ (
+              .A(d),
+              .Y(__0__)
+          );
+
+          INV _2_ (
+              .A (__0__),
+              .ZN(y)
+          );
+
+        endmodule
+        "
+        .to_string();
+        let ast = sv_parse_wrapper(&module, None).unwrap();
+        let module = SVModule::from_ast(&ast);
+        assert!(module.is_ok());
+        let module = module.unwrap();
+        assert_eq!(
+            module.to_single_expr().unwrap().to_string(),
+            "(NOT (NOT d))".to_string()
+        );
+    }
+
+    #[test]
     fn test_verilog_emitter() {
         let mux: RecExpr<LutLang> = "(LUT 202 s1 (LUT 202 s0 a b) (LUT 202 s0 c d))"
             .parse()
@@ -854,6 +889,22 @@ endmodule\n"
         let expr: RecExpr<CellLang> = "(AND a b)".parse().unwrap();
         assert!(CellLang::verify_expr(&expr).is_ok());
         assert!(matches!(expr.as_ref().last().unwrap(), CellLang::And(_)));
+    }
+
+    #[test]
+    fn test_input_lists() {
+        assert_eq!(
+            PrimitiveType::AND4.get_input_list(),
+            vec!["A1", "A2", "A3", "A4"]
+        );
+        assert_eq!(
+            PrimitiveType::AOI22.get_input_list(),
+            vec!["A1", "A2", "B1", "B2"]
+        );
+        assert_eq!(
+            PrimitiveType::LUT6.get_input_list(),
+            vec!["I0", "I1", "I2", "I3", "I4", "I5"]
+        );
     }
 
     #[test]

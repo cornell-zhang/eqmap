@@ -513,13 +513,6 @@ impl SVPrimitive {
         prim
     }
 
-    /// Create a new unconnected FDRE primitive with instance name `name`
-    pub fn new_reg(name: String) -> Self {
-        let mut prim = Self::new(REG_NAME.to_string(), name, 1);
-        prim.set_attribute("INIT".to_string(), "1'hx".to_string());
-        prim
-    }
-
     /// Create a new unconnected gate primitive with instance name `name`
     pub fn new_gate(logic: PrimitiveType, name: String) -> Self {
         let n_inputs: usize = logic.get_num_inputs();
@@ -553,37 +546,11 @@ impl SVPrimitive {
         Self::new(format!("{}_X{}", logic, drive_strength), name, n_inputs)
     }
 
-    /// Create a new unconnected gate primitive with instance name `name`
-    pub fn new_gate_from_string(gate: String, name: String) -> Result<Self, String> {
-        // All names should take form <LOGIC>_<DRIVE> or <LOGIC>
-        let logic = gate.split_once('_');
-        let logic = match logic {
-            Some((l, _)) => l,
-            None => gate.as_str(),
-        };
-        let logic: PrimitiveType = logic.parse()?;
-        Ok(Self::new_gate(logic, name))
-    }
-
     /// Create a new constant with name `name` and drive `signal` with it
     pub fn new_const(val: Logic, signal: String, name: String) -> Self {
         let mut prim = Self::new("CONST".to_string(), name, 0);
         prim.connect_output("Y".to_string(), signal).unwrap();
         prim.set_attribute("VAL".to_string(), val.as_str().to_string());
-        prim
-    }
-
-    /// Create an unconnnected instance to represent ground
-    pub fn new_gnd(name: String) -> Self {
-        let mut prim = Self::new("CONST".to_string(), name, 0);
-        prim.set_attribute("VAL".to_string(), "1'b0".to_string());
-        prim
-    }
-
-    /// Create an unconnnected instance to represent logical 1
-    pub fn new_vcc(name: String) -> Self {
-        let mut prim = Self::new("CONST".to_string(), name, 0);
-        prim.set_attribute("VAL".to_string(), "1'b1".to_string());
         prim
     }
 
@@ -1522,8 +1489,7 @@ impl SVModule {
                                 ])),
                             )
                         }
-                        "NOT" => Ok(expr.add(LutLang::Not([subexpr["A"]]))),
-                        "INV" => Ok(expr.add(LutLang::Not([subexpr["I"]]))),
+                        "NOT" | "INV" => Ok(expr.add(LutLang::Not([subexpr["A"]]))),
                         _ => Err(format!("Unsupported gate primitive {}", primitive.prim)),
                     }
                 } else if Self::is_reg_prim(primitive.prim.as_str()) {
