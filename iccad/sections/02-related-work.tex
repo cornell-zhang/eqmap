@@ -1,17 +1,17 @@
 \section{Related Work}\label{sec:relatedwork}
-\subsection{FPGA Mappers}\label{sec:relatedwork:fpga}
-Broadly speaking, FPGA LUT packing can be divided into architecture-specific
-and architecture-agnostic optimizations. Architecture-specific LUT packing
-reduces routing congestion by more efficiently using intra-CLB routing
-resources. Examples include mapping dual-output functions to fractured
-LUTs~\cite{fraclut} or using dedicated multiplexers to implement functions with
-more than 6 inputs~\cite{ug574}. The rough optimization goal of
-architecture-specific LUT packing is to reduce the number of flip-flops driven
-across CLB boundaries~\cite{ffpack}, and this is the most precise definition of
-LUT packing.
+\subsection{FPGA Tech Mappers}\label{sec:relatedwork:fpga}
+Broadly speaking, FPGA mapping heuristics can be divided into
+architecture-specific and architecture-agnostic optimizations.
+Architecture-specific optimizations reduce routing congestion by more
+efficiently using intra-CLB routing resources. Examples include mapping
+dual-output functions to fractured LUTs~\cite{fraclut} or using dedicated
+multiplexers to implement functions with more than 6 inputs~\cite{ug574}. In
+the literature, these types of optimizations are known as \textit{LUT packing},
+and the rough optimization goal is to reduce the number of flip-flops driven
+across CLB boundaries~\cite{ffpack}.
 
-In contrast, architecture-agnostic LUT packing has broader meaning as it
-attempts to mitigate the structural bias of the technology mapper in general.
+In contrast, other works attempt to mitigate the structural bias of the
+technology mapper in general and do not account for the specific architecture.
 As an example, AGDMap~\cite{adaptdecomp} decomposes simple logic gates with
 large fan-in to enable the exploration of better graph coverings. However,
 structural bias can take on many forms. Finding advantageous decompositions of
