@@ -945,9 +945,7 @@ impl VerilogParsing for CellLang {
                         PrimitiveType::INV | PrimitiveType::NOT => {
                             Ok(expr.add(CellLang::Inv([ids[0]])))
                         }
-                        _ => {
-                            Ok(expr.add(CellLang::Cell(primitive.name.clone().into(), ids.into())))
-                        }
+                        _ => Ok(expr.add(CellLang::Cell(primitive.name.clone().into(), ids))),
                     }
                 } else if primitive.is_assign() {
                     let val = primitive.attributes.get("VAL").unwrap();
