@@ -934,11 +934,21 @@ impl VerilogParsing for LutLang {
                     // Update the mapping
                     let subexpr = Self::map_inputs(primitive, module, expr, map)?;
                     let logic = primitive.get_logic().unwrap();
-                    let mut ids: Vec<Id> = logic
-                        .get_input_list()
-                        .iter()
-                        .map(|x| subexpr[x.as_str()])
-                        .collect();
+                    let mut ids: Vec<Id> = if matches!(logic, PrimitiveType::INV) {
+                        if let Some(a) = subexpr.get("A") {
+                            vec![*a]
+                        } else if let Some(i) = subexpr.get("I") {
+                            vec![*i]
+                        } else {
+                            return Err("Expected A or I as input to NOT primitive".to_string());
+                        }
+                    } else {
+                        logic
+                            .get_input_list()
+                            .iter()
+                            .map(|x| subexpr[x.as_str()])
+                            .collect()
+                    };
                     match logic {
                         PrimitiveType::AND | PrimitiveType::AND2 => {
                             Ok(expr.add(LutLang::And([ids[0], ids[1]])))
