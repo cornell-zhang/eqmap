@@ -1609,17 +1609,11 @@ impl SVModule {
         Ok(module)
     }
 
-    fn get_expr<'a>(
-        &'a self,
-        signal: &'a str,
-        expr: &mut RecExpr<LutLang>,
-        map: &mut HashMap<&'a str, Id>,
-    ) -> Result<Id, String> {
-        LutLang::get_expr(signal, self, expr, map)
-    }
-
-    /// Get a separate [LutLang] expression for every output in the module
-    pub fn get_exprs(&self) -> Result<Vec<(String, RecExpr<LutLang>)>, String> {
+    /// Get a separate [Language] expression for every output in the module
+    pub fn get_exprs<L>(&self) -> Result<Vec<(String, RecExpr<L>)>, String>
+    where
+        L: VerilogParsing,
+    {
         if let Err(s) = self.contains_cycles() {
             return Err(format!(
                 "Cannot convert module with feedback on signal {}",
@@ -1630,14 +1624,14 @@ impl SVModule {
         let mut exprs = vec![];
         for output in self.outputs.iter() {
             let mut expr = RecExpr::default();
-            self.get_expr(&output.name, &mut expr, &mut HashMap::new())?;
+            L::get_expr(&output.name, self, &mut expr, &mut HashMap::new())?;
             exprs.push((output.name.clone(), expr));
         }
         Ok(exprs)
     }
 
     /// Get a single [LutLang] expression for the module as a bus
-    pub fn to_single_expr(&self) -> Result<RecExpr<LutLang>, String> {
+    pub fn to_single_lut_expr(&self) -> Result<RecExpr<LutLang>, String> {
         if let Err(s) = self.contains_cycles() {
             return Err(format!(
                 "Cannot convert module with feedback on signal {}",
@@ -1649,7 +1643,7 @@ impl SVModule {
         let mut map = HashMap::new();
         let mut outputs: Vec<Id> = vec![];
         for output in self.outputs.iter() {
-            outputs.push(self.get_expr(&output.name, &mut expr, &mut map)?);
+            outputs.push(LutLang::get_expr(&output.name, self, &mut expr, &mut map)?);
         }
         if outputs.len() > 1 {
             expr.add(LutLang::Bus(outputs.into()));
@@ -1659,7 +1653,7 @@ impl SVModule {
     }
 
     /// Convert the module to a [LutLang] expression
-    pub fn to_expr(&self) -> Result<RecExpr<LutLang>, String> {
+    pub fn to_lut_expr(&self) -> Result<RecExpr<LutLang>, String> {
         if let Err(s) = self.contains_cycles() {
             return Err(format!(
                 "Cannot convert module with feedback on signal {}",

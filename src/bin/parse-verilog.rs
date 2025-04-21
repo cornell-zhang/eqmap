@@ -70,7 +70,7 @@ fn main() -> std::io::Result<()> {
             }
         } else {
             let expr = f
-                .to_single_expr()
+                .to_single_lut_expr()
                 .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
             LutLang::verify_expr(&expr)
                 .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;

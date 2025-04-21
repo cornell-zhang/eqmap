@@ -282,7 +282,7 @@ endmodule\n"
         assert!(module.is_ok());
         let module = module.unwrap();
         assert_eq!(
-            module.to_single_expr().unwrap().to_string(),
+            module.to_single_lut_expr().unwrap().to_string(),
             "d".to_string()
         );
     }
@@ -328,7 +328,7 @@ endmodule\n"
         assert!(module.is_ok());
         let module = module.unwrap();
         assert_eq!(
-            module.to_single_expr().unwrap().to_string(),
+            module.to_single_lut_expr().unwrap().to_string(),
             "(LUT 17361601744336890538 true false b a c d)".to_string()
         );
     }
@@ -380,14 +380,14 @@ endmodule\n"
     }
 
     #[test]
-    fn test_verilog_to_expr() {
+    fn test_verilog_to_lut_expr() {
         let module = get_struct_verilog();
         let ast = sv_parse_wrapper(&module, None).unwrap();
         let module = SVModule::from_ast(&ast)
             .unwrap()
             .with_fname("mux_4_1".to_string());
         assert!(module.get_name() == "mux_4_1");
-        let expr = module.to_expr().unwrap();
+        let expr = module.to_lut_expr().unwrap();
         assert_eq!(
             expr.to_string(),
             "(LUT 17361601744336890538 s0 s1 b a c d)".to_string()
@@ -402,7 +402,7 @@ endmodule\n"
         assert!(module.is_ok());
         let module = module.unwrap();
         assert_eq!(
-            module.to_single_expr().unwrap().to_string(),
+            module.to_single_lut_expr().unwrap().to_string(),
             "(REG d)".to_string()
         );
         let output = module.to_string();
@@ -456,7 +456,7 @@ endmodule\n"
         assert!(module.is_ok());
         let module = module.unwrap();
         assert_eq!(
-            module.to_single_expr().unwrap().to_string(),
+            module.to_single_lut_expr().unwrap().to_string(),
             "(AND a b)".to_string()
         );
     }
@@ -496,7 +496,7 @@ endmodule\n"
         assert!(module.is_ok());
         let module = module.unwrap();
         assert_eq!(
-            module.to_single_expr().unwrap().to_string(),
+            module.to_single_lut_expr().unwrap().to_string(),
             "(AND (AND true true) (AND false false))".to_string()
         );
     }
@@ -531,7 +531,7 @@ endmodule\n"
         assert!(module.is_ok());
         let module = module.unwrap();
         assert_eq!(
-            module.to_single_expr().unwrap().to_string(),
+            module.to_single_lut_expr().unwrap().to_string(),
             "(NOT (NOT d))".to_string()
         );
     }
