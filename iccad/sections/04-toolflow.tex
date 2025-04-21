@@ -31,7 +31,7 @@ from the e-graph. Given that a saturated e-graph can contain hundreds of
 thousands of e-nodes across tens of thousands of e-classes, a greedy extraction
 algorithm is the most pragmatic. The greedy extractor iterates over the
 e-classes, updating the cost of the cheapest e-node until the database of costs
-no longer change. Whenever possible, our compiler uses the builtin
+no longer change. Whenever possible, our compiler uses the built-in
 functionality of the egg e-graph Rust library~\cite{docsEgg}. However, e-graph
 extraction itself is an ongoing research area~\cite{smoothe,
     sparsextract,esynth}, and future work should experiment with more capable
@@ -56,7 +56,7 @@ While formal verification is not the primary focus of this work, using e-graphs
 as a formal reasoning tool helps to build trust in our synthesis results. In
 fact, e-graphs were originally designed for automated theorem
 proving~\cite{eggpaper}. Thus, constructing proofs that demonstrate equivalence
-between the original and optimized netlist is a builtin feature of
+between the original and optimized netlist is a built-in feature of
 \shortname{}. This technique is relatively slow, so we also use two other
 independent sources of verification. For combinational netlists, our middle end
 can do exhaustive functional testing. Lastly, we use Yosys~\cite{yosys} for its

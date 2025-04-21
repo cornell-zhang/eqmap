@@ -4,7 +4,7 @@ the iterative rewriting of terms. Rewrite rules define the equivalence
 relations in full generality by defining search patterns of terms to rewrite.
 This prompts the creation of a grammar that can represent the structure of
 digital circuits and lends itself well to pattern matching. As an example, one
-can define De Morgan's laws as rewrite rule:
+can define De Morgan's laws as a rewrite rule:
 
 \begin{lstlisting}
 (NOT (AND x y)) => (OR (NOT x) (NOT y))
@@ -168,7 +168,7 @@ define and compute $\texttt{restrict(F, i, j)}$ which maps $F : \Bx{k}
 
 Since rewrite search patterns already match `modulo' e-class, this rule is
 automatically triggered when e-classes are merged. For instance, if the e-graph
-proved in Fig.~\ref{fig:eg} that $A_i = B_i$ then all the LUTs would shrink by
+proved in Fig.~\ref{fig:eg} that $A_i = B_i$, then all the LUTs would shrink by
 one input---causing the next wave of rewrites to fire. Again, only one rule is
 needed for each LUT size $k=2$ through 6, because LUT symmetry is represented
 in the graph. Considering the entire rewriting system as a whole,
