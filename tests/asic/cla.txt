@@ -1,4 +1,4 @@
-// RUN: cellmap %s -k 4 -n 6 --verify 2>>/dev/null | FileCheck %s
+// RUN: optcell %s -k 4 -n 6 2>>/dev/null | FileCheck %s
 
 // 2-bit CLA
 (OR (OR (AND a1 b1) (AND (AND a0 b0) (OR a1 b1))) (AND c0 (AND (OR a1 b1) (OR a0 b0))))
