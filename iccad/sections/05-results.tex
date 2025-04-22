@@ -66,15 +66,15 @@ their own.
     \begin{subfigure}{0.47\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/improvement.pdf}
-        \caption{Marginal improvement versus iteration count. The labels mark equality saturation.}\label{fig:marginal:improvement}
+        \caption{Marginal improvement in LUT count versus iteration count. The labels mark equality saturation.}\label{fig:marginal:improvement}
     \end{subfigure}
     \hfill\vspace{4mm}
     \begin{subfigure}{0.47\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/runtime_derivative.pdf}
-        \caption{Marginal increase in run time versus iteration count. Later iterations consume more time as the e-graph is larger.}\label{fig:marginal:runtime}
+        \caption{Marginal cost in run time versus iteration count. Later iterations consume more time as the e-graph is larger.}\label{fig:marginal:runtime}
     \end{subfigure}
-    \caption{Comparison of marginal gain in QoR against e-graph size and runtime. In most cases, exploring a circuit to equality saturation is not necessary.}\label{fig:marginal}
+    \caption{The marginal gain in QoR and cost in time as the e-graph grows in size. In most cases, exploring a circuit to equality saturation is not necessary.}\label{fig:marginal}
 \end{figure}
 
 \begin{table*}[t]
@@ -83,7 +83,7 @@ their own.
     \csvautobooktabular{data/mult.csv}
 \end{table*}
 
-\subsection{Marginal Improvement and Cost}\label{sec:results:margin}
+\subsection{Marginal Gain and Cost}\label{sec:results:margin}
 
 Given that \shortname{} is fundamentally a superoptimization tool, we want to
 provide evidence that significant gains can be found within reasonable time
@@ -99,7 +99,7 @@ Some notable exceptions occur, such as `alu4' being reduced in size after the
 iteration should be addressed. The marginal cost of executing an iteration of
 rewrites becomes prohibitive as the e-graph becomes larger.
 Fig.~\ref{fig:marginal:runtime} illustrates that after approximately the 30th
-iteration, the marginal cost in compile time rapidly increases.
+iteration, the added cost in compile time rapidly increases.
 
 \subsection{Case Study: Pipelined Designs}\label{sec:results:retiming}
 
