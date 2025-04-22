@@ -481,7 +481,7 @@ endmodule\n"
               .A(a),
               .B1(b),
               .B2(c),
-              .Y(y)
+              .ZN(y)
           );
         endmodule"
             .to_string();
@@ -492,6 +492,38 @@ endmodule\n"
         assert_eq!(
             module.to_expr::<CellLang>().unwrap().to_string(),
             "(AOI21_X1 a b c)".to_string()
+        );
+    }
+
+    #[test]
+    fn test_cell_parse_and() {
+        let module = "module my_cell (
+            a,
+            b,
+            y
+        );
+          input a;
+          wire a;
+          input b;
+          wire b;
+          output y;
+          wire y;
+          AND _0_ (
+              .A(a),
+              .B(b),
+              .Y(y)
+          );
+        endmodule"
+            .to_string();
+        let ast = sv_parse_wrapper(&module, None).unwrap();
+        let module = SVModule::from_ast(&ast);
+        assert!(module.is_ok());
+        let module = module.unwrap();
+        let expr = module.to_expr::<CellLang>().unwrap();
+        assert!(matches!(expr.last().unwrap(), CellLang::And(_)));
+        assert_eq!(
+            module.to_expr::<CellLang>().unwrap().to_string(),
+            "(AND a b)".to_string()
         );
     }
 
