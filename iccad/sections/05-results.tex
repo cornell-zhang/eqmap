@@ -157,5 +157,11 @@ Vivado or Yosys to quickly achieve better LUT packing with minimal time cost.
 \begin{table}
     \centering
     \caption{EqMap synthesis results of $n$-bit ALU}\label{tab:alu}
-    \csvautobooktabular{data/alu.csv}
+    \csvreader[
+        tabular=lrrr, % Custom alignment for this instance
+        late after line=\\, % Add \\ after each row
+        late after last line=\\ \bottomrule, % Prevent extra \\ after the last row
+        table head=\toprule ALU Bit Width & LUT Count &  &  \\ \midrule
+    ]{data/alu.csv}{1=\Name, 2=\LC, 3=\City, 4=\Thing}%
+    {\Name & \LC & \City & \Thing}
 \end{table}
