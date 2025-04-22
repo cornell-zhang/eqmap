@@ -1,4 +1,4 @@
-
+// These are the cell mappings to convert arbitrary verilog into something parseable by EqMap
 module \$mux (
     A,
     B,
@@ -76,7 +76,6 @@ module \$xor (
 
 endmodule
 
-
 module \$and (
     A,
     B,
@@ -116,7 +115,6 @@ module \$and (
   endgenerate
 
 endmodule
-
 
 module \$not (
     A,
