@@ -1010,4 +1010,17 @@ endmodule\n"
             .to_string();
         assert_eq!(module.to_string(), golden);
     }
+
+    #[test]
+    fn test_check_equiv() {
+        let expr1: RecExpr<LutLang> = "(MUX s1 (MUX s0 a b) (MUX s0 c d))".parse().unwrap();
+        let expr2: RecExpr<LutLang> = "(LUT 51952 s1 (LUT 61642 s1 s0 c d) a b)".parse().unwrap();
+        let expr3: RecExpr<LutLang> = "(LUT 51952 s0 (LUT 61642 s0 s1 b d) a c)".parse().unwrap();
+        assert!(LutLang::func_equiv(&expr1, &expr2).is_equiv());
+        assert!(LutLang::func_equiv(&expr2, &expr3).is_equiv());
+        let expr3: RecExpr<LutLang> = "(LUT 51952 s0 (LUT 61642 s1 s0 b d) a c)".parse().unwrap();
+        assert!(LutLang::func_equiv(&expr2, &expr3).is_not_equiv());
+        let expr3: RecExpr<LutLang> = "(LUT 51952 s0 (LUT 61643 s0 s1 b d) a c)".parse().unwrap();
+        assert!(LutLang::func_equiv(&expr2, &expr3).is_not_equiv());
+    }
 }
