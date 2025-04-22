@@ -90,15 +90,14 @@ increasingly longer rewrite sequences are added to the e-graph. Within the
 e-graph infrastructure, this phasing of applying rewrites and rebuilding the
 union-find data structure is referred to as an \textit{iteration}. As shown in
 Fig.~\ref{fig:marginal:improvement}, nearly all the performance gains are
-discovered within the first 10 iterations---well before equality
-saturation---suggesting that most of the optimizations are relatively local.
+discovered within the first 10 iterations---well before equality saturation.
 Some notable exceptions occur, such as `alu4' being reduced in size after the
 40th iteration. Lastly, the growing runtime of e-graph exploration with each
 iteration should be addressed. The marginal cost of executing an iteration of
 rewrites becomes prohibitive as the e-graph becomes larger.
 Fig.~\ref{fig:marginal:runtime} illustrates that after approximately the 30th
 iteration, the added cost in compile time rapidly increases. However, the far
-majority of results are reached within 20 iterations of rewriting, and this on
+majority of results are reached within 20 iterations of rewriting, which on
 average takes only 3 seconds.
 
 \subsection{Case Study: Pipelined Designs}\label{sec:results:retiming}
@@ -114,11 +113,11 @@ any case, \shortname{} can be utilized to reduce total CLB usage in pipelined
 designs. To test this hypothesis, our compiler was used to optimize a 32-bit
 integer multiplier with a varying number of pipeline stages. The data in
 Table~\ref{tab:multiply} clearly shows that as the number of pipeline stages
-increases, some inefficiency in technology mapping is accumulated. \shortname{}
-is able to repack the LUTs into roughly the same amount of logic as the single
-stage design---without increasing the number of flip-flops. While our current
+increases, an inefficiency in the mapping is accumulated. \shortname{} is able
+to repack the LUTs into roughly the same amount of logic as the single stage
+design---without increasing the number of flip-flops. While our current
 technique only supports acyclic designs, we wanted to add an additional case
-study on pipelined logic to prove the potential of extending our approach
+study on a pipelined operator to prove the potential of extending our approach
 beyond combinational logic.
 
 While the drop in CLB usage is desirable, we anticipate that more exact
