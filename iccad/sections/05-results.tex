@@ -78,7 +78,13 @@ their own.
 \begin{table*}[t]
     \centering
     \caption{Post-implementation results of pipelined multiplication circuit optimized with EqMap. Yosys 0.33 + EqMap is used for synthesis, and Vivado 2024 is used for placement and routing.}\label{tab:multiply}
-    \csvautobooktabular{data/mult.csv}
+    \csvreader[
+        tabular=lrrrrrrrrr, % Custom alignment for this instance
+        late after line=\\, % Add \\ after each row
+        late after last line=\\ \bottomrule, % Prevent extra \\ after the last row
+        table head=\toprule $\times$ Num. Stages & LUTs & & & Depth & & & CLBs & & \\ \midrule
+    ]{data/mult.csv}{1=\one, 2=\two, 3=\three, 4=\four, 5=\five, 6=\six, 7=\seven, 8=\eight, 9=\nine, 10=\ten}%
+    {\one & \two & \three & \four & \five & \six & \seven & \eight & \nine & \ten}
 \end{table*}
 
 \subsection{Marginal Gain and Cost}\label{sec:results:margin}
