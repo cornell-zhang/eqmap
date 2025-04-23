@@ -1075,8 +1075,9 @@ where
             #[cfg(feature = "exactness")]
             (OptStrat::AstSize, ExtractStrat::Exact(t)) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                L::canonicalize_expr(e.timeout(t as f64).solve(root))
+                let e = egg::GoodLpExtractor::new(egraph, Box::new(egg::AstSize));
+                let (best_cost, best_expr) = e.solve(root);
+                L::canonicalize_expr(best_expr)
             }),
             _ => Err(format!(
                 "{:?} optimization strategy is incomptabile with {:?} extraction.",
