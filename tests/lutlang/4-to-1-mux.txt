@@ -1,0 +1,5 @@
+// RUN: opt %s -k 4 --no-verify 2>>/dev/null | FileCheck %s
+
+// 4:1 mux
+(MUX s1 (MUX s0 a b) (MUX s0 c d))
+// CHECK: (LUT 51952 s1 (LUT 61642 s1 s0 c d) a b)
