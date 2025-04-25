@@ -218,14 +218,13 @@ cells and their logic functions in terms of the EqMap intermediate language.
     \centering
     \begin{tabular}{ll}
         \toprule
-        \textbf{Logic Function}                       & \textbf{Standard Cell}                                             \\ \midrule
-        \texttt{(INV a)}                              & \texttt{INV\_X1}, \texttt{INV\_X2}, \texttt{INV\_X4}, \ldots       \\
-        \texttt{(INV (AND a b))}                      & \texttt{NAND2\_X1}, \texttt{NAND2\_X2}, \texttt{NAND2\_X4}, \ldots \\
-        \texttt{(INV (OR a b))}                       & \texttt{NOR2\_X1}, \texttt{NOR2\_X2}, \texttt{NOR2\_X4}, \ldots    \\
-        \texttt{(INV (AND (AND a b) (AND c d)))}      & \texttt{NAND4\_X1}, \texttt{NAND4\_X2}, \texttt{NAND4\_X4}, \ldots \\
-        \texttt{(OR (AND b (INV a)) (AND a (INV b)))} & \texttt{XOR2\_X1}, \texttt{XOR2\_X2}, \texttt{XOR2\_X4}, \ldots    \\
-        \texttt{(INV (OR (AND a b) c))}               & \texttt{AOI21\_X1}, \texttt{AOI21\_X2}, \texttt{AOI21\_X4}, \ldots \\
-        \texttt{(INV (AND (OR a b) c))}               & \texttt{OAI21\_X1}, \texttt{OAI21\_X2}, \texttt{OAI21\_X4}, \ldots \\
+        \textbf{Logic Function}                  & \textbf{Standard Cell}                                             \\ \midrule
+        \texttt{(INV a)}                         & \texttt{INV\_X1}, \texttt{INV\_X2}, \texttt{INV\_X4}, \ldots       \\
+        \texttt{(INV (AND a b))}                 & \texttt{NAND2\_X1}, \texttt{NAND2\_X2}, \texttt{NAND2\_X4}, \ldots \\
+        \texttt{(INV (OR a b))}                  & \texttt{NOR2\_X1}, \texttt{NOR2\_X2}, \texttt{NOR2\_X4}, \ldots    \\
+        \texttt{(INV (AND (AND a b) (AND c d)))} & \texttt{NAND4\_X1}, \texttt{NAND4\_X2}, \texttt{NAND4\_X4}, \ldots \\
+        \texttt{(INV (OR (AND a b) c))}          & \texttt{AOI21\_X1}, \texttt{AOI21\_X2}, \texttt{AOI21\_X4}, \ldots \\
+        \texttt{(INV (AND (OR a b) c))}          & \texttt{OAI21\_X1}, \texttt{OAI21\_X2}, \texttt{OAI21\_X4}, \ldots \\
         \bottomrule
     \end{tabular}
     \caption{An incomplete table of cells defined as rewrite rules}\label{tab:cells}
@@ -316,13 +315,36 @@ Fig.~\ref{fig:test:gates}.
 
 \subsection{More Cells}\label{sec:alt:cells}
 
-\begin{itemize}
-    \item There are many alternate version of AOI and OAI gates, ranging from 3 to 5
-          inputs
-    \item Full adders and half adders.
-    \item MUX2 and MUX4 cells.
-    \item Majority gates.
-\end{itemize}
+In the baseline design of the compiler, only a limited amount of custom cells
+in the library were implemented. Now that the end-to-end integration is
+complete, it is time to expand the functionality of the flow. Since there are
+so many variations of each cell type, it is cumbersome to translate every cell
+type into a rewrite rule. This is perhaps the one task I would entrust to an
+LLM. However, I still wrote the reasoning rules for the rest of the cells by
+hand by reading \texttt{stdcells.v} from the Nangate 45nm Free PDK. The main
+cells missing from the baseline design are XOR gates, multiplexers, and
+majority gates. There are also many alternate version of AOI and OAI gates,
+ranging from 3 to 5 inputs, that were finally implemented. One interesting
+thing I learned is that a majority gate is a special case of
+\texttt{AOI222}\footnote{\href{https://en.wikichip.org/wiki/majority\_gate\#MAJ3}{https://en.wikichip.org/wiki/majority\_gate\#MAJ3}}.
+Tab.~\ref{tab:morecells} shows the rewrite rules for some of the new cells that
+were added in the latest iteration of the compiler.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Logic Function}                            & \textbf{Standard Cell}                                                \\ \midrule
+        \texttt{(INV (OR (OR (AND c1 c2) a) (AND b1 b2)))} & \texttt{AOI221\_X1}, \texttt{AOI221\_X2}, \texttt{AOI221\_X4}, \ldots \\
+        \texttt{(INV (AND (AND (OR c1 c2) a) (OR b1 b2)))} & \texttt{OAI221\_X1}, \texttt{OAI221\_X2}, \texttt{OAI221\_X4}, \ldots \\
+        \texttt{(OR (AND (INV s) a) (AND s b))}            & \texttt{MUX2\_X1}, \texttt{MUX2\_X2}                                  \\
+        \texttt{(INV (AND (AND a b) c))}                   & \texttt{NAND3\_X1}, \texttt{NAND3\_X2}, \texttt{NAND3\_X4}, \ldots    \\
+        \texttt{(OR (AND b (INV a)) (AND a (INV b)))}      & \texttt{XOR2\_X1}, \texttt{XOR2\_X2}, \texttt{XOR2\_X4}, \ldots       \\
+        \texttt{(OR (AND a b) (OR (AND a c) (AND b c)))}   & \texttt{MAJ3\_X1}, \texttt{MAJ3\_X2}, \texttt{MAJ3\_X4}, \ldots       \\
+        \bottomrule
+    \end{tabular}
+    \caption{An incomplete table of cells defined as rewrite rules}\label{tab:morecells}
+\end{table}
 
 \subsection{Heuristics Supplanted by Automated Reasoning}\label{sec:alt:heuristics}
 
