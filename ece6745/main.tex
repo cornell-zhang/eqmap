@@ -313,6 +313,16 @@ Fig.~\ref{fig:test:gates}.
 
 \section{Alternative Compiler Design}\label{sec:alt}
 
+The purpose of the baseline design was to have a Verilog-to-Verilog compiler
+that could do some basic mapping of AND, OR, and INV logic to the standard
+cells used in the course. The alternative design enhances the mapping
+capabilities in the hopes that my tool might be able to compete with existing
+tools like
+Yosys\footnote{\href{https://github.com/YosysHQ/yosys}{https://github.com/YosysHQ/yosys}}
+or Synopsys Design Compiler. This meant implementing more cells, as well as
+relating existing heuristics for technology mapping to e-graph rewriting and
+extraction.
+
 \subsection{More Cells}\label{sec:alt:cells}
 
 In the baseline design of the compiler, only a limited amount of custom cells
@@ -348,9 +358,17 @@ were added in the latest iteration of the compiler.
 
 \subsection{Heuristics Supplanted by Automated Reasoning}\label{sec:alt:heuristics}
 
-With the alternative design of the compiler, I set out to improve upon the
-heuristic techniques we learned from lecture. In particular, I will be drawing
-points of comparison and contrast with the course book~\cite{coursebook}.
+The alternative design of the compiler sets out to improve upon the heuristic
+techniques we learned from lecture. In particular, I will be drawing points of
+comparison and contrast with the course book~\cite{coursebook}. The goal is to
+show that unifying technology mapping under an automated reasoning framework
+greatly reduces the complexity of implementation and also increases the
+resilience of the technology mapper to structural bias. That is, the technology
+mapper becomes less dependent on the formulation/grouping of the input logic.
+That being said, I will know relate the heuristics from the
+book~\cite{coursebook} with my implementation: \bigbreak{} \noindent
+\textbf{Tree Covering Approximation of DAG Selection.} The thing is really
+cool.
 
 \section{Testing}\label{sec:testing}
 
