@@ -367,8 +367,44 @@ resilience of the technology mapper to structural bias. That is, the technology
 mapper becomes less dependent on the formulation/grouping of the input logic.
 That being said, I will know relate the heuristics from the
 book~\cite{coursebook} with my implementation: \bigbreak{} \noindent
-\textbf{Tree Covering Approximation of DAG Selection.} The thing is really
-cool.
+\textbf{Tree Covering Approximation of DAG Selection.} To make the technology
+mapping problem tractable, the book proposes that the DAG representing the
+digital circuit be broken down into a forest of trees. As a consequence, the
+technology mapper is not able to account for fan-out. In the case of e-graphs,
+this issue reoccurs, but in a reduced form. We can rewrite and map the logic
+with the full DAG structure. However, extraction is the phase in which this
+approximation/heuristic could be re-introduced. For example, greedy extraction
+will not accurately measure cost with respect to fan-out. Hence, it shares the
+same issue as pointed out in the book. However, if we reformulate the e-graph
+extraction problem in terms of mixed-integer linear programming (MILP) we can
+find the exact area-optimal solution. There is no escaping the NP-hardness of
+the mapping problem, but the e-graph offers more flexibility by isolating this
+issue in the extraction phase. \bigbreak{} \noindent \textbf{Simple Gate
+    Decomposition.} Large fan-in gates that have simple decompositions are broken
+down into reduction trees in order to discover more mappings. This heuristic is
+partially dependent on the input format. For example, this would be a
+requirement if the input to your mapper was an and-inverter graph (AIG). Again,
+the e-graph here affords lots of flexibility of input format, and it will
+automatically explore an expanded tree topology or the condensed gate form.
+Moreover, the commutativity and associativity rules mean \textit{all} the tree
+decompositions will be explored. This is a delicate issue to explain, but
+finding multiple tree decompositions is important to mitigating structural
+bias. \bigbreak{} \noindent \textbf{Inserting Inverter Pairs.} By inserting
+redundant inverters in the circuit, the technology mapper can try many more
+covers of the graph. For example, think of how De Morgan's laws can be used to
+interchange between AND and OR gates. This has an exact analgous feature in the
+e-graph rewriting system. To be exact, it is the interaction between the De
+Morgan rules and negation rules in Tab.~\ref{tab:rules}. \bigbreak{} \noindent
+\textbf{Matching Small DAGs.} The book acknowledges that not all problems can
+be solved by paritioning the DAG circuit into a forest of trees. Even very
+simple operations like XOR are incompatible with those constraints. Hence, the
+book proposes that small structures should use a matching technique to map
+those structures outside the general dynamic programming problem. The downside,
+however, is this means that those operations further segment the graph into
+smaller trees. With e-graph rewriting, this is simply not an issue as we can
+expand the search pattern in the e-graph rewrite rule arbitrarily. Of course,
+more complex patterns incur more execution time. However, this has not been an
+issue for gates like XOR or MAJ3.
 
 \section{Testing}\label{sec:testing}
 
