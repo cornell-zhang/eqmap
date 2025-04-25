@@ -298,13 +298,35 @@ nearly seamless integration with other RTL-based tool flows.
     \end{subfigure}\vspace{0.5cm}
     \begin{subfigure}{\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{img/cells.pdf}
+        \includegraphics[width=0.75\textwidth]{img/cells.pdf}
         \caption{EqMap reduces the cell count from 10 to 6 when OAI cells are introduced}\label{fig:test:cells}
     \end{subfigure}
     \caption{Diagrams of the top-level integration of \shortname{} into existing tool flows and internal e-graph driven compiler architecture.}\label{fig:flow}
 \end{figure}
 
-\subsection{Testing}\label{sec:baseline:testing}
+Since building out the compiler is the first priority, very little evaluation
+was performed at this point. However, I can report the results of compiling one
+example: a 2-bit carry lookahead unit. Part of the advantage of EqMap is the
+flexibility of choosing which library to map to. For example,
+Fig.~\ref{fig:test:cells} shows the advantage of introducing OAI and AOI cells
+into the library. The mapping uses four less cells than
+Fig.~\ref{fig:test:gates}.
+
+\section{Alternative Compiler Design}\label{sec:alt}
+
+\subsection{More Cells}\label{sec:alt:cells}
+
+\begin{itemize}
+    \item There are many alternate version of AOI and OAI gates, ranging from 3 to 5
+          inputs
+    \item Full adders and half adders.
+    \item MUX2 and MUX4 cells.
+    \item Majority gates.
+\end{itemize}
+
+\subsection{Heuristics Supplanted by Automated Reasoning}\label{sec:alt:heuristics}
+
+\section{Testing}\label{sec:testing}
 
 In the development of this tool, I used a varied testing strategy on both the
 software development front and the circuit verification front. For the project
@@ -338,14 +360,6 @@ strategies is itemized below:
                     optimized and original form of the Verilog.
           \end{itemize}
 \end{itemize}
-
-Since building out the compiler is the first priority, very little evaluation
-was performed at this point. However, I can report the results of compiling one
-example: a 2-bit carry lookahead unit. Part of the advantage of EqMap is the
-flexibility of choosing which library to map to. For example,
-Fig.~\ref{fig:test:cells} shows the advantage of introducing OAI and AOI cells
-into the library. The mapping uses four less cells than
-Fig.~\ref{fig:test:gates}.
 
 \nocite{*}
 \bibliographystyle{plain-annote}
