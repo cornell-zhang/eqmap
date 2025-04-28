@@ -1,0 +1,5 @@
+// RUN: opt %s -k 4 --no-verify 2>>/dev/null | FileCheck %s
+
+// We can create the circuit by hand too
+(NOT (NOR (AND s0 a) (AND (NOT s0) b)))
+// CHECK: (LUT 202 s0 a b)
