@@ -1,0 +1,5 @@
+// RUN: opt %s -k 4 --no-verify 2>>/dev/null | FileCheck %s
+
+// MUX with match cuts
+(MUX s1 (MUX s0 a b) (MUX s0 b a))
+// CHECK: (LUT 44234 s1 s0 b a)
