@@ -1,0 +1,5 @@
+// RUN: opt %s -k 4 --no-verify 2>>/dev/null | FileCheck %s
+
+// Also a 4:1 mux using AIG
+(NOT (NOR (AND s1 (NOT (NOR (AND s0 a) (AND (NOT s0) b)))) (AND (NOT s1) (NOT (NOR (AND s0 c) (AND (NOT s0) d))))))
+// CHECK: (LUT 51952 s1 (LUT 61642 s1 s0 c d) a b)

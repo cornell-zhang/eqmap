@@ -1,0 +1,4 @@
+// RUN: opt %s -k 4 --no-verify 2>>/dev/null | FileCheck %s
+
+(LUT 202 s (NOT b) b)
+// CHECK: (LUT 6 s b)
