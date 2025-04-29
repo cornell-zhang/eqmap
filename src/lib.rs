@@ -972,6 +972,13 @@ endmodule\n"
             PrimitiveType::LUT6.get_input_list(),
             vec!["I5", "I4", "I3", "I2", "I1", "I0"]
         );
+
+        assert_eq!(PrimitiveType::AOI222.get_num_inputs(), 6);
+
+        assert_eq!(
+            PrimitiveType::AOI222.get_input_list().len(),
+            PrimitiveType::AOI222.get_num_inputs()
+        );
     }
 
     #[test]
