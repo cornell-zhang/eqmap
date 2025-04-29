@@ -373,7 +373,7 @@ impl PrimitiveType {
             Self::VCC => "P".to_string(),
             Self::GND => "G".to_string(),
             Self::FDRE => "Q".to_string(),
-            Self::MUX2 => "Z".to_string(),
+            Self::MUX2 | Self::XOR2 => "Z".to_string(),
             _ => "ZN".to_string(),
         }
     }
