@@ -323,6 +323,18 @@ pub fn asic_rewrites() -> Vec<egg::Rewrite<CellLang, CellAnalysis>> {
     rules.push(
         rewrite!("oai211_x1"; "(INV (AND ?a (AND (OR ?c ?d) ?b)))" => "(OAI211_X1 ?a ?b ?c ?d)"),
     );
+    rules.push(
+        rewrite!("aoi221_x1"; "(INV (OR (AND ?b ?c) (OR ?a (AND ?d ?e))))" => "(AOI221_X1 ?a ?b ?c ?d ?e)"),
+    );
+    rules.push(
+        rewrite!("oai221_x1"; "(INV (AND (OR ?b ?c) (AND ?a (OR ?d ?e))))" => "(OAI221_X1 ?a ?b ?c ?d ?e)"),
+    );
+    rules.push(
+        rewrite!("aoi222_x1"; "(INV (OR (AND ?e ?f) (OR (AND ?a ?b) (AND ?c ?d))))" => "(AOI222_X1 ?a ?b ?c ?d ?e ?f)"),
+    );
+    rules.push(
+        rewrite!("oai222_x1"; "(INV (AND (OR ?e ?f) (AND (OR ?a ?b) (OR ?c ?d))))" => "(OAI222_X1 ?a ?b ?c ?d ?e ?f)"),
+    );
     rules.push(rewrite!("mux2_x1"; "(OR (AND (INV ?s) ?b) (AND ?s ?a))" => "(MUX2_X1 ?s ?a ?b)"));
 
     rules
