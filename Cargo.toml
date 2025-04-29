@@ -7,7 +7,7 @@ default-run = "epak"
 [dependencies]
 bitvec = "1.0.1"
 clap = { version = "4.5.31", features = ["derive"] }
-egg = { git = "https://github.com/neel-patel-1/egg" }
+egg = { path = "../egg", features = [ "lp", "clarabel", "coin_cbc", "highs", "lp-solvers", "lpsolve", "microlp", "scip", "scip_bundled"] }
 indicatif = "0.17.11"
 serde = { version = "1.0.218", features = ["derive"] }
 serde_json = "1.0.140"
@@ -24,7 +24,7 @@ default = [ "dyn_decomp" ]
 # default = [ "dyn_decomp", "egraph_fold" ]
 egraph_fold = []
 exactness = [ "egg/lp" ]
-cbc = ["egg/cbc"]
+cbc = ["egg/coin_cbc"]
 highs = ["egg/highs"]
 lp-solvers = ["egg/lp-solvers"]
 lpsolve = ["egg/lpsolve"]
