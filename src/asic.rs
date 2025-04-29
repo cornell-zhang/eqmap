@@ -102,11 +102,13 @@ impl CostFunction<CellLang> for CellCountFn {
         let op_cost = match enode {
             CellLang::Const(_) => 1,
             CellLang::Var(_) => 2,
-            CellLang::Cell(_, l) => {
+            CellLang::Cell(n, l) => {
                 if l.len() > self.cut_size {
                     usize::MAX
+                } else if n.as_str().starts_with("N") {
+                    2 + l.len()
                 } else {
-                    3
+                    3 + l.len()
                 }
             }
             _ => usize::MAX,
