@@ -74,42 +74,37 @@ module cla (
       .Y(c2)
   );
 
-  // CHECK: NAND2_X1 #(
-  // CHECK: ) __5__ (
-  // CHECK:     .A1(a0),
-  // CHECK:     .A2(b0),
+  // CHECK: AOI22_X1 #(
+  // CHECK: ) __4__ (
+  // CHECK:     .A1(a1),
+  // CHECK:     .A2(b1),
+  // CHECK:     .B1(a0),
+  // CHECK:     .B2(b0),
   // CHECK:     .ZN(__0__)
   // CHECK: );
   // CHECK: OAI21_X1 #(
-  // CHECK: ) __6__ (
+  // CHECK: ) __5__ (
   // CHECK:     .A(c0),
   // CHECK:     .B1(a0),
   // CHECK:     .B2(b0),
   // CHECK:     .ZN(__1__)
   // CHECK: );
-  // CHECK: NAND2_X1 #(
-  // CHECK: ) __7__ (
+  // CHECK: AND2_X1 #(
+  // CHECK: ) __6__ (
   // CHECK:     .A1(__1__),
   // CHECK:     .A2(__0__),
   // CHECK:     .ZN(__2__)
   // CHECK: );
-  // CHECK: OAI21_X1 #(
-  // CHECK: ) __8__ (
-  // CHECK:     .A(__2__),
-  // CHECK:     .B1(a1),
-  // CHECK:     .B2(b1),
-  // CHECK:     .ZN(__3__)
-  // CHECK: );
-  // CHECK: NAND2_X1 #(
-  // CHECK: ) __9__ (
+  // CHECK: NOR2_X1 #(
+  // CHECK: ) __7__ (
   // CHECK:     .A1(a1),
   // CHECK:     .A2(b1),
-  // CHECK:     .ZN(__4__)
+  // CHECK:     .ZN(__3__)
   // CHECK: );
-  // CHECK: NAND2_X1 #(
-  // CHECK: ) __10__ (
-  // CHECK:     .A1(__4__),
-  // CHECK:     .A2(__3__),
+  // CHECK: NOR2_X1 #(
+  // CHECK: ) __8__ (
+  // CHECK:     .A1(__3__),
+  // CHECK:     .A2(__2__),
   // CHECK:     .ZN(c2)
   // CHECK: );
 
