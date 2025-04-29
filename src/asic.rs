@@ -289,13 +289,25 @@ pub fn asic_rewrites() -> Vec<egg::Rewrite<CellLang, CellAnalysis>> {
 
     // Standard Cells
 
-    rules.push(rewrite!("nor2_x1"; "(INV (OR ?a ?b))" => "(NOR2_X1 ?a ?b)"));
+    rules.push(rewrite!("and2_x1"; "(AND ?a ?b)" => "(AND2_X1 ?a ?b)"));
     rules.push(rewrite!("nand2_x1"; "(INV (AND ?a ?b))" => "(NAND2_X1 ?a ?b)"));
+    rules.push(rewrite!("or2_x1"; "(OR ?a ?b)" => "(OR2_X1 ?a ?b)"));
+    rules.push(rewrite!("nor2_x1"; "(INV (OR ?a ?b))" => "(NOR2_X1 ?a ?b)"));
+    rules
+        .push(rewrite!("xor2_x1"; "(OR (AND ?b (INV ?a)) (AND ?a (INV ?b)))" => "(XOR2_X1 ?a ?b)"));
+    rules.push(
+        rewrite!("xnor2_x1"; "(OR (AND ?b ?a) (AND (INV ?a) (INV ?b)))" => "(XNOR2_X1 ?a ?b)"),
+    );
+    rules.push(rewrite!("and3_x1"; "(AND (AND ?a ?b) ?c)" => "(AND3_X1 ?a ?b ?c)"));
+    rules.push(rewrite!("nand3_x1"; "(INV (AND (AND ?a ?b) ?c))" => "(NAND3_X1 ?a ?b ?c)"));
+    rules.push(rewrite!("or3_x1"; "(OR (OR ?a ?b) ?c)" => "(OR3_X1 ?a ?b ?c)"));
+    rules.push(rewrite!("nor3_x1"; "(INV (OR (OR ?a ?b) ?c))" => "(NOR3_X1 ?a ?b ?c)"));
+    rules.push(rewrite!("and4_x1"; "(AND (AND ?a ?b) (AND ?c ?d))" => "(AND4_X1 ?a ?b ?c ?d)"));
     rules.push(
         rewrite!("nand4_x1"; "(INV (AND (AND ?a ?b) (AND ?c ?d)))" => "(NAND4_X1 ?a ?b ?c ?d)"),
     );
-    rules
-        .push(rewrite!("xor2_x1"; "(OR (AND ?b (INV ?a)) (AND ?a (INV ?b)))" => "(XOR2_X1 ?a ?b)"));
+    rules.push(rewrite!("or4_x1"; "(OR (OR ?a ?b) (OR ?c ?d))" => "(OR4_X1 ?a ?b ?c ?d)"));
+    rules.push(rewrite!("nor4_x1"; "(INV (OR (OR ?a ?b) (OR ?c ?d)))" => "(NOR4_X1 ?a ?b ?c ?d)"));
     rules.push(rewrite!("inv_x1"; "(INV ?a)" => "(INV_X1 ?a)"));
     rules.push(rewrite!("aoi21_x1"; "(INV (OR (AND ?b ?c) ?a))" => "(AOI21_X1 ?a ?b ?c)"));
     rules.push(rewrite!("oai21_x1"; "(INV (AND (OR ?b ?c) ?a))" => "(OAI21_X1 ?a ?b ?c)"));
@@ -311,6 +323,7 @@ pub fn asic_rewrites() -> Vec<egg::Rewrite<CellLang, CellAnalysis>> {
     rules.push(
         rewrite!("oai211_x1"; "(INV (AND ?b (AND (OR ?c ?d) ?a)))" => "(OAI211_X1 ?a ?b ?c ?d)"),
     );
+    rules.push(rewrite!("mux2_x1"; "(OR (AND (INV ?s) ?b) (AND ?s ?a))" => "(MUX2_X1 ?s ?a ?b)"));
 
     rules
 }

@@ -215,13 +215,16 @@ pub enum PrimitiveType {
     NOR2,
     XOR2,
     XNOR2,
+    AND3,
+    NAND3,
+    OR3,
+    NOR3,
     AND4,
     NAND4,
     OR4,
     NOR4,
-    XOR4,
-    XNOR4,
     MUX,
+    MUX2,
     MUXF7,
     MUXF8,
     MUXF9,
@@ -253,8 +256,9 @@ impl PrimitiveType {
             Self::XOR2 | Self::XOR => 2,
             Self::XNOR2 | Self::XNOR => 2,
             Self::NOT | Self::INV | Self::LUT1 => 1,
-            Self::MUX | Self::MUXF7 | Self::MUXF8 | Self::MUXF9 => 3,
-            Self::AND4 | Self::NAND4 | Self::OR4 | Self::NOR4 | Self::XOR4 | Self::XNOR4 => 4,
+            Self::MUX | Self::MUX2 | Self::MUXF7 | Self::MUXF8 | Self::MUXF9 => 3,
+            Self::AND3 | Self::NAND3 | Self::OR3 | Self::NOR3 => 3,
+            Self::AND4 | Self::NAND4 | Self::OR4 | Self::NOR4 => 4,
             Self::AOI21 | Self::OAI21 => 3,
             Self::AOI211 | Self::AOI22 | Self::OAI211 | Self::OAI22 => 4,
             Self::LUT2 => 2,
@@ -277,7 +281,10 @@ impl PrimitiveType {
             Self::AND2 | Self::NAND2 | Self::OR2 | Self::NOR2 | Self::XOR2 | Self::XNOR2 => {
                 vec!["A1".to_string(), "A2".to_string()]
             }
-            Self::AND4 | Self::NAND4 | Self::OR4 | Self::NOR4 | Self::XOR4 | Self::XNOR4 => {
+            Self::AND3 | Self::NAND3 | Self::OR3 | Self::NOR3 => {
+                vec!["A1".to_string(), "A2".to_string(), "A3".to_string()]
+            }
+            Self::AND4 | Self::NAND4 | Self::OR4 | Self::NOR4 => {
                 vec![
                     "A1".to_string(),
                     "A2".to_string(),
@@ -287,6 +294,9 @@ impl PrimitiveType {
             }
             Self::MUX => {
                 vec!["S".to_string(), "A".to_string(), "B".to_string()]
+            }
+            Self::MUX2 => {
+                vec!["S".to_string(), "B".to_string(), "A".to_string()]
             }
             Self::MUXF7 | Self::MUXF8 | Self::MUXF9 => {
                 vec!["S".to_string(), "I1".to_string(), "I0".to_string()]
@@ -356,6 +366,7 @@ impl PrimitiveType {
             Self::VCC => "P".to_string(),
             Self::GND => "G".to_string(),
             Self::FDRE => "Q".to_string(),
+            Self::MUX2 => "Z".to_string(),
             _ => "ZN".to_string(),
         }
     }
@@ -393,18 +404,21 @@ impl FromStr for PrimitiveType {
                 "NOR2" => Ok(Self::NOR2),
                 "XOR2" => Ok(Self::XOR2),
                 "XNOR2" => Ok(Self::XNOR2),
+                "AND3" => Ok(Self::AND3),
+                "NAND3" => Ok(Self::NAND3),
+                "OR3" => Ok(Self::OR3),
+                "NOR3" => Ok(Self::NOR3),
                 "AND4" => Ok(Self::AND4),
                 "NAND4" => Ok(Self::NAND4),
                 "OR4" => Ok(Self::OR4),
                 "NOR4" => Ok(Self::NOR4),
-                "XOR4" => Ok(Self::XOR4),
-                "XNOR4" => Ok(Self::XNOR4),
                 "AOI21" => Ok(Self::AOI21),
                 "OAI21" => Ok(Self::OAI21),
                 "AOI211" => Ok(Self::AOI211),
                 "AOI22" => Ok(Self::AOI22),
                 "OAI211" => Ok(Self::OAI211),
                 "OAI22" => Ok(Self::OAI22),
+                "MUX2" => Ok(Self::MUX2),
                 _ => Err(format!("Unknown primitive type {}", l)),
             },
             None => match s {
