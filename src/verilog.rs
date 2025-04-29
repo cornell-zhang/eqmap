@@ -776,7 +776,11 @@ impl VerilogEmission for CellLang {
         if expr.is_empty() {
             return vec![];
         }
-        vec![(expr.len() - 1).into()]
+
+        match expr.last().unwrap() {
+            CellLang::Bus(l) => l.to_vec(),
+            _ => vec![(expr.len() - 1).into()],
+        }
     }
 
     fn get_var(&self) -> Option<String> {
@@ -1606,8 +1610,6 @@ impl SVModule {
                     module.signals.push(SVSignal::new(1, output));
                 }
                 mapping.insert(id.into(), sname);
-            } else {
-                return Err(format!("Unsupported node type: {:?}", node));
             }
         }
 
@@ -1750,6 +1752,27 @@ impl SVModule {
             expr.add(LutLang::Bus(outputs.into()));
         }
         // TODO(matth2k): Add an option to run subexpression elimination here
+        Ok(expr)
+    }
+
+    /// Get a single [CellLang] expression for the module as a bus
+    pub fn to_single_cell_expr(&self) -> Result<RecExpr<CellLang>, String> {
+        if let Err(s) = self.contains_cycles() {
+            return Err(format!(
+                "Cannot convert module with feedback on signal {}",
+                s
+            ));
+        }
+
+        let mut expr: RecExpr<CellLang> = RecExpr::default();
+        let mut map = HashMap::new();
+        let mut outputs: Vec<Id> = vec![];
+        for output in self.outputs.iter() {
+            outputs.push(CellLang::get_expr(&output.name, self, &mut expr, &mut map)?);
+        }
+        if outputs.len() > 1 {
+            expr.add(CellLang::Bus(outputs.into()));
+        }
         Ok(expr)
     }
 

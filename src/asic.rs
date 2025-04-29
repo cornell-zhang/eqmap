@@ -23,7 +23,8 @@ define_language! {
         "AND" = And([Id; 2]),
         "OR" = Or([Id; 2]),
         "INV" = Inv([Id; 1]),
-        Cell(Symbol, Vec<Id>), // or Box<[Id]>?
+        Cell(Symbol, Vec<Id>),
+        "BUS" = Bus(Box<[Id]>),
     }
 }
 

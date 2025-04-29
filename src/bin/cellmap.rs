@@ -161,7 +161,7 @@ fn main() -> std::io::Result<()> {
 
     eprintln!("INFO: Compiling Verilog...");
     let expr = f
-        .to_expr()
+        .to_single_cell_expr()
         .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
     eprintln!("INFO: Building e-graph...");
