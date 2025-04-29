@@ -274,11 +274,18 @@ impl PrimitiveType {
     /// Get the list of inputs for the primitive
     pub fn get_input_list(&self) -> Vec<String> {
         match self {
-            Self::AND | Self::NAND | Self::OR | Self::NOR | Self::XOR | Self::XNOR => {
+            Self::AND
+            | Self::NAND
+            | Self::OR
+            | Self::NOR
+            | Self::XOR
+            | Self::XNOR
+            | Self::XOR2
+            | Self::XNOR2 => {
                 vec!["A".to_string(), "B".to_string()]
             }
             Self::INV | Self::NOT => vec!["A".to_string()],
-            Self::AND2 | Self::NAND2 | Self::OR2 | Self::NOR2 | Self::XOR2 | Self::XNOR2 => {
+            Self::AND2 | Self::NAND2 | Self::OR2 | Self::NOR2 => {
                 vec!["A1".to_string(), "A2".to_string()]
             }
             Self::AND3 | Self::NAND3 | Self::OR3 | Self::NOR3 => {
