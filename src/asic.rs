@@ -13,6 +13,7 @@ use egg::{
     define_language, rewrite,
 };
 use serde::Serialize;
+use std::collections::BTreeMap;
 
 define_language! {
     /// Definitions of e-node types. Programs are the only node type that is not a net/signal.
@@ -105,10 +106,10 @@ impl CostFunction<CellLang> for CellCountFn {
             CellLang::Cell(n, l) => {
                 if l.len() > self.cut_size {
                     usize::MAX
-                } else if n.as_str().starts_with("N") {
-                    2 + l.len()
+                } else if n.as_str().starts_with("N") || n.as_str().starts_with("INV") {
+                    2
                 } else {
-                    3 + l.len()
+                    3
                 }
             }
             _ => usize::MAX,
@@ -185,10 +186,22 @@ impl Analysis<CellLang> for CellAnalysis {
     fn make(_egraph: &mut EGraph<CellLang, Self>, _enode: &CellLang) -> Self::Data {}
 }
 
+fn get_cell_counts(expr: &RecExpr<CellLang>) -> BTreeMap<String, usize> {
+    let mut counts = BTreeMap::new();
+    for node in expr.iter() {
+        if let CellLang::Cell(name, _) = node {
+            *counts.entry(name.to_string()).or_insert(0) += 1;
+        }
+    }
+    counts
+}
+
 #[derive(Debug, Serialize)]
 struct CircuitStats {
     /// AST size of the circuit
     ast_size: usize,
+    /// Number of cells in the circuit
+    cell_counts: BTreeMap<String, usize>,
 }
 
 /// An empty report struct for synthesizing CellLang
@@ -224,9 +237,11 @@ impl Report<CellLang> for CellRpt {
             "top".to_string(),
             CircuitStats {
                 ast_size: input.len(),
+                cell_counts: get_cell_counts(input),
             },
             CircuitStats {
                 ast_size: output.len(),
+                cell_counts: get_cell_counts(output),
             },
         ))
     }
@@ -356,7 +371,7 @@ where
     );
 
     // Negation Rules
-    rules.push(rewrite!("negation"; "?a" => "(INV (INV ?a))"));
+    rules.append(&mut rewrite!("negation"; "?a" <=> "(INV (INV ?a))"));
     rules
 }
 
