@@ -2,4 +2,4 @@
 
 // 2-bit CLA
 (OR (OR (AND a1 b1) (AND (AND a0 b0) (OR a1 b1))) (AND c0 (AND (OR a1 b1) (OR a0 b0))))
-// CHECK: (NAND2_X1 (NAND2_X1 a1 b1) (OAI21_X1 a1 b1 (NAND2_X1 (NAND2_X1 a0 b0) (OAI21_X1 a0 b0 c0))))
+// CHECK: (NAND2_X1 (NAND2_X1 a1 b1) (OAI21_X1 (NAND2_X1 (NAND2_X1 a0 b0) (OAI21_X1 c0 a0 b0)) a1 b1))

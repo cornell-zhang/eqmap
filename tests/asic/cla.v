@@ -82,9 +82,9 @@ module cla (
   // CHECK: );
   // CHECK: OAI21_X1 #(
   // CHECK: ) __6__ (
-  // CHECK:     .A(a0),
-  // CHECK:     .B1(b0),
-  // CHECK:     .B2(c0),
+  // CHECK:     .A(c0),
+  // CHECK:     .B1(a0),
+  // CHECK:     .B2(b0),
   // CHECK:     .ZN(__1__)
   // CHECK: );
   // CHECK: NAND2_X1 #(
@@ -95,9 +95,9 @@ module cla (
   // CHECK: );
   // CHECK: OAI21_X1 #(
   // CHECK: ) __8__ (
-  // CHECK:     .A(a1),
-  // CHECK:     .B1(b1),
-  // CHECK:     .B2(__2__),
+  // CHECK:     .A(__2__),
+  // CHECK:     .B1(a1),
+  // CHECK:     .B2(b1),
   // CHECK:     .ZN(__3__)
   // CHECK: );
   // CHECK: NAND2_X1 #(
