@@ -802,7 +802,7 @@ impl VerilogEmission for CellLang {
                 let inputs = self.children();
                 let gate_type = self
                     .get_gate_type()
-                    .expect("CellLang gates should have a primitive type");
+                    .ok_or("CellLang gates should have a primitive type".to_string())?;
                 let port_list = gate_type.get_input_list();
                 // TODO(matth2k): Carry through drive strength
                 let mut prim =
@@ -882,7 +882,7 @@ impl VerilogEmission for LutLang {
                 let inputs = self.children();
                 let gate_type = self
                     .get_gate_type()
-                    .expect("CellLang gates should have a primitive type");
+                    .ok_or("LutLang gates should have a primitive type".to_string())?;
                 let port_list = gate_type.get_input_list();
                 let mut prim = SVPrimitive::new_gate(gate_type.clone(), fresh_prim_name());
                 for (input, port) in inputs.iter().zip(port_list) {

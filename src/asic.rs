@@ -297,8 +297,20 @@ pub fn asic_rewrites() -> Vec<egg::Rewrite<CellLang, CellAnalysis>> {
     rules
         .push(rewrite!("xor2_x1"; "(OR (AND ?b (INV ?a)) (AND ?a (INV ?b)))" => "(XOR2_X1 ?a ?b)"));
     rules.push(rewrite!("inv_x1"; "(INV ?a)" => "(INV_X1 ?a)"));
-    rules.push(rewrite!("aoi_x1"; "(INV (OR (AND ?a ?b) ?c))" => "(AOI21_X1 ?a ?b ?c)"));
-    rules.push(rewrite!("oai_x1"; "(INV (AND (OR ?a ?b) ?c))" => "(OAI21_X1 ?a ?b ?c)"));
+    rules.push(rewrite!("aoi21_x1"; "(INV (OR (AND ?b ?c) ?a))" => "(AOI21_X1 ?a ?b ?c)"));
+    rules.push(rewrite!("oai21_x1"; "(INV (AND (OR ?b ?c) ?a))" => "(OAI21_X1 ?a ?b ?c)"));
+    rules.push(
+        rewrite!("aoi22_x1"; "(INV (OR (AND ?c ?d) (AND ?a ?b)))" => "(AOI22_X1 ?a ?b ?c ?d)"),
+    );
+    rules.push(
+        rewrite!("oai22_x1"; "(INV (AND (OR ?c ?d) (OR ?a ?b)))" => "(OAI22_X1 ?a ?b ?c ?d)"),
+    );
+    rules.push(
+        rewrite!("aoi211_x1"; "(INV (OR ?b (OR (AND ?c ?d) ?a)))" => "(AOI211_X1 ?a ?b ?c ?d)"),
+    );
+    rules.push(
+        rewrite!("oai211_x1"; "(INV (AND ?b (AND (OR ?c ?d) ?a)))" => "(OAI211_X1 ?a ?b ?c ?d)"),
+    );
 
     rules
 }

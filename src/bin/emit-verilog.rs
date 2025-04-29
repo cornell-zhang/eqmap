@@ -5,7 +5,7 @@ use std::{
 
 use clap::Parser;
 use egg::RecExpr;
-use lut_synth::{driver::Canonical, lut::LutLang, verilog::SVModule};
+use lut_synth::{asic::CellLang, driver::Canonical, lut::LutLang, verilog::SVModule};
 /// Emit a LutLang Expression as a Verilog Netlist
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -28,6 +28,10 @@ struct Args {
     /// Canonicalize the input expression
     #[arg(short = 'c', long, default_value_t = false)]
     canonicalize: bool,
+
+    /// Parse input as a CellLang expression
+    #[arg(short = 'a', long, default_value_t = false)]
+    asic: bool,
 }
 
 fn main() -> std::io::Result<()> {
@@ -67,18 +71,27 @@ fn main() -> std::io::Result<()> {
             continue;
         }
         let expr = line.split("//").next().unwrap();
-        let expr: RecExpr<LutLang> = expr
-            .parse()
-            .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+        let module = if !args.asic {
+            let expr: RecExpr<LutLang> = expr
+                .parse()
+                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
-        let expr = if args.canonicalize {
-            LutLang::canonicalize_expr(expr)
+            let expr = if args.canonicalize {
+                LutLang::canonicalize_expr(expr)
+            } else {
+                expr
+            };
+
+            SVModule::from_luts(expr, mod_name.clone(), args.output_names.clone())
+                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?
         } else {
-            expr
-        };
+            let expr: RecExpr<CellLang> = expr
+                .parse()
+                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
-        let module = SVModule::from_luts(expr, mod_name.clone(), args.output_names.clone())
-            .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+            SVModule::from_cells(expr, mod_name.clone(), args.output_names.clone())
+                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?
+        };
         print!("{}", module);
         break;
     }
