@@ -237,9 +237,78 @@ impl Report<CellLang> for CellRpt {
     }
 }
 
-/// Rewrite rules on CellLang
-pub fn asic_rewrites() -> Vec<egg::Rewrite<CellLang, CellAnalysis>> {
-    let mut rules: Vec<Rewrite<CellLang, CellAnalysis>> = Vec::new();
+/// Return a list of forward and backwards rewrites that maps logic to their cells
+/// The forwards rule is first in the array.
+pub fn get_cell_logic_eqn<A>() -> Vec<[egg::Rewrite<CellLang, A>; 2]>
+where
+    A: Analysis<CellLang>,
+{
+    let mut rules: Vec<Vec<Rewrite<CellLang, A>>> = Vec::new();
+    rules.push(rewrite!("and2_x1"; "(AND ?a ?b)" <=> "(AND2_X1 ?a ?b)"));
+    rules.push(rewrite!("nand2_x1"; "(INV (AND ?a ?b))" <=> "(NAND2_X1 ?a ?b)"));
+    rules.push(rewrite!("or2_x1"; "(OR ?a ?b)" <=> "(OR2_X1 ?a ?b)"));
+    rules.push(rewrite!("nor2_x1"; "(INV (OR ?a ?b))" <=> "(NOR2_X1 ?a ?b)"));
+    rules.push(
+        rewrite!("xor2_x1"; "(OR (AND ?b (INV ?a)) (AND ?a (INV ?b)))" <=> "(XOR2_X1 ?a ?b)"),
+    );
+    rules.push(
+        rewrite!("xnor2_x1"; "(OR (AND ?b ?a) (AND (INV ?a) (INV ?b)))" <=> "(XNOR2_X1 ?a ?b)"),
+    );
+    rules.push(rewrite!("and3_x1"; "(AND (AND ?a ?b) ?c)" <=> "(AND3_X1 ?a ?b ?c)"));
+    rules.push(rewrite!("nand3_x1"; "(INV (AND (AND ?a ?b) ?c))" <=> "(NAND3_X1 ?a ?b ?c)"));
+    rules.push(rewrite!("or3_x1"; "(OR (OR ?a ?b) ?c)" <=> "(OR3_X1 ?a ?b ?c)"));
+    rules.push(rewrite!("nor3_x1"; "(INV (OR (OR ?a ?b) ?c))" <=> "(NOR3_X1 ?a ?b ?c)"));
+    rules.push(rewrite!("and4_x1"; "(AND (AND ?a ?b) (AND ?c ?d))" <=> "(AND4_X1 ?a ?b ?c ?d)"));
+    rules.push(
+        rewrite!("nand4_x1"; "(INV (AND (AND ?a ?b) (AND ?c ?d)))" <=> "(NAND4_X1 ?a ?b ?c ?d)"),
+    );
+    rules.push(rewrite!("or4_x1"; "(OR (OR ?a ?b) (OR ?c ?d))" <=> "(OR4_X1 ?a ?b ?c ?d)"));
+    rules.push(rewrite!("nor4_x1"; "(INV (OR (OR ?a ?b) (OR ?c ?d)))" <=> "(NOR4_X1 ?a ?b ?c ?d)"));
+    rules.push(rewrite!("inv_x1"; "(INV ?a)" <=> "(INV_X1 ?a)"));
+    rules.push(rewrite!("aoi21_x1"; "(INV (OR (AND ?b ?c) ?a))" <=> "(AOI21_X1 ?a ?b ?c)"));
+    rules.push(rewrite!("oai21_x1"; "(INV (AND (OR ?b ?c) ?a))" <=> "(OAI21_X1 ?a ?b ?c)"));
+    rules.push(
+        rewrite!("aoi22_x1"; "(INV (OR (AND ?c ?d) (AND ?a ?b)))" <=> "(AOI22_X1 ?a ?b ?c ?d)"),
+    );
+    rules.push(
+        rewrite!("oai22_x1"; "(INV (AND (OR ?c ?d) (OR ?a ?b)))" <=> "(OAI22_X1 ?a ?b ?c ?d)"),
+    );
+    rules.push(
+        rewrite!("aoi211_x1"; "(INV (OR ?a (OR (AND ?c ?d) ?b)))" <=> "(AOI211_X1 ?a ?b ?c ?d)"),
+    );
+    rules.push(
+        rewrite!("oai211_x1"; "(INV (AND ?a (AND (OR ?c ?d) ?b)))" <=> "(OAI211_X1 ?a ?b ?c ?d)"),
+    );
+    rules.push(
+        rewrite!("aoi221_x1"; "(INV (OR (AND ?b ?c) (OR ?a (AND ?d ?e))))" <=> "(AOI221_X1 ?a ?b ?c ?d ?e)"),
+    );
+    rules.push(
+        rewrite!("oai221_x1"; "(INV (AND (OR ?b ?c) (AND ?a (OR ?d ?e))))" <=> "(OAI221_X1 ?a ?b ?c ?d ?e)"),
+    );
+    rules.push(
+        rewrite!("aoi222_x1"; "(INV (OR (AND ?e ?f) (OR (AND ?a ?b) (AND ?c ?d))))" <=> "(AOI222_X1 ?a ?b ?c ?d ?e ?f)"),
+    );
+    rules.push(
+        rewrite!("oai222_x1"; "(INV (AND (OR ?e ?f) (AND (OR ?a ?b) (OR ?c ?d))))" <=> "(OAI222_X1 ?a ?b ?c ?d ?e ?f)"),
+    );
+    rules.push(rewrite!("mux2_x1"; "(OR (AND (INV ?s) ?b) (AND ?s ?a))" <=> "(MUX2_X1 ?s ?a ?b)"));
+
+    rules
+        .into_iter()
+        .map(|mut v| {
+            let bwd = v.pop().unwrap();
+            let fwd = v.pop().unwrap();
+            [fwd, bwd]
+        })
+        .collect()
+}
+
+/// Get the complete set of rewrites for a Boolean Algebra
+pub fn get_boolean_algebra_rewrites<A>() -> Vec<egg::Rewrite<CellLang, A>>
+where
+    A: Analysis<CellLang>,
+{
+    let mut rules: Vec<Rewrite<CellLang, A>> = Vec::new();
 
     // Short circuit logic
     rules.push(rewrite!("or-true"; "(OR ?a true)" => "true"));
@@ -286,56 +355,21 @@ pub fn asic_rewrites() -> Vec<egg::Rewrite<CellLang, CellAnalysis>> {
 
     // Negation Rules
     rules.push(rewrite!("negation"; "?a" => "(INV (INV ?a))"));
+    rules
+}
+
+/// All the Boolean algebra and cell mapping rules for [CellLang].
+pub fn asic_rewrites() -> Vec<egg::Rewrite<CellLang, CellAnalysis>> {
+    let mut rules: Vec<Rewrite<CellLang, CellAnalysis>> = Vec::new();
+
+    // Boolean Algebra
+    rules.append(&mut get_boolean_algebra_rewrites());
 
     // Standard Cells
-
-    rules.push(rewrite!("and2_x1"; "(AND ?a ?b)" => "(AND2_X1 ?a ?b)"));
-    rules.push(rewrite!("nand2_x1"; "(INV (AND ?a ?b))" => "(NAND2_X1 ?a ?b)"));
-    rules.push(rewrite!("or2_x1"; "(OR ?a ?b)" => "(OR2_X1 ?a ?b)"));
-    rules.push(rewrite!("nor2_x1"; "(INV (OR ?a ?b))" => "(NOR2_X1 ?a ?b)"));
-    rules
-        .push(rewrite!("xor2_x1"; "(OR (AND ?b (INV ?a)) (AND ?a (INV ?b)))" => "(XOR2_X1 ?a ?b)"));
-    rules.push(
-        rewrite!("xnor2_x1"; "(OR (AND ?b ?a) (AND (INV ?a) (INV ?b)))" => "(XNOR2_X1 ?a ?b)"),
-    );
-    rules.push(rewrite!("and3_x1"; "(AND (AND ?a ?b) ?c)" => "(AND3_X1 ?a ?b ?c)"));
-    rules.push(rewrite!("nand3_x1"; "(INV (AND (AND ?a ?b) ?c))" => "(NAND3_X1 ?a ?b ?c)"));
-    rules.push(rewrite!("or3_x1"; "(OR (OR ?a ?b) ?c)" => "(OR3_X1 ?a ?b ?c)"));
-    rules.push(rewrite!("nor3_x1"; "(INV (OR (OR ?a ?b) ?c))" => "(NOR3_X1 ?a ?b ?c)"));
-    rules.push(rewrite!("and4_x1"; "(AND (AND ?a ?b) (AND ?c ?d))" => "(AND4_X1 ?a ?b ?c ?d)"));
-    rules.push(
-        rewrite!("nand4_x1"; "(INV (AND (AND ?a ?b) (AND ?c ?d)))" => "(NAND4_X1 ?a ?b ?c ?d)"),
-    );
-    rules.push(rewrite!("or4_x1"; "(OR (OR ?a ?b) (OR ?c ?d))" => "(OR4_X1 ?a ?b ?c ?d)"));
-    rules.push(rewrite!("nor4_x1"; "(INV (OR (OR ?a ?b) (OR ?c ?d)))" => "(NOR4_X1 ?a ?b ?c ?d)"));
-    rules.push(rewrite!("inv_x1"; "(INV ?a)" => "(INV_X1 ?a)"));
-    rules.push(rewrite!("aoi21_x1"; "(INV (OR (AND ?b ?c) ?a))" => "(AOI21_X1 ?a ?b ?c)"));
-    rules.push(rewrite!("oai21_x1"; "(INV (AND (OR ?b ?c) ?a))" => "(OAI21_X1 ?a ?b ?c)"));
-    rules.push(
-        rewrite!("aoi22_x1"; "(INV (OR (AND ?c ?d) (AND ?a ?b)))" => "(AOI22_X1 ?a ?b ?c ?d)"),
-    );
-    rules.push(
-        rewrite!("oai22_x1"; "(INV (AND (OR ?c ?d) (OR ?a ?b)))" => "(OAI22_X1 ?a ?b ?c ?d)"),
-    );
-    rules.push(
-        rewrite!("aoi211_x1"; "(INV (OR ?a (OR (AND ?c ?d) ?b)))" => "(AOI211_X1 ?a ?b ?c ?d)"),
-    );
-    rules.push(
-        rewrite!("oai211_x1"; "(INV (AND ?a (AND (OR ?c ?d) ?b)))" => "(OAI211_X1 ?a ?b ?c ?d)"),
-    );
-    rules.push(
-        rewrite!("aoi221_x1"; "(INV (OR (AND ?b ?c) (OR ?a (AND ?d ?e))))" => "(AOI221_X1 ?a ?b ?c ?d ?e)"),
-    );
-    rules.push(
-        rewrite!("oai221_x1"; "(INV (AND (OR ?b ?c) (AND ?a (OR ?d ?e))))" => "(OAI221_X1 ?a ?b ?c ?d ?e)"),
-    );
-    rules.push(
-        rewrite!("aoi222_x1"; "(INV (OR (AND ?e ?f) (OR (AND ?a ?b) (AND ?c ?d))))" => "(AOI222_X1 ?a ?b ?c ?d ?e ?f)"),
-    );
-    rules.push(
-        rewrite!("oai222_x1"; "(INV (AND (OR ?e ?f) (AND (OR ?a ?b) (OR ?c ?d))))" => "(OAI222_X1 ?a ?b ?c ?d ?e ?f)"),
-    );
-    rules.push(rewrite!("mux2_x1"; "(OR (AND (INV ?s) ?b) (AND ?s ?a))" => "(MUX2_X1 ?s ?a ?b)"));
+    get_cell_logic_eqn().into_iter().for_each(|r| {
+        let [f, _] = r;
+        rules.push(f)
+    });
 
     rules
 }
