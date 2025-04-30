@@ -1076,7 +1076,7 @@ where
             (OptStrat::AstSize, ExtractStrat::Exact(t)) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP ON");
                 let e = egg::GoodLpExtractor::new(egraph, Box::new(egg::AstSize));
-                let (best_cost, best_expr) = e.solve(root);
+                let (_best_cost, best_expr) = e.solve(root);
                 L::canonicalize_expr(best_expr)
             }),
             _ => Err(format!(
