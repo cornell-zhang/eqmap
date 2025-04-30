@@ -436,7 +436,7 @@ dependencies = [
 [[package]]
 name = "egg"
 version = "0.10.0"
-source = "git+https://github.com/neel-patel-1/egg#c281c4c800c5b941cd6e92889c60f6a4f300d371"
+source = "git+https://github.com/neel-patel-1/egg#8f49e0e463ff5391622ea4be7e6e7e917641bb0a"
 dependencies = [
  "coin_cbc",
  "env_logger",

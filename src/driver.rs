@@ -8,6 +8,8 @@ use super::cost::NegativeCostFn;
 use super::lut::{CircuitStats, LutExprInfo, LutLang};
 #[cfg(feature = "graph_dumps")]
 use super::serialize::serialize_egraph;
+#[cfg(feature = "exactness")]
+use egg::LpCostFunction;
 use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
     RecExpr, RecExprParseError, Rewrite, Runner, StopReason, TreeTerm,
@@ -443,6 +445,12 @@ where
     /// Returns the cost function using exact cell areas.
     fn exact_area_cost_fn() -> impl CostFunction<Self>;
 
+    fn exact_cell_cost_with_reg_weight_fn(cut_size: usize, w: u64)
+    -> impl LpCostFunction<Self, ()>;
+
+    fn exact_cell_cost_fn(cut_size: usize) -> impl LpCostFunction<Self, ()> {
+        Self::exact_cell_cost_with_reg_weight_fn(cut_size, 1)
+    }
     /// Returns a cost function used for extracting only certain types nodes.
     fn filter_cost_fn(set: HashSet<String>) -> impl CostFunction<Self>;
 }
@@ -1057,25 +1065,9 @@ where
                 self.greedy_extract_with(L::filter_cost_fn(set))
             }
             #[cfg(feature = "exactness")]
-            (OptStrat::CellCount(6), ExtractStrat::Exact(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: ILP ON");
-                    let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                    L::canonicalize_expr(e.timeout(t as f64).solve(root))
-                })
-            }
-            #[cfg(feature = "exactness")]
-            (OptStrat::CellCountRegWeighted(6, 1), ExtractStrat::Exact(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: ILP ON");
-                    let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                    L::canonicalize_expr(e.timeout(t as f64).solve(root))
-                })
-            }
-            #[cfg(feature = "exactness")]
-            (OptStrat::AstSize, ExtractStrat::Exact(t)) => self.extract_with(|egraph, root| {
+            ExtractStrat::Exact(_t) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP ON");
-                let e = egg::GoodLpExtractor::new(egraph, Box::new(egg::AstSize));
+                let e = egg::GoodLpExtractor::new(egraph, L::exact_cell_cost_fn(1));
                 let (_best_cost, best_expr) = e.solve(root);
                 L::canonicalize_expr(best_expr)
             }),
