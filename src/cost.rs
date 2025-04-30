@@ -3,7 +3,6 @@
   The code module contains a super simple cost function that extracts LUTs with at most `k` fan-in.
 
 */
-use crate::analysis::LutAnalysis;
 
 use super::lut::LutLang;
 use egg::{CostFunction, Id, Language};
@@ -72,8 +71,9 @@ impl CostFunction<LutLang> for KLUTCostFn {
     }
 }
 
-impl LpCostFunction<LutLang, LutAnalysis> for KLUTCostFn {
-    fn node_cost(&mut self, _egraph: &EGraph<LutLang, LutAnalysis>, _eclass: Id, enode: &LutLang) -> f64 {
+#[cfg(feature = "exactness")]
+impl LpCostFunction<LutLang, ()> for KLUTCostFn {
+    fn node_cost(&mut self, _egraph: &EGraph<LutLang, ()>, _eclass: Id, enode: &LutLang) -> f64 {
         let op_cost: f64 = match enode {
             LutLang::Lut(l) => {
                 if l.len() <= self.k + 1 {
@@ -94,7 +94,6 @@ impl LpCostFunction<LutLang, LutAnalysis> for KLUTCostFn {
         };
         return op_cost;
     }
-
 }
 
 
