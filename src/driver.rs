@@ -363,15 +363,11 @@ enum OptStrat {
 enum ExtractStrat {
     /// Use greedy extraction algorithm.
     Greedy,
+    /// Extract exactly using ILP with timeout in seconds.
     #[allow(dead_code)]
-    /// Use exact ILP extraction with timeout in seconds.
     Exact(u64),
 }
 
-/// The list of gates that must be reachable by the disassembling rewrite rule system.
-pub const GATE_WHITELIST_STR: &str = "MUX,AND,OR,XOR,NOT,INV,REG,NAND,NOR";
-
-/// The list of gates that must be reachable by the disassembling rewrite rule system.
 pub const GATE_WHITELIST: [&str; 9] = [
     "MUX", "AND", "OR", "XOR", "NOT", "INV", "REG", "NAND", "NOR",
 ];
@@ -503,6 +499,9 @@ where
     /// The extraction strategy to use.
     extract_strat: ExtractStrat,
 
+    /// The optimization strategy to use.
+    opt_strat: OptStrat,
+
     /// The e-graph build strategy to use.
     build_strat: BuildStrat,
 
@@ -565,6 +564,7 @@ impl<L: Language, A: Analysis<L> + std::clone::Clone> std::clone::Clone for Synt
             rules: self.rules.clone(),
             opt_strat: self.opt_strat.clone(),
             extract_strat: self.extract_strat.clone(),
+            opt_strat: self.opt_strat.clone(),
             build_strat: self.build_strat.clone(),
             no_canonicalize: self.no_canonicalize,
             assert_sat: self.assert_sat,
