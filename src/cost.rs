@@ -73,8 +73,26 @@ impl CostFunction<LutLang> for KLUTCostFn {
 }
 
 impl LpCostFunction<LutLang, LutAnalysis> for KLUTCostFn {
-    fn node_cost(&mut self, egraph: &EGraph<LutLang, LutAnalysis>, eclass: Id, enode: &LutLang) -> f64 {
-        1.0
+    fn node_cost(&mut self, _egraph: &EGraph<LutLang, LutAnalysis>, _eclass: Id, enode: &LutLang) -> f64 {
+        let op_cost: f64 = match enode {
+            LutLang::Lut(l) => {
+                if l.len() <= self.k + 1 {
+                    1.0
+                } else {
+                    2.0 * l.len() as f64 * l.len() as f64
+                }
+            }
+            LutLang::Program(_) => 0.0,
+            LutLang::Bus(_) => 0.0,
+            LutLang::Reg(_) => self.reg_cost as f64,
+            LutLang::Cycle(_) => 0.0,
+            LutLang::Arg(_) => 0.0,
+            LutLang::Const(_) => 0.0,
+            LutLang::Var(_) => 1.0,
+            LutLang::DC => 0.0,
+            _ => f64::MAX,
+        };
+        return op_cost;
     }
 
 }
