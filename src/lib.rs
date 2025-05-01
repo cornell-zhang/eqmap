@@ -967,7 +967,25 @@ endmodule\n"
             PrimitiveType::AOI22.get_input_list(),
             vec!["A1", "A2", "B1", "B2"]
         );
+
+        assert_eq!(
+            PrimitiveType::AOI211.get_input_list(),
+            vec!["A", "B", "C1", "C2"]
+        );
+
+        assert_eq!(
+            PrimitiveType::AOI221.get_input_list(),
+            vec!["A", "B1", "B2", "C1", "C2"]
+        );
+
+        assert_eq!(PrimitiveType::XOR2.get_output(), "Z".to_string());
+
         // LUT input list is backwards relative to the IR
+        assert_eq!(
+            PrimitiveType::LUT5.get_input_list(),
+            vec!["I4", "I3", "I2", "I1", "I0"]
+        );
+
         assert_eq!(
             PrimitiveType::LUT6.get_input_list(),
             vec!["I5", "I4", "I3", "I2", "I1", "I0"]
@@ -1039,7 +1057,8 @@ endmodule\n"
         let mut req: SynthRequest<CellLang, CellAnalysis> = SynthRequest::default()
             .with_expr(expr)
             .with_report()
-            .with_rules(asic_rewrites());
+            .with_rules(asic_rewrites())
+            .without_progress_bar();
         let result = req
             .synth::<CellRpt>()
             .unwrap()
