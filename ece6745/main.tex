@@ -1,6 +1,8 @@
 \documentclass[10pt,letterpaper]{article}
 \usepackage{fullpage}
 \usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{csvsimple}
 \usepackage[top=1in, bottom=1in, left=1in, right=1in]{geometry}
 \usepackage{graphicx}
 \usepackage{wrapfig}
@@ -440,6 +442,20 @@ strategies is itemized below:
                     optimized and original form of the Verilog.
           \end{itemize}
 \end{itemize}
+
+\section{Evaluation}\label{sec:evaluation}
+
+\begin{table*}[th]
+    \centering
+    \caption{Post-implementation results of pipelined multiplication circuit optimized with EqMap. Yosys 0.33 + EqMap is used for synthesis, and Vivado 2024 is used for placement and routing.}\label{tab:multiply}
+    \csvreader[
+        tabular=lrrrrrrrrr, % Custom alignment for this instance
+        late after line=\\, % Add \\ after each row
+        late after last line=\\ \bottomrule, % Prevent extra \\ after the last row
+        table head=\toprule Module & Cell Count & & Area &  \\ \midrule
+    ]{data/results.csv}{1=\one, 2=\two, 3=\three, 4=\four, 5=\five}%
+    {\one & \two & \three & \four & \five}
+\end{table*}
 
 \nocite{*}
 \bibliographystyle{plain-annote}
