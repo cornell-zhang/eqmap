@@ -218,6 +218,8 @@ impl Analysis<CellLang> for CellAnalysis {
 struct CircuitStats {
     /// AST size of the circuit
     ast_size: usize,
+    // The total cell count
+    cell_count: usize,
     /// Number of cells in the circuit
     cell_counts: BTreeMap<String, usize>,
     /// The area of the circuit
@@ -253,9 +255,12 @@ impl CircuitStats {
     }
 
     fn new(expr: &RecExpr<CellLang>) -> Self {
+        let cell_counts = Self::get_cell_counts(expr);
+        let cell_count = cell_counts.values().sum();
         Self {
             ast_size: expr.len(),
-            cell_counts: Self::get_cell_counts(expr),
+            cell_count,
+            cell_counts,
             area: Self::get_area(expr),
         }
     }
