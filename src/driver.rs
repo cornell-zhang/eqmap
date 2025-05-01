@@ -3,6 +3,7 @@
   Common infrastructure to created command-line tools for logic synthesis using egg.
 
 */
+use super::asic::CellLang;
 use super::check::Check;
 use super::cost::NegativeCostFn;
 use super::lut::{CircuitStats, LutExprInfo, LutLang};
@@ -1028,6 +1029,28 @@ where
     }
 }
 
+impl<A> SynthRequest<CellLang, A>
+where
+    A: Analysis<CellLang> + Default,
+{
+    /// Synthesize with the extraction strategy set in `self`.
+    pub fn dyn_synth<R>(&mut self) -> Result<SynthOutput<CellLang, R>, String>
+    where
+        R: Report<CellLang>,
+    {
+        self.extract_with(|egraph, root| {
+            eprintln!("INFO: ILP ON");
+            let mut e = super::dyn_extractor::DynExtractor::new(
+                egraph,
+                super::dyn_extractor::ASICCostFunction,
+            );
+            let expr = e.find_best_expression(root).unwrap();
+            eprintln!("{}", expr);
+            expr
+        })
+    }
+}
+
 /// A simple function to read from file, stdin, or a string. The `cmd` takes the most precendence, then files, then stdin.
 pub fn simple_reader(cmd: Option<String>, input_file: Option<PathBuf>) -> std::io::Result<String> {
     let mut buf = String::new();
@@ -1109,6 +1132,87 @@ where
         eprintln!("INFO: Skipping functionality tests...");
     } else {
         let check = L::check_expr(&expr, simplified);
+        if check.is_inconclusive() && verbose {
+            eprintln!("WARNING: Functionality verification inconclusive");
+        }
+        if check.is_not_equiv() {
+            match result.get_expl() {
+                Some(e) => {
+                    eprintln!("ERROR: Exhaustive testing failed. Dumping explanations...");
+                    for expl in e {
+                        eprintln!("{}", expl);
+                    }
+                }
+                None => eprintln!(
+                    "ERROR: Failed for unknown reason. Try running with --verbose for an attempted proof"
+                ),
+            }
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Functionality verification failed",
+            ));
+        }
+    }
+    Ok(result)
+}
+
+/// Compile a [CircuitLang] expression using a baseline request `req`.
+/// The output expression is returned as a [SynthOutput]. Everything else goes to stderr.
+pub fn process_expression_dyn<A, R>(
+    expr: RecExpr<CellLang>,
+    req: SynthRequest<CellLang, A>,
+    no_verify: bool,
+    verbose: bool,
+) -> std::io::Result<SynthOutput<CellLang, R>>
+where
+    A: Analysis<CellLang> + Clone + Default,
+    R: Report<CellLang>,
+{
+    if !no_verify {
+        CellLang::verify_expr(&expr)
+            .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+    }
+
+    if cfg!(debug_assertions) {
+        eprintln!("WARNING: Running with debug assertions is slow");
+    }
+
+    let mut req = req.with_expr(expr.clone());
+
+    let result = req
+        .dyn_synth()
+        .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+
+    #[cfg(feature = "graph_dumps")]
+    if let Some(p) = &req.dump_egraph {
+        eprintln!("INFO: Dumping e-graph...");
+        let mut file = std::fs::File::create(p)?;
+        req.serialize_with_greedy_cost(L::depth_cost_fn(), &mut file)?;
+    }
+
+    if verbose && result.has_explanation() {
+        eprintln!("INFO: Rule uses in proof");
+        eprintln!("INFO: =============");
+        let proof = result.get_rule_uses().unwrap();
+        let mut linecount = 0;
+        for line in proof.lines() {
+            eprintln!("INFO:\t{}", line);
+            linecount += 1;
+        }
+        eprintln!("INFO: Approx. {} lines in proof tree", linecount);
+    } else if req.get_expr().as_ref().len() < 240 {
+        let expr = req.get_expr().to_string();
+        let len = expr.len().min(240);
+        eprintln!("INFO: {} ... => ", &expr[0..len]);
+    }
+
+    let simplified = result.get_expr();
+
+    // Verify functionality
+    if no_verify {
+        eprintln!("INFO: Skipping functionality tests...");
+    } else {
+        let check = CellLang::check_expr(&expr, simplified);
         if check.is_inconclusive() && verbose {
             eprintln!("WARNING: Functionality verification inconclusive");
         }

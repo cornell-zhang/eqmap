@@ -1,7 +1,7 @@
 use clap::Parser;
 use lut_synth::{
     asic::{CellLang, CellRpt, asic_rewrites},
-    driver::{SynthRequest, process_expression},
+    driver::{SynthRequest, process_expression_dyn},
     verilog::{SVModule, sv_parse_wrapper},
 };
 use std::{
@@ -161,7 +161,7 @@ fn main() -> std::io::Result<()> {
         .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
     eprintln!("INFO: Building e-graph...");
-    let result = process_expression::<CellLang, _, CellRpt>(expr, req, true, args.verbose)?
+    let result = process_expression_dyn::<_, CellRpt>(expr, req, true, args.verbose)?
         .with_name(f.get_name());
 
     if let Some(p) = args.report {
