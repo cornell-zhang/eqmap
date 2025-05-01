@@ -31,20 +31,14 @@ fn get_main_runner(
 /// parse an expression, simplify it with DSD and at most 4 fan-in, and pretty print it back out
 fn simplify(s: &str) -> String {
     let mut req = get_main_runner(s).unwrap();
-    req.simplify_expr::<SynthReport>()
-        .unwrap()
-        .get_expr()
-        .to_string()
+    req.synth::<SynthReport>().unwrap().get_expr().to_string()
 }
 
 #[allow(dead_code)]
 /// parse an expression, simplify it with DSD and at most 4 fan-in, and pretty print it back out
 fn simplify_w_proof(s: &str) -> String {
     let mut req = get_main_runner(s).unwrap().with_proof();
-    req.simplify_expr::<SynthReport>()
-        .unwrap()
-        .get_expr()
-        .to_string()
+    req.synth::<SynthReport>().unwrap().get_expr().to_string()
 }
 
 /// Technology Mapping Optimization with E-Graphs

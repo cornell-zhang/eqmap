@@ -26,20 +26,14 @@ fn get_main_runner(
 /// parse an expression, simplify it with DSD and at most 4 fan-in, and pretty print it back out
 fn simplify(s: &str) -> String {
     let mut req = get_main_runner(s).unwrap();
-    req.simplify_expr::<CellRpt>()
-        .unwrap()
-        .get_expr()
-        .to_string()
+    req.synth::<CellRpt>().unwrap().get_expr().to_string()
 }
 
 #[allow(dead_code)]
 /// parse an expression, simplify it with DSD and at most 4 fan-in, and pretty print it back out
 fn simplify_w_proof(s: &str) -> String {
     let mut req = get_main_runner(s).unwrap().with_proof();
-    req.simplify_expr::<CellRpt>()
-        .unwrap()
-        .get_expr()
-        .to_string()
+    req.synth::<CellRpt>().unwrap().get_expr().to_string()
 }
 
 /// ASIC Technology Mapping Optimization with E-Graphs
@@ -207,7 +201,7 @@ fn simple_tests() {
 #[test]
 fn cell_rpt() {
     let mut req = get_main_runner("(INV a)").unwrap().with_report();
-    let result = req.simplify_expr::<CellRpt>().unwrap();
+    let result = req.synth::<CellRpt>().unwrap();
     let rpt = result.write_report_to_string();
     assert!(rpt.is_ok());
     let rpt = rpt.unwrap();

@@ -1001,8 +1001,8 @@ where
         L::get_explanations(root_expr, best, runner)
     }
 
-    /// Simplify expression with the extraction strategy set in `self`.
-    pub fn simplify_expr<R>(&mut self) -> Result<SynthOutput<L, R>, String>
+    /// Synthesize with the extraction strategy set in `self`.
+    pub fn synth<R>(&mut self) -> Result<SynthOutput<L, R>, String>
     where
         R: Report<L>,
     {
@@ -1076,7 +1076,7 @@ where
     let mut req = req.with_expr(expr.clone());
 
     let result = req
-        .simplify_expr()
+        .synth()
         .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
     #[cfg(feature = "graph_dumps")]

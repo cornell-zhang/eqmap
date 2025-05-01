@@ -25,8 +25,8 @@ mod tests {
     use std::collections::HashMap;
 
     use analysis::LutAnalysis;
-    use asic::CellLang;
-    use driver::Canonical;
+    use asic::{CellAnalysis, CellLang, CellRpt, asic_rewrites};
+    use driver::{Canonical, SynthRequest};
     use egg::{Analysis, Language, RecExpr};
     use lut::{LutExprInfo, LutLang};
     use verilog::{PrimitiveType, SVModule, sv_parse_wrapper};
@@ -1029,5 +1029,24 @@ endmodule\n"
         assert!(LutLang::func_equiv(&expr2, &expr3).is_not_equiv());
         let expr3: RecExpr<LutLang> = "(LUT 51952 s0 (LUT 61643 s0 s1 b d) a c)".parse().unwrap();
         assert!(LutLang::func_equiv(&expr2, &expr3).is_not_equiv());
+    }
+
+    #[test]
+    fn test_cell_area() {
+        assert!(PrimitiveType::INV.get_min_area().is_some());
+        assert_eq!(PrimitiveType::INV.get_min_area().unwrap(), 0.532);
+        let expr: RecExpr<CellLang> = "(INV a)".parse().unwrap();
+        let mut req: SynthRequest<CellLang, CellAnalysis> = SynthRequest::default()
+            .with_expr(expr)
+            .with_report()
+            .with_rules(asic_rewrites());
+        let result = req
+            .synth::<CellRpt>()
+            .unwrap()
+            .write_report_to_string()
+            .unwrap();
+
+        assert!(result.contains("area"));
+        assert!(result.contains("\"area\": 1.064"));
     }
 }

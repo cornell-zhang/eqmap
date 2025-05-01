@@ -930,11 +930,7 @@ pub mod decomp {
             .without_progress_bar()
             .with_joint_limits(20, 20_000, 30);
 
-        let ans = req
-            .simplify_expr::<SynthReport>()
-            .unwrap()
-            .get_expr()
-            .to_string();
+        let ans = req.synth::<SynthReport>().unwrap().get_expr().to_string();
         assert_eq!(ans, "(LUT 202 s1 s0 (LUT 202 s0 c d))");
     }
 }
