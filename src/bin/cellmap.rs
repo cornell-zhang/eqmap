@@ -28,9 +28,9 @@ struct Args {
     #[arg(long)]
     dump_graph: Option<PathBuf>,
 
-    /// Return an error if the graph does not reach saturation
+    /// Use a cost model that weighs the cells by exact area
     #[arg(short = 'a', long, default_value_t = false)]
-    assert_sat: bool,
+    area: bool,
 
     /// Perform an exact extraction using ILP (much slower)
     #[cfg(feature = "exactness")]
@@ -118,12 +118,6 @@ fn main() -> std::io::Result<()> {
         }
     };
 
-    let req = if args.assert_sat {
-        req.with_asserts()
-    } else {
-        req
-    };
-
     let req = if args.verbose { req.with_proof() } else { req };
 
     let req = if args.report.is_some() {
@@ -140,6 +134,8 @@ fn main() -> std::io::Result<()> {
 
     let req = if args.min_depth {
         req.with_min_depth()
+    } else if args.area {
+        req.with_area()
     } else {
         req.with_k(args.k)
     };

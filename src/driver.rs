@@ -341,6 +341,8 @@ enum BuildStrat {
 /// Only [ExtractStrat::Exact] uses ILP.
 #[derive(Debug, Clone)]
 enum ExtractStrat {
+    /// Extract the cirucit using exact cell areas.
+    Area,
     /// Extract maximum circuit depth (RAM bomb).
     MaxDepth,
     /// Extract minimum circuit depth.
@@ -429,6 +431,9 @@ where
     fn cell_cost_fn(cut_size: usize) -> impl CostFunction<Self> {
         Self::cell_cost_with_reg_weight_fn(cut_size, 1)
     }
+
+    /// Returns the cost function using exact cell areas.
+    fn exact_area_cost_fn() -> impl CostFunction<Self>;
 
     /// Returns a cost function used for extracting only certain types nodes.
     fn filter_cost_fn(set: HashSet<String>) -> impl CostFunction<Self>;
@@ -571,6 +576,14 @@ where
     pub fn with_klut_regw(self, k: usize, w: u64) -> Self {
         Self {
             extract_strat: ExtractStrat::CellCountRegWeighted(k, w),
+            ..self
+        }
+    }
+
+    /// Request greedy extraction using exact cell areas.
+    pub fn with_area(self) -> Self {
+        Self {
+            extract_strat: ExtractStrat::Area,
             ..self
         }
     }
@@ -994,6 +1007,7 @@ where
         R: Report<L>,
     {
         match self.extract_strat.to_owned() {
+            ExtractStrat::Area => self.greedy_extract_with(L::exact_area_cost_fn()),
             ExtractStrat::MinDepth => self.greedy_extract_with(L::depth_cost_fn()),
             ExtractStrat::MaxDepth => {
                 eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");

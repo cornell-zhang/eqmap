@@ -416,6 +416,39 @@ impl PrimitiveType {
     pub fn is_reg(&self) -> bool {
         matches!(self, Self::FDRE)
     }
+
+    /// Get the area of a minimum sized primitive of [PrimitiveType]
+    pub fn get_min_area(&self) -> Option<f32> {
+        match self {
+            Self::AND2 => Some(1.064),
+            Self::AND3 => Some(1.33),
+            Self::AND4 => Some(1.596),
+            Self::AOI21 => Some(1.064),
+            Self::AOI22 => Some(1.33),
+            Self::AOI211 => Some(1.33),
+            Self::AOI221 => Some(1.596),
+            Self::AOI222 => Some(2.128),
+            Self::INV => Some(0.532),
+            Self::MUX2 => Some(1.862),
+            Self::NAND2 => Some(0.798),
+            Self::NAND3 => Some(1.064),
+            Self::NAND4 => Some(1.33),
+            Self::NOR2 => Some(0.798),
+            Self::NOR3 => Some(1.064),
+            Self::NOR4 => Some(1.33),
+            Self::OAI21 => Some(1.064),
+            Self::OAI22 => Some(1.33),
+            Self::OAI211 => Some(1.33),
+            Self::OAI221 => Some(1.596),
+            Self::OAI222 => Some(2.128),
+            Self::OR2 => Some(1.064),
+            Self::OR3 => Some(1.33),
+            Self::OR4 => Some(1.596),
+            Self::XNOR2 => Some(1.596),
+            Self::XOR2 => Some(1.596),
+            _ => None,
+        }
+    }
 }
 
 impl FromStr for PrimitiveType {

@@ -1099,6 +1099,10 @@ impl Extractable for LutLang {
         KLUTCostFn::new(cut_size).with_reg_weight(w)
     }
 
+    fn exact_area_cost_fn() -> impl CostFunction<Self> {
+        KLUTCostFn::new(6).with_reg_weight(1)
+    }
+
     fn filter_cost_fn(set: std::collections::HashSet<String>) -> impl CostFunction<Self> {
         GateCostFn::new(set)
     }

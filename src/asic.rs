@@ -8,12 +8,14 @@ use super::check::Check;
 use super::driver::Comparison;
 use super::driver::Report;
 use super::driver::{Canonical, CircuitLang, EquivCheck, Explanable, Extractable};
+use super::verilog::PrimitiveType;
 use egg::{
     Analysis, AstSize, CostFunction, DidMerge, EGraph, Id, Language, RecExpr, Rewrite, Symbol,
     define_language, rewrite,
 };
 use serde::Serialize;
 use std::collections::BTreeMap;
+use std::str::FromStr;
 
 define_language! {
     /// Definitions of e-node types. Programs are the only node type that is not a net/signal.
@@ -119,6 +121,29 @@ impl CostFunction<CellLang> for CellCountFn {
     }
 }
 
+/// A cost function that extracts a circuit with the least area
+pub struct AreaFn;
+
+impl CostFunction<CellLang> for AreaFn {
+    type Cost = f32;
+    fn cost<C>(&mut self, enode: &CellLang, mut costs: C) -> Self::Cost
+    where
+        C: FnMut(Id) -> Self::Cost,
+    {
+        let op_cost = match enode {
+            CellLang::Const(_) => 1.0,
+            CellLang::Var(_) => 2.0,
+            CellLang::Cell(n, _l) => {
+                let prim = PrimitiveType::from_str(n.as_str()).unwrap();
+                prim.get_min_area().unwrap_or(1.33)
+            }
+            _ => f32::MAX,
+        };
+
+        enode.fold(op_cost, |sum, id| sum + costs(id))
+    }
+}
+
 impl Extractable for CellLang {
     fn depth_cost_fn() -> impl CostFunction<Self, Cost = i64> {
         DepthCostFn
@@ -126,6 +151,10 @@ impl Extractable for CellLang {
 
     fn cell_cost_with_reg_weight_fn(cut_size: usize, _w: u64) -> impl CostFunction<Self> {
         CellCountFn::new(cut_size)
+    }
+
+    fn exact_area_cost_fn() -> impl CostFunction<Self> {
+        AreaFn
     }
 
     fn filter_cost_fn(_set: std::collections::HashSet<String>) -> impl CostFunction<Self> {
