@@ -464,13 +464,20 @@ some have hundreds.
 
 In general, the results of my custom compiler are 1.5x to 2x worse with respect
 to area. This is because my compiler has not addressed the DAG selection / tree
-partitioning problem. In short, circuit selection is a highly combinatorial
-problem, and the default greedy extraction algorithm I am using is too
-primitive. It does increase the fan-out of gates to share computation and save
-area.
+partitioning problem. Fig.~\ref{fig:dag} shows a very small circuit which
+demonstrates the issue. The circuit shows that creating a \texttt{NAND2} and
+\texttt{AND2} in parallel is wasteful when they share the same inputs. However,
+greedy extraction will produce the suboptimal solution in
+Fig.~\ref{fig:dag:bad}. On the other hand, Fig.~\ref{fig:dag:good} resuses the
+\texttt{NAND2} logic and the entire circuit is half the area. While this
+example is simple to understand, computing the optimal solution in general is
+combinatorial and hence NP-hard. In short, exact circuit selection is
+computationally intractable, but the default greedy extraction algorithm I am
+using is too primitive. It cannot increase the fan-out of gates to share
+computation and save area. Clearly, I will need to reimplement some heuristics.
 
-In most respects, the evaluation procedure is incomplete. In the final
-iteration of the compiler, I plan to improve extraction by implementing by own
+In most other respects, the evaluation procedure is incomplete. In the final
+iteration of the compiler, I plan to improve extraction by implementing my own
 dynamic programing algorithm to solve the DAG selection problem. This will
 likely not scale well, but it could be useful for small designs. I can also
 re-implement the tree partitioning heuristic. Moreover, I plan to continue
@@ -479,6 +486,20 @@ experimentation, I plan to introduce a second baseline: Yosys. Finally, I will
 also measure the timing qualities of the outputted netlists. As a reach, I can
 also measure switching energy. Lastly, I will run the tools on a larger set of
 benchmarks, perhaps Verilog that other students wrote in the course.
+
+\begin{figure}[h]
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/bad.pdf}
+        \caption{Using a separate NAND2 and AND2 is redundant.}\label{fig:dag:bad}
+    \end{subfigure}
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/good.pdf}
+        \caption{Sharing the NAND2 is much better.}\label{fig:dag:good}
+    \end{subfigure}
+    \caption{DAG selection in general is an NP-hard problem. Hence, a tree partition heuristic is needed to create higher fan-out gates that share logic.}\label{fig:dag}
+\end{figure}
 
 \begin{table*}[t]
     \centering
