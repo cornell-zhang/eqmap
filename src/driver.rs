@@ -1002,8 +1002,24 @@ where
         C: CostFunction<L>,
     {
         self.extract_with(|egraph, root| {
+            // greedy search time
+            let search_start = Instant::now();
             let e = Extractor::new(egraph, c);
-            e.find_best(root).1
+            let search_time = search_start.elapsed();
+            // find best time
+            let best_start = Instant::now();
+            let (best_cost, expr) = e.find_best(root);
+            let best_duration = best_start.elapsed();
+            eprintln!(
+                "INFO: Greedy search time: {} seconds",
+                search_time.as_secs_f64()
+            );
+            eprintln!(
+                "INFO: Find best time: {} seconds",
+                best_duration.as_secs_f64()
+            );
+            eprintln!("INFO: Cost: {:?}", best_cost);
+            expr
         })
     }
 
