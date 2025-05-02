@@ -445,9 +445,44 @@ strategies is itemized below:
 
 \section{Evaluation}\label{sec:evaluation}
 
-\begin{table*}[th]
+Early results are promising, because they demonstrate that e-graph driven
+compilers can scale to the thousands of gates. As an example, a 4,000 line
+Verilog module with 108 outputs can be expanded to an e-graph with 50,000 nodes
+in seconds. Including Verilog compilation and emission, the total synthesis
+time is approximately 10 seconds. Of course, we can extend or shortern the
+amount of time spent on e-graph construction. Moreover, the results are also
+evidence that automated reasoning and the Rust programming language are great
+tools for creating robust, high quality compilers. E-graphs force us to define
+formal semantics for our Verilog netlists, and Rust's static typing, pattern
+matching, and memory safety enforce a certain level of code hygiene. Software
+development aside, Yosys is used to perform SAT-based equivalence checking to
+verify the resulting netlists. In short, the gate netlists are proven to be
+logically equivalent. Tab.~\ref{tab:results} shows very early results compiling
+benchmarks from the ISCAS'85 suite. These modules span from a handful of number
+of gates into the thousands. Likewise, some have very few output ports, while
+some have hundreds.
+
+In general, the results of my custom compiler are 1.5x to 2x worse with respect
+to area. This is because my compiler has not addressed the DAG selection / tree
+partitioning problem. In short, circuit selection is a highly combinatorial
+problem, and the default greedy extraction algorithm I am using is too
+primitive. It does increase the fan-out of gates to share computation and save
+area.
+
+In most respects, the evaluation procedure is incomplete. In the final
+iteration of the compiler, I plan to improve extraction by implementing by own
+dynamic programing algorithm to solve the DAG selection problem. This will
+likely not scale well, but it could be useful for small designs. I can also
+re-implement the tree partitioning heuristic. Moreover, I plan to continue
+tweaking my cost model to take into account power and latency. As for the
+experimentation, I plan to introduce a second baseline: Yosys. Finally, I will
+also measure the timing qualities of the outputted netlists. As a reach, I can
+also measure switching energy. Lastly, I will run the tools on a larger set of
+benchmarks, perhaps Verilog that other students wrote in the course.
+
+\begin{table*}[t]
     \centering
-    \caption{Post-implementation results of pipelined multiplication circuit optimized with EqMap. Yosys 0.33 + EqMap is used for synthesis, and Vivado 2024 is used for placement and routing.}\label{tab:multiply}
+    \caption{Post-implementation results of pipelined multiplication circuit optimized with EqMap. Yosys 0.33 + EqMap is used for synthesis, and Vivado 2024 is used for placement and routing.}\label{tab:results}
     \csvreader[
         tabular=lrrrrrrrrr, % Custom alignment for this instance
         late after line=\\, % Add \\ after each row
