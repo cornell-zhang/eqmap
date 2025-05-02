@@ -9,7 +9,6 @@ An exact extractor using dynamic programming.
 use super::asic::CellLang;
 use super::verilog::PrimitiveType;
 use egg::{Analysis, EGraph, Id, Language, RecExpr};
-use serde_json::de;
 use std::{
     collections::{HashMap, HashSet},
     str::FromStr,
@@ -51,13 +50,7 @@ where
         *c = d;
     }
 
-    if an == *bn {
-        eprintln!("Found a match: {} == {}", an, bn);
-        true
-    } else {
-        eprintln!("Found a match: {} == {}", an, bn);
-        false
-    }
+    an == *bn
 }
 
 fn merge_expr<L>(mut exprs: Vec<RecExpr<L>>) -> (RecExpr<L>, Vec<Id>)
@@ -94,10 +87,32 @@ where
     (expr, mapping)
 }
 
+fn get_permutations<T>(mut choices: Vec<Vec<T>>) -> Vec<Vec<T>>
+where
+    T: Clone,
+{
+    if choices.is_empty() {
+        return vec![vec![]];
+    }
+
+    let fchoices: Vec<Vec<T>> = choices.remove(0).into_iter().map(|v| vec![v]).collect();
+    let ochoices = get_permutations(choices);
+    let mut result = vec![];
+
+    for f in fchoices.iter() {
+        for o in ochoices.iter() {
+            let mut newv = f.clone();
+            newv.extend(o.iter().cloned());
+            result.push(newv);
+        }
+    }
+    result
+}
+
 /// An extractor similar to [egg::Extractor] with [egg:CostFunction]. However, it uses dynamic programming.
 pub struct DynExtractor<'a, CF: CostFunction<L>, L: Language, A: Analysis<L>> {
     cost_function: CF,
-    best_exprs: HashMap<Id, Option<RecExpr<L>>>,
+    best_exprs: HashMap<Id, Vec<RecExpr<L>>>,
     visited: HashSet<L>,
     egraph: &'a EGraph<L, A>,
 }
@@ -119,12 +134,11 @@ where
     }
 
     /// Find the best expression for the given eclass.
-    pub fn find_best_expression(&mut self, eclass: Id) -> Option<RecExpr<L>> {
+    pub fn find_best_expression(&mut self, eclass: Id) -> Vec<RecExpr<L>> {
         if self.best_exprs.contains_key(&eclass) {
             return self.best_exprs[&eclass].clone();
         }
 
-        let mut best_e: Option<RecExpr<L>> = None;
         let mut best_cost: Option<CF::Cost> = None;
         for node in self.egraph[eclass].nodes.iter() {
             if self.cost_function.skip(node) {
@@ -137,7 +151,7 @@ where
 
             self.visited.insert(node.clone());
 
-            let c_expr: Vec<Option<RecExpr<L>>> = node
+            let c_expr: Vec<Vec<RecExpr<L>>> = node
                 .children()
                 .iter()
                 .map(|x| self.find_best_expression(*x))
@@ -145,7 +159,7 @@ where
 
             let mut impossible_node = false;
             for c in c_expr.iter() {
-                if c.is_none() {
+                if c.is_empty() {
                     impossible_node = true;
                     break;
                 }
@@ -156,28 +170,45 @@ where
                 continue;
             }
 
-            let c_expr: Vec<RecExpr<L>> = c_expr.into_iter().map(|x| x.unwrap()).collect();
-            let (mut expr, children) = merge_expr(c_expr);
-            let mut remapped = node.clone();
-            for (i, child) in remapped.children_mut().iter_mut().enumerate() {
-                *child = children[i];
-            }
-            expr.add(remapped);
+            for c_exprs in get_permutations(c_expr) {
+                let (mut expr, children) = merge_expr(c_exprs);
+                let mut remapped = node.clone();
+                for (i, child) in remapped.children_mut().iter_mut().enumerate() {
+                    *child = children[i];
+                }
+                expr.add(remapped);
 
-            let total_cost = expr
-                .iter()
-                .map(|x| self.cost_function.cost(x))
-                .fold(CF::Cost::default(), |a, b| self.cost_function.fold(a, b));
+                let total_cost = expr
+                    .iter()
+                    .map(|x| self.cost_function.cost(x))
+                    .fold(CF::Cost::default(), |a, b| self.cost_function.fold(a, b));
 
-            if best_cost.is_none() || total_cost <= *best_cost.as_ref().unwrap() {
-                best_cost = Some(total_cost);
-                best_e = Some(expr);
+                if best_cost.is_none() || total_cost <= *best_cost.as_ref().unwrap() {
+                    best_cost = Some(total_cost.clone());
+                    if !self.best_exprs.contains_key(&eclass) {
+                        self.best_exprs.insert(eclass, vec![]);
+                    }
+
+                    if best_cost.is_none() || total_cost < *best_cost.as_ref().unwrap() {
+                        self.best_exprs.insert(eclass, vec![expr]);
+                    } else if self.best_exprs[&eclass].len() < 1000 {
+                        self.best_exprs.get_mut(&eclass).unwrap().push(expr);
+                    }
+                }
             }
             self.visited.remove(node);
         }
-
-        self.best_exprs.insert(eclass, best_e.clone());
-        best_e
+        if !self.best_exprs.contains_key(&eclass) {
+            self.best_exprs.insert(eclass, vec![]);
+        }
+        // eprintln!(
+        //     "Best exprs for eclass {}: {}",
+        //     eclass,
+        //     self.best_exprs[&eclass]
+        //         .first()
+        //         .unwrap_or(&RecExpr::default())
+        // );
+        self.best_exprs[&eclass].clone()
     }
 }
 

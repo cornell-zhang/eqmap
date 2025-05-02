@@ -428,7 +428,7 @@ impl PrimitiveType {
             Self::AOI211 => Some(1.33),
             Self::AOI221 => Some(1.596),
             Self::AOI222 => Some(2.128),
-            Self::INV => Some(0.532),
+            Self::INV => Some(0.532 + 0.01),
             Self::MUX2 => Some(1.862),
             Self::NAND2 => Some(0.798),
             Self::NAND3 => Some(1.064),

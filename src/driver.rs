@@ -1044,7 +1044,7 @@ where
                 egraph,
                 super::dyn_extractor::ASICCostFunction,
             );
-            let expr = e.find_best_expression(root).unwrap();
+            let expr = e.find_best_expression(root).pop().unwrap();
             eprintln!("{}", expr);
             expr
         })
