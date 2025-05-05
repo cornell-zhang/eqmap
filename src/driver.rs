@@ -1021,7 +1021,7 @@ where
             let search_time = search_start.elapsed();
             // find best time
             let best_start = Instant::now();
-            let (best_cost, expr) = e.find_best(root);
+            let (_, expr) = e.find_best(root);
             let best_duration = best_start.elapsed();
             eprintln!(
                 "INFO: Greedy search time: {} seconds",
@@ -1031,7 +1031,6 @@ where
                 "INFO: Find best time: {} seconds",
                 best_duration.as_secs_f64()
             );
-            eprintln!("INFO: Cost: {:?}", best_cost);
             expr
         })
     }

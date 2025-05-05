@@ -1074,6 +1074,7 @@ dependencies = [
  "clap",
  "ctrlc",
  "egg",
+ "good_lp",
  "indicatif",
  "serde",
  "serde_json",
