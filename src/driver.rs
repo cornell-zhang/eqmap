@@ -635,6 +635,14 @@ where
         }
     }
 
+    /// Request exact solver choice.
+    pub fn with_solver_choice(self, solver: &str) -> Self {
+        Self {
+            solver_choice: solver.to_string(),
+            ..self
+        }
+    }
+
     /// Extract based on minimum circuit depth.
     pub fn with_min_depth(self) -> Self {
         Self {
