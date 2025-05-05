@@ -340,6 +340,8 @@ enum BuildStrat {
 /// An enum for the optimization strategies used to synthesize LUT/cell networks.
 #[derive(Debug, Clone)]
 enum OptStrat {
+    /// Extract the circuit by the syntax of the expression
+    AstSize,
     /// Extract the cirucit using exact cell areas.
     Area,
     /// Extract maximum circuit depth (RAM bomb).
@@ -597,6 +599,15 @@ where
     pub fn with_area(self) -> Self {
         Self {
             opt_strat: OptStrat::Area,
+            extract_strat: ExtractStrat::Greedy,
+            ..self
+        }
+    }
+
+    /// Request greedy extraction by syntax complexity.
+    pub fn with_ast_size(self) -> Self {
+        Self {
+            opt_strat: OptStrat::AstSize,
             extract_strat: ExtractStrat::Greedy,
             ..self
         }
@@ -1025,6 +1036,7 @@ where
         R: Report<L>,
     {
         match (self.opt_strat.to_owned(), self.extract_strat.to_owned()) {
+            (OptStrat::AstSize, ExtractStrat::Greedy) => self.greedy_extract_with(egg::AstSize),
             (OptStrat::Area, ExtractStrat::Greedy) => {
                 self.greedy_extract_with(L::exact_area_cost_fn())
             }
@@ -1052,6 +1064,12 @@ where
                     L::canonicalize_expr(e.timeout(t as f64).solve(root))
                 })
             }
+            #[cfg(feature = "exactness")]
+            (OptStrat::AstSize, ExtractStrat::Exact(t)) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: ILP ON");
+                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                L::canonicalize_expr(e.timeout(t as f64).solve(root))
+            }),
             _ => Err(format!(
                 "{:?} optimization strategy is incomptabile with {:?} extraction.",
                 self.opt_strat, self.extract_strat

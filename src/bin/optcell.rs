@@ -1,7 +1,7 @@
 use clap::Parser;
 use egg::{FromOpError, RecExpr, RecExprParseError};
 use lut_synth::{
-    asic::{CellAnalysis, CellLang, CellRpt, asic_rewrites},
+    asic::{CellAnalysis, CellLang, CellRpt, asic_rewrites, get_boolean_algebra_rewrites},
     driver::{SynthRequest, process_string_expression, simple_reader},
     verilog::SVModule,
 };
@@ -56,7 +56,7 @@ struct Args {
     #[arg(short = 'f', long, default_value_t = false)]
     verify: bool,
 
-    /// Don't canonicalize the input expression
+    /// Only do algebraic simplification
     #[arg(short = 'c', long, default_value_t = false)]
     canonicalize: bool,
 
@@ -107,13 +107,20 @@ fn main() -> std::io::Result<()> {
 
     let buf = simple_reader(args.command, args.input)?;
 
-    let rules = asic_rewrites();
+    let rules = if args.canonicalize {
+        get_boolean_algebra_rewrites()
+    } else {
+        asic_rewrites()
+    };
 
     if args.verbose {
         eprintln!("INFO: Running with {} rewrite rules", rules.len());
     }
 
-    let req = SynthRequest::default().with_rules(rules).with_k(args.k);
+    let req = SynthRequest::default()
+        .with_rules(rules)
+        .with_k(args.k)
+        .without_canonicalization();
 
     let req = match (args.timeout, args.node_limit, args.iter_limit) {
         (None, None, None) => req.with_joint_limits(2, 20_000, 9),
@@ -134,12 +141,6 @@ fn main() -> std::io::Result<()> {
         req
     };
 
-    let req = if args.canonicalize {
-        req
-    } else {
-        req.without_canonicalization()
-    };
-
     let req = if args.verbose { req.with_proof() } else { req };
 
     #[cfg(feature = "graph_dumps")]
@@ -148,10 +149,12 @@ fn main() -> std::io::Result<()> {
         None => req,
     };
 
-    let req = if args.min_depth {
+    let req = if args.canonicalize {
+        req.with_ast_size()
+    } else if args.min_depth {
         req.with_min_depth()
     } else {
-        req.with_k(args.k)
+        req.with_area()
     };
 
     #[cfg(feature = "exactness")]
