@@ -148,8 +148,11 @@ impl CostFunction<CellLang> for AreaFn {
 }
 
 #[cfg(feature = "exactness")]
-impl LpCostFunction<CellLang, ()> for CellCountFn {
-    fn node_cost(&mut self, _egraph: &EGraph<CellLang, ()>, _eclass: Id, enode: &CellLang) -> f64 {
+impl<A> LpCostFunction<CellLang, A> for CellCountFn
+where
+    A: Analysis<CellLang>,
+{
+    fn node_cost(&mut self, _egraph: &EGraph<CellLang, A>, _eclass: Id, enode: &CellLang) -> f64 {
         let op_cost = match enode {
             CellLang::Const(_) => 1.0,
             CellLang::Var(_) => 2.0,
@@ -179,7 +182,10 @@ impl Extractable for CellLang {
         AreaFn
     }
 
-    fn lp_cell_cost_with_reg_weight_fn(cut_size: usize, _w: u64) -> impl LpCostFunction<Self, ()> {
+    fn lp_cell_cost_with_reg_weight_fn<A: Analysis<Self>>(
+        cut_size: usize,
+        _w: u64,
+    ) -> impl LpCostFunction<Self, A> {
         CellCountFn::new(cut_size)
     }
 

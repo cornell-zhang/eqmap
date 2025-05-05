@@ -448,7 +448,7 @@ where
     fn lp_cell_cost_with_reg_weight_fn(cut_size: usize, w: u64) -> impl LpCostFunction<Self, ()>;
 
     fn lp_cell_cost_fn(cut_size: usize) -> impl LpCostFunction<Self, ()> {
-        Self::exact_cell_cost_with_reg_weight_fn(cut_size, 1)
+        Self::lp_cell_cost_with_reg_weight_fn(cut_size, 1)
     }
 
     /// Returns a cost function used for extracting only certain types nodes.

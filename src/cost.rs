@@ -7,7 +7,7 @@
 use super::lut::LutLang;
 use egg::{CostFunction, Id, Language};
 #[cfg(feature = "exactness")]
-use egg::{EGraph, LpCostFunction};
+use egg::{EGraph, LpCostFunction,Analysis};
 use std::collections::HashSet;
 
 /// A cost function that extracts LUTs with at most `k` fan-in.
@@ -72,8 +72,11 @@ impl CostFunction<LutLang> for KLUTCostFn {
 }
 
 #[cfg(feature = "exactness")]
-impl LpCostFunction<LutLang, ()> for KLUTCostFn {
-    fn node_cost(&mut self, _egraph: &EGraph<LutLang, ()>, _eclass: Id, enode: &LutLang) -> f64 {
+impl<A> LpCostFunction<LutLang, A> for KLUTCostFn
+where
+    A: Analysis<LutLang>,
+{
+    fn node_cost(&mut self, _egraph: &EGraph<LutLang, A>, _eclass: Id, enode: &LutLang) -> f64 {
         let op_cost: f64 = match enode {
             LutLang::Lut(l) => {
                 if l.len() <= self.k + 1 {
