@@ -452,7 +452,7 @@ where
     fn lp_cell_cost_with_reg_weight_fn<A: Analysis<Self>>(cut_size: usize, w: u64) -> impl LpCostFunction<Self, A>;
 
     /// Returns the lp_cost function using exact cell areas with a register weight of 1.
-    fn lp_cell_cost_fn(cut_size: usize) -> impl LpCostFunction<Self, ()> {
+    fn lp_cell_cost_fn<A: Analysis<Self>>(cut_size: usize) -> impl LpCostFunction<Self, A> {
         Self::lp_cell_cost_with_reg_weight_fn(cut_size, 1)
     }
 
@@ -1127,6 +1127,12 @@ where
             }
             (OptStrat::Area, ExtractStrat::Exact(t)) => {
                 self.exact_extract_with(L::lp_exact_area_cost_fn(), t)
+            }
+            (OptStrat:: CellCount(k), ExtractStrat::Exact(t)) => {
+                self.exact_extract_with(L::lp_cell_cost_fn(k), t)
+            }
+            (OptStrat::CellCountRegWeighted(k, w), ExtractStrat::Exact(t)) => {
+                self.exact_extract_with(L::lp_cell_cost_with_reg_weight_fn(k, w), t)
             }
             _ => Err(format!(
                 "{:?} optimization strategy is incomptabile with {:?} extraction.",
