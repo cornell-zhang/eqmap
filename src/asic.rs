@@ -123,6 +123,28 @@ impl CostFunction<CellLang> for CellCountFn {
     }
 }
 
+#[cfg(feature = "exactness")]
+impl<A> LpCostFunction<CellLang, A> for CellCountFn
+where
+    A: Analysis<CellLang>,
+{
+    fn node_cost(&mut self, _egraph: &EGraph<CellLang, A>, _eclass: Id, enode: &CellLang) -> f64 {
+        let op_cost = match enode {
+            CellLang::Const(_) => 1.0,
+            CellLang::Var(_) => 2.0,
+            CellLang::Cell(_, l) => {
+                if l.len() > self.cut_size {
+                    f64::MAX
+                } else {
+                    3.0
+                }
+            }
+            _ => f64::MAX,
+        };
+        return op_cost;
+    }
+}
+
 /// A cost function that extracts a circuit with the least area
 pub struct AreaFn;
 
@@ -148,20 +170,16 @@ impl CostFunction<CellLang> for AreaFn {
 }
 
 #[cfg(feature = "exactness")]
-impl<A> LpCostFunction<CellLang, A> for CellCountFn
+impl<A> LpCostFunction<CellLang, A> for AreaFn
 where
-    A: Analysis<CellLang>,
+    A: Analysis<CellLang>
 {
     fn node_cost(&mut self, _egraph: &EGraph<CellLang, A>, _eclass: Id, enode: &CellLang) -> f64 {
-        let op_cost = match enode {
-            CellLang::Const(_) => 1.0,
-            CellLang::Var(_) => 2.0,
-            CellLang::Cell(_, l) => {
-                if l.len() > self.cut_size {
-                    f64::MAX
-                } else {
-                    3.0
-                }
+        let op_cost: f64 = match enode {
+            CellLang::Const(_) | CellLang::Var(_) => PrimitiveType::INV.get_min_area().unwrap() as f64,
+            CellLang::Cell(n, _l) => {
+                let prim = PrimitiveType::from_str(n.as_str()).unwrap();
+                prim.get_min_area().unwrap_or(1.33) as f64
             }
             _ => f64::MAX,
         };
@@ -179,6 +197,10 @@ impl Extractable for CellLang {
     }
 
     fn exact_area_cost_fn() -> impl CostFunction<Self> {
+        AreaFn
+    }
+
+    fn lp_exact_area_cost_fn<A: Analysis<Self>>() -> impl LpCostFunction<Self, A> {
         AreaFn
     }
 

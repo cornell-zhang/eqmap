@@ -3,7 +3,6 @@
   The lut module defines the grammar used to represent LUTs, gates, and principal inputs.
 
 */
-use crate::asic::AreaFn;
 
 use super::analysis::LutAnalysis;
 use super::check::{Check, equivalent, inconclusive, not_equivalent};
@@ -1104,6 +1103,10 @@ impl Extractable for LutLang {
     }
 
     fn exact_area_cost_fn() -> impl CostFunction<Self> {
+        KLUTCostFn::new(6).with_reg_weight(1)
+    }
+
+    fn lp_exact_area_cost_fn<A: Analysis<Self>>()-> impl LpCostFunction<Self, A> {
         KLUTCostFn::new(6).with_reg_weight(1)
     }
 

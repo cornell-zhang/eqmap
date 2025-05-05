@@ -368,8 +368,10 @@ enum ExtractStrat {
     Exact(u64),
 }
 
-/// The list of gates that must be reachable by the disassembling rewrite rule system.
+/// The list (string) of gates that must be reachable by the disassembling rewrite rule system.
 pub const GATE_WHITELIST_STR: &str = "MUX,AND,OR,XOR,NOT,INV,REG,NAND,NOR";
+
+/// The list of gates that must be reachable by the disassembling rewrite rule system.
 pub const GATE_WHITELIST: [&str; 9] = [
     "MUX", "AND", "OR", "XOR", "NOT", "INV", "REG", "NAND", "NOR",
 ];
@@ -443,8 +445,13 @@ where
     /// Returns the cost function using exact cell areas.
     fn exact_area_cost_fn() -> impl CostFunction<Self>;
 
+    /// Returns the lp_cost function using exact cell areas.
+    fn lp_exact_area_cost_fn<A: Analysis<Self>>() -> impl LpCostFunction<Self,A>;
+
+    /// Returns the lp_cost function using exact cell areas with a register weight.
     fn lp_cell_cost_with_reg_weight_fn<A: Analysis<Self>>(cut_size: usize, w: u64) -> impl LpCostFunction<Self, A>;
 
+    /// Returns the lp_cost function using exact cell areas with a register weight of 1.
     fn lp_cell_cost_fn(cut_size: usize) -> impl LpCostFunction<Self, ()> {
         Self::lp_cell_cost_with_reg_weight_fn(cut_size, 1)
     }
@@ -1117,6 +1124,9 @@ where
             }
             (OptStrat::Disassemble(set), ExtractStrat::Greedy) => {
                 self.greedy_extract_with(L::filter_cost_fn(set))
+            }
+            (OptStrat::Area, ExtractStrat::Exact(t)) => {
+                self.exact_extract_with(L::lp_exact_area_cost_fn(), t)
             }
             _ => Err(format!(
                 "{:?} optimization strategy is incomptabile with {:?} extraction.",
