@@ -3,6 +3,8 @@
   The lut module defines the grammar used to represent LUTs, gates, and principal inputs.
 
 */
+use crate::asic::AreaFn;
+
 use super::analysis::LutAnalysis;
 use super::check::{Check, equivalent, inconclusive, not_equivalent};
 use super::cost::DepthCostFn;
@@ -12,6 +14,8 @@ use bitvec::prelude::*;
 use egg::CostFunction;
 use egg::Id;
 use egg::Language;
+#[cfg(feature = "exactness")]
+use egg::LpCostFunction;
 use egg::RecExpr;
 use egg::Symbol;
 use egg::define_language;
@@ -1101,6 +1105,10 @@ impl Extractable for LutLang {
 
     fn exact_area_cost_fn() -> impl CostFunction<Self> {
         KLUTCostFn::new(6).with_reg_weight(1)
+    }
+
+    fn lp_cell_cost_with_reg_weight_fn(cut_size: usize, w: u64) -> impl LpCostFunction<Self, ()> {
+        KLUTCostFn::new(cut_size).with_reg_weight(w)
     }
 
     fn filter_cost_fn(set: std::collections::HashSet<String>) -> impl CostFunction<Self> {

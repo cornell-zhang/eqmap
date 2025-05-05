@@ -179,7 +179,7 @@ impl Extractable for CellLang {
         AreaFn
     }
 
-    fn cell_cost_with_reg_weight_fn(cut_size: usize, _w: u64) -> impl LpCostFunction<Self, ()> {
+    fn lp_cell_cost_with_reg_weight_fn(cut_size: usize, _w: u64) -> impl LpCostFunction<Self, ()> {
         CellCountFn::new(cut_size)
     }
 
