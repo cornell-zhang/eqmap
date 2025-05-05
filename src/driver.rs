@@ -368,6 +368,8 @@ enum ExtractStrat {
     Exact(u64),
 }
 
+/// The list of gates that must be reachable by the disassembling rewrite rule system.
+pub const GATE_WHITELIST_STR: &str = "MUX,AND,OR,XOR,NOT,INV,REG,NAND,NOR";
 pub const GATE_WHITELIST: [&str; 9] = [
     "MUX", "AND", "OR", "XOR", "NOT", "INV", "REG", "NAND", "NOR",
 ];
@@ -441,7 +443,7 @@ where
     /// Returns the cost function using exact cell areas.
     fn exact_area_cost_fn() -> impl CostFunction<Self>;
 
-    fn lp_cell_cost_with_reg_weight_fn(cut_size: usize, w: u64) -> impl LpCostFunction<Self, ()>;
+    fn lp_cell_cost_with_reg_weight_fn<A: Analysis<Self>>(cut_size: usize, w: u64) -> impl LpCostFunction<Self, A>;
 
     fn lp_cell_cost_fn(cut_size: usize) -> impl LpCostFunction<Self, ()> {
         Self::lp_cell_cost_with_reg_weight_fn(cut_size, 1)
@@ -498,9 +500,6 @@ where
 
     /// The extraction strategy to use.
     extract_strat: ExtractStrat,
-
-    /// The optimization strategy to use.
-    opt_strat: OptStrat,
 
     /// The choice of solver
     solver_choice: String,
@@ -568,7 +567,6 @@ impl<L: Language, A: Analysis<L> + std::clone::Clone> std::clone::Clone for Synt
             rules: self.rules.clone(),
             opt_strat: self.opt_strat.clone(),
             extract_strat: self.extract_strat.clone(),
-            opt_strat: self.opt_strat.clone(),
             solver_choice: self.solver_choice.clone(),
             build_strat: self.build_strat.clone(),
             no_canonicalize: self.no_canonicalize,
@@ -1120,13 +1118,6 @@ where
             (OptStrat::Disassemble(set), ExtractStrat::Greedy) => {
                 self.greedy_extract_with(L::filter_cost_fn(set))
             }
-            #[cfg(feature = "exactness")]
-            ExtractStrat::Exact(_t) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: ILP ON");
-                let e = egg::GoodLpExtractor::new(egraph, L::exact_cell_cost_fn(1));
-                let (_best_cost, best_expr) = e.solve(root);
-                L::canonicalize_expr(best_expr)
-            }),
             _ => Err(format!(
                 "{:?} optimization strategy is incomptabile with {:?} extraction.",
                 self.opt_strat, self.extract_strat

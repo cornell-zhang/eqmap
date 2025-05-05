@@ -14,8 +14,6 @@ use bitvec::prelude::*;
 use egg::CostFunction;
 use egg::Id;
 use egg::Language;
-#[cfg(feature = "exactness")]
-use egg::LpCostFunction;
 use egg::RecExpr;
 use egg::Symbol;
 use egg::define_language;
@@ -1109,9 +1107,6 @@ impl Extractable for LutLang {
         KLUTCostFn::new(6).with_reg_weight(1)
     }
 
-    fn lp_cell_cost_with_reg_weight_fn(cut_size: usize, w: u64) -> impl LpCostFunction<Self, ()> {
-        KLUTCostFn::new(6).with_reg_weight(w)
-    }
     #[cfg(feature = "exactness")]
     fn lp_cell_cost_with_reg_weight_fn<A: Analysis<Self>>(
         cut_size: usize,
