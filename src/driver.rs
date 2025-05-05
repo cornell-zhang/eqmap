@@ -1035,6 +1035,34 @@ where
         })
     }
 
+    #[cfg(feature = "exactness")]
+    /// Extract requested expression with cost model `c` using ILP with timeout `_t`
+    pub fn exact_extract_with<R, C>(&mut self, c: C, _t: u64) -> Result<SynthOutput<L, R>, String>
+    where
+        R: Report<L>,
+        C: LpCostFunction<L, A>,
+    {
+        let solver_choice = self.solver_choice.clone();
+        self.extract_with(|egraph, root| {
+            eprintln!("INFO: ILP ON");
+            let formulation_start = Instant::now();
+            let e = egg::GoodLpExtractor::new(egraph, c);
+            let formulation_time = formulation_start.elapsed();
+            let solver_start = Instant::now();
+            let (_best_cost, best_expr) = e.solve(root, solver_choice, _t);
+            let solver_time = solver_start.elapsed();
+            eprintln!(
+                "   INFO: ILP formulation time: {} seconds",
+                formulation_time.as_secs_f64()
+            );
+            eprintln!(
+                "   INFO: ILP solver time: {} seconds",
+                solver_time.as_secs_f64()
+            );
+            best_expr
+        })
+    }
+
     /// Serialize the e-graph with an associated cost provided by `c`.
     #[cfg(feature = "graph_dumps")]
     pub fn serialize_with_greedy_cost<C>(&mut self, c: C, w: &mut impl Write) -> std::io::Result<()>
