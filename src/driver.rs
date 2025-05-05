@@ -502,6 +502,9 @@ where
     /// The optimization strategy to use.
     opt_strat: OptStrat,
 
+    /// The choice of solver
+    solver_choice: String,
+
     /// The e-graph build strategy to use.
     build_strat: BuildStrat,
 
@@ -541,6 +544,7 @@ impl<L: Language, A: Analysis<L>> std::default::Default for SynthRequest<L, A> {
             expr: RecExpr::default(),
             rules: Vec::new(),
             opt_strat: OptStrat::CellCount(6),
+            solver_choice: "cbc".to_string(),
             extract_strat: ExtractStrat::Greedy,
             build_strat: BuildStrat::Custom(10, 20_000, 16),
             no_canonicalize: false,
@@ -565,6 +569,7 @@ impl<L: Language, A: Analysis<L> + std::clone::Clone> std::clone::Clone for Synt
             opt_strat: self.opt_strat.clone(),
             extract_strat: self.extract_strat.clone(),
             opt_strat: self.opt_strat.clone(),
+            solver_choice: self.solver_choice.clone(),
             build_strat: self.build_strat.clone(),
             no_canonicalize: self.no_canonicalize,
             assert_sat: self.assert_sat,
