@@ -9,6 +9,8 @@ use super::driver::Comparison;
 use super::driver::Report;
 use super::driver::{Canonical, CircuitLang, EquivCheck, Explanable, Extractable};
 use super::verilog::PrimitiveType;
+#[cfg(feature = "exactness")]
+use egg::LpCostFunction;
 use egg::{
     Analysis, AstSize, CostFunction, DidMerge, EGraph, Id, Language, RecExpr, Rewrite, Symbol,
     define_language, rewrite,
@@ -145,6 +147,25 @@ impl CostFunction<CellLang> for AreaFn {
     }
 }
 
+#[cfg(feature = "exactness")]
+impl LpCostFunction<CellLang, ()> for CellCountFn {
+    fn node_cost(&mut self, _egraph: &EGraph<CellLang, ()>, _eclass: Id, enode: &CellLang) -> f64 {
+        let op_cost = match enode {
+            CellLang::Const(_) => 1.0,
+            CellLang::Var(_) => 2.0,
+            CellLang::Cell(_, l) => {
+                if l.len() > self.cut_size {
+                    f64::MAX
+                } else {
+                    3.0
+                }
+            }
+            _ => f64::MAX,
+        };
+        return op_cost;
+    }
+}
+
 impl Extractable for CellLang {
     fn depth_cost_fn() -> impl CostFunction<Self, Cost = i64> {
         DepthCostFn
@@ -156,6 +177,10 @@ impl Extractable for CellLang {
 
     fn exact_area_cost_fn() -> impl CostFunction<Self> {
         AreaFn
+    }
+
+    fn cell_cost_with_reg_weight_fn(cut_size: usize, _w: u64) -> impl LpCostFunction<Self, ()> {
+        CellCountFn::new(cut_size)
     }
 
     fn filter_cost_fn(_set: std::collections::HashSet<String>) -> impl CostFunction<Self> {
