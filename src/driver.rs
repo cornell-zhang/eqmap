@@ -337,10 +337,9 @@ enum BuildStrat {
     Custom(u64, usize, usize),
 }
 
-/// An enum for the extraction strategies used to synthesize LUT networks.
-/// Only [ExtractStrat::Exact] uses ILP.
+/// An enum for the optimization strategies used to synthesize LUT/cell networks.
 #[derive(Debug, Clone)]
-enum ExtractStrat {
+enum OptStrat {
     /// Extract the cirucit using exact cell areas.
     Area,
     /// Extract maximum circuit depth (RAM bomb).
@@ -353,8 +352,15 @@ enum ExtractStrat {
     CellCountRegWeighted(usize, u64),
     /// Disassemble into set of logic gates.
     Disassemble(HashSet<String>),
-    #[cfg(feature = "exactness")]
-    /// Extract LUTs exactly using ILP with timeout in seconds.
+}
+
+/// An enum for the extraction strategies used to synthesize LUT/cell networks.
+#[derive(Debug, Clone)]
+enum ExtractStrat {
+    /// Use greedy extraction algorithm.
+    Greedy,
+    #[allow(dead_code)]
+    /// Use exact ILP extraction with timeout in seconds.
     Exact(u64),
 }
 
@@ -366,7 +372,7 @@ pub const GATE_WHITELIST: [&str; 9] = [
     "MUX", "AND", "OR", "XOR", "NOT", "INV", "REG", "NAND", "NOR",
 ];
 
-impl ExtractStrat {
+impl OptStrat {
     /// Create an extraction strategy from a comma-separated list of gates.
     /// For example, `list` can be `"MUX,AND,NOT"`.
     pub fn from_gate_set(list: &str) -> Result<Self, String> {
@@ -384,7 +390,7 @@ impl ExtractStrat {
                 ));
             }
         }
-        Ok(ExtractStrat::Disassemble(gates))
+        Ok(OptStrat::Disassemble(gates))
     }
 }
 
@@ -481,6 +487,9 @@ where
     /// The rewrite rules used to simplify the expression.
     rules: Vec<Rewrite<L, A>>,
 
+    /// The optimization strategy to use.
+    opt_strat: OptStrat,
+
     /// The extraction strategy to use.
     extract_strat: ExtractStrat,
 
@@ -522,7 +531,8 @@ impl<L: Language, A: Analysis<L>> std::default::Default for SynthRequest<L, A> {
         Self {
             expr: RecExpr::default(),
             rules: Vec::new(),
-            extract_strat: ExtractStrat::CellCount(6),
+            opt_strat: OptStrat::CellCount(6),
+            extract_strat: ExtractStrat::Greedy,
             build_strat: BuildStrat::Custom(10, 20_000, 16),
             no_canonicalize: false,
             assert_sat: false,
@@ -543,6 +553,7 @@ impl<L: Language, A: Analysis<L> + std::clone::Clone> std::clone::Clone for Synt
         Self {
             expr: self.expr.clone(),
             rules: self.rules.clone(),
+            opt_strat: self.opt_strat.clone(),
             extract_strat: self.extract_strat.clone(),
             build_strat: self.build_strat.clone(),
             no_canonicalize: self.no_canonicalize,
@@ -567,7 +578,8 @@ where
     /// Request greedy extraction of cells/LUTs with at most `k` inputs.
     pub fn with_k(self, k: usize) -> Self {
         Self {
-            extract_strat: ExtractStrat::CellCount(k),
+            opt_strat: OptStrat::CellCount(k),
+            extract_strat: ExtractStrat::Greedy,
             ..self
         }
     }
@@ -575,7 +587,8 @@ where
     /// Request greedy extraction of cells/LUTs with at most `k` inputs and registers with weight `w`.
     pub fn with_klut_regw(self, k: usize, w: u64) -> Self {
         Self {
-            extract_strat: ExtractStrat::CellCountRegWeighted(k, w),
+            opt_strat: OptStrat::CellCountRegWeighted(k, w),
+            extract_strat: ExtractStrat::Greedy,
             ..self
         }
     }
@@ -583,12 +596,13 @@ where
     /// Request greedy extraction using exact cell areas.
     pub fn with_area(self) -> Self {
         Self {
-            extract_strat: ExtractStrat::Area,
+            opt_strat: OptStrat::Area,
+            extract_strat: ExtractStrat::Greedy,
             ..self
         }
     }
 
-    /// Request exact LUT extraction using ILP with `timeout` in seconds.
+    /// Request exact extraction using ILP with `timeout` in seconds.
     #[cfg(feature = "exactness")]
     pub fn with_exactness(self, timeout: u64) -> Self {
         Self {
@@ -600,15 +614,17 @@ where
     /// Extract based on minimum circuit depth.
     pub fn with_min_depth(self) -> Self {
         Self {
-            extract_strat: ExtractStrat::MinDepth,
+            opt_strat: OptStrat::MinDepth,
+            extract_strat: ExtractStrat::Greedy,
             ..self
         }
     }
 
-    /// Extract based on maximum circuit depth.
+    /// Extract based on maximum circuit depth. *Does not work with cycles in e-graph.*
     pub fn with_max_depth(self) -> Self {
         Self {
-            extract_strat: ExtractStrat::MaxDepth,
+            opt_strat: OptStrat::MaxDepth,
+            extract_strat: ExtractStrat::Greedy,
             ..self
         }
     }
@@ -616,7 +632,8 @@ where
     /// Extract by disassembling into basic logic gates. The exact list can be found at [GATE_WHITELIST].
     pub fn with_disassembler(self) -> Self {
         Self {
-            extract_strat: ExtractStrat::from_gate_set(GATE_WHITELIST_STR).unwrap(),
+            opt_strat: OptStrat::from_gate_set(GATE_WHITELIST_STR).unwrap(),
+            extract_strat: ExtractStrat::Greedy,
             ..self
         }
     }
@@ -624,7 +641,8 @@ where
     /// Extract by disassembling into logic gates in the `list`. Elements in the list must be matched against elements in [GATE_WHITELIST].
     pub fn with_disassembly_into(self, list: &str) -> Result<Self, String> {
         Ok(Self {
-            extract_strat: ExtractStrat::from_gate_set(list)?,
+            opt_strat: OptStrat::from_gate_set(list)?,
+            extract_strat: ExtractStrat::Greedy,
             ..self
         })
     }
@@ -1006,24 +1024,38 @@ where
     where
         R: Report<L>,
     {
-        match self.extract_strat.to_owned() {
-            ExtractStrat::Area => self.greedy_extract_with(L::exact_area_cost_fn()),
-            ExtractStrat::MinDepth => self.greedy_extract_with(L::depth_cost_fn()),
-            ExtractStrat::MaxDepth => {
+        match (self.opt_strat.to_owned(), self.extract_strat.to_owned()) {
+            (OptStrat::Area, ExtractStrat::Greedy) => {
+                self.greedy_extract_with(L::exact_area_cost_fn())
+            }
+            (OptStrat::MinDepth, ExtractStrat::Greedy) => {
+                self.greedy_extract_with(L::depth_cost_fn())
+            }
+            (OptStrat::MaxDepth, ExtractStrat::Greedy) => {
                 eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");
                 self.greedy_extract_with(NegativeCostFn::new(L::depth_cost_fn()))
             }
-            ExtractStrat::CellCount(k) => self.greedy_extract_with(L::cell_cost_fn(k)),
-            ExtractStrat::CellCountRegWeighted(k, w) => {
+            (OptStrat::CellCount(k), ExtractStrat::Greedy) => {
+                self.greedy_extract_with(L::cell_cost_fn(k))
+            }
+            (OptStrat::CellCountRegWeighted(k, w), ExtractStrat::Greedy) => {
                 self.greedy_extract_with(L::cell_cost_with_reg_weight_fn(k, w))
             }
-            ExtractStrat::Disassemble(set) => self.greedy_extract_with(L::filter_cost_fn(set)),
+            (OptStrat::Disassemble(set), ExtractStrat::Greedy) => {
+                self.greedy_extract_with(L::filter_cost_fn(set))
+            }
             #[cfg(feature = "exactness")]
-            ExtractStrat::Exact(t) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                L::canonicalize_expr(e.timeout(t as f64).solve(root))
-            }),
+            (OptStrat::CellCountRegWeighted(6, 1), ExtractStrat::Exact(t)) => {
+                self.extract_with(|egraph, root| {
+                    eprintln!("INFO: ILP ON");
+                    let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                    L::canonicalize_expr(e.timeout(t as f64).solve(root))
+                })
+            }
+            _ => Err(format!(
+                "{:?} optimization strategy is incomptabile with {:?} extraction.",
+                self.opt_strat, self.extract_strat
+            )),
         }
     }
 }
