@@ -129,7 +129,7 @@ where
     A: Analysis<CellLang>,
 {
     fn node_cost(&mut self, _egraph: &EGraph<CellLang, A>, _eclass: Id, enode: &CellLang) -> f64 {
-        let op_cost = match enode {
+         match enode {
             CellLang::Const(_) => 1.0,
             CellLang::Var(_) => 2.0,
             CellLang::Cell(_, l) => {
@@ -140,8 +140,7 @@ where
                 }
             }
             _ => f64::MAX,
-        };
-        return op_cost;
+        }
     }
 }
 
@@ -183,7 +182,7 @@ where
             }
             _ => f64::MAX,
         };
-        return op_cost;
+        op_cost
     }
 }
 

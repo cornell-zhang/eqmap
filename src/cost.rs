@@ -95,7 +95,7 @@ where
             LutLang::DC => 0.0,
             _ => f64::MAX,
         };
-        return op_cost;
+        op_cost
     }
 }
 
