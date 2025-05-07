@@ -4,8 +4,11 @@ use std::{
 };
 
 use clap::Parser;
-use lut_synth::verilog::{SVModule, sv_parse_wrapper};
-use lut_synth::{driver::Canonical, lut::LutLang};
+use lut_synth::{asic::CellLang, driver::Canonical, lut::LutLang, verilog::VerilogParsing};
+use lut_synth::{
+    driver::CircuitLang,
+    verilog::{SVModule, sv_parse_wrapper},
+};
 /// Parse structural verilog into a LutLang Expression
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -16,14 +19,29 @@ struct Args {
     #[arg(short = 'r', long, default_value_t = false)]
     round_trip: bool,
     /// Dump ast
-    #[arg(short = 'a', long, default_value_t = false)]
+    #[arg(short = 'd', long, default_value_t = false)]
     dump_ast: bool,
+    /// Parse Verilog as CellLang
+    #[arg(short = 'a', long, default_value_t = false)]
+    asic: bool,
     /// Get a separate expression for each output
     #[arg(short = 'm', long, default_value_t = false)]
     multiple_expr: bool,
     /// Print the parsed module as a data structure
     #[arg(short = 'v', long, default_value_t = false)]
     verbose: bool,
+}
+
+fn emit_exprs<L: CircuitLang + VerilogParsing>(f: &SVModule) -> std::io::Result<()> {
+    let exprs = f
+        .get_exprs()
+        .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+    for (y, expr) in exprs {
+        L::verify_expr(&expr).map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+        eprintln!("{}: {}", y, expr);
+        println!("{}", expr);
+    }
+    Ok(())
 }
 
 fn main() -> std::io::Result<()> {
@@ -59,15 +77,17 @@ fn main() -> std::io::Result<()> {
 
     if !args.round_trip {
         if args.multiple_expr {
-            let exprs = f
-                .get_exprs()
-                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
-            for (y, expr) in exprs {
-                LutLang::verify_expr(&expr)
-                    .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
-                eprintln!("{}: {}", y, expr);
-                println!("{}", expr);
+            if args.asic {
+                emit_exprs::<CellLang>(&f)?;
+            } else {
+                emit_exprs::<LutLang>(&f)?;
             }
+        } else if args.asic {
+            let expr = f
+                .to_single_cell_expr()
+                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+            eprintln!("{:?}", f.get_outputs());
+            println!("{}", expr);
         } else {
             let expr = f
                 .to_single_lut_expr()
