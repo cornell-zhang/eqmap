@@ -103,7 +103,7 @@ impl CostFunction<CellLang> for CellCountFn {
         C: FnMut(Id) -> Self::Cost,
     {
         let op_cost = match enode {
-            CellLang::Const(_) => 1,
+            CellLang::Const(_) | CellLang::Bus(_) => 1,
             CellLang::Var(_) => 2,
             CellLang::Cell(n, l) => {
                 if l.len() > self.cut_size {
@@ -131,7 +131,9 @@ impl CostFunction<CellLang> for AreaFn {
         C: FnMut(Id) -> Self::Cost,
     {
         let op_cost = match enode {
-            CellLang::Const(_) | CellLang::Var(_) => PrimitiveType::INV.get_min_area().unwrap(),
+            CellLang::Const(_) | CellLang::Var(_) | CellLang::Bus(_) => {
+                PrimitiveType::INV.get_min_area().unwrap()
+            }
             CellLang::Cell(n, _l) => {
                 let prim = PrimitiveType::from_str(n.as_str()).unwrap();
                 prim.get_min_area().unwrap_or(1.33)
