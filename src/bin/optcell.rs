@@ -48,9 +48,9 @@ struct Args {
     #[arg(long)]
     dump_graph: Option<PathBuf>,
 
-    /// Return an error if the graph does not reach saturation
+    /// Use a cost model that weighs the cells by exact area
     #[arg(short = 'a', long, default_value_t = false)]
-    assert_sat: bool,
+    area: bool,
 
     /// Do not verify the functionality of the output
     #[arg(short = 'f', long, default_value_t = false)]
@@ -119,7 +119,6 @@ fn main() -> std::io::Result<()> {
 
     let req = SynthRequest::default()
         .with_rules(rules)
-        .with_k(args.k)
         .without_canonicalization();
 
     let req = match (args.timeout, args.node_limit, args.iter_limit) {
@@ -135,12 +134,6 @@ fn main() -> std::io::Result<()> {
         }
     };
 
-    let req = if args.assert_sat {
-        req.with_asserts()
-    } else {
-        req
-    };
-
     let req = if args.verbose { req.with_proof() } else { req };
 
     #[cfg(feature = "graph_dumps")]
@@ -153,8 +146,10 @@ fn main() -> std::io::Result<()> {
         req.with_ast_size()
     } else if args.min_depth {
         req.with_min_depth()
-    } else {
+    } else if args.area {
         req.with_area()
+    } else {
+        req.with_k(args.k)
     };
 
     #[cfg(feature = "exactness")]
