@@ -1937,10 +1937,15 @@ impl fmt::Display for SVModule {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let level = 0;
         let indent = " ".repeat(level);
+        let mut already_decl: HashSet<String> = HashSet::new();
         writeln!(f, "{}module {} (", indent, self.name)?;
         for input in self.inputs.iter() {
+            if already_decl.contains(&input.name) {
+                continue;
+            }
             let indent = " ".repeat(level + 4);
             writeln!(f, "{}{},", indent, emit_id(input.name.clone()))?;
+            already_decl.insert(input.name.clone());
         }
         for (i, output) in self.outputs.iter().enumerate() {
             let indent = " ".repeat(level + 4);
@@ -1952,8 +1957,11 @@ impl fmt::Display for SVModule {
             }
         }
         writeln!(f, "{});", indent)?;
-        let mut already_decl: HashSet<String> = HashSet::new();
+        already_decl.clear();
         for input in self.inputs.iter() {
+            if already_decl.contains(&input.name) {
+                continue;
+            }
             let indent = " ".repeat(level + 2);
             writeln!(f, "{}input {};", indent, emit_id(input.name.clone()))?;
             writeln!(f, "{}wire {};", indent, emit_id(input.name.clone()))?;
@@ -1969,6 +1977,7 @@ impl fmt::Display for SVModule {
             let indent = " ".repeat(level + 2);
             if !already_decl.contains(&signal.name) {
                 writeln!(f, "{}wire {};", indent, emit_id(signal.name.clone()))?;
+                already_decl.insert(signal.name.clone());
             }
         }
         for instance in self.instances.iter() {
