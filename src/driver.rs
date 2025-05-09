@@ -1057,6 +1057,14 @@ where
                 self.greedy_extract_with(L::filter_cost_fn(set))
             }
             #[cfg(feature = "exactness")]
+            (OptStrat::CellCount(6), ExtractStrat::Exact(t)) => {
+                self.extract_with(|egraph, root| {
+                    eprintln!("INFO: ILP ON");
+                    let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                    L::canonicalize_expr(e.timeout(t as f64).solve(root))
+                })
+            }
+            #[cfg(feature = "exactness")]
             (OptStrat::CellCountRegWeighted(6, 1), ExtractStrat::Exact(t)) => {
                 self.extract_with(|egraph, root| {
                     eprintln!("INFO: ILP ON");

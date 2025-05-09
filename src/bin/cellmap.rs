@@ -1,6 +1,6 @@
 use clap::Parser;
 use lut_synth::{
-    asic::{CellLang, CellRpt, asic_rewrites},
+    asic::{CellLang, CellRpt, asic_rewrites, expr_is_mapped},
     driver::{SynthRequest, process_expression},
     verilog::{SVModule, sv_parse_wrapper},
 };
@@ -31,6 +31,10 @@ struct Args {
     /// Use a cost model that weighs the cells by exact area
     #[arg(short = 'a', long, default_value_t = false)]
     area: bool,
+
+    /// Do not check that all cells have been mapped
+    #[arg(short = 'm', long, default_value_t = false)]
+    no_assert: bool,
 
     /// Perform an exact extraction using ILP (much slower)
     #[cfg(feature = "exactness")]
@@ -163,6 +167,13 @@ fn main() -> std::io::Result<()> {
     eprintln!("INFO: Building e-graph...");
     let result = process_expression::<CellLang, _, CellRpt>(expr, req, true, args.verbose)?
         .with_name(f.get_name());
+
+    if !(args.no_assert || expr_is_mapped(result.get_expr())) {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Not all logic is mapped to cells",
+        ));
+    }
 
     if let Some(p) = args.report {
         let mut writer = std::fs::File::create(p)?;

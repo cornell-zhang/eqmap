@@ -312,6 +312,17 @@ impl Report<CellLang> for CellRpt {
     }
 }
 
+/// Returns true if the logic is fully mapped to cells
+pub fn expr_is_mapped(expr: &RecExpr<CellLang>) -> bool {
+    for n in expr {
+        if matches!(n, CellLang::And(_) | CellLang::Or(_) | CellLang::Inv(_)) {
+            return false;
+        }
+    }
+
+    true
+}
+
 /// Return a list of forward and backwards rewrites that maps logic to their cells
 /// The forwards rule is first in the array.
 pub fn get_cell_logic_eqn<A>() -> Vec<[egg::Rewrite<CellLang, A>; 2]>
