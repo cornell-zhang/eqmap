@@ -145,6 +145,23 @@ impl CostFunction<CellLang> for AreaFn {
     }
 }
 
+#[cfg(feature = "exactness")]
+impl<A: Analysis<CellLang>> egg::LpCostFunction<CellLang, A> for AreaFn {
+    fn node_cost(&mut self, _: &EGraph<CellLang, A>, _: Id, enode: &CellLang) -> f64 {
+        match enode {
+            CellLang::Const(_) | CellLang::Var(_) | CellLang::Bus(_) => {
+                PrimitiveType::INV.get_min_area().unwrap()
+            }
+            CellLang::Cell(n, _l) => {
+                let prim = PrimitiveType::from_str(n.as_str()).unwrap();
+                prim.get_min_area().unwrap_or(1.33)
+            }
+            _ => f32::MAX,
+        }
+        .into()
+    }
+}
+
 impl Extractable for CellLang {
     fn depth_cost_fn() -> impl CostFunction<Self, Cost = i64> {
         DepthCostFn
@@ -155,6 +172,11 @@ impl Extractable for CellLang {
     }
 
     fn exact_area_cost_fn() -> impl CostFunction<Self> {
+        AreaFn
+    }
+
+    #[cfg(feature = "exactness")]
+    fn lp_area_cost_fn<A: Analysis<Self>>() -> impl egg::LpCostFunction<Self, A> {
         AreaFn
     }
 

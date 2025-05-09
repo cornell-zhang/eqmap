@@ -443,6 +443,12 @@ where
     /// Returns the cost function using exact cell areas.
     fn exact_area_cost_fn() -> impl CostFunction<Self>;
 
+    /// Implements the area cost function in ILP form.
+    #[cfg(feature = "exactness")]
+    fn lp_area_cost_fn<A: Analysis<Self>>() -> impl egg::LpCostFunction<Self, A> {
+        egg::AstSize
+    }
+
     /// Returns a cost function used for extracting only certain types nodes.
     fn filter_cost_fn(set: HashSet<String>) -> impl CostFunction<Self>;
 }
@@ -474,6 +480,8 @@ pub trait CircuitLang:
     + egg::FromOp<Error = FromOpError>
 {
 }
+
+type PurgeFn<L> = Arc<dyn Fn(&L) -> bool + 'static>;
 
 /// A request to explore and extract an expression.
 /// The request can be configured with various options
@@ -524,6 +532,9 @@ where
     /// Whether the expression was non-trivially canonicalized before exploration.
     canonicalized: bool,
 
+    /// A function to purge the e-graph with before extraction.
+    purge_fn: Option<PurgeFn<L>>,
+
     /// The running result
     result: Option<Runner<L, A>>,
 }
@@ -543,6 +554,7 @@ impl<L: Language, A: Analysis<L>> std::default::Default for SynthRequest<L, A> {
             produce_rpt: false,
             max_canon_size: MAX_CANON_SIZE,
             canonicalized: false,
+            purge_fn: None,
             result: None,
             #[cfg(feature = "graph_dumps")]
             dump_egraph: None,
@@ -565,11 +577,27 @@ impl<L: Language, A: Analysis<L> + std::clone::Clone> std::clone::Clone for Synt
             produce_rpt: self.produce_rpt,
             max_canon_size: self.max_canon_size,
             canonicalized: self.canonicalized,
+            purge_fn: self.purge_fn.clone(),
             result: None,
             #[cfg(feature = "graph_dumps")]
             dump_egraph: self.dump_egraph.clone(),
         }
     }
+}
+
+/// Purge the e-graph of nodes that satisfy the predicate `f`.
+fn purge_graph<L, A, F: Fn(&L) -> bool>(egraph: &mut egg::EGraph<L, A>, f: F) -> Result<(), String>
+where
+    L: Language,
+    A: Analysis<L>,
+{
+    for class in egraph.classes_mut() {
+        let new_nodes: Vec<L> = class.nodes.iter().filter(|n| !f(n)).cloned().collect();
+        if !new_nodes.is_empty() {
+            class.nodes = new_nodes;
+        }
+    }
+    Ok(())
 }
 
 impl<L, A> SynthRequest<L, A>
@@ -768,6 +796,18 @@ where
         self
     }
 
+    /// Purge nodes that satisfy the predicate `f` from the e-graph before extraction.
+    pub fn with_purge_fn<F>(self, f: F) -> Self
+    where
+        F: Fn(&L) -> bool + 'static,
+    {
+        Self {
+            purge_fn: Some(Arc::new(f)),
+            result: None,
+            ..self
+        }
+    }
+
     /// Return a reference to the underlying expression
     pub fn get_expr(&self) -> &RecExpr<L> {
         &self.expr
@@ -925,6 +965,12 @@ where
         if self.result.is_none() {
             self.explore()?;
         }
+
+        if let Some(f) = self.purge_fn.take() {
+            eprintln!("INFO: Purging e-graph...");
+            purge_graph(&mut self.result.as_mut().unwrap().egraph, f.as_ref())?;
+        }
+
         let runner = self.result.as_ref().unwrap();
 
         // We need to canonicalize the root ID
@@ -1064,6 +1110,12 @@ where
                     L::canonicalize_expr(e.timeout(t as f64).solve(root))
                 })
             }
+            #[cfg(feature = "exactness")]
+            (OptStrat::Area, ExtractStrat::Exact(t)) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: ILP ON");
+                let mut e = egg::LpExtractor::new(egraph, L::lp_area_cost_fn());
+                L::canonicalize_expr(e.timeout(t as f64).solve(root))
+            }),
             #[cfg(feature = "exactness")]
             (OptStrat::CellCountRegWeighted(6, 1), ExtractStrat::Exact(t)) => {
                 self.extract_with(|egraph, root| {
