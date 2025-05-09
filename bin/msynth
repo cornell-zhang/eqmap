@@ -7,8 +7,6 @@ SIMLIB="$(realpath $SIMLIB)"
 MKFILE=$1.mk
 TOOL=cellmap
 
-echo $0
-
 # Decide whether to use Vivado or Yosys based on the stem given to Make
 if [ -z $FSTEM ]; then
     FSTEM=synth
