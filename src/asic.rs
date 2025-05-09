@@ -412,7 +412,7 @@ where
 }
 
 /// Get the complete set of rewrites for a Boolean Algebra
-pub fn get_boolean_algebra_rewrites<A>() -> Vec<egg::Rewrite<CellLang, A>>
+pub fn get_boolean_algebra_rewrites<A>(no_cycles: bool) -> Vec<egg::Rewrite<CellLang, A>>
 where
     A: Analysis<CellLang>,
 {
@@ -451,27 +451,30 @@ where
     // Idempotent Laws
     rules.push(rewrite!("or-idempotent"; "(OR ?a ?a)" => "?a"));
     rules.push(rewrite!("and-idempotent"; "(AND ?a ?a)" => "?a"));
-
-    // Absorption Laws
-    rules.push(rewrite!("or-absorption"; "(OR ?a (AND ?a ?b))" => "?a"));
-    rules.push(rewrite!("and-absorption"; "(AND ?a (OR ?a ?b))" => "?a"));
+    if !no_cycles {
+        // Absorption Laws
+        rules.push(rewrite!("or-absorption"; "(OR ?a (AND ?a ?b))" => "?a"));
+        rules.push(rewrite!("and-absorption"; "(AND ?a (OR ?a ?b))" => "?a"));
+    }
 
     // Consensus Rule
     rules.append(
         &mut rewrite!("consensus-rule"; "(OR (AND ?x ?y) (OR (AND (INV ?x) ?z) (AND ?y ?z)))" <=> "(OR (AND ?x ?y) (AND (INV ?x) ?z))"),
     );
 
-    // Negation Rules
-    rules.append(&mut rewrite!("negation"; "?a" <=> "(INV (INV ?a))"));
+    if !no_cycles {
+        // Negation Rules
+        rules.append(&mut rewrite!("negation"; "?a" <=> "(INV (INV ?a))"));
+    }
     rules
 }
 
 /// All the Boolean algebra and cell mapping rules for [CellLang].
-pub fn asic_rewrites() -> Vec<egg::Rewrite<CellLang, CellAnalysis>> {
+pub fn asic_rewrites(no_cycles: bool) -> Vec<egg::Rewrite<CellLang, CellAnalysis>> {
     let mut rules: Vec<Rewrite<CellLang, CellAnalysis>> = Vec::new();
 
     // Boolean Algebra
-    rules.append(&mut get_boolean_algebra_rewrites());
+    rules.append(&mut get_boolean_algebra_rewrites(no_cycles));
 
     // Standard Cells
     get_cell_logic_eqn().into_iter().for_each(|r| {

@@ -1057,7 +1057,7 @@ endmodule\n"
         let mut req: SynthRequest<CellLang, CellAnalysis> = SynthRequest::default()
             .with_expr(expr)
             .with_report()
-            .with_rules(asic_rewrites())
+            .with_rules(asic_rewrites(false))
             .without_progress_bar();
         let result = req
             .synth::<CellRpt>()

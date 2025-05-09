@@ -101,7 +101,7 @@ fn main() -> std::io::Result<()> {
         f.get_outputs().len()
     );
 
-    let rules = asic_rewrites();
+    let rules = asic_rewrites(false);
 
     if args.verbose {
         eprintln!("INFO: Running with {} rewrite rules", rules.len());
@@ -148,6 +148,8 @@ fn main() -> std::io::Result<()> {
     let req = if args.exact {
         req.with_exactness(args.timeout.unwrap_or(600))
             .with_purge_fn(|n| matches!(n, CellLang::And(_) | CellLang::Or(_) | CellLang::Inv(_)))
+            .clear_rules()
+            .with_rules(asic_rewrites(true))
     } else {
         req
     };

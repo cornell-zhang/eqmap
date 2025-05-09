@@ -592,7 +592,12 @@ where
     A: Analysis<L>,
 {
     for class in egraph.classes_mut() {
-        let new_nodes: Vec<L> = class.nodes.iter().filter(|n| !f(n)).cloned().collect();
+        let new_nodes: Vec<L> = class
+            .nodes
+            .iter()
+            .filter(|n| !f(n) && !n.children().iter().any(|c| *c == class.id))
+            .cloned()
+            .collect();
         if !new_nodes.is_empty() {
             class.nodes = new_nodes;
         }
@@ -794,6 +799,15 @@ where
         self.rules.append(&mut more_rules);
         self.result = None;
         self
+    }
+
+    /// Clear the rules currently stored in the request.
+    pub fn clear_rules(self) -> Self {
+        Self {
+            rules: Vec::new(),
+            result: None,
+            ..self
+        }
     }
 
     /// Purge nodes that satisfy the predicate `f` from the e-graph before extraction.

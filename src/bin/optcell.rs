@@ -11,7 +11,7 @@ fn get_main_runner(
     s: &str,
 ) -> Result<SynthRequest<CellLang, CellAnalysis>, RecExprParseError<FromOpError>> {
     let expr: RecExpr<CellLang> = s.parse()?;
-    let rules = asic_rewrites();
+    let rules = asic_rewrites(false);
 
     Ok(SynthRequest::default()
         .with_expr(expr)
@@ -108,9 +108,9 @@ fn main() -> std::io::Result<()> {
     let buf = simple_reader(args.command, args.input)?;
 
     let rules = if args.canonicalize {
-        get_boolean_algebra_rewrites()
+        get_boolean_algebra_rewrites(false)
     } else {
-        asic_rewrites()
+        asic_rewrites(false)
     };
 
     if args.verbose {
