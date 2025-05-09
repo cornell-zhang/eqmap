@@ -171,7 +171,7 @@ fn main() -> std::io::Result<()> {
     if !(args.no_assert || expr_is_mapped(result.get_expr())) {
         return Err(std::io::Error::new(
             std::io::ErrorKind::Other,
-            "Not all logic is mapped to cells",
+            "Not all logic is mapped to cells. Run the tool for more iterations/time.",
         ));
     }
 
