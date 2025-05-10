@@ -15,6 +15,8 @@ use egg::Language;
 use egg::RecExpr;
 use egg::Symbol;
 use egg::define_language;
+#[cfg(feature = "exactness")]
+use egg::{Analysis, LpCostFunction};
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
 
@@ -1101,6 +1103,18 @@ impl Extractable for LutLang {
 
     fn exact_area_cost_fn() -> impl CostFunction<Self> {
         KLUTCostFn::new(6).with_reg_weight(1)
+    }
+
+    fn lp_exact_area_cost_fn<A: Analysis<Self>>()-> impl LpCostFunction<Self, A> {
+        KLUTCostFn::new(6).with_reg_weight(1)
+    }
+
+    #[cfg(feature = "exactness")]
+    fn lp_cell_cost_with_reg_weight_fn<A: Analysis<Self>>(
+        cut_size: usize,
+        w: u64,
+    ) -> impl LpCostFunction<Self, A> {
+        KLUTCostFn::new(cut_size).with_reg_weight(w)
     }
 
     fn filter_cost_fn(set: std::collections::HashSet<String>) -> impl CostFunction<Self> {

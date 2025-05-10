@@ -8,6 +8,8 @@ use super::cost::NegativeCostFn;
 use super::lut::{CircuitStats, LutExprInfo, LutLang};
 #[cfg(feature = "graph_dumps")]
 use super::serialize::serialize_egraph;
+#[cfg(feature = "exactness")]
+use egg::LpCostFunction;
 use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
     RecExpr, RecExprParseError, Rewrite, Runner, StopReason, TreeTerm,
@@ -443,6 +445,17 @@ where
     /// Returns the cost function using exact cell areas.
     fn exact_area_cost_fn() -> impl CostFunction<Self>;
 
+    /// Returns the lp_cost function using exact cell areas.
+    fn lp_exact_area_cost_fn<A: Analysis<Self>>() -> impl LpCostFunction<Self,A>;
+
+    /// Returns the lp_cost function using exact cell areas with a register weight.
+    fn lp_cell_cost_with_reg_weight_fn<A: Analysis<Self>>(cut_size: usize, w: u64) -> impl LpCostFunction<Self, A>;
+
+    /// Returns the lp_cost function using exact cell areas with a register weight of 1.
+    fn lp_cell_cost_fn<A: Analysis<Self>>(cut_size: usize) -> impl LpCostFunction<Self, A> {
+        Self::lp_cell_cost_with_reg_weight_fn(cut_size, 1)
+    }
+
     /// Returns a cost function used for extracting only certain types nodes.
     fn filter_cost_fn(set: HashSet<String>) -> impl CostFunction<Self>;
 }
@@ -497,6 +510,9 @@ where
     /// The extraction strategy to use.
     extract_strat: ExtractStrat,
 
+    /// The choice of solver
+    solver_choice: String,
+
     /// The e-graph build strategy to use.
     build_strat: BuildStrat,
 
@@ -539,6 +555,7 @@ impl<L: Language, A: Analysis<L>> std::default::Default for SynthRequest<L, A> {
             expr: RecExpr::default(),
             rules: Vec::new(),
             opt_strat: OptStrat::CellCount(6),
+            solver_choice: "cbc".to_string(),
             extract_strat: ExtractStrat::Greedy,
             build_strat: BuildStrat::Custom(10, 20_000, 16),
             no_canonicalize: false,
@@ -563,6 +580,7 @@ impl<L: Language, A: Analysis<L> + std::clone::Clone> std::clone::Clone for Synt
             rules: self.rules.clone(),
             opt_strat: self.opt_strat.clone(),
             extract_strat: self.extract_strat.clone(),
+            solver_choice: self.solver_choice.clone(),
             build_strat: self.build_strat.clone(),
             no_canonicalize: self.no_canonicalize,
             assert_sat: self.assert_sat,
@@ -646,6 +664,14 @@ where
     pub fn with_exactness(self, timeout: u64) -> Self {
         Self {
             extract_strat: ExtractStrat::Exact(timeout),
+            ..self
+        }
+    }
+
+    /// Request exact solver choice.
+    pub fn with_solver_choice(self, solver: &str) -> Self {
+        Self {
+            solver_choice: solver.to_string(),
             ..self
         }
     }
@@ -1049,9 +1075,61 @@ where
         C: CostFunction<L>,
     {
         self.extract_with(|egraph, root| {
+            // greedy search time
+            let search_start = Instant::now();
             let e = Extractor::new(egraph, c);
-            e.find_best(root).1
+            let search_time = search_start.elapsed();
+            // find best time
+            let best_start = Instant::now();
+            let (_, expr) = e.find_best(root);
+            let best_duration = best_start.elapsed();
+            eprintln!(
+                "INFO: Greedy search time: {} seconds",
+                search_time.as_secs_f64()
+            );
+            eprintln!(
+                "INFO: Find best time: {} seconds",
+                best_duration.as_secs_f64()
+            );
+            expr
         })
+    }
+
+    #[cfg(feature = "exactness")]
+    /// Extract requested expression with cost model `c` using ILP with timeout `_t`
+    pub fn exact_extract_with<R, C>(&mut self, c: C, t: u64) -> Result<SynthOutput<L, R>, String>
+    where
+        R: Report<L>,
+        C: LpCostFunction<L, A>,
+    {
+        let solver_choice = self.solver_choice.clone();
+        if solver_choice == "cbc" {
+            self.extract_with(|egraph, root| {
+                eprintln!("INFO: ILP USING EGG's LP EXTRACTOR ON");
+                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                L::canonicalize_expr(e.timeout(t as f64).solve(root))
+            })
+        }
+        else {
+            self.extract_with(|egraph, root| {
+                eprintln!("INFO: ILP USING GOOD_LP EXTRACTOR");
+                let formulation_start = Instant::now();
+                let e = egg::GoodLpExtractor::new(egraph, c);
+                let formulation_time = formulation_start.elapsed();
+                let solver_start = Instant::now();
+                let (_best_cost, best_expr) = e.solve(root, solver_choice, t);
+                let solver_time = solver_start.elapsed();
+                eprintln!(
+                    "   INFO: ILP formulation time: {} seconds",
+                    formulation_time.as_secs_f64()
+                );
+                eprintln!(
+                    "   INFO: ILP solver time: {} seconds",
+                    solver_time.as_secs_f64()
+                );
+                best_expr
+            })
+        }
     }
 
     /// Serialize the e-graph with an associated cost provided by `c`.
@@ -1111,28 +1189,15 @@ where
             (OptStrat::Disassemble(set), ExtractStrat::Greedy) => {
                 self.greedy_extract_with(L::filter_cost_fn(set))
             }
-            #[cfg(feature = "exactness")]
-            (OptStrat::CellCount(6), ExtractStrat::Exact(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: ILP ON");
-                    let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                    L::canonicalize_expr(e.timeout(t as f64).solve(root))
-                })
+            (OptStrat::Area, ExtractStrat::Exact(t)) => {
+                self.exact_extract_with(L::lp_exact_area_cost_fn(), t)
             }
-            #[cfg(feature = "exactness")]
-            (OptStrat::CellCountRegWeighted(6, 1), ExtractStrat::Exact(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: ILP ON");
-                    let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                    L::canonicalize_expr(e.timeout(t as f64).solve(root))
-                })
+            (OptStrat:: CellCount(k), ExtractStrat::Exact(t)) => {
+                self.exact_extract_with(L::lp_cell_cost_fn(k), t)
             }
-            #[cfg(feature = "exactness")]
-            (OptStrat::AstSize, ExtractStrat::Exact(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                L::canonicalize_expr(e.timeout(t as f64).solve(root))
-            }),
+            (OptStrat::CellCountRegWeighted(k, w), ExtractStrat::Exact(t)) => {
+                self.exact_extract_with(L::lp_cell_cost_with_reg_weight_fn(k, w), t)
+            }
             _ => Err(format!(
                 "{:?} optimization strategy is incomptabile with {:?} extraction.",
                 self.opt_strat, self.extract_strat

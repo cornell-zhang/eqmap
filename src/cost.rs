@@ -3,8 +3,11 @@
   The code module contains a super simple cost function that extracts LUTs with at most `k` fan-in.
 
 */
+
 use super::lut::LutLang;
 use egg::{CostFunction, Id, Language};
+#[cfg(feature = "exactness")]
+use egg::{EGraph, LpCostFunction,Analysis};
 use std::collections::HashSet;
 
 /// A cost function that extracts LUTs with at most `k` fan-in.
@@ -67,6 +70,36 @@ impl CostFunction<LutLang> for KLUTCostFn {
         enode.fold(op_cost, |sum, id| sum.saturating_add(costs(id)))
     }
 }
+
+#[cfg(feature = "exactness")]
+impl<A> LpCostFunction<LutLang, A> for KLUTCostFn
+where
+    A: Analysis<LutLang>,
+{
+    fn node_cost(&mut self, _egraph: &EGraph<LutLang, A>, _eclass: Id, enode: &LutLang) -> f64 {
+        let op_cost: f64 = match enode {
+            LutLang::Lut(l) => {
+                if l.len() <= self.k + 1 {
+                    1.0
+                } else {
+                    2.0 * l.len() as f64 * l.len() as f64
+                }
+            }
+            LutLang::Program(_) => 0.0,
+            LutLang::Bus(_) => 0.0,
+            LutLang::Reg(_) => self.reg_cost as f64,
+            LutLang::Cycle(_) => 0.0,
+            LutLang::Arg(_) => 0.0,
+            LutLang::Const(_) => 0.0,
+            LutLang::Var(_) => 1.0,
+            LutLang::DC => 0.0,
+            _ => f64::MAX,
+        };
+        op_cost
+    }
+}
+
+
 
 /// A cost function that extracts a circuit with the least depth
 pub struct DepthCostFn;

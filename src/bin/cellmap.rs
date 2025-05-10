@@ -57,6 +57,10 @@ struct Args {
     #[arg(short = 't', long)]
     timeout: Option<u64>,
 
+    /// Solver choice for exact extraction
+    #[arg(long)]
+    solver_choice: Option<String>,
+
     /// Maximum number of nodes in graph
     #[arg(short = 's', long)]
     node_limit: Option<usize>,
@@ -148,6 +152,9 @@ fn main() -> std::io::Result<()> {
     let req = if args.exact {
         req.with_exactness(args.timeout.unwrap_or(600))
             .with_purge_fn(|n| matches!(n, CellLang::And(_) | CellLang::Or(_) | CellLang::Inv(_)))
+            .with_solver_choice(
+            &args.solver_choice.unwrap_or("cbc".to_string()),
+        )
     } else {
         req
     };
