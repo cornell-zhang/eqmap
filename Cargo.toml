@@ -7,7 +7,8 @@ default-run = "epak"
 [dependencies]
 bitvec = "1.0.1"
 clap = { version = "4.5.31", features = ["derive"] }
-egg = "0.10.0"
+egg = { git = "https://github.com/neel-patel-1/egg" }
+good_lp = { version = "*" }
 indicatif = "0.17.11"
 serde = { version = "1.0.218", features = ["derive"] }
 serde_json = "1.0.140"
@@ -18,12 +19,23 @@ ctrlc = "3.4"
 manual_range_contains = "allow"
 
 [features]
-default = [ "dyn_decomp" ]
+default = [ "dyn_decomp", "exactness", "highs", "microlp" ]
 # We probably don't want the compiler to apply folding on LUTs.
 # It is too expensive
 # default = [ "dyn_decomp", "egraph_fold" ]
 egraph_fold = []
 exactness = [ "egg/lp" ]
+clarabel = ["egg/clarabel"]
+cbc = ["egg/cbc"]
+highs = ["egg/highs"]
+lp-solvers = ["egg/lp-solvers"]
+lpsolve = ["egg/lpsolve"]
+microlp = ["egg/microlp"]
+scip = ["egg/scip"]
+scip_bundled = ["egg/scip_bundled"]
+
+no_acyclic = ["egg/no_acyclic" ]
+
 cut_analysis = []
 dyn_decomp = [ "cut_analysis" ]
 graph_dumps = []
