@@ -1106,8 +1106,21 @@ where
         if solver_choice == "cbc" {
             self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP USING EGG's LP EXTRACTOR ON");
+                let formulation_start = Instant::now();
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                L::canonicalize_expr(e.timeout(t as f64).solve(root))
+                let formulation_time = formulation_start.elapsed();
+                let solver_start = Instant::now();
+                let expr = L::canonicalize_expr(e.timeout(t as f64).solve(root));
+                let solver_time = solver_start.elapsed();
+                eprintln!(
+                    "   INFO: ILP formulation time: {} seconds",
+                    formulation_time.as_secs_f64()
+                );
+                eprintln!(
+                    "   INFO: ILP solver time: {} seconds",
+                    solver_time.as_secs_f64()
+                );
+                expr
             })
         }
         else {
