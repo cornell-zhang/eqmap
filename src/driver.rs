@@ -23,7 +23,7 @@ use std::time::{Duration, Instant};
 use serde::Serialize;
 use std::{
     io::{IsTerminal, Read, Write},
-    path::PathBuf,
+    path::PathBuf, path::Path
 };
 
 const MAX_CANON_SIZE: usize = 30000;
@@ -1103,7 +1103,7 @@ where
         C: LpCostFunction<L, A>,
     {
         let solver_choice = self.solver_choice.clone();
-        if solver_choice == "cbc" {
+        if solver_choice == "egg_cbc" {
             self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP USING EGG's LP EXTRACTOR ON");
                 let formulation_start = Instant::now();
@@ -1158,6 +1158,13 @@ where
         }
         let runner = self.result.as_ref().unwrap();
         serialize_egraph(&runner.egraph, &runner.roots, c, w)
+    }
+
+    #[cfg(feature = "graph_dumps")]
+    /// Print an svg of the e-graph.
+    pub fn to_svg_file(&self, filename: impl AsRef<Path>) -> std::io::Result<()> {
+        let runner = self.result.as_ref().unwrap();
+        runner.egraph.dot().to_svg(filename)
     }
 
     /// Get individual proofs for each wire at the root of `best`.
@@ -1266,15 +1273,56 @@ where
 
     let mut req = req.with_expr(expr.clone());
 
+    #[cfg(feature = "graph_dumps")]
+    if let Some(p) = &req.dump_egraph {
+        let dump_path = p.clone();
+        eprintln!("INFO: Dumping e-graph before rewrites...");
+        let mut path = dump_path.clone();
+        if let Some(stem) = path.file_stem() {
+            let new_stem = format!("{}_before", stem.to_string_lossy());
+            path.set_file_name(new_stem);
+            if let Some(ext) = p.extension() {
+                path.set_extension(ext);
+            }
+        }
+        let mut file = std::fs::File::create(path)?;
+        req.serialize_with_greedy_cost(L::depth_cost_fn(), &mut file)?;
+        let mut name = dump_path.clone();
+        if let Some(stem) = name.file_stem() {
+            let new_stem = format!("{}_before", stem.to_string_lossy());
+            name.set_file_name(new_stem);
+            name.set_extension("svg");
+        }
+
+        req.to_svg_file(name)?;
+    }
+
     let result = req
         .synth()
         .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
 
     #[cfg(feature = "graph_dumps")]
     if let Some(p) = &req.dump_egraph {
-        eprintln!("INFO: Dumping e-graph...");
-        let mut file = std::fs::File::create(p)?;
+        let dump_path = p.clone();
+        eprintln!("INFO: Dumping e-graph after rewrites...");
+        let mut path = dump_path.clone();
+        if let Some(stem) = path.file_stem() {
+            let new_stem = format!("{}_after", stem.to_string_lossy());
+            path.set_file_name(new_stem);
+            if let Some(ext) = p.extension() {
+                path.set_extension(ext);
+            }
+        }
+        let mut file = std::fs::File::create(path.clone())?;
         req.serialize_with_greedy_cost(L::depth_cost_fn(), &mut file)?;
+
+        let mut name = dump_path.clone();
+        if let Some(stem) = name.file_stem() {
+            let new_stem = format!("{}_after", stem.to_string_lossy());
+            name.set_file_name(new_stem);
+            name.set_extension("svg");
+        }
+        req.to_svg_file(name)?;
     }
 
     if verbose && result.has_explanation() {
