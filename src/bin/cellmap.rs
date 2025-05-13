@@ -147,6 +147,7 @@ fn main() -> std::io::Result<()> {
     #[cfg(feature = "exactness")]
     let req = if args.exact {
         req.with_exactness(args.timeout.unwrap_or(600))
+            .with_purge_fn(|n| matches!(n, CellLang::And(_) | CellLang::Or(_) | CellLang::Inv(_)))
     } else {
         req
     };
