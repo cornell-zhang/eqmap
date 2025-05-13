@@ -467,8 +467,8 @@ detract from the rest of the ASIC work in the report. \todo{Provide the
         \State \textbf{Continue}
         \EndIf
         \State $bestChildren \gets []$ \Comment{List for best children}
-        \For{$v$ in \Call{Children}{$n$}}
-        \State $bestChildren \gets bestChildren\; + $ \Call{BestExpr}{$v$} \Comment{Append the list with recursive step}
+        \For{$v$ in \Call{Children}{$n$}} \Comment{Iterate over child e-classes}
+        \State $bestChildren \gets bestChildren\; + $ \Call{BestExpr}{$v$, $e$} \Comment{Append the list with recursive step}
         \EndFor
         \State $candidate \gets$ \Call{Combine}{$bestChildren + n$} \Comment{Combine the sub-circuits into one}
         \If{\Call{Area}{$candidate$} $<$ $bestArea$}
