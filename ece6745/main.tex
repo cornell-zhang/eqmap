@@ -33,10 +33,10 @@
 \section{Introduction}\label{sec:intro}
 \subsection{Motivation}\label{sec:intro:motivation}
 
-As the trends of transistor scaling come to a close, the QoR (quality of
-results) of EDA tools will become more of a bottleneck in the hardware design
-process. Given new developments in compiler technology and automated reasoning
-tools, it is possible to better study the suboptimality of the EDA tool stack.
+As transistor scaling comes to a close, the QoR (quality of results) of EDA
+tools will become more of a bottleneck in the hardware design process. Given
+new developments in compiler technology and automated reasoning tools, it is
+possible to better study the suboptimality of the conventional EDA tool stack.
 Several of the heuristics used in core EDA algorithms were invented decades
 ago, and increases in compute capacity in the modern era afford us a more
 formal and exploratory approach to optimizing digital logic. In this project, I
@@ -46,7 +46,7 @@ trade-off space. With my results, I demonstrate that e-graph driven compilers
 can better span the wide gap between SAT-based, exact synthesis and fully
 heuristic algorithms.
 
-\subsection{Project Proposal}\label{sec:intro:proposal}
+\subsection{Project Overview}\label{sec:intro:proposal}
 
 Over the length of this course project, I have developed a tool which uses
 e-graphs to superoptimize ASIC technology mapping. Besides developing the core
@@ -54,18 +54,24 @@ optimization and mapping framework, I have developed a Verilog parser and
 emitter to be able to test my technique against existing RTL tools. In short, I
 will be comparing against Synopsys Design Compiler. Across 96 RTL benchmarks,
 my tool, called \shortname{}, should be able to more exactly synthesize
-combinational logic to standard cells. My goal is roughly 10\% area savings
-without increasing the circuit depth.
+combinational logic to standard cells. My goal was roughly 10\% area savings
+without increasing the circuit depth. Ultimately, I did not reach this goal,
+but the results are a promising start. My tool (1) produces \textit{verified}
+netlists, (2) often achieves better timing than Synopsys, and (3) is at least
+competitive with respect to area.
 
-I am optimistic tat my tool can outperform Synopsys on small designs, because
-e-graphs can explore circuit topologies that heuristic methods cannot. However,
-the real challenge may lie in the extraction algorithm. For this reason, I will
-also consider optimizing for delay if that proves to be more feasible than
-optimizing for area. All of these experiments were relatively low cost to
-start, because I have a lot of compiler infrastructure already built up. For
-instance, I have a custom, bare-bones Verilog frontend. In the following
-sections, I will give the literature review needed to understand equality
-graphs for superoptimization as well as ASIC technology mapping in general.
+I was optimistic that my tool could outperform Synopsys on small designs,
+because e-graphs can explore circuit topologies that heuristic methods cannot.
+However, the real challenge lies within the e-graph extraction algorithm.
+Circuit minimization in general in NP-hard, and this problem in my flow
+manifests in the extraction stage (Sec.~\ref{sec:alt:extraction}). For this
+reason, future work should consider optimizing for delay as it might be more
+feasible than optimizing for area. Future experiments will be relatively low
+cost to start, because I have a lot of compiler infrastructure already built
+up. For instance, I have a custom, bare-bones Verilog frontend. In the
+following sections, I will give the literature review needed to understand
+equality graphs for superoptimization as well as ASIC technology mapping in
+general.
 
 \section{Literature Review}\label{sec:background}
 
@@ -118,12 +124,12 @@ The standard-cell design methodology for semiconductors came to fruition in the
 1980s and 90s. While ASIC design as a general technique is more manageable than
 full-custom layouts, there are still provably difficult problems in the flow.
 In general, Boolean logic minimization is NP-hard, and this carries over to
-more architecture-specific problems, like technology mapping. Technology
-mapping is the compilation step which converts the abstract RTL logic into a
-network of design elements that belong to the standard cell library. In other
-words, the input is the user-written logic and the output is a gate netlist.
-Since exact technology mapping is hard, most logic synthesis tools are largely
-driven by heuristics---either for minimizing area or delay. For instance,
+architecture-specific problems, i.e., technology mapping. Technology mapping is
+the compilation step which converts the abstract RTL logic into a network of
+design elements that belong to the standard cell library. In other words, the
+input is the user-written logic and the output is a gate netlist. Since exact
+technology mapping is hard, most logic synthesis tools are largely driven by
+heuristics---either for minimizing area or delay. For instance,
 Lily~\cite{areamap} takes into account the connectivity of a circuit in order
 to reduce area dedicated to routing signals. Another is example is
 how~\cite{powermap} maps cells while taking into account signal transition
@@ -273,8 +279,8 @@ In order to run meaningful experiments with \shortname{}, I needed to be able
 to interface with existing RTL tool flows. This means building some sort of
 Verilog compiler from scratch. A half-baked attempt may use a separate tool to
 convert the Verilog to a more primitive format---perhaps an and-inverter graph
-(AIG). However, if we want a high performance tool it is very important that
-all compilation stages stay in DRAM. For example, some Verilog test cases are
+(AIG). However, it is very important that all compilation stages stay in main
+memory if we want a speedy tool. For example, some Verilog test cases are
 50,000 lines of code. If we have multiple stages of serialization and parsing,
 the performance of the compiler is doomed.
 
@@ -308,9 +314,10 @@ nearly seamless integration with other RTL-based tool flows.
 \end{figure}
 
 Since building out the compiler is the first priority, very little evaluation
-was performed at this point. However, I can report the results of compiling one
-example: a 2-bit carry lookahead unit. Part of the advantage of EqMap is the
-flexibility of choosing which library to map to. For example,
+was performed at this point. However, the baseline compiler still has
+compelling results for simple cases. As an example, the baseline compiler was
+tested against a 2-bit carry lookahead unit. Part of the advantage of EqMap is
+the flexibility of choosing which library to map to. For example,
 Fig.~\ref{fig:test:cells} shows the advantage of introducing OAI and AOI cells
 into the library. The mapping uses four less cells than
 Fig.~\ref{fig:test:gates}.
@@ -371,37 +378,40 @@ techniques we learned from lecture. In particular, I will be drawing points of
 comparison and contrast with the course book~\cite{coursebook}. The goal is to
 show that unifying technology mapping under an automated reasoning framework
 greatly reduces the complexity of implementation and also increases the
-resilience of the technology mapper to structural bias. That is, the technology
-mapper becomes less dependent on the formulation/grouping of the input logic.
-That being said, I will know relate the heuristics from the
-book~\cite{coursebook} with my implementation: \bigbreak{} \noindent
-\textbf{Tree Covering Approximation of DAG Selection.} To make the technology
-mapping problem tractable, the book proposes that the DAG representing the
-digital circuit be broken down into a forest of trees. As a consequence, the
-technology mapper is not able to account for fan-out. In the case of e-graphs,
-this issue reoccurs, but in a reduced form. We can rewrite and map the logic
-with the full DAG structure. However, extraction is the phase in which this
-approximation/heuristic could be re-introduced. For example, greedy extraction
-will not accurately measure cost with respect to fan-out. Hence, it shares the
-same issue as pointed out in the book. However, if we reformulate the e-graph
-extraction problem in terms of mixed-integer linear programming (MILP) we can
-find the exact area-optimal solution. There is no escaping the NP-hardness of
-the mapping problem, but the e-graph offers more flexibility by isolating this
-issue in the extraction phase. \bigbreak{} \noindent \textbf{Simple Gate
-    Decomposition.} Large fan-in gates that have simple decompositions are broken
-down into reduction trees in order to discover more mappings. This heuristic is
-partially dependent on the input format. For example, this would be a
-requirement if the input to your mapper was an and-inverter graph (AIG). Again,
-the e-graph here affords lots of flexibility of input format, and it will
-automatically explore an expanded tree topology or the condensed gate form.
-Moreover, the commutativity and associativity rules mean \textit{all} the tree
-decompositions will be explored. This is a delicate issue to explain, but
-finding multiple tree decompositions is important to mitigating structural
-bias. \bigbreak{} \noindent \textbf{Inserting Inverter Pairs.} By inserting
-redundant inverters in the circuit, the technology mapper can try many more
-covers of the graph. For example, think of how De Morgan's laws can be used to
-interchange between AND and OR gates. This has an exact analgous feature in the
-e-graph rewriting system. To be exact, it is the interaction between the De
+resilience of the technology mapper to structural bias. The hypothesis is that
+an e-graph driven technology mapper will be less dependent on the
+formulation/grouping of the logic terms. That being said, I will now relate the
+heuristics from the book~\cite{coursebook} with my implementation: \bigbreak{}
+\noindent \textbf{Tree Covering Approximation of DAG Selection.} To make the
+technology mapping problem tractable, the book proposes that the DAG
+representing the digital circuit be broken down into a forest of trees. As a
+consequence, the technology mapper is limited in the ways it can restructure
+the logic. In the case of e-graphs, this issue reoccurs, but in a reduced form.
+We can rewrite and map the logic with the full DAG structure. However,
+extraction is the phase in which this approximation/heuristic could be
+re-introduced. For example, greedy extraction will not accurately measure cost
+with respect to fan-out. It measures cost as if the graph is a tree. Hence, it
+shares the same issue as pointed out in the book. However, if we reformulate
+the e-graph extraction problem in terms of mixed-integer linear programming
+(MILP) we can find the exact area-optimal solution. There is no escaping the
+NP-hardness of the mapping problem, but the e-graph offers more flexibility by
+isolating this issue in the extraction phase. \bigbreak{} \noindent
+\textbf{Simple Gate Decomposition.} Large fan-in gates that have simple
+decompositions are broken down into reduction trees in order to discover more
+mappings. This heuristic is partially dependent on the input logic format. For
+example, this would be a requirement if the input to your mapper was an
+and-inverter graph (AIG). Again, the e-graph here affords lots of flexibility
+of input format, and it will automatically explore different reduction tree
+topologies as a consequence of the rewrite rule system. In fact, the
+commutativity and associativity rules mean \textit{all} the tree decompositions
+will be explored. This is a delicate issue to explain, but restructuring the
+input logic is vital to mitigating structural bias and this is the main
+hypothesized advantage of using automated reasoning for logic synthesis.
+\bigbreak{} \noindent \textbf{Inserting Inverter Pairs.} By inserting redundant
+inverters in the circuit, the technology mapper can try many more covers of the
+graph. For example, observe how De Morgan's laws can be used to interchange
+between AND and OR gates. This has an exact analgous feature in the e-graph
+rewriting system. More specifically, it is the interaction between the De
 Morgan rules and negation rules in Tab.~\ref{tab:rules}. \bigbreak{} \noindent
 \textbf{Matching Small DAGs.} The book acknowledges that not all problems can
 be solved by paritioning the DAG circuit into a forest of trees. Even very
@@ -420,25 +430,26 @@ While the e-graph contains many possible cell coverings of the input logic,
 finding the best solution is still hard. While greedy extraction is very fast,
 it still views the logic structure as one big tree, meaning it can not use
 higher levels of fan-out to reduce area. In this project, I put quite a bit of
-effort into exploring other extraction techniques. E-Graph extraction is an
-open area of research, and my implementation efforts just reinforce the
-difficulty of the problem. \bigbreak{} \noindent \textbf{Integer Linear
-    Programming (ILP) Formulation.} Like many other combinatorial problems, the
-technology mapping problem can be reduced into an ILP formulation. This does
-not change the brute-force nature of the technique, but it does provides some
-perspective on the complexity of the problem. Moreover, it allows us to plug-in
-to other linear programming solvers to generate our solution.
-Sec.~\ref{sec:evaluation} provides some results using an ILP formulation of
-e-graph extraction. In short, the results are negative, because ILP cannot be
-ran on e-graphs as large the ones processed with a greedy cost metric.
-Moreover, the cycles in the e-graph prove to be a huge challenge for both the
-ILP formulation and the solving engine. There is a lot more to share about the
-ILP extraction efforts. However, they are pretty technical problems, not
-relevant to ASIC technology, and would detract from the rest of the ASIC work
-in the report. \todo{Provide the constraints.} \bigbreak{} \noindent
-\textbf{Dynamic Programming.} \todo{Provide the dynamic programming sec.}
+effort into exploring other extraction techniques. In general, e-graph
+extraction is still an open area of research, and my implementation efforts
+just reinforce the difficulty of the problem. \bigbreak{} \noindent
+\textbf{Integer Linear Programming (ILP) Formulation.} Like many other problems
+that are combinatorial in nature, the technology mapping problem can be reduced
+into an ILP formulation. This does not change the brute-force nature of the
+technique, but it does provides some perspective on the complexity of the
+problem. Moreover, it allows us to plug into to other linear programming
+solvers to generate our solution. Sec.~\ref{sec:evaluation} provides some
+results using an ILP formulation of e-graph extraction. In short, the results
+are negative, because the ILP solver cannot be ran on e-graphs as large as the
+ones processed with a greedy extractor. Moreover, the cycles in the e-graph
+prove to be a huge challenge for both the ILP formulation and the solving
+engine. There is a lot more to share about the ILP extraction efforts. However,
+they are pretty technical problems, not relevant to ASIC technology, and would
+detract from the rest of the ASIC work in the report. \todo{Provide the
+    constraints.} \bigbreak{} \noindent \textbf{Dynamic Programming.} \todo{Provide
+    the dynamic programming sec.}
 
-\begin{algorithm}
+\begin{algorithm}[h]
     \caption{Best Logic Expression for E-Class $c$ using Dynamic Programming}
     \label{alg:dynprog}
     \begin{algorithmic}[1]
@@ -473,13 +484,13 @@ in the report. \todo{Provide the constraints.} \bigbreak{} \noindent
 
 \section{Testing}\label{sec:testing}
 
-In the development of this tool, I used a varied testing strategy on both the
-software development front and the circuit verification front. For the project
-to be successful, it is very important to abstract the components of the
-compiler wisely and test them rigorously. This enforces some level of
+Throughout the course of this project, I used a varied testing strategy on both
+the software development front and the circuit verification front. For the
+project to be successful, it is very important to abstract the components of
+the compiler wisely and test them rigorously. This enforces some level of
 self-consistency in how the layers of the compiler integrate with each other.
-Still, end-to-end testing is still required to capture the demands of the end
-application---having a working Verilog-to-Verilog compiler. Hence, there is
+Nonethless, end-to-end testing is still required to capture the demands of the
+end application---having a working Verilog-to-Verilog compiler. Hence, there is
 nearly as much testing code as there is compiler code. The full list of testing
 strategies is itemized below:
 
@@ -497,6 +508,7 @@ strategies is itemized below:
           \begin{itemize}
               \item The intermediate language is its own statically typed data structure. A
                     mini-linter is built around it to check for syntax errors.
+              \item Verilator is used to lint Verilog output for sanity checking.
               \item The compiler performs exhaustive testing of combinational logic. Although, this
                     is only feasible for small circuits.
               \item Yosys RTL equivalence checking is used as a third party source to verify the
@@ -520,35 +532,25 @@ formal semantics for our Verilog netlists, and Rust's static typing, pattern
 matching, and memory safety enforce a certain level of code hygiene. Software
 development aside, Yosys is used to perform SAT-based equivalence checking to
 verify the resulting netlists. In short, the gate netlists are proven to be
-logically equivalent. Tab.~\ref{tab:results} shows very early results compiling
+logically equivalent. Tab.~\ref{tab:results} shows early results compiling
 benchmarks from the ISCAS'85 suite. These modules span from a handful of number
 of gates into the thousands. Likewise, some have very few output ports, while
 some have hundreds.
 
-In general, the results of my custom compiler are 1.5x to 2x worse with respect
-to area. This is because my compiler has not addressed the DAG selection / tree
-partitioning problem. Fig.~\ref{fig:dag} shows a very small circuit which
-demonstrates the issue. The circuit shows that creating a \texttt{NAND2} and
-\texttt{AND2} in parallel is wasteful when they share the same inputs. However,
-greedy extraction will produce the suboptimal solution in
+In general, the results of my custom compiler are roughly 1.5x worse with
+respect to area. This is because my compiler has not addressed the DAG
+selection / tree partitioning problem. Fig.~\ref{fig:dag} shows a very small
+circuit which demonstrates the issue. The circuit shows that creating a
+\texttt{NAND2} and \texttt{AND2} in parallel is wasteful when they share the
+same inputs. However, greedy extraction will produce the suboptimal solution in
 Fig.~\ref{fig:dag:bad}. On the other hand, Fig.~\ref{fig:dag:good} resuses the
 \texttt{NAND2} logic and the entire circuit is half the area. While this
 example is simple to understand, computing the optimal solution in general is
-combinatorial and hence NP-hard. In short, exact circuit selection is
-computationally intractable, but the default greedy extraction algorithm I am
-using is too primitive. It cannot increase the fan-out of gates to share
-computation and save area. Clearly, I will need to reimplement some heuristics.
-
-In most other respects, the evaluation procedure is incomplete. In the final
-iteration of the compiler, I plan to improve extraction by implementing my own
-dynamic programing algorithm to solve the DAG selection problem. This will
-likely not scale well, but it could be useful for small designs. I can also
-re-implement the tree partitioning heuristic. Moreover, I plan to continue
-tweaking my cost model to take into account power and latency. As for the
-experimentation, I plan to introduce a second baseline: Yosys. Finally, I will
-also measure the timing qualities of the outputted netlists. As a reach, I can
-also measure switching energy. Lastly, I will run the tools on a larger set of
-benchmarks, perhaps Verilog that other students wrote in the course.
+combinatorial in nature and is proven in general to be NP-hard. In short, exact
+circuit selection is computationally intractable. At the same time, the default
+greedy extraction algorithm I am using is too primitive. It cannot increase the
+fan-out of gates to share computation and save area. Clearly, I will need to
+reimplement some heuristics in future work.
 
 \begin{figure}[h]
     \begin{subfigure}{0.48\textwidth}
@@ -575,6 +577,18 @@ benchmarks, perhaps Verilog that other students wrote in the course.
     ]{data/results.csv}{1=\one, 2=\two, 3=\three, 4=\four, 5=\five, 6=\six, 7=\seven}%
     {\one & \two & \three & \four & \five & \six & \seven}
 \end{table*}
+
+\section{Future Work and Conclusion}\label{sec:conclusion}
+
+In the final iteration of the compiler, I enhanced extraction by implementing
+my own dynamic programing algorithm to solve the DAG selection problem. This
+does not scale well, but it could be useful for small designs. In the future, I
+plan to also re-implement the tree partitioning heuristic. Moreover, I plan to
+continue tweaking my cost model to take into account power and latency. As for
+the experimentation, I plan to introduce a second baseline: Yosys. Finally, I
+will also measure the timing qualities of the outputted netlists. As a reach, I
+can also measure switching energy. Lastly, I will run the tools on a larger set
+of benchmarks, perhaps Verilog that other students wrote in the course.
 
 \nocite{*}
 \bibliographystyle{plain-annote}
