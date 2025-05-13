@@ -566,9 +566,9 @@ reimplement some heuristics in future work.
     \caption{DAG selection in general is an NP-hard problem. Hence, a tree partition heuristic is needed to create higher fan-out gates that share logic.}\label{fig:dag}
 \end{figure}
 
-\begin{table*}[t]
+\begin{table}[t]
     \centering
-    \caption{Post-implementation results of pipelined multiplication circuit optimized with EqMap. Yosys 0.33 + EqMap is used for synthesis, and Vivado 2024 is used for placement and routing.}\label{tab:results}
+    \caption{ISCAS'85 Benchmark results comparing MSynth (My e-graph driven tool) against Synopsys Design Compiler. Fast, greedy e-graph extraction is used.}\label{tab:results}
     \csvreader[
         tabular=lrrrrrrrrr, % Custom alignment for this instance
         late after line=\\, % Add \\ after each row
@@ -576,7 +576,19 @@ reimplement some heuristics in future work.
         table head=\toprule Module & Cell Count & & Area ($\mu\text{m}^2$) & & Arrival Time (ns) &  \\ \midrule
     ]{data/results.csv}{1=\one, 2=\two, 3=\three, 4=\four, 5=\five, 6=\six, 7=\seven}%
     {\one & \two & \three & \four & \five & \six & \seven}
-\end{table*}
+\end{table}
+
+\begin{table}
+    \centering
+    \caption{Results comparing greedy extraction technique with ILP formulation of the extraction problem. The ILP results are worse, because the egraph needed to be limited in size (8000 nodes), whereas the greedy extractor still works on e-graphs grown to hundreds of thousands of nodes.}\label{tab:ilp}
+    \csvreader[
+        tabular=lrrrrrrrrr, % Custom alignment for this instance
+        late after line=\\, % Add \\ after each row
+        late after last line=\\ \bottomrule, % Prevent extra \\ after the last row
+        table head=\toprule Module & Area ($\mu\text{m}^2$) & & Extraction Time (s) &  \\ \midrule
+    ]{data/ilp.csv}{1=\one, 2=\two, 3=\three, 4=\four, 5=\five}%
+    {\one & \two & \three & \four & \five}
+\end{table}
 
 \section{Future Work and Conclusion}\label{sec:conclusion}
 
