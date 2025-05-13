@@ -448,6 +448,15 @@ they are pretty technical problems, not relevant to ASIC technology, and would
 detract from the rest of the ASIC work in the report. However, I will provide
 the ILP formulation of e-graph extraction that my compiler uses. It is inspired
 from TenSat~\cite{ilpextract} and takes the form of four linear constraints:
+
+\begin{align}
+     & x_i \in \{0, 1\} \;\;\;\;                      & \text{(Binary variables to represent choice of nodes)}            & \\
+     & \sum_{i \in C} x_i = 1 \;\;\;\;                & (\text{Choose one node to extract from class } C)                 & \\
+     & x_i \leq \sum_{j \in \texttt{Children}(i)} x_j & \text{(Any selected node must have its children implemented too)} & \\
+    \nonumber                                                                                                               \\
+     & \text{Goal: }                                  & \min \sum x_i \cdot \texttt{Cost}(i)                              &
+\end{align}
+
 \todo{Provide the constraints.} \bigbreak{} \noindent \textbf{Dynamic
     Programming.} \todo{Provide the dynamic programming sec.}
 
