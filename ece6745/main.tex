@@ -445,9 +445,11 @@ ones processed with a greedy extractor. Moreover, the cycles in the e-graph
 prove to be a huge challenge for both the ILP formulation and the solving
 engine. There is a lot more to share about the ILP extraction efforts. However,
 they are pretty technical problems, not relevant to ASIC technology, and would
-detract from the rest of the ASIC work in the report. \todo{Provide the
-    constraints.} \bigbreak{} \noindent \textbf{Dynamic Programming.} \todo{Provide
-    the dynamic programming sec.}
+detract from the rest of the ASIC work in the report. However, I will provide
+the ILP formulation of e-graph extraction that my compiler uses. It is inspired
+from TenSat~\cite{ilpextract} and takes the form of four linear constraints:
+\todo{Provide the constraints.} \bigbreak{} \noindent \textbf{Dynamic
+    Programming.} \todo{Provide the dynamic programming sec.}
 
 \begin{algorithm}[h]
     \caption{Best Logic Expression for E-Class $c$ using Dynamic Programming}
@@ -607,7 +609,7 @@ of benchmarks, perhaps Verilog that other students wrote in the course.
 \bibliography{references}
 
 % TODOs:
-% - Get timing information
+% - Are Model
 % - Talk about ILP
 % - Describe dynamic programming algorithm
 
