@@ -358,6 +358,10 @@ were added in the latest iteration of the compiler.
     \caption{An incomplete table of cells defined as rewrite rules}\label{tab:morecells}
 \end{table}
 
+\subsection{Exact Area Model}\label{sec:alt:area}
+
+\todo{Do the area model.}
+
 \subsection{Heuristics Supplanted by Automated Reasoning}\label{sec:alt:heuristics}
 
 The alternative design of the compiler sets out to improve upon the heuristic
@@ -407,6 +411,30 @@ smaller trees. With e-graph rewriting, this is simply not an issue as we can
 expand the search pattern in the e-graph rewrite rule arbitrarily. Of course,
 more complex patterns incur more execution time. However, this has not been an
 issue for gates like XOR or MAJ3.
+
+\subsection{Exact Extraction Techniques}\label{sec:alt:extraction}
+
+While the e-graph contains many possible cell coverings of the input logic,
+finding the best solution is still hard. While greedy extraction is very fast,
+it still views the logic structure as one big tree, meaning it can not use
+higher levels of fan-out to reduce area. In this project, I put quite a bit of
+effort into exploring other extraction techniques. E-Graph extraction is an
+open area of research, and my implementation efforts just reinforce the
+difficulty of the problem. \bigbreak{} \noindent \textbf{Integer Linear
+    Programming (ILP) Formulation.} Like many other combinatorial problems, the
+technology mapping problem can be reduced into an ILP formulation. This does
+not change the brute-force nature of the technique, but it does provides some
+perspective on the complexity of the problem. Moreover, it allows us to plug-in
+to other linear programming solvers to generate our solution.
+Sec.~\ref{sec:evaluation} provides some results using an ILP formulation of
+e-graph extraction. In short, the results are negative, because ILP cannot be
+ran on e-graphs as large the ones processed with a greedy cost metric.
+Moreover, the cycles in the e-graph prove to be a huge challenge for both the
+ILP formulation and the solving engine. There is a lot more to share about the
+ILP extraction efforts. However, they are pretty technical problems, not
+relevant to ASIC technology, and would detract from the rest of the ASIC work
+in the report. \todo{Provide the constraints.} \bigbreak{} \noindent
+\textbf{Dynamic Programming.} \todo{Provide the dynamic programming sec.}
 
 \section{Testing}\label{sec:testing}
 
