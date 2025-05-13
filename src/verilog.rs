@@ -700,7 +700,9 @@ impl SVPrimitive {
     pub fn connect_signal(&mut self, port: String, signal: String) -> Result<(), String> {
         match port.as_str() {
             "I" | "I0" | "I1" | "I2" | "I3" | "I4" | "I5" | "D" | "A" | "B" | "S" | "A1" | "A2"
-            | "A3" | "B1" | "B2" | "B3" | "C1" | "C2" | "C3" => self.connect_input(port, signal),
+            | "A3" | "A4" | "B1" | "B2" | "B3" | "C1" | "C2" | "C3" => {
+                self.connect_input(port, signal)
+            }
             "O" | "Y" | "Q" | "G" | "P" | "Z" | "ZN" => self.connect_output(port, signal),
             "C" | "CE" | "R" => Ok(()),
             _ => Err(format!("Unknown port name {}", port)),
