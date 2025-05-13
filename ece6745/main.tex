@@ -11,6 +11,8 @@
 \usepackage{multirow}
 \usepackage{amsmath}
 \usepackage{subcaption}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 
 \newcommand{\todo}[1]{\textcolor{red}{TODO:\ #1}}
 \newcommand{\shortname}{EqMap}
@@ -436,6 +438,39 @@ relevant to ASIC technology, and would detract from the rest of the ASIC work
 in the report. \todo{Provide the constraints.} \bigbreak{} \noindent
 \textbf{Dynamic Programming.} \todo{Provide the dynamic programming sec.}
 
+\begin{algorithm}
+    \caption{Best Logic Expression for E-Class $c$ using Dynamic Programming}
+    \label{alg:dynprog}
+    \begin{algorithmic}[1]
+        \Require $e$ \Comment{The e-graph to be extracted from}
+        \Require $table$ \Comment{Table to memoize the best results}
+
+        \Function{BestExpr}{$c$}
+        \If{$table$ contains $c$}
+        \State \Return $table[c]$ \Comment{Return the memoized result}
+        \EndIf
+        \State $bestArea \gets \infty$ \Comment{Initialize best cost}
+        \State $bestExpr \gets \texttt{None}$ \Comment{Initialize best expression}
+        \For{$n$ in \Call{Nodes}{$c$, $e$}} \Comment{Iterate over all nodes in the e-class}
+        \If{\Call{Visited}{$n$}} \Comment{Break out of cycles}
+        \State \textbf{Continue}
+        \EndIf
+        \State $bestChildren \gets []$ \Comment{List for best children}
+        \For{$v$ in \Call{Children}{$n$}}
+        \State $bestChildren \gets bestChildren\; + $ \Call{BestExpr}{$v$} \Comment{Append the list with recursive step}
+        \EndFor
+        \State $candidate \gets$ \Call{Combine}{$bestChildren + n$} \Comment{Combine the sub-circuits into one}
+        \If{\Call{Area}{$candidate$} $<$ $bestArea$}
+        \State $bestArea \gets$ \Call{Area}{$candidate$} \Comment{Update best cost}
+        \State $bestExpr \gets candidate$ \Comment{Update best expression}
+        \EndIf
+        \EndFor
+        \State $table[c] \gets bestExpr$ \Comment{Memoize the result}
+        \State \Return $bestExpr$ \Comment{Return the best expression}
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+
 \section{Testing}\label{sec:testing}
 
 In the development of this tool, I used a varied testing strategy on both the
@@ -544,5 +579,10 @@ benchmarks, perhaps Verilog that other students wrote in the course.
 \nocite{*}
 \bibliographystyle{plain-annote}
 \bibliography{references}
+
+% TODOs:
+% - Get timing information
+% - Talk about ILP
+% - Describe dynamic programming algorithm
 
 \end{document}
