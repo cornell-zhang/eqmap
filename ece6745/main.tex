@@ -705,17 +705,44 @@ reimplement some heuristics in future work.
     \caption{DAG selection in general is an NP-hard problem. Hence, a tree partition heuristic is needed to create higher fan-out gates that share logic.}\label{fig:dag}
 \end{figure}
 
-\section{Future Work and Conclusion}\label{sec:conclusion}
+As for timing, my results are much more competitive. In fact, the e-graph
+produced netlists have better arrival time in all but two cases. Using c7552 as
+an example, the delay path is roughly 33\% shorter when using my compiler over
+Synopsys. Lastly, I will address the failure of ILP driven exact extraction. In
+short, it is supposed to solve the problem exactly. However, it does not scale
+to the e-graphs we want to process. For example, the results in
+Tab.~\ref{tab:results} does not restrict the size of the e-graph, and many
+e-graphs grew into the hundreds of thousands of nodes. Meanwhile, the ILP
+results in Tab.~\ref{tab:ilp} are limited to 8,000 nodes. In the end, it means
+we have an extraction time that is roughly 10,000x slower just to achieve a
+worse result. Clearly, we need to invent new extraction heuristics. It is an
+open area of research~\cite{smoothe,sparsextract,ilpextract}, but there are no
+robust Rust implementations of said research that can be integrated and tested
+today, without writing more code.
 
-In the final iteration of the compiler, I enhanced extraction by implementing
-my own dynamic programing algorithm to solve the DAG selection problem. This
-does not scale well, but it could be useful for small designs. In the future, I
-plan to also re-implement the tree partitioning heuristic. Moreover, I plan to
-continue tweaking my cost model to take into account power and latency. As for
-the experimentation, I plan to introduce a second baseline: Yosys. Finally, I
-will also measure the timing qualities of the outputted netlists. As a reach, I
-can also measure switching energy. Lastly, I will run the tools on a larger set
-of benchmarks, perhaps Verilog that other students wrote in the course.
+\section{Conclusion and Future Work}\label{sec:conclusion}
+
+In this project, I build an ASIC technology mapping tool that uses
+industry-standard Verilog as input and output. While the project proved that
+e-graphs for automated reasoning can be used to make verified compilers very
+quickly, the argument for higher levels of optimization still needs to be
+proven. All my netlists were verified, but the area was roughly 1.5x worse than
+Synopsys DC. At the very least, the timing was better in all but two cases.
+Future work on extraction remains.
+
+In the future, I plan to also re-implement the tree partitioning heuristic.
+Moreover, I plan to continue tweaking my cost model to take into account power
+and latency. As for the experimentation, I plan to introduce a second baseline:
+Yosys. There are no existing Yosys passes to do the full logic synthesis and
+technology mapping for ASIC. I can create my own Yosys pass, but I did not have
+enough time for this deadline. Maybe I can also measure switching energy in my
+cost model. Lastly, I will run the tools on a larger set of benchmarks, perhaps
+Verilog that other students wrote in the course. Within this project, my
+extraction technique was too primitive to make it worthwhile to expand to more
+benchmarks. I spend the large majority of the last two weeks making ILP
+extraction feasible. In the end, I am satisfied with this project, because it
+brought in a lot of challenges not presented by the FPGA LUT mapping. These
+problems will no doubt be inspiration for future research.
 
 \nocite{*}
 \bibliographystyle{plain-annote}
