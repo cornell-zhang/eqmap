@@ -456,11 +456,11 @@ hypothesized advantage of using automated reasoning for logic synthesis.
 \bigbreak{} \noindent \textbf{Inserting Inverter Pairs.} By inserting redundant
 inverters in the circuit, the technology mapper can try many more covers of the
 graph. For example, observe how De Morgan's laws can be used to interchange
-between AND and OR gates. This has an exact analgous feature in the e-graph
+between AND and OR gates. This has an exact analogous feature in the e-graph
 rewriting system. More specifically, it is the interaction between the De
 Morgan rules and negation rules in Tab.~\ref{tab:rules}. \bigbreak{} \noindent
 \textbf{Matching Small DAGs.} The book acknowledges that not all problems can
-be solved by paritioning the DAG circuit into a forest of trees. Even very
+be solved by partitioning the DAG circuit into a forest of trees. Even very
 simple operations like XOR are incompatible with those constraints. Hence, the
 book proposes that small structures should use a matching technique to map
 those structures outside the general dynamic programming problem. The downside,
@@ -493,7 +493,7 @@ engine. There is a lot more to share about the ILP extraction efforts. However,
 they are pretty technical problems, not relevant to ASIC technology, and would
 detract from the rest of the ASIC work in the report. However, I will provide
 the ILP formulation of e-graph extraction that my compiler uses. It is inspired
-from TenSat~\cite{ilpextract}. Ectracting some root e-class $C$ takes on the
+from TenSat~\cite{ilpextract}. Extracting some root e-class $C$ takes on the
 form of three linear constraints:
 
 \begin{align}
@@ -563,15 +563,15 @@ solution space to search. Algorithm~\ref{alg:dynprog} shows the dynamic
 programming implementation I used. When choosing the best gate mapping for an
 e-class $c$, we first recursively find the best gate mappings for all the child
 e-classes for all the nodes in the e-class. Then, we combine the circuits using
-common subexpression elimination (the call to \texttt{Combine} in
+common sub-expression elimination (the call to \texttt{Combine} in
 Alg.~\ref{alg:dynprog}). If the candidate circuit is better than the current
 best, we update the best circuit. Finally, a lookup table is used to memoize
 the results. The dynamic programming algorithm as presented in the course
-textbook does not need a common subexpression elimination step, because it is
+textbook does not need a common sub-expression elimination step, because it is
 always covering the same graph. On the other hand, the e-graph models all
-possile restructuring of the logic according to Boolean algebra. Hence, the
+possible restructuring of the logic according to Boolean algebra. Hence, the
 e-graph extractor presents many `best' solutions. As a result,
-Alg.~\ref{alg:dynprog} is quick but produces suboptimal results. I attempted to
+Alg.~\ref{alg:dynprog} is quick but produces sub-optimal results. I attempted to
 augment the algorithm by storing multiple `best' expressions, then checking
 them all in a loop. This is the correct fix, but the execution time and spaces
 grows factorially. After all, the e-graph contains all Boolean restructuring of
@@ -604,7 +604,7 @@ the software development front and the circuit verification front. For the
 project to be successful, it is very important to abstract the components of
 the compiler wisely and test them rigorously. This enforces some level of
 self-consistency in how the layers of the compiler integrate with each other.
-Nonethless, end-to-end testing is still required to capture the demands of the
+Nonetheless, end-to-end testing is still required to capture the demands of the
 end application---having a working Verilog-to-Verilog compiler. Hence, there is
 nearly as much testing code as there is compiler code. The full list of testing
 strategies is itemized below:
@@ -649,7 +649,7 @@ strategies is itemized below:
 
 \begin{table}[h]
     \centering
-    \caption{Results comparing greedy extraction technique with ILP formulation of the extraction problem. The ILP results are worse, because the egraph needed to be limited in size (8000 nodes), whereas the greedy extractor still works on e-graphs grown to hundreds of thousands of nodes.}\label{tab:ilp}
+    \caption{Results comparing greedy extraction technique with ILP formulation of the extraction problem. The ILP results are worse, because the e-graph needed to be limited in size (8000 nodes), whereas the greedy extractor still works on e-graphs grown to hundreds of thousands of nodes.}\label{tab:ilp}
     \csvreader[
         tabular=lrrrrrrrrr, % Custom alignment for this instance
         late after line=\\, % Add \\ after each row
@@ -663,7 +663,7 @@ Early results are promising, because they demonstrate that e-graph driven
 compilers can scale to the thousands of gates. As an example, a 4,000 line
 Verilog module with 108 outputs can be expanded to an e-graph with 50,000 nodes
 in seconds. Including Verilog compilation and emission, the total synthesis
-time is approximately 10 seconds. Of course, we can extend or shortern the
+time is approximately 10 seconds. Of course, we can extend or shorten the
 amount of time spent on e-graph construction. Moreover, the results are also
 evidence that automated reasoning and the Rust programming language are great
 tools for creating robust, high quality compilers. E-graphs force us to define
@@ -681,15 +681,15 @@ respect to area. This is because my compiler has not addressed the DAG
 selection / tree partitioning problem. Fig.~\ref{fig:dag} shows a very small
 circuit which demonstrates the issue. The circuit shows that creating a
 \texttt{NAND2} and \texttt{AND2} in parallel is wasteful when they share the
-same inputs. However, greedy extraction will produce the suboptimal solution in
-Fig.~\ref{fig:dag:bad}. On the other hand, Fig.~\ref{fig:dag:good} resuses the
-\texttt{NAND2} logic and the entire circuit is half the area. While this
+same inputs. However, greedy extraction will produce the sub-optimal solution
+in Fig.~\ref{fig:dag:bad}. On the other hand, Fig.~\ref{fig:dag:good} reuses
+the \texttt{NAND2} logic and the entire circuit is half the area. While this
 example is simple to understand, computing the optimal solution in general is
 combinatorial in nature and is proven in general to be NP-hard. In short, exact
 circuit selection is computationally intractable. At the same time, the default
 greedy extraction algorithm I am using is too primitive. It cannot increase the
 fan-out of gates to share computation and save area. Clearly, I will need to
-reimplement some heuristics in future work.
+re-implement some heuristics in future work.
 
 \begin{figure}[h]
     \begin{subfigure}{0.48\textwidth}
@@ -739,7 +739,7 @@ enough time for this deadline. Maybe I can also measure switching energy in my
 cost model. Lastly, I will run the tools on a larger set of benchmarks, perhaps
 Verilog that other students wrote in the course. Within this project, my
 extraction technique was too primitive to make it worthwhile to expand to more
-benchmarks. I spend the large majority of the last two weeks making ILP
+benchmarks. I spent the large majority of the last two weeks making ILP
 extraction feasible. In the end, I am satisfied with this project, because it
 brought in a lot of challenges not presented by the FPGA LUT mapping. These
 problems will no doubt be inspiration for future research.
