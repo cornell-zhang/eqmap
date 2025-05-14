@@ -54,13 +54,13 @@ Over the length of this course project, I have developed a tool which uses
 e-graphs to superoptimize ASIC technology mapping. Besides developing the core
 optimization and mapping framework, I have developed a Verilog parser and
 emitter to be able to test my technique against existing RTL tools. In short, I
-will be comparing against Synopsys Design Compiler. Across 96 RTL benchmarks,
-my tool, called \shortname{}, should be able to more exactly synthesize
-combinational logic to standard cells. My goal was roughly 10\% area savings
-without increasing the circuit depth. Ultimately, I did not reach this goal,
-but the results are a promising start. My tool (1) produces \textit{verified}
-netlists, (2) often achieves better timing than Synopsys, and (3) is at least
-competitive with respect to area.
+will be comparing my results against Synopsys Design Compiler. Across the
+ISCAS'85 RTL benchmark suite, my tool, called \shortname{}, should be able to
+more exactly synthesize combinational logic to standard cells. My goal was
+roughly 10\% area savings without increasing the circuit depth. Ultimately, I
+did not reach this goal, but the results are a promising start. My tool (1)
+produces \textit{verified} netlists, (2) often achieves better timing than
+Synopsys, and (3) is at least competitive with respect to area.
 
 I was optimistic that my tool could outperform Synopsys on small designs,
 because e-graphs can explore circuit topologies that heuristic methods cannot.
@@ -256,13 +256,13 @@ practice, equality saturation takes too long, and empirically it is not
 required to capture the majority of the optimization potential. The quality of
 results are more so dependent on the extraction technique used. As explained in
 Sec.~\ref{sec:background:egraph}, \textit{extraction} is the process of
-selecting the ``best'' circuit from the e-graph. Given that e-graph can easily
-contain hundreds of thousands of e-nodes across tens of thousands of e-classes,
-a greedy extraction algorithm is the most pragmatic. The greedy extractor
-iterates over the e-classes, updating the cost of the cheapest e-node until the
-database of costs no longer change. In the baseline compiler, the cost model
-simply counts the number of cells required to implement a logic function. For a
-circuit node \texttt{x}, its cost is defined as follows:
+selecting the ``best'' circuit from the e-graph. Given that an e-graph can
+easily contain hundreds of thousands of e-nodes across tens of thousands of
+e-classes, a greedy extraction algorithm is the most pragmatic. The greedy
+extractor iterates over the e-classes, updating the cost of the cheapest e-node
+until the database of costs no longer change. In the baseline compiler, the
+cost model simply counts the number of cells required to implement a logic
+function. For a circuit node \texttt{x}, its cost is defined as follows:
 
 \begin{figure}[h]
     \[
@@ -346,9 +346,9 @@ type into a rewrite rule. This is perhaps the one task I would entrust to an
 LLM. However, I still wrote the reasoning rules for the rest of the cells by
 hand by reading \texttt{stdcells.v} from the Nangate 45nm Free PDK. The main
 cells missing from the baseline design are XOR gates, multiplexers, and
-majority gates. There are also many alternate version of AOI and OAI gates,
-ranging from 3 to 5 inputs, that were finally implemented. One interesting
-thing I learned is that a majority gate is a special case of
+majority gates. There are also many varieties of AOI and OAI gates, ranging
+from 3 to 5 inputs, that were finally implemented. One interesting thing I
+learned is that a majority gate is a special case of
 \texttt{AOI222}\footnote{\href{https://en.wikichip.org/wiki/majority\_gate\#MAJ3}{https://en.wikichip.org/wiki/majority\_gate\#MAJ3}}.
 Tab.~\ref{tab:morecells} shows the rewrite rules for some of the new cells that
 were added in the latest iteration of the compiler.
@@ -562,7 +562,7 @@ posing of the problem may prove more optimal, but it admits a much wider
 solution space to search. Algorithm~\ref{alg:dynprog} shows the dynamic
 programming implementation I used. When choosing the best gate mapping for an
 e-class $c$, we first recursively find the best gate mappings for all the child
-e-classes for all the nodes in the e-class. Then, we combine the circuits using
+e-classes---for all the nodes in the e-class. Then, we combine the circuits using
 common sub-expression elimination (the call to \texttt{Combine} in
 Alg.~\ref{alg:dynprog}). If the candidate circuit is better than the current
 best, we update the best circuit. Finally, a lookup table is used to memoize
@@ -572,9 +572,9 @@ always covering the same graph. On the other hand, the e-graph models all
 possible restructuring of the logic according to Boolean algebra. Hence, the
 e-graph extractor presents many `best' solutions. As a result,
 Alg.~\ref{alg:dynprog} is quick but produces sub-optimal results. I attempted to
-augment the algorithm by storing multiple `best' expressions, then checking
+augment the algorithm by first storing multiple `best' expressions and then checking
 them all in a loop. This is the correct fix, but the execution time and spaces
-grows factorially. After all, the e-graph contains all Boolean restructuring of
+grows factorial in the number of nodes. After all, the e-graph contains all Boolean restructuring of
 the logic. Since this algorithm only worked on very small e-graphs, there are
 no results reported using this technique in Sec.~\ref{sec:evaluation}. However,
 I do include some ILP results. In both the case of ILP and dynamic programming,
@@ -682,14 +682,15 @@ selection / tree partitioning problem. Fig.~\ref{fig:dag} shows a very small
 circuit which demonstrates the issue. The circuit shows that creating a
 \texttt{NAND2} and \texttt{AND2} in parallel is wasteful when they share the
 same inputs. However, greedy extraction will produce the sub-optimal solution
-in Fig.~\ref{fig:dag:bad}. On the other hand, Fig.~\ref{fig:dag:good} reuses
-the \texttt{NAND2} logic and the entire circuit is half the area. While this
-example is simple to understand, computing the optimal solution in general is
-combinatorial in nature and is proven in general to be NP-hard. In short, exact
-circuit selection is computationally intractable. At the same time, the default
-greedy extraction algorithm I am using is too primitive. It cannot increase the
-fan-out of gates to share computation and save area. Clearly, I will need to
-re-implement some heuristics in future work.
+as depicted in Fig.~\ref{fig:dag:bad}. On the other hand,
+Fig.~\ref{fig:dag:good} reuses the \texttt{NAND2} logic and the entire circuit
+is half the area. While this example is simple to understand, computing the
+optimal solution in general is combinatorial in nature and is proven in general
+to be NP-hard. In short, exact circuit selection is computationally
+intractable. At the same time, the default greedy extraction algorithm I am
+using is too primitive. It cannot increase the fan-out of gates to share
+computation and save area. Clearly, I will need to re-implement some heuristics
+in future work.
 
 \begin{figure}[h]
     \begin{subfigure}{0.48\textwidth}
@@ -711,7 +712,7 @@ an example, the delay path is roughly 33\% shorter when using my compiler over
 Synopsys. Lastly, I will address the failure of ILP driven exact extraction. In
 short, it is supposed to solve the problem exactly. However, it does not scale
 to the e-graphs we want to process. For example, the results in
-Tab.~\ref{tab:results} does not restrict the size of the e-graph, and many
+Tab.~\ref{tab:results} do not restrict the size of the e-graph, and many
 e-graphs grew into the hundreds of thousands of nodes. Meanwhile, the ILP
 results in Tab.~\ref{tab:ilp} are limited to 8,000 nodes. In the end, it means
 we have an extraction time that is roughly 10,000x slower just to achieve a
