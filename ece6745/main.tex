@@ -463,11 +463,12 @@ before extraction. We use the Rust crate \texttt{good\_lp} to represent the ILP
 problem, and this allows for seamless integration with many ILP solvers, like
 CBC\footnote{\href{https://github.com/coin-or/Cbc}{https://github.com/coin-or/Cbc}}
 and HiGHS\footnote{\href{https://highs.dev/}{https://highs.dev/}}. The cost
-model in this context is cell area. Finally, there are additional constraints
-not listed here for preventing combinational loops.
-
-\bigbreak{} \noindent \textbf{Dynamic
-    Programming.} \todo{Provide the dynamic programming sec.}
+model in this context is the cell area metric from Sec.~\ref{sec:alt:area}.
+Finally, there are additional constraints not listed here for preventing
+combinational loops. As we will see in Sec.~\ref{sec:evaluation}, ILP
+extraction does not scale well to the very large e-graphs my tool generates.
+Hence, we need to limit the build size in order to obtain results, introducing
+a new trade-off.
 
 \begin{algorithm}[h]
     \caption{Best Logic Expression for E-Class $c$ using Dynamic Programming}
@@ -501,6 +502,38 @@ not listed here for preventing combinational loops.
         \EndFunction
     \end{algorithmic}
 \end{algorithm}
+
+\bigbreak{} \noindent \textbf{Dynamic
+    Programming.} We can also use dynamic programming as another way to brute force the solution
+to exact technology mapping. The tree covering algorithm as presented in the
+course textbook~\cite{coursebook} is optimal, disregarding the DAG partitioning
+part. However, extending the same algorithm to e-graph extraction is naive,
+because e-graph rewriting also restructures the logic. In other words, the
+e-graph extractor needs to compute the best cell covering for every single
+possible equivalent graph, whereas the textbook algorithm is given a graph and
+only needs to find the best covering for said graph. Obviously, the e-graph
+posing of the problem may prove more optimal, but it admits a much wider
+solution space to search. Algorithm~\ref{alg:dynprog} shows the dynamic
+programming implementation I used. When choosing the best gate mapping for an
+e-class $c$, we first recursively find the best gate mappings for all the child
+e-classes for all the nodes in the e-class. Then, we combine the circuits using
+common subexpression elimination (the call to \texttt{Combine} in
+Alg.~\ref{alg:dynprog}). If the candidate circuit is better than the current
+best, we update the best circuit. Finally, a lookup table is used to memoize
+the results. The dynamic programming algorithm as presented in the course
+textbook does not need a common subexpression elimination step, because it is
+always covering the same graph. On the other hand, the e-graph models all
+possile restructuring of the logic according to Boolean algebra. Hence, the
+e-graph extractor presents many `best' solutions. As a result,
+Alg.~\ref{alg:dynprog} is quick but produces suboptimal results. I attempted to
+augment the algorithm by storing multiple `best' expressions, then checking
+them all in a loop. This is the correct fix, but the execution time and spaces
+grows factorially. After all, the e-graph contains all Boolean restructuring of
+the logic. Since this algorithm only worked on very small e-graphs, there are
+no results reported using this technique in Sec.~\ref{sec:evaluation}. However,
+I do include some ILP results. In both the case of ILP and dynamic programming,
+we see that there are consequences for widening the solution space so much over
+more classic technology mapping algorithms. There is no free lunch.
 
 \section{Testing}\label{sec:testing}
 
