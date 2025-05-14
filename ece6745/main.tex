@@ -13,6 +13,8 @@
 \usepackage{subcaption}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
+\usepackage{listings}
+\usepackage{xcolor}
 
 \newcommand{\todo}[1]{\textcolor{red}{TODO:\ #1}}
 \newcommand{\shortname}{EqMap}
@@ -369,7 +371,51 @@ were added in the latest iteration of the compiler.
 
 \subsection{Exact Area Model}\label{sec:alt:area}
 
-\todo{Do the area model.}
+\begin{figure}[h!]
+    \centering
+    \begin{lstlisting}[language=c++, caption={Cell Area Cost Function}, label={lst:area-code}]
+        /// Returns the area of a 45nm cell in um^2.
+        pub fn get_min_area(&self) -> Option<f32> {
+            match self {
+                Self::AND2 => Some(1.064),
+                Self::AND3 => Some(1.33),
+                Self::AND4 => Some(1.596),
+                Self::AOI21 => Some(1.064),
+                Self::AOI22 => Some(1.33),
+                Self::AOI211 => Some(1.33),
+                Self::AOI221 => Some(1.596),
+                Self::AOI222 => Some(2.128),
+                // ...
+                Self::OAI211 => Some(1.33),
+                Self::OAI221 => Some(1.596),
+                Self::OAI222 => Some(2.128),
+                Self::OR2 => Some(1.064),
+                Self::XNOR2 => Some(1.596),
+                Self::XOR2 => Some(1.596),
+                _ => None,
+            }
+        }
+    \end{lstlisting}
+    \caption{A Rust function that returns the area of a 45nm cell in $\mu\text{m}^2$.}
+\end{figure}
+
+\begin{figure}[h!]
+    \[
+        F(\texttt{x}) = \begin{cases}
+            0                                                                   & \text{if \texttt{x} is an \texttt{Input} or \texttt{Const}}        \\
+            \texttt{x.get\_min\_area()} + \sum_{\texttt{c} \in C} F(\texttt{c}) & \text{if \texttt{x} is a standard cell with a set of children } C, \\
+            \infty                                                              & \text{if \texttt{x} is a not a \texttt{StdCell}}.
+        \end{cases}
+    \]
+    \caption{The update cost function for greedy extraction using area, instead of cell count.}\label{fig:costa}
+\end{figure}
+
+One implementation task in the alternative design was to implement an area cost
+model based on the standard cell library \texttt{lib} file. It contains the
+area of each gate in units of $\mu\text{m}^2$. In the Rust code, the area
+function is implemented as a huge match statement like in
+Listing.~\ref{lst:area-code}. Then, this function is passed to the updated
+greedy cost metric as shown in Fig.~\ref{fig:costa}.
 
 \subsection{Heuristics Supplanted by Automated Reasoning}\label{sec:alt:heuristics}
 
@@ -535,6 +581,22 @@ I do include some ILP results. In both the case of ILP and dynamic programming,
 we see that there are consequences for widening the solution space so much over
 more classic technology mapping algorithms. There is no free lunch.
 
+\subsection{Node Pruning}\label{sec:alt:pruning}
+
+To mitigate the scalability problems with the ILP extractor, I added a `node
+pruning' step after e-graph building, but before extraction. To provide some
+context, I use the logical nodes (\texttt{AND}, \texttt{OR}, \texttt{INV}) to
+facilitate e-graph exploration, but they are filtered out during extraction by
+giving them $\infty$ cost. This technique works well for the greedy extractor.
+However, it cripples the ILP solvers with useless constraints. For brevity's
+sake, I will not show the code as it is not very interesting, but you can find
+it
+here\footnote{\href{https://github.com/matth2k/lut-synth/blob/ece6745/src/driver.rs\#L584}{https://github.com/matth2k/lut-synth/blob/ece6745/src/driver.rs\#L584}}.
+However, this pruning step proved vital in obtaining the results in
+Tab.~\ref{tab:ilp}. It cut the amount of linear constraints by roughly one
+third. Moving forward, I think this a neat feature that can be developed into a
+full-on heuristic.
+
 \section{Testing}\label{sec:testing}
 
 Throughout the course of this project, I used a varied testing strategy on both
@@ -572,6 +634,30 @@ strategies is itemized below:
 \end{itemize}
 
 \section{Evaluation}\label{sec:evaluation}
+
+\begin{table}[h]
+    \centering
+    \caption{ISCAS'85 Benchmark results comparing MSynth (My e-graph driven tool) against Synopsys Design Compiler. Fast, greedy e-graph extraction is used.}\label{tab:results}
+    \csvreader[
+        tabular=lrrrrrrrrr, % Custom alignment for this instance
+        late after line=\\, % Add \\ after each row
+        late after last line=\\ \bottomrule, % Prevent extra \\ after the last row
+        table head=\toprule Module & Cell Count & & Area ($\mu\text{m}^2$) & & Arrival Time (ns) &  \\ \midrule
+    ]{data/results.csv}{1=\one, 2=\two, 3=\three, 4=\four, 5=\five, 6=\six, 7=\seven}%
+    {\one & \two & \three & \four & \five & \six & \seven}
+\end{table}
+
+\begin{table}[h]
+    \centering
+    \caption{Results comparing greedy extraction technique with ILP formulation of the extraction problem. The ILP results are worse, because the egraph needed to be limited in size (8000 nodes), whereas the greedy extractor still works on e-graphs grown to hundreds of thousands of nodes.}\label{tab:ilp}
+    \csvreader[
+        tabular=lrrrrrrrrr, % Custom alignment for this instance
+        late after line=\\, % Add \\ after each row
+        late after last line=\\ \bottomrule, % Prevent extra \\ after the last row
+        table head=\toprule Module & Area ($\mu\text{m}^2$) & & Extraction Time (s) &  \\ \midrule
+    ]{data/ilp.csv}{1=\one, 2=\two, 3=\three, 4=\four, 5=\five}%
+    {\one & \two & \three & \four & \five}
+\end{table}
 
 Early results are promising, because they demonstrate that e-graph driven
 compilers can scale to the thousands of gates. As an example, a 4,000 line
@@ -618,30 +704,6 @@ reimplement some heuristics in future work.
     \end{subfigure}
     \caption{DAG selection in general is an NP-hard problem. Hence, a tree partition heuristic is needed to create higher fan-out gates that share logic.}\label{fig:dag}
 \end{figure}
-
-\begin{table}[t]
-    \centering
-    \caption{ISCAS'85 Benchmark results comparing MSynth (My e-graph driven tool) against Synopsys Design Compiler. Fast, greedy e-graph extraction is used.}\label{tab:results}
-    \csvreader[
-        tabular=lrrrrrrrrr, % Custom alignment for this instance
-        late after line=\\, % Add \\ after each row
-        late after last line=\\ \bottomrule, % Prevent extra \\ after the last row
-        table head=\toprule Module & Cell Count & & Area ($\mu\text{m}^2$) & & Arrival Time (ns) &  \\ \midrule
-    ]{data/results.csv}{1=\one, 2=\two, 3=\three, 4=\four, 5=\five, 6=\six, 7=\seven}%
-    {\one & \two & \three & \four & \five & \six & \seven}
-\end{table}
-
-\begin{table}
-    \centering
-    \caption{Results comparing greedy extraction technique with ILP formulation of the extraction problem. The ILP results are worse, because the egraph needed to be limited in size (8000 nodes), whereas the greedy extractor still works on e-graphs grown to hundreds of thousands of nodes.}\label{tab:ilp}
-    \csvreader[
-        tabular=lrrrrrrrrr, % Custom alignment for this instance
-        late after line=\\, % Add \\ after each row
-        late after last line=\\ \bottomrule, % Prevent extra \\ after the last row
-        table head=\toprule Module & Area ($\mu\text{m}^2$) & & Extraction Time (s) &  \\ \midrule
-    ]{data/ilp.csv}{1=\one, 2=\two, 3=\three, 4=\four, 5=\five}%
-    {\one & \two & \three & \four & \five}
-\end{table}
 
 \section{Future Work and Conclusion}\label{sec:conclusion}
 
