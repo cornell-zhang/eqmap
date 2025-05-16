@@ -522,6 +522,9 @@ where
     /// If true, an error is returned if saturation is not met.
     assert_sat: bool,
 
+    /// If true, the LUTs will be printed to stdout.
+    lut_print: bool,
+
     /// If true, a proof of the simplification should be generation. If false, no proof will be
     /// generated.
     gen_proof: bool,
@@ -560,6 +563,7 @@ impl<L: Language, A: Analysis<L>> std::default::Default for SynthRequest<L, A> {
             build_strat: BuildStrat::Custom(10, 20_000, 16),
             no_canonicalize: false,
             assert_sat: false,
+            lut_print: false,
             gen_proof: false,
             prog_bar: true,
             produce_rpt: false,
@@ -584,6 +588,7 @@ impl<L: Language, A: Analysis<L> + std::clone::Clone> std::clone::Clone for Synt
             build_strat: self.build_strat.clone(),
             no_canonicalize: self.no_canonicalize,
             assert_sat: self.assert_sat,
+            lut_print: self.lut_print,
             gen_proof: self.gen_proof,
             prog_bar: self.prog_bar,
             produce_rpt: self.produce_rpt,
@@ -781,6 +786,14 @@ where
         Self {
             assert_sat: true,
             result: None,
+            ..self
+        }
+    }
+
+    /// Print LUTs to stdout.
+    pub fn with_lut_print(self) -> Self {
+        Self {
+            lut_print: true,
             ..self
         }
     }
@@ -1042,6 +1055,7 @@ where
                 stop_reason
             );
         }
+
 
         let rpt = if self.produce_rpt {
             eprintln!("INFO: Generating report...");

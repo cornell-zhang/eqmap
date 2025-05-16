@@ -10,6 +10,7 @@ use std::{
     io::{Read, Write, stdin},
     path::PathBuf,
 };
+use lut_synth::lut::{CircuitStats, LutExprInfo, LutLang};
 
 /// Technology Mapping Optimization with E-Graphs
 #[derive(Parser, Debug)]
@@ -29,6 +30,9 @@ struct Args {
     #[cfg(feature = "graph_dumps")]
     #[arg(long)]
     dump_graph: Option<PathBuf>,
+
+    #[arg(short = 'l', long, default_value_t = false)]
+    print_luts: bool,
 
     /// Return an error if the graph does not reach saturation
     #[arg(short = 'a', long, default_value_t = false)]
@@ -179,6 +183,12 @@ fn main() -> std::io::Result<()> {
         req
     };
 
+    let req = if args.print_luts {
+        req.with_lut_print()
+    } else {
+        req
+    };
+
     let req = if args.no_canonicalize {
         req.without_canonicalization()
     } else {
@@ -239,10 +249,20 @@ fn main() -> std::io::Result<()> {
     eprintln!("INFO: Building e-graph...");
     let result = process_expression::<_, _, SynthReport>(expr, req, args.no_verify, args.verbose)?
         .with_name(f.get_name());
+    eprintln!( "INFO: Finished building e-graph");
 
     if let Some(p) = args.report {
         let mut writer = std::fs::File::create(p)?;
         result.write_report(&mut writer)?;
+    }
+
+    // Only run this block if L = LutLang
+    if args.print_luts {
+        eprintln!("INFO: Printing LUTs...");
+        let expr = result.get_expr().to_owned();
+        let expr_info = LutExprInfo::new(&expr);
+        let lut_count = expr_info.get_lut_count();
+        eprintln!("INFO: {}", lut_count);
     }
 
     eprintln!("INFO: Writing output to Verilog...");
