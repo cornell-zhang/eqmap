@@ -5,7 +5,7 @@ use std::{
 
 use clap::Parser;
 use egg::RecExpr;
-use lut_synth::{asic::CellLang, driver::Canonical, lut::LutLang, verilog::SVModule};
+use eqmap::{asic::CellLang, driver::Canonical, lut::LutLang, verilog::SVModule};
 /// Emit a LutLang Expression as a Verilog Netlist
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

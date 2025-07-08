@@ -1,6 +1,6 @@
 use clap::Parser;
 use egg::{FromOpError, RecExpr, RecExprParseError};
-use lut_synth::{
+use eqmap::{
     asic::{CellAnalysis, CellLang, CellRpt, asic_rewrites, get_boolean_algebra_rewrites},
     driver::{SynthRequest, process_string_expression, simple_reader},
     verilog::SVModule,

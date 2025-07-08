@@ -1,8 +1,8 @@
 use clap::Parser;
 use egg::*;
 #[cfg(feature = "dyn_decomp")]
-use lut_synth::rewrite::dyn_decompositions;
-use lut_synth::{
+use eqmap::rewrite::dyn_decompositions;
+use eqmap::{
     analysis::LutAnalysis,
     driver::{SynthReport, SynthRequest, process_string_expression, simple_reader},
     lut,
@@ -288,7 +288,7 @@ fn test_incorrect_dsd() {
 
 #[test]
 fn test_greedy_folds() {
-    use lut_synth::driver::Canonical;
+    use eqmap::driver::Canonical;
     assert_eq!(simplify("(LUT 202 true a b)"), "a");
     assert_eq!(simplify("(LUT 0 a)"), "false");
     assert_eq!(simplify("(LUT 3 a)"), "true");

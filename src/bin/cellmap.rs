@@ -1,5 +1,5 @@
 use clap::Parser;
-use lut_synth::{
+use eqmap::{
     asic::{CellLang, CellRpt, asic_rewrites, expr_is_mapped},
     driver::{SynthRequest, process_expression},
     verilog::{SVModule, sv_parse_wrapper},

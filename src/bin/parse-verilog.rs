@@ -4,8 +4,8 @@ use std::{
 };
 
 use clap::Parser;
-use lut_synth::{asic::CellLang, driver::Canonical, lut::LutLang, verilog::VerilogParsing};
-use lut_synth::{
+use eqmap::{asic::CellLang, driver::Canonical, lut::LutLang, verilog::VerilogParsing};
+use eqmap::{
     driver::CircuitLang,
     verilog::{SVModule, sv_parse_wrapper},
 };

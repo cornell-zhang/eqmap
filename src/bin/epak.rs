@@ -1,7 +1,7 @@
 use clap::Parser;
 #[cfg(feature = "dyn_decomp")]
-use lut_synth::rewrite::dyn_decompositions;
-use lut_synth::{
+use eqmap::rewrite::dyn_decompositions;
+use eqmap::{
     driver::{SynthReport, SynthRequest, process_expression},
     rewrite::{all_static_rules, register_retiming},
     verilog::{SVModule, sv_parse_wrapper},
