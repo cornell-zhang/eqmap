@@ -1,4 +1,4 @@
-// RUN: epak %s --report tmp.json >> /dev/null && cat tmp.json | FileCheck %s
+// RUN: eqmap_fpga %s --report tmp.json >> /dev/null && cat tmp.json | FileCheck %s
 
 module mux_4_1 (
     a,

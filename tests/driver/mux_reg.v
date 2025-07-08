@@ -1,4 +1,4 @@
-// RUN: epak %s --assert-sat -k 4 | FileCheck %s
+// RUN: eqmap_fpga %s --assert-sat -k 4 | FileCheck %s
 
 module mux_reg (
     a,

@@ -97,7 +97,7 @@ fn main() -> std::io::Result<()> {
         eprintln!("WARNING: Debug assertions are enabled");
     }
 
-    eprintln!("INFO: E-Pack Technology Mapping Optimization with E-Graphs");
+    eprintln!("INFO: EqMap (FPGA Technology Mapping w/ E-Graphs)");
 
     let mut buf = String::new();
 

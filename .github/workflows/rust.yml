@@ -75,8 +75,8 @@ jobs:
         run: echo "comparator (release, proof gen)" >> $GITHUB_STEP_SUMMARY; (time cargo run --release --bin opt -- tests/lutlang/gate_compare.txt --verbose 2>>/dev/null) 2>> $GITHUB_STEP_SUMMARY
       - name: Run comparator (release,)
         run: echo "comparator (release,)" >> $GITHUB_STEP_SUMMARY; (time cargo run --release --bin opt -- tests/lutlang/gate_compare.txt 2>>/dev/null) 2>> $GITHUB_STEP_SUMMARY
-      - name: Run epak (release,)
-        run: echo "epak (release,)" >> $GITHUB_STEP_SUMMARY; (time cargo run --release --bin epak -- verilog/multPipe_n4.v --no-verify 1>>/dev/null 2>>/dev/null) 2>> $GITHUB_STEP_SUMMARY
+      - name: Run eqmap_fpga (release,)
+        run: echo "eqmap_fpga (release,)" >> $GITHUB_STEP_SUMMARY; (time cargo run --release --bin eqmap_fpga -- verilog/multPipe_n4.v --no-verify 1>>/dev/null 2>>/dev/null) 2>> $GITHUB_STEP_SUMMARY
 
   coverage:
     name: Code Coverage
@@ -89,9 +89,9 @@ jobs:
       - name: Generate code coverage
         run: cargo llvm-cov --features default --workspace --json > coverage.json
       - name: Coverage (60% by line)
-        run: python3 utils/min-coverage.py -p 60.0 coverage.json --whitelist optcell.rs cellmap.rs epak.rs opt.rs parse-verilog.rs emit-verilog.rs check.rs logic.rs driver.rs cost.rs >> $GITHUB_STEP_SUMMARY
+        run: python3 utils/min-coverage.py -p 60.0 coverage.json --whitelist optcell.rs cellmap.rs eqmap_fpga.rs opt.rs parse-verilog.rs emit-verilog.rs check.rs logic.rs driver.rs cost.rs >> $GITHUB_STEP_SUMMARY
       - name: Coverage (80% by line)
-        run: python3 utils/min-coverage.py -p 80.0 coverage.json --whitelist optcell.rs cellmap.rs asic.rs epak.rs opt.rs parse-verilog.rs emit-verilog.rs check.rs logic.rs driver.rs cost.rs >> $GITHUB_STEP_SUMMARY
+        run: python3 utils/min-coverage.py -p 80.0 coverage.json --whitelist optcell.rs cellmap.rs asic.rs eqmap_fpga.rs opt.rs parse-verilog.rs emit-verilog.rs check.rs logic.rs driver.rs cost.rs >> $GITHUB_STEP_SUMMARY
 
   mdformat:
     name: Markdown format

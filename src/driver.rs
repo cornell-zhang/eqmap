@@ -27,7 +27,7 @@ use std::{
 const MAX_CANON_SIZE: usize = 30000;
 
 /// A trait to facilitate the generation of text-based reports on output ciruits.
-/// For E-Pack, this includes things like LUT count and circuit-depth.
+/// For EqMap, this includes things like LUT count and circuit-depth.
 pub trait Report<L: Language>
 where
     Self: Serialize + Sized,

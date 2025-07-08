@@ -1,4 +1,4 @@
-// RUN: epak %s --disassemble NOR,INV,AND -s 140000 2>>/dev/null | FileCheck %s
+// RUN: eqmap_fpga %s --disassemble NOR,INV,AND -s 140000 2>>/dev/null | FileCheck %s
 
 module mux_4_1 (
     b,

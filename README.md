@@ -1,6 +1,6 @@
 ![](https://github.com/matth2k/eqmap/actions/workflows/rust.yml/badge.svg)
 
-# E-Pack: Technology Mapping with E-Graphs
+# EqMap: FPGA LUT Technology Mapping w/ E-Graphs
 
 ## Description
 
@@ -8,7 +8,7 @@ A Verilog-to-Verilog tool for superoptimizing FPGA netlists with E-Graphs
 
 ### Dependencies
 
-#### Building
+#### To Build
 
 - Bash Shell (use WSL for Windows)
 - [rustup](https://rustup.rs/)
@@ -20,7 +20,7 @@ A Verilog-to-Verilog tool for superoptimizing FPGA netlists with E-Graphs
     - [sv-parser](https://docs.rs/sv-parser/latest/sv_parser/)
     - [serde_json](https://docs.rs/serde_json/latest/serde_json/)
 - [Yosys 0.33](https://github.com/YosysHQ/yosys)
-- ILP (only when using Cargo feature `exactness`)
+- *Optional* ILP
   - [CBC Solver](https://github.com/coin-or/Cbc)
 
 #### For Development
@@ -34,7 +34,7 @@ A Verilog-to-Verilog tool for superoptimizing FPGA netlists with E-Graphs
 
 ### Installing & Getting Started
 
-First, install all the prerequisites for building. For basic functionality, you will need the Rust toolchain, a Yosys 0.33 install, and access to a Bash shell. Linux is preferred, but MacOS and WSL should work without much trouble.
+First, check the prerequisites for building. For basic functionality, you will need the Rust toolchain, a Yosys 0.33 install. Linux is preferred, but MacOS and WSL should work without much trouble.
 
 `cargo build`
 
@@ -44,15 +44,15 @@ You can also try to synthesize your own verilog module `my_file.v` as long as it
 
 `source utils/setup.sh # Add tools to path`
 
-`lvv my_file.v`
+`eqmap my_file.v`
 
 Use `--help` to get an overview of all the options the compiler has:
 
 ```
-$ epak --help
+$ eqmap --help
 Technology Mapping Optimization with E-Graphs
 
-Usage: epak [OPTIONS] [INPUT] [OUTPUT]
+Usage: eqmap_fpga [OPTIONS] [INPUT] [OUTPUT]
 
 Arguments:
   [INPUT]   Verilog file to read from (or use stdin)
@@ -68,8 +68,8 @@ Options:
   -r, --no-retime                  Do not use register retiming
   -v, --verbose                    Print explanations (generates a proof and runs slower)
       --min-depth                  Extract for minimum circuit depth
-  -k, --k <K>                      Max fan in size for extracted LUTs [default: 6]
-  -w, --reg-weight <REG_WEIGHT>    Ratio of register cost to LUT cost [default: 1]
+  -k, --k <K>                      Max fan in size allowed for extracted LUTs
+  -w, --reg-weight <REG_WEIGHT>    Ratio of register cost to LUT cost
   -t, --timeout <TIMEOUT>          Build/extraction timeout in seconds
   -s, --node-limit <NODE_LIMIT>    Maximum number of nodes in graph
   -n, --iter-limit <ITER_LIMIT>    Maximum number of rewrite iterations
