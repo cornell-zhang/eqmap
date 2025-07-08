@@ -1,4 +1,4 @@
-![](https://github.com/matth2k/lut-synth/actions/workflows/rust.yml/badge.svg)
+![](https://github.com/matth2k/eqmap/actions/workflows/rust.yml/badge.svg)
 
 # E-Pack: Technology Mapping with E-Graphs
 

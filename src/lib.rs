@@ -2,7 +2,7 @@
 #![warn(missing_docs)]
 /*!
 
-`lut-synth`: LUT Network Synthesis with E-Graphs
+`eqmap`: LUT Network Synthesis with E-Graphs
 
 TODO: overview, tutorial, testing, research papers
 

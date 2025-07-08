@@ -1,5 +1,5 @@
 [package]
-name = "lut-synth"
+name = "eqmap"
 version = "0.7.2"
 edition = "2024"
 default-run = "epak"
