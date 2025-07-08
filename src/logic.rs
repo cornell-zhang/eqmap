@@ -85,7 +85,7 @@ impl FromStr for Logic {
             "1'b0" | "1'h0" => Ok(Logic::False),
             "1'bx" | "1'hx" => Ok(Logic::X),
             "1'bz" | "1'hz" => Ok(Logic::Z),
-            _ => Err(format!("Invalid logic value: {}", s)),
+            _ => Err(format!("Invalid logic value: {s}")),
         }
     }
 }

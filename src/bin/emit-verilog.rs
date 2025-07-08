@@ -72,9 +72,7 @@ fn main() -> std::io::Result<()> {
         }
         let expr = line.split("//").next().unwrap();
         let module = if !args.asic {
-            let expr: RecExpr<LutLang> = expr
-                .parse()
-                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+            let expr: RecExpr<LutLang> = expr.parse().map_err(std::io::Error::other)?;
 
             let expr = if args.canonicalize {
                 LutLang::canonicalize_expr(expr)
@@ -83,16 +81,14 @@ fn main() -> std::io::Result<()> {
             };
 
             SVModule::from_luts(expr, mod_name.clone(), args.output_names.clone())
-                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?
+                .map_err(std::io::Error::other)?
         } else {
-            let expr: RecExpr<CellLang> = expr
-                .parse()
-                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+            let expr: RecExpr<CellLang> = expr.parse().map_err(std::io::Error::other)?;
 
             SVModule::from_cells(expr, mod_name.clone(), args.output_names.clone())
-                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?
+                .map_err(std::io::Error::other)?
         };
-        print!("{}", module);
+        print!("{module}");
         break;
     }
 

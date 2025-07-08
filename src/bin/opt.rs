@@ -197,7 +197,7 @@ fn main() -> std::io::Result<()> {
         Some(list) => req
             .without_canonicalization()
             .with_disassembly_into(&list)
-            .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?,
+            .map_err(std::io::Error::other)?,
         None => req,
     };
 
@@ -216,7 +216,7 @@ fn main() -> std::io::Result<()> {
             args.verbose,
         )?;
         if !result.is_empty() {
-            println!("{}", result);
+            println!("{result}");
         }
     }
     Ok(())
@@ -281,7 +281,7 @@ fn test_incorrect_dsd() {
     for i in 0..64 {
         let pos_to_flip: usize = i;
         let p = p ^ (1 << pos_to_flip);
-        let other: RecExpr<lut::LutLang> = format!("(LUT {} s1 s0 a b c d)", p).parse().unwrap();
+        let other: RecExpr<lut::LutLang> = format!("(LUT {p} s1 s0 a b c d)").parse().unwrap();
         assert!(!lut::LutLang::func_equiv(&expr, &other).unwrap());
     }
 }

@@ -549,8 +549,7 @@ pub fn to_bitvec(p: u64, capacity: usize) -> Result<BitVec, String> {
     };
     if p > maxval {
         return Err(format!(
-            "Program value {} is too large for capacity {}",
-            p, capacity
+            "Program value {p} is too large for capacity {capacity}"
         ));
     }
     let mut bv: BitVec = bitvec!(usize, Lsb0; 0; capacity);
@@ -966,11 +965,11 @@ where
 
     if cfg!(debug_assertions) {
         if let Err(e) = verify_expr(&moved) {
-            panic!("Folding failed: {}", e);
+            panic!("Folding failed: {e}");
         }
         let info = LutExprInfo::new(&moved);
         if info.check(&expr).is_not_equiv() {
-            panic!("Folding failed: not equivalent {}", moved);
+            panic!("Folding failed: not equivalent {moved}");
         }
     }
 

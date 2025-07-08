@@ -92,7 +92,7 @@ fn parse_literal_as_logic(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<
             match num {
                 1 => Ok(true.into()),
                 0 => Ok(false.into()),
-                _ => Err(format!("Expected a 1 bit constant. Found {}", num)),
+                _ => Err(format!("Expected a 1 bit constant. Found {num}")),
             }
         }
         RefNode::HexValue(b) => {
@@ -106,7 +106,7 @@ fn parse_literal_as_logic(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<
             match num {
                 1 => Ok(true.into()),
                 0 => Ok(false.into()),
-                _ => Err(format!("Expected a 1 bit constant. Found {}", num)),
+                _ => Err(format!("Expected a 1 bit constant. Found {num}")),
             }
         }
         RefNode::UnsignedNumber(b) => {
@@ -121,7 +121,7 @@ fn parse_literal_as_logic(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<
             match num {
                 1 => Ok(true.into()),
                 0 => Ok(false.into()),
-                _ => Err(format!("Expected a 1 bit constant. Found {}", num)),
+                _ => Err(format!("Expected a 1 bit constant. Found {num}")),
             }
         }
         _ => unreachable!(),
@@ -131,12 +131,12 @@ fn parse_literal_as_logic(node: RefNode, ast: &sv_parser::SyntaxTree) -> Result<
 fn init_format(program: u64, k: usize) -> Result<String, ()> {
     let w = 1 << k;
     match k {
-        1 => Ok(format!("{}'h{:01x}", w, program)),
-        2 => Ok(format!("{}'h{:01x}", w, program)),
-        3 => Ok(format!("{}'h{:02x}", w, program)),
-        4 => Ok(format!("{}'h{:04x}", w, program)),
-        5 => Ok(format!("{}'h{:08x}", w, program)),
-        6 => Ok(format!("{}'h{:016x}", w, program)),
+        1 => Ok(format!("{w}'h{program:01x}")),
+        2 => Ok(format!("{w}'h{program:01x}")),
+        3 => Ok(format!("{w}'h{program:02x}")),
+        4 => Ok(format!("{w}'h{program:04x}")),
+        5 => Ok(format!("{w}'h{program:08x}")),
+        6 => Ok(format!("{w}'h{program:016x}")),
         _ => Err(()),
     }
 }
@@ -484,7 +484,7 @@ impl FromStr for PrimitiveType {
                 "AOI222" => Ok(Self::AOI222),
                 "OAI222" => Ok(Self::OAI222),
                 "MUX2" => Ok(Self::MUX2),
-                _ => Err(format!("Unknown primitive type {}", l)),
+                _ => Err(format!("Unknown primitive type {l}")),
             },
             None => match s {
                 "AND" => Ok(Self::AND),
@@ -508,7 +508,7 @@ impl FromStr for PrimitiveType {
                 "VCC" => Ok(Self::VCC),
                 "GND" => Ok(Self::GND),
                 "FDRE" => Ok(Self::FDRE),
-                _ => Err(format!("Unknown primitive type {}", s)),
+                _ => Err(format!("Unknown primitive type {s}")),
             },
         }
     }
@@ -516,7 +516,7 @@ impl FromStr for PrimitiveType {
 
 impl fmt::Display for PrimitiveType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -556,7 +556,7 @@ impl SVPrimitive {
     pub fn connect_output(&mut self, port: String, signal: String) -> Result<(), String> {
         if !self.outputs.is_empty() {
             let (y, o) = self.outputs.first_key_value().unwrap();
-            return Err(format!("Signal {} is already driven by {}", y, o));
+            return Err(format!("Signal {y} is already driven by {o}"));
         }
         self.outputs.insert(signal, port);
         Ok(())
@@ -623,7 +623,7 @@ impl SVPrimitive {
 
     /// Create a new unconnected LUT primitive with size `k`, instance name `name`, and program `program`
     pub fn new_lut(k: usize, name: String, program: u64) -> Self {
-        let mut prim = Self::new(format!("{}{}", LUT_ROOT, k), name, k);
+        let mut prim = Self::new(format!("{LUT_ROOT}{k}"), name, k);
         prim.set_init(program);
         prim
     }
@@ -666,7 +666,7 @@ impl SVPrimitive {
         drive_strength: usize,
     ) -> Self {
         let n_inputs: usize = logic.get_num_inputs();
-        Self::new(format!("{}_X{}", logic, drive_strength), name, n_inputs)
+        Self::new(format!("{logic}_X{drive_strength}"), name, n_inputs)
     }
 
     /// Create a new constant with name `name` and drive `signal` with it
@@ -705,7 +705,7 @@ impl SVPrimitive {
             }
             "O" | "Y" | "Q" | "G" | "P" | "Z" | "ZN" => self.connect_output(port, signal),
             "C" | "CE" | "R" => Ok(()),
-            _ => Err(format!("Unknown port name {}", port)),
+            _ => Err(format!("Unknown port name {port}")),
         }
     }
 
@@ -757,7 +757,7 @@ impl fmt::Display for SVPrimitive {
         writeln!(f, "{}{} #(", indent, self.prim)?;
         for (i, (key, value)) in self.attributes.iter().enumerate() {
             let indent = " ".repeat(level + 4);
-            write!(f, "{}.{}({})", indent, key, value)?;
+            write!(f, "{indent}.{key}({value})")?;
             if i == self.attributes.len() - 1 {
                 writeln!(f)?;
             } else {
@@ -768,8 +768,8 @@ impl fmt::Display for SVPrimitive {
         // TODO(matth2k): refactor as "is clocked"
         if self.prim.as_str() == REG_NAME {
             let indent = " ".repeat(level + 4);
-            writeln!(f, "{}.C({}),", indent, CLK)?;
-            writeln!(f, "{}.CE(1'h1),", indent)?;
+            writeln!(f, "{indent}.C({CLK}),")?;
+            writeln!(f, "{indent}.CE(1'h1),")?;
         }
         for (input, value) in self.inputs.iter() {
             let indent = " ".repeat(level + 4);
@@ -777,7 +777,7 @@ impl fmt::Display for SVPrimitive {
         }
         if self.prim.as_str() == REG_NAME {
             let indent = " ".repeat(level + 4);
-            writeln!(f, "{}.R(1'h0),", indent)?;
+            writeln!(f, "{indent}.R(1'h0),")?;
         }
         for (i, (value, output)) in self.outputs.iter().enumerate() {
             let indent = " ".repeat(level + 4);
@@ -788,7 +788,7 @@ impl fmt::Display for SVPrimitive {
                 writeln!(f, ",")?;
             }
         }
-        write!(f, "{});", indent)
+        write!(f, "{indent});")
     }
 }
 
@@ -890,7 +890,7 @@ impl VerilogEmission for CellLang {
                     SVPrimitive::new_gate_with_strength(gate_type.clone(), fresh_prim_name(), 1);
                 for (input, port) in inputs.iter().zip(port_list) {
                     let signal = lookup(input)
-                        .ok_or(format!("Could not find signal {} in the module", input))?;
+                        .ok_or(format!("Could not find signal {input} in the module"))?;
                     prim.connect_input(port, signal)?;
                 }
                 prim.connect_output(gate_type.get_output(), fresh_signal_name())?;
@@ -968,7 +968,7 @@ impl VerilogEmission for LutLang {
                 let mut prim = SVPrimitive::new_gate(gate_type.clone(), fresh_prim_name());
                 for (input, port) in inputs.iter().zip(port_list) {
                     let signal = lookup(input)
-                        .ok_or(format!("Could not find signal {} in the module", input))?;
+                        .ok_or(format!("Could not find signal {input} in the module"))?;
                     prim.connect_input(port, signal)?;
                 }
                 prim.connect_output(gate_type.get_output(), fresh_signal_name())?;
@@ -982,7 +982,7 @@ impl VerilogEmission for LutLang {
                 let mut prim = SVPrimitive::new_gate(gate_type.clone(), fresh_prim_name());
                 for (input, port) in l.iter().skip(1).zip(port_list) {
                     let signal = lookup(input)
-                        .ok_or(format!("Could not find signal {} in the module", input))?;
+                        .ok_or(format!("Could not find signal {input} in the module"))?;
                     prim.connect_input(port, signal)?;
                 }
                 prim.connect_output(gate_type.get_output(), fresh_signal_name())?;
@@ -1163,7 +1163,7 @@ impl VerilogParsing for LutLang {
                         | PrimitiveType::LUT6 => {
                             let program = primitive
                                 .get_attribute("INIT")
-                                .ok_or(format!("LUT {} has no INIT attribute", signal))?;
+                                .ok_or(format!("LUT {signal} has no INIT attribute"))?;
                             let program = init_parser(program)?;
                             let mut c = vec![expr.add(LutLang::Program(program))];
                             c.append(&mut ids);
@@ -1380,8 +1380,7 @@ impl SVModule {
                                     Ok(x) => x,
                                     Err(_) => {
                                         return Err(format!(
-                                            "Could not parse hex value from INIT string {}",
-                                            loc
+                                            "Could not parse hex value from INIT string {loc}"
                                         ));
                                     }
                                 }
@@ -1393,16 +1392,14 @@ impl SVModule {
                                     Ok(x) => x,
                                     Err(_) => {
                                         return Err(format!(
-                                            "Could not parse decimal value from INIT string {}",
-                                            loc
+                                            "Could not parse decimal value from INIT string {loc}"
                                         ));
                                     }
                                 }
                             }
                             _ => {
                                 return Err(format!(
-                                    "{} {} should have INIT value written in hexadecimal",
-                                    LUT_ROOT, mod_name
+                                    "{LUT_ROOT} {mod_name} should have INIT value written in hexadecimal"
                                 ));
                             }
                         };
@@ -1416,8 +1413,7 @@ impl SVModule {
                     }
 
                     return Err(format!(
-                        "Expected a {} or {} primitive. Found primitive {} {:?}",
-                        LUT_ROOT, REG_NAME, mod_name, inst
+                        "Expected a {LUT_ROOT} or {REG_NAME} primitive. Found primitive {mod_name} {inst:?}"
                     ));
                 }
                 NodeEvent::Leave(RefNode::ModuleInstantiation(_inst)) => (),
@@ -1465,8 +1461,7 @@ impl SVModule {
                             if port_name == "CE" || port_name == "R" {
                                 if unwrap_node!(arg, PrimaryLiteral).is_none() {
                                     return Err(format!(
-                                        "Non-data port {} should be driven constant",
-                                        port_name
+                                        "Non-data port {port_name} should be driven constant"
                                     ));
                                 }
                             } else {
@@ -1484,8 +1479,7 @@ impl SVModule {
                                 let literal = unwrap_node!(arg, PrimaryLiteral);
                                 if literal.is_none() {
                                     return Err(format!(
-                                        "Expected a literal for connection on port {}",
-                                        port_name
+                                        "Expected a literal for connection on port {port_name}"
                                     ));
                                 }
                                 let value = parse_literal_as_logic(literal.unwrap(), ast)?;
@@ -1528,7 +1522,7 @@ impl SVModule {
                             let loc = sym.nodes.0;
                             let eq = ast.get_str(&loc).unwrap();
                             if eq != "=" {
-                                return Err(format!("Expected an assignment operator, got {}", eq));
+                                return Err(format!("Expected an assignment operator, got {eq}"));
                             }
                         }
                         _ => {
@@ -1604,7 +1598,7 @@ impl SVModule {
             return Err("'tmp' is a reserved keyword".to_string());
         }
         if sname.contains(CLK) {
-            return Err(format!("'{}' is a reserved keyword", CLK));
+            return Err(format!("'{CLK}' is a reserved keyword"));
         }
         if sname.contains("input") {
             return Err("'input' is a reserved keyword".to_string());
@@ -1635,7 +1629,7 @@ impl SVModule {
         let out_ids = L::get_output_ids(&expr);
         if out_ids.len() > 1 {
             for (i, id) in out_ids.iter().enumerate() {
-                let defname = format!("y{}", i);
+                let defname = format!("y{i}");
                 module.name_output(
                     *id,
                     outputs.get(i).unwrap_or(&defname).to_string(),
@@ -1653,7 +1647,7 @@ impl SVModule {
         let mut prim_count: usize = 0;
         for (i, l) in expr.as_ref().iter().enumerate() {
             if !mapping.contains_key(&i.into()) && !l.is_var() && i < expr.as_ref().len() - 1 {
-                mapping.insert(i.into(), format!("__{}__", prim_count));
+                mapping.insert(i.into(), format!("__{prim_count}__"));
                 prim_count += 1;
             }
         }
@@ -1714,7 +1708,7 @@ impl SVModule {
         let out_ids = LutLang::get_output_ids(&expr);
         if out_ids.len() > 1 {
             for (i, id) in out_ids.iter().enumerate() {
-                let defname = format!("y{}", i);
+                let defname = format!("y{i}");
                 module.name_output(
                     *id,
                     outputs.get(i).unwrap_or(&defname).to_string(),
@@ -1735,7 +1729,7 @@ impl SVModule {
                 && !matches!(l, LutLang::Var(_) | LutLang::Program(_))
                 && i < expr.as_ref().len() - 1
             {
-                mapping.insert(i.into(), format!("__{}__", prim_count));
+                mapping.insert(i.into(), format!("__{prim_count}__"));
                 prim_count += 1;
             }
         }
@@ -1786,7 +1780,7 @@ impl SVModule {
             } else if let LutLang::Program(p) = node {
                 programs.insert(id.into(), *p);
             } else if !matches!(node, LutLang::Bus(_)) {
-                return Err(format!("Unsupported node type: {:?}", node));
+                return Err(format!("Unsupported node type: {node:?}"));
             }
         }
 
@@ -1799,10 +1793,7 @@ impl SVModule {
         L: VerilogParsing,
     {
         if let Err(s) = self.contains_cycles() {
-            return Err(format!(
-                "Cannot convert module with feedback on signal {}",
-                s
-            ));
+            return Err(format!("Cannot convert module with feedback on signal {s}"));
         }
 
         let mut exprs = vec![];
@@ -1817,10 +1808,7 @@ impl SVModule {
     /// Get a single [LutLang] expression for the module as a bus
     pub fn to_single_lut_expr(&self) -> Result<RecExpr<LutLang>, String> {
         if let Err(s) = self.contains_cycles() {
-            return Err(format!(
-                "Cannot convert module with feedback on signal {}",
-                s
-            ));
+            return Err(format!("Cannot convert module with feedback on signal {s}"));
         }
 
         let mut expr: RecExpr<LutLang> = RecExpr::default();
@@ -1839,10 +1827,7 @@ impl SVModule {
     /// Get a single [CellLang] expression for the module as a bus
     pub fn to_single_cell_expr(&self) -> Result<RecExpr<CellLang>, String> {
         if let Err(s) = self.contains_cycles() {
-            return Err(format!(
-                "Cannot convert module with feedback on signal {}",
-                s
-            ));
+            return Err(format!("Cannot convert module with feedback on signal {s}"));
         }
 
         let mut expr: RecExpr<CellLang> = RecExpr::default();
@@ -1863,10 +1848,7 @@ impl SVModule {
         L: VerilogParsing,
     {
         if let Err(s) = self.contains_cycles() {
-            return Err(format!(
-                "Cannot convert module with feedback on signal {}",
-                s
-            ));
+            return Err(format!("Cannot convert module with feedback on signal {s}"));
         }
 
         if self.outputs.len() != 1 {
@@ -1958,7 +1940,7 @@ impl fmt::Display for SVModule {
                 writeln!(f, ",")?;
             }
         }
-        writeln!(f, "{});", indent)?;
+        writeln!(f, "{indent});")?;
         already_decl.clear();
         for input in self.inputs.iter() {
             if already_decl.contains(&input.name) {
@@ -1983,9 +1965,9 @@ impl fmt::Display for SVModule {
             }
         }
         for instance in self.instances.iter() {
-            writeln!(f, "{}", instance)?;
+            writeln!(f, "{instance}")?;
         }
-        writeln!(f, "{}endmodule", indent)
+        writeln!(f, "{indent}endmodule")
     }
 }
 

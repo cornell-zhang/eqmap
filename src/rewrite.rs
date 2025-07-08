@@ -92,25 +92,25 @@ pub fn permute_groups() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
         => {PermuteInput::new(1, "?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap()])}));
 
     for i in 1..3 {
-        let rname = format!("lut3-permute-{}", i);
+        let rname = format!("lut3-permute-{i}");
         rules.push(rewrite!(rname; "(LUT ?p ?a ?b ?c)" 
         => {PermuteInput::new(i, "?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
     }
 
     for i in 1..4 {
-        let rname = format!("lut4-permute-{}", i);
+        let rname = format!("lut4-permute-{i}");
         rules.push(rewrite!(rname; "(LUT ?p ?a ?b ?c ?d)" 
         => {PermuteInput::new(i, "?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()])}));
     }
 
     for i in 1..5 {
-        let rname = format!("lut5-permute-{}", i);
+        let rname = format!("lut5-permute-{i}");
         rules.push(rewrite!(rname; "(LUT ?p ?a ?b ?c ?d ?e)" 
         => {PermuteInput::new(i, "?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap()])}));
     }
 
     for i in 1..6 {
-        let rname = format!("lut6-permute-{}", i);
+        let rname = format!("lut6-permute-{i}");
         rules.push(rewrite!(rname; "(LUT ?p ?a ?b ?c ?d ?e ?f)" 
         => {PermuteInput::new(i, "?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap(), "?f".parse().unwrap()])}));
     }
@@ -144,10 +144,10 @@ fn p_q_cut_fuse(p: usize, q: usize) -> Rewrite<lut::LutLang, LutAnalysis> {
     let mut pi: Vec<String> = Vec::new();
     let mut qi: Vec<String> = Vec::new();
     for i in 0..p {
-        pi.push(format!("?p{}", i));
+        pi.push(format!("?p{i}"));
     }
     for i in 0..q {
-        qi.push(format!("?q{}", i));
+        qi.push(format!("?q{i}"));
     }
     let pattern: Pattern<lut::LutLang> =
         format!("(LUT ?pp {} (LUT ?qp {}))", pi.join(" "), qi.join(" "))
@@ -185,14 +185,14 @@ where
     // LUT fuse inputs (exclusive or not, sometimes the opposite of DSD)
     for k in 2..7 {
         let mask = if k < 6 { (1 << (1 << k)) - 1 } else { u64::MAX };
-        let vars = (0..k).map(|i| format!("?v{}", i)).collect::<Vec<String>>();
+        let vars = (0..k).map(|i| format!("?v{i}")).collect::<Vec<String>>();
         let pattern_true: Pattern<lut::LutLang> = format!("(LUT {} {})", mask, vars.join(" "))
             .parse()
             .unwrap();
         let pattern_false: Pattern<lut::LutLang> =
             format!("(LUT 0 {})", vars.join(" ")).parse().unwrap();
-        let rname_true = format!("lut{}-const-true", k);
-        let rname_false = format!("lut{}-const-false", k);
+        let rname_true = format!("lut{k}-const-true");
+        let rname_false = format!("lut{k}-const-false");
         rules.push(rewrite!(rname_true; pattern_true => "true"));
         rules.push(rewrite!(rname_false; pattern_false => "false"));
     }

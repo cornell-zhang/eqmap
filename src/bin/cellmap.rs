@@ -89,11 +89,9 @@ fn main() -> std::io::Result<()> {
         }
     };
 
-    let ast = sv_parse_wrapper(&buf, path)
-        .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+    let ast = sv_parse_wrapper(&buf, path).map_err(std::io::Error::other)?;
 
-    let f =
-        SVModule::from_ast(&ast).map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+    let f = SVModule::from_ast(&ast).map_err(std::io::Error::other)?;
 
     eprintln!(
         "INFO: Module {} has {} outputs",
@@ -161,17 +159,14 @@ fn main() -> std::io::Result<()> {
     }
 
     eprintln!("INFO: Compiling Verilog...");
-    let expr = f
-        .to_single_cell_expr()
-        .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+    let expr = f.to_single_cell_expr().map_err(std::io::Error::other)?;
 
     eprintln!("INFO: Building e-graph...");
     let result = process_expression::<CellLang, _, CellRpt>(expr, req, true, args.verbose)?
         .with_name(f.get_name());
 
     if !(args.no_assert || expr_is_mapped(result.get_expr())) {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
+        return Err(std::io::Error::other(
             "Not all logic is mapped to cells. Run the tool for more iterations/time.",
         ));
     }
@@ -188,7 +183,7 @@ fn main() -> std::io::Result<()> {
         f.get_name().to_string(),
         output_names,
     )
-    .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+    .map_err(std::io::Error::other)?;
 
     // Unused inputs from the original module are lost upon conversion to a LutLang expression so
     // they must be readded to the module here.
@@ -205,7 +200,7 @@ fn main() -> std::io::Result<()> {
         )?;
         eprintln!("INFO: Goodbye");
     } else {
-        print!("{}", module);
+        print!("{module}");
     }
 
     Ok(())

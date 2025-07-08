@@ -37,11 +37,11 @@ impl CellLang {
         match self {
             CellLang::Var(s) | CellLang::Cell(s, _) => match s.as_str() {
                 "AND" | "OR" | "INV" | "LUT" | "x" => {
-                    Err(format!("Invalid cell/variable name: {}", s))
+                    Err(format!("Invalid cell/variable name: {s}"))
                 }
                 _ => {
                     if s.as_str().parse::<usize>().is_ok() {
-                        Err(format!("Invalid cell/variable name: {}", s))
+                        Err(format!("Invalid cell/variable name: {s}"))
                     } else {
                         Ok(())
                     }

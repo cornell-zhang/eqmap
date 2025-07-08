@@ -33,13 +33,11 @@ struct Args {
 }
 
 fn emit_exprs<L: CircuitLang + VerilogParsing>(f: &SVModule) -> std::io::Result<()> {
-    let exprs = f
-        .get_exprs()
-        .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+    let exprs = f.get_exprs().map_err(std::io::Error::other)?;
     for (y, expr) in exprs {
-        L::verify_expr(&expr).map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
-        eprintln!("{}: {}", y, expr);
-        println!("{}", expr);
+        L::verify_expr(&expr).map_err(std::io::Error::other)?;
+        eprintln!("{y}: {expr}");
+        println!("{expr}");
     }
     Ok(())
 }
@@ -59,20 +57,18 @@ fn main() -> std::io::Result<()> {
         }
     };
 
-    let ast = sv_parse_wrapper(&buf, path)
-        .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+    let ast = sv_parse_wrapper(&buf, path).map_err(std::io::Error::other)?;
 
     if args.dump_ast {
-        println!("{}", ast);
+        println!("{ast}");
         return Ok(());
     }
 
-    let f =
-        SVModule::from_ast(&ast).map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+    let f = SVModule::from_ast(&ast).map_err(std::io::Error::other)?;
 
     if args.verbose {
         eprintln!("SVModule: ");
-        eprintln!("{:?}", f);
+        eprintln!("{f:?}");
     }
 
     if !args.round_trip {
@@ -83,22 +79,17 @@ fn main() -> std::io::Result<()> {
                 emit_exprs::<LutLang>(&f)?;
             }
         } else if args.asic {
-            let expr = f
-                .to_single_cell_expr()
-                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+            let expr = f.to_single_cell_expr().map_err(std::io::Error::other)?;
             eprintln!("{:?}", f.get_outputs());
-            println!("{}", expr);
+            println!("{expr}");
         } else {
-            let expr = f
-                .to_single_lut_expr()
-                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
-            LutLang::verify_expr(&expr)
-                .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+            let expr = f.to_single_lut_expr().map_err(std::io::Error::other)?;
+            LutLang::verify_expr(&expr).map_err(std::io::Error::other)?;
             eprintln!("{:?}", f.get_outputs());
-            println!("{}", expr);
+            println!("{expr}");
         }
     } else {
-        print!("{}", f);
+        print!("{f}");
     }
 
     Ok(())

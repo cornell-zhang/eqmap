@@ -113,9 +113,9 @@ impl SynthReport {
         };
         let stop_reason = match rpt.stop_reason {
             StopReason::Saturated => "Saturated".to_string(),
-            StopReason::IterationLimit(n) => format!("{} Iterations", n),
-            StopReason::NodeLimit(n) => format!("{} Nodes", n),
-            StopReason::TimeLimit(n) => format!("{} Seconds", n),
+            StopReason::IterationLimit(n) => format!("{n} Iterations"),
+            StopReason::NodeLimit(n) => format!("{n} Nodes"),
+            StopReason::TimeLimit(n) => format!("{n} Seconds"),
             StopReason::Other(s) => s,
         };
         Self {
@@ -242,9 +242,10 @@ where
         for expl in expl_list {
             Self::get_rule_uses_rec(&mut map, &expl.explanation_trees);
         }
-        Some(map.iter().fold("".to_string(), |acc, (k, v)| {
-            format!("{}\n\t{}: {}", acc, k, v)
-        }))
+        Some(
+            map.iter()
+                .fold("".to_string(), |acc, (k, v)| format!("{acc}\n\t{k}: {v}")),
+        )
     }
 
     /// Check if the output has an explanation.
@@ -387,8 +388,7 @@ impl OptStrat {
         for gate in &gates {
             if !GATE_WHITELIST.contains(&gate.as_str()) {
                 return Err(format!(
-                    "Gate {} is not in the whitelist {}",
-                    gate, GATE_WHITELIST_STR
+                    "Gate {gate} is not in the whitelist {GATE_WHITELIST_STR}"
                 ));
             }
         }
@@ -590,7 +590,7 @@ where
         let new_nodes: Vec<L> = class
             .nodes
             .iter()
-            .filter(|n| !f(n) && !n.children().iter().any(|c| *c == class.id))
+            .filter(|n| !f(n) && !n.children().contains(&class.id))
             .cloned()
             .collect();
         if !new_nodes.is_empty() {
@@ -959,7 +959,7 @@ where
             let data = &runner.egraph[croot].data;
             eprintln!("INFO: Root analysis");
             eprintln!("INFO: =============");
-            eprintln!("INFO:\t{:?}", data);
+            eprintln!("INFO:\t{data:?}");
         }
 
         Ok(())
@@ -1179,7 +1179,7 @@ where
     R: Report<L>,
 {
     if !no_verify {
-        L::verify_expr(&expr).map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+        L::verify_expr(&expr).map_err(std::io::Error::other)?;
     }
 
     if cfg!(debug_assertions) {
@@ -1188,9 +1188,7 @@ where
 
     let mut req = req.with_expr(expr.clone());
 
-    let result = req
-        .synth()
-        .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+    let result = req.synth().map_err(std::io::Error::other)?;
 
     #[cfg(feature = "graph_dumps")]
     if let Some(p) = &req.dump_egraph {
@@ -1205,10 +1203,10 @@ where
         let proof = result.get_rule_uses().unwrap();
         let mut linecount = 0;
         for line in proof.lines() {
-            eprintln!("INFO:\t{}", line);
+            eprintln!("INFO:\t{line}");
             linecount += 1;
         }
-        eprintln!("INFO: Approx. {} lines in proof tree", linecount);
+        eprintln!("INFO: Approx. {linecount} lines in proof tree");
     } else if req.get_expr().as_ref().len() < 240 {
         let expr = req.get_expr().to_string();
         let len = expr.len().min(240);
@@ -1230,17 +1228,14 @@ where
                 Some(e) => {
                     eprintln!("ERROR: Exhaustive testing failed. Dumping explanations...");
                     for expl in e {
-                        eprintln!("{}", expl);
+                        eprintln!("{expl}");
                     }
                 }
                 None => eprintln!(
                     "ERROR: Failed for unknown reason. Try running with --verbose for an attempted proof"
                 ),
             }
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Functionality verification failed",
-            ));
+            return Err(std::io::Error::other("Functionality verification failed"));
         }
     }
     Ok(result)
@@ -1269,9 +1264,7 @@ where
         });
     }
     let expr = line.split("//").next().unwrap();
-    let expr: RecExpr<L> = expr
-        .parse()
-        .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))?;
+    let expr: RecExpr<L> = expr.parse().map_err(std::io::Error::other)?;
 
     process_expression(expr, req, no_verify, verbose)
 }
