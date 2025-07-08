@@ -1,4 +1,4 @@
-// RUN: cellmap %s -k 4 -n 6 2>>/dev/null | FileCheck %s
+// RUN: eqmap_asic %s -k 4 -n 6 2>>/dev/null | FileCheck %s
 
 module cla (
     a0,

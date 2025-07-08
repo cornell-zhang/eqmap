@@ -5,7 +5,7 @@ LIB="$(realpath $LIB)"
 SIMLIB="$(dirname $0)/../verilog/simlib.v"
 SIMLIB="$(realpath $SIMLIB)"
 MKFILE=$1.mk
-TOOL=cellmap
+TOOL=eqmap_asic
 
 # Decide whether to use Vivado or Yosys based on the stem given to Make
 if [ -z $FSTEM ]; then

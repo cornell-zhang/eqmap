@@ -2,7 +2,7 @@
 
 The files in this directory need to be distributed with the tool in order to be able to run most experiments.
 
-- `celllang.v` This file provides the tech mapping library for Yosys to convert the RTL logic into a netlist of AND, OR, and INV gates. It is meant to be used with the `msynth` and `cellmap` tools.
+- `celllang.v` This file provides the tech mapping library for Yosys to convert the RTL logic into a netlist of AND, OR, and INV gates. It is meant to be used with the `msynth` and `eqmap_asic` tools.
 
 - `lutlang.v` This file provides the techmapping library for Yosys to convert the RTL logic into a netlist of XOR, NOR, AND, and INV gates. It is meant to be used with the `eqmap` and `eqmap_fpga` tools.
 
