@@ -70,7 +70,7 @@ Options:
   -V, --version                    Print version
 ```
 
-You will likely want to use the `--report <report file name>` flag to measure improvements in LUT count and circuit depth.
+You will likely want to use the `--report <file>` flag to measure improvements in LUT count and circuit depth.
 
 ### Features
 
