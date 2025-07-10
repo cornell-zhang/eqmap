@@ -70,6 +70,8 @@ Options:
   -V, --version                    Print version
 ```
 
+You will likely want to use the `--report <report file name>` flag to measure improvements in LUT count and circuit depth.
+
 ### Features
 
 The project has three conditionally compiled features:
