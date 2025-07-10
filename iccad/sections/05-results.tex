@@ -29,7 +29,8 @@ remapping optimizations influence CLB usage.
         \includegraphics[width=\textwidth]{img/y47.pdf}
         \caption{Distribution of LUTs when using EqMap + Yosys 0.47.}\label{fig:histogram:y47}
     \end{subfigure}
-    \caption{Yosys 0.47 maps `i9' with fewer LUTs than Yosys 0.33. However, remapping with EqMap causes the trend to invert.}\label{fig:histogram}
+    \caption{Yosys 0.47 maps `i9' with fewer LUTs than Yosys 0.33. However, remapping with EqMap inverts the trend.}\label{fig:histogram}
+    \vspace{-0.5mm}
 \end{figure}
 
 \subsection{Benchmarking}\label{sec:results:benchmark}
@@ -72,7 +73,8 @@ their own.
         \includegraphics[width=\textwidth]{img/runtime_derivative.pdf}
         \caption{Marginal cost in compile time versus iteration count. Later iterations consume more time as the e-graph is larger.}\label{fig:marginal:runtime}
     \end{subfigure}
-    \caption{The marginal gain in QoR and cost in time as the e-graph grows in size. In most cases, exploring a circuit to equality saturation is not necessary.}\label{fig:marginal}
+    \caption{The marginal gain in QoR and marginal cost in time as the e-graph grows in size.}\label{fig:marginal}
+    \vspace{-0.5mm}
 \end{figure}
 
 \begin{table*}[t]
@@ -142,8 +144,8 @@ Table~\ref{tab:results}, only six exceed 1000 LUTs. Although this e-graph
 driven technology provides promising results for smaller benchmarks, FPGA
 technology mapping is especially difficult---and important---for larger designs
 Through our case study on bit-parallel designs, we demonstrate that
-\shortname{} benefits hold with larger design sizes, achieving area reductions
-without incurring excessive build times.
+\shortname{}'s benefits hold with larger design sizes, achieving area
+reductions without incurring excessive build times.
 
 To test how \shortname{} scales with gate count, we created a synthetic ALU
 benchmark and varied the input and output bit widths from 8 bits to 4096 bits.
