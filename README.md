@@ -2,37 +2,28 @@
 
 # EqMap: FPGA LUT Technology Mapping w/ E-Graphs
 
-## Description
+EqMap is Verilog-to-Verilog tool for superoptimizing FPGA technology mapping using E-Graphs. Our experiments show improved cut selection and smaller mapped circuits than the commercial tools.
 
-A Verilog-to-Verilog tool for superoptimizing FPGA netlists with E-Graphs
+## Getting Started
 
-### Dependencies
+### Dependencies for Users
 
-#### To Build
-
-- Bash Shell (use WSL for Windows)
 - [rustup](https://rustup.rs/)
-  - Crates (these are fetched automatically)
-    - [egg](https://docs.rs/egg/latest/egg/)
-    - [bitvec](https://docs.rs/bitvec/latest/bitvec/)
-    - [clap](https://docs.rs/clap/latest/clap/)
-    - [indicatif](https://docs.rs/indicatif/latest/indicatif/)
-    - [sv-parser](https://docs.rs/sv-parser/latest/sv_parser/)
-    - [serde_json](https://docs.rs/serde_json/latest/serde_json/)
+  - Crate Used (these are fetched automatically)
+    - [egg](https://docs.rs/egg/latest/egg/), [bitvec](https://docs.rs/bitvec/latest/bitvec/), [clap](https://docs.rs/clap/latest/clap/), [indicatif](https://docs.rs/indicatif/latest/indicatif/), [sv-parser](https://docs.rs/sv-parser/latest/sv_parser/), [serde_json](https://docs.rs/serde_json/latest/serde_json/)
 - [Yosys 0.33](https://github.com/YosysHQ/yosys)
-- *Optional* ILP
-  - [CBC Solver](https://github.com/coin-or/Cbc)
+- *Optional* [CBC Solver](https://github.com/coin-or/Cbc)
 
-#### For Development
+## Dependencies For Developers
 
-- VSCode
+- VSCode Extensions
   - [Rust Analyzer Extension](https://rust-analyzer.github.io/)
   - [VerilogHDL Extension](https://marketplace.visualstudio.com/items?itemName=mshr-h.VerilogHDL)
 - RTL Tools
   - [Verilator](https://github.com/verilator/verilator)
   - [Verible](https://github.com/chipsalliance/verible)
 
-### Installing & Getting Started
+### Building the Tools
 
 First, check the prerequisites for building. For basic functionality, you will need the Rust toolchain, a Yosys 0.33 install. Linux is preferred, but MacOS and WSL should work without much trouble.
 
@@ -40,9 +31,11 @@ First, check the prerequisites for building. For basic functionality, you will n
 
 `cargo run --release -- tests/verilog/mux_reg.v # Sanity check`
 
-You can also try to synthesize your own verilog module `my_file.v` as long as it has no multi-bit signals:
+### Bring Your Own RTL
 
-`source utils/setup.sh # Add tools to path`
+You can also try to synthesize your own verilog module `my_file.v` as long as there are no multi-bit top-level ports:
+
+`source utils/setup.sh # Add eqmap script to PATH`
 
 `eqmap my_file.v`
 
@@ -81,37 +74,15 @@ Options:
 
 The project has three conditionally compiled features:
 
-1. `egraph_fold` (should really not be used)
-2. `exactness` (used for exact synthesis, requires cbc)
-3. `cut_analysis` (tracks principle inputs used in cut of logic)
+1. `egraph_fold` (deprecated)
+2. `exactness` (used for ILP exact synthesis, requires [CBC](https://github.com/coin-or/Cbc))
+3. `cut_analysis` (on by default)
 4. `graph_dumps` (enables the serialization module and `--dump-graph` argument)
 
-To build with these features enabled:
+To build with any of these features enabled:
 
-`cargo build --release --features exactness`
-
-Or to get the tools in your PATH:
-
-`source utils/setup.sh exactness`
+`source utils/setup.sh <feature>`
 
 ### Docs
 
 You can generate most of the documentation with `cargo doc`.
-
-Here is a rough outline of the grammar defined by `LutLang`:
-
-`<LutLang> ::= <Program> | <Node> | BUS <Node> ... <Node>`
-
-REG expressions do not work with verification, and sequential logic isn't fully supported yet.
-
-```
-<Node> ::= <Const> | x | <Input> | NOR <Node> <Node> | MUX <Node> <Node> <Node>
-            | LUT <Program> <Node> ... <Node> | REG <Node> | ARG <u64> | CYCLE <Node>
-
-
-<Const> ::= false | true // Base type is a bool
-
-<Input> ::= <String> // Any string is parsed as an input variable
-
-<Program> ::= <u64> // Can store a program for up to 6 bits
-```
