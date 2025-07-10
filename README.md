@@ -25,7 +25,7 @@ EqMap is Verilog-to-Verilog tool that attempts to superoptimize FPGA technology 
 
 ### Building the Tools
 
-First, check the prerequisites for building. For basic functionality, you will need the Rust toolchain, a Yosys 0.33 install. Linux is preferred, but MacOS and WSL should work without much trouble.
+First, check the prerequisites for building. For basic functionality, you will need the Rust toolchain and a Yosys 0.33 install. Linux is preferred, but MacOS and WSL should work without much trouble.
 
 `cargo build`
 
