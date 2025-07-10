@@ -57,9 +57,9 @@ as a formal reasoning tool helps to build trust in our synthesis results. In
 fact, e-graphs were originally designed for automated theorem
 proving~\cite{eggpaper}. Thus, constructing proofs that demonstrate equivalence
 between the original and remapped netlist is a built-in feature of
-\shortname{}. This technique is relatively slow, so we also use two other
-independent sources of verification. For combinational netlists, our middle end
-can do exhaustive functional testing. Lastly, we use Yosys~\cite{yosys} for its
-SAT-driven equivalence checking capabilities. All in all, the mixed usage of
-these verification techniques build confidence in the robustness of our
-technology mapper built around e-graphs.
+\shortname{}. However, we also use two other independent sources of
+verification. For combinational netlists, our middle end can do exhaustive
+functional testing. Lastly, we use Yosys~\cite{yosys} for its SAT-driven
+equivalence checking capabilities. All in all, the mixed usage of these
+verification techniques build confidence in the robustness of our technology
+mapper built around e-graphs.

@@ -98,9 +98,8 @@ union-find data structure is referred to as an \textit{iteration}. As shown in
 Fig.~\ref{fig:marginal:improvement}, nearly all the performance gains are
 discovered within the first 10 iterations---well before equality saturation.
 Some notable exceptions occur, such as `alu4' being reduced in size after the
-40th iteration. Lastly, the growing runtime of e-graph exploration with each
-iteration should be addressed. The marginal cost of executing an iteration of
-rewrites becomes prohibitive as the e-graph becomes larger.
+40th iteration. Lastly, the marginal cost of executing an iteration of rewrites
+becomes prohibitive as the e-graph becomes larger.
 Fig.~\ref{fig:marginal:runtime} illustrates that after approximately the 30th
 iteration, the added cost in compile time rapidly increases. However, the far
 majority of results are reached within 20 iterations of rewriting, which on
@@ -142,23 +141,22 @@ literature, the circuits are relatively small. On average, the designs map to
 Table~\ref{tab:results}, only six exceed 1000 LUTs. Although this e-graph
 driven technology provides promising results for smaller benchmarks, FPGA
 technology mapping is especially difficult---and important---for larger designs
-with tens of thousands of LUTs. Through our case study on bit-parallel designs,
-we demonstrate that \shortname{} performs just as well on large designs,
-achieving area reductions without incurring excessive build times.
+Through our case study on bit-parallel designs, we demonstrate that
+\shortname{} benefits hold with larger design sizes, achieving area reductions
+without incurring excessive build times.
 
-To test how \shortname{} scales with increasing numbers of LUTs, we created a
-synthetic ALU benchmark and varied the input and output bit widths from 8 bits
-to 4096 bits. Table~\ref{tab:alu} lists the LUT counts from the initial
-synthesis by Vivado 2024, followed by the packed LUT counts. Even though the
-1024-bit, 2048-bit, and 4096-bit ALU designs had up to 15,000 LUTs,
-\shortname{} was able to achieve up to almost 15\% improvement over Vivado
-within 5 minutes of extra build time. While longer runs lead to slightly better
-improvements, these results demonstrate how \shortname{} can achieve area
-reductions within a short period of time, even when input designs are scaled to
-beyond 10,000 LUTs. In this specific case, \shortname{} can be used to audit
-synthesis tools and perhaps even reverse-engineer adverse behavior. Hence,
-\shortname{} proves to be a practical tool to run after a baseline synthesis by
-Vivado or Yosys to quickly achieve better LUT packing with minimal time cost.
+To test how \shortname{} scales with gate count, we created a synthetic ALU
+benchmark and varied the input and output bit widths from 8 bits to 4096 bits.
+Table~\ref{tab:alu} lists the LUT counts from the initial synthesis by Vivado
+2024, followed by the packed LUT counts. Even though the 1024-bit, 2048-bit,
+and 4096-bit ALU designs had up to 15,000 LUTs, \shortname{} was able to
+achieve up to almost 15\% improvement over Vivado within 5 minutes of extra
+build time. While longer runs lead to slightly better improvements, these
+results demonstrate how \shortname{} can achieve area reductions within a short
+period of time, even when input designs are scaled to beyond 10,000 LUTs. In
+this specific case, \shortname{} can be used to audit synthesis tools and
+perhaps even reverse-engineer adverse behavior. Hence, \shortname{} proves to
+be a practical tool to quickly improve a baseline synthesis run.
 
 \begin{table}
     \centering
