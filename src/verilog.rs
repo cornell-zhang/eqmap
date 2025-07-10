@@ -1,7 +1,6 @@
 /*!
 
-  Parse a rigid form of structural verilog and covert it into a [SVModule] struct.
-  This struct can then be converted into a [LutLang] expression.
+  Parses structural verilog and convert it into a [SVModule] struct.
 
 */
 

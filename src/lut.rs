@@ -1,6 +1,6 @@
 /*!
 
-  The lut module defines the grammar used to represent LUTs, gates, and principal inputs.
+  Defines the grammar used to represent LUTs, gates, and principal inputs.
 
 */
 use super::analysis::LutAnalysis;

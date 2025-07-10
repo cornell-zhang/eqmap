@@ -1,11 +1,6 @@
 /*!
 
-  The rewrite module defines the collection of rewrite rules for LUT networks.
-  These rules roughly fall into 5 categories:
-  Shannon decomposition, general cut-fusion, general cut-decomposition (using DSD), LUT symmetry, constant evaluation, and gate conversion.
-  Gate conversion is only present for the sake of running without structural synthesis.
-
-  This module also contains all the appliers for LUT rewrite rules. This code is the most delicate and requires the most testing.
+  Shannon decomposition, general cut-fusion, general cut-decomposition (using DSD), LUT symmetry, constant evaluation, and gate conversion rewrite rules.
 
 */
 use super::analysis::LutAnalysis;

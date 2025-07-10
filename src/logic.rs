@@ -1,6 +1,6 @@
 /*!
 
-  Implement four-state logic
+  Four-state logic
 
 */
 

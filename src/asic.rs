@@ -1,6 +1,6 @@
 /*!
 
-  Module for ASIC technology mapping.
+  Defines rewrite rules for ASIC cell mapping.
 
 */
 

@@ -2,9 +2,42 @@
 #![warn(missing_docs)]
 /*!
 
-`eqmap`: LUT Network Synthesis with E-Graphs
+`eqmap`: FPGA LUT Remapping using E-Graphs
 
-TODO: overview, tutorial, testing, research papers
+This Verilog-to-Verilog tool seeks to evaluate the use of logic rewriting and equality saturation for improving FPGA technology mapping.
+
+The LUT representation can be found in the [lut] module, whereas a lot of the bit-twiddling of truth tables happens in [rewrite]. [driver] has all the code related to tooling and end-to-end integration.
+
+`eqmap_fpga` is the main CLI tool, and you can see how it is used in some of the CI [tests](https://github.com/matth2k/eqmap/tree/main/tests/verilog). Lastly, eqmap is bundled together with yosys in the [eqmap](https://github.com/matth2k/eqmap/blob/main/bin/eqmap) script. This is the script that should be used to process your own verilog:
+
+```bash
+$ eqmap --help
+Technology Mapping Optimization with E-Graphs
+
+Usage: eqmap_fpga [OPTIONS] [INPUT] [OUTPUT]
+
+Arguments:
+  [INPUT]   Verilog file to read from (or use stdin)
+  [OUTPUT]  Verilog file to output to (or use stdout)
+
+Options:
+      --report <REPORT>            If provided, output a JSON file with result data
+  -a, --assert-sat                 Return an error if the graph does not reach saturation
+  -f, --no-verify                  Do not verify the functionality of the output
+  -c, --no-canonicalize            Do not canonicalize the input into LUTs
+  -d, --decomp                     Find new decompositions at runtime
+      --disassemble <DISASSEMBLE>  Comma separated list of cell types to decompose into
+  -r, --no-retime                  Do not use register retiming
+  -v, --verbose                    Print explanations (generates a proof and runs slower)
+      --min-depth                  Extract for minimum circuit depth
+  -k, --k <K>                      Max fan in size allowed for extracted LUTs [default: 6]
+  -w, --reg-weight <REG_WEIGHT>    Ratio of register cost to LUT cost [default: 1]
+  -t, --timeout <TIMEOUT>          Build/extraction timeout in seconds
+  -s, --node-limit <NODE_LIMIT>    Maximum number of nodes in graph
+  -n, --iter-limit <ITER_LIMIT>    Maximum number of rewrite iterations
+  -h, --help                       Print help
+  -V, --version                    Print version
+```
 
 */
 

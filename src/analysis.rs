@@ -1,9 +1,7 @@
 /*!
 
-  This module defines the analysis stored with signals in the LUT network.
-  In most respects, the analysis enforces some level of consistency when rewrite rules are applied.
-  For example, we should not be merging programs with non-programs.
-  This analysis can also assist in constant propagation and pruning nodes.
+  The analysis stored with signals in the LUT network.
+  In most respects, the analysis helps "type check" for any erroneous rewrite rules.
 
 */
 

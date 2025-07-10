@@ -1,6 +1,6 @@
 /*!
 
-  The code module contains a super simple cost function that extracts LUTs with at most `k` fan-in.
+  Simple cost functions that extracts LUTs with at most `k` fan-in.
 
 */
 use super::lut::LutLang;
