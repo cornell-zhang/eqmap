@@ -2,7 +2,7 @@
 
 # EqMap: FPGA LUT Technology Mapping w/ E-Graphs
 
-EqMap is Verilog-to-Verilog tool that attempts to uperoptimize FPGA technology mapping using E-Graphs. Our experiments show that equality saturation techniques can improve logic sut selection and ultimately produce smaller circuits than the commercial tools.
+EqMap is Verilog-to-Verilog tool that attempts to superoptimize FPGA technology mapping using E-Graphs. Our experiments show that equality saturation techniques can improve logic sut selection and ultimately produce smaller circuits than the commercial tools.
 
 ## Getting Started
 
