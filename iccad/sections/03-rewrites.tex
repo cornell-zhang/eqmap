@@ -13,9 +13,11 @@ can define De Morgan's laws as a rewrite rule:
 On the left of \texttt{=>} is the \textit{search pattern}. The right-hand side
 of the rule is the \textit{application}. In the following subsections, we will
 define our netlist representation, \texttt{LutLang}, and the accompanying
-equivalence relations. Formalizing the meaning of FPGA netlists is critical to
-both verification and finding deeper insight into the structure of our rewrite
-rules under composition.
+equivalence relations. While none of \shortname{}'s rewrite rules are
+particularly novel at face value, together they define a transformation space
+that can discover compacted circuits. Hence, formalizing our language and rules
+is critical to both verification and finding deeper insight into the structure
+of our rewrite rules under composition.
 
 \subsection{\texttt{LutLang} Representation}\label{sec:rewrites:lutlang}
 
