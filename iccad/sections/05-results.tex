@@ -38,11 +38,13 @@ remapping optimizations influence CLB usage.
 We used a compilation of \nbenchmarks{} combinational benchmarks from three
 academic sources to test LUT mapping ability. Among the combinational
 benchmarks we tested, \shortname{} was able to reduce the LUT count \fmetric{}
-of the time. On average, \shortname{} packed the netlists to \metric{}. The
+of the time. On average, \shortname{} packed those netlists to \metric{}. The
 results in Table~\ref{tab:results} list all the reduced LUT counts, sorted by
-approximate design size. AMD/Xilinx Vivado 2024~\cite{vivado} was used as the
-baseline synthesis tool. For the \shortname{} flow, Yosys~\cite{yosys} was used
-to generate the initial mapped circuit. At a glance, circuits like `int2float,'
+design size. It should be noted that \nnotimproved{} benchmarks did not
+improve. However, \shortname{} was always able to produce a circuit of equal
+size at worst. AMD/Xilinx Vivado 2024~\cite{vivado} was used as the baseline
+synthesis tool. For the \shortname{} flow, Yosys~\cite{yosys} was used to
+generate the initial mapped circuit. At a glance, circuits like `int2float,'
 `c6288,` `adder,' and `square' have the most to gain from \shortname{}. These
 circuits are all arithmetic in nature, and this pattern continues throughout
 the rest of the results.

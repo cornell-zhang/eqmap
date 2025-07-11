@@ -33,6 +33,7 @@
 \newcommand{\metric}{12\% fewer LUTs}
 \newcommand{\fmetric}{44\%}
 \newcommand{\nimproved}{42}
+\newcommand{\nnotimproved}{53}
 \newcommand{\nbenchmarks}{95}
 \newcommand{\B}{\mathbb{Z}_{2}}
 \newcommand{\Bk}{\mathbb{Z}_{2}^{k}}
@@ -62,12 +63,12 @@
     substantial room for improvement in the quality of results. As a solution, we
     introduce \shortname{}, an e-graph driven compiler that can better span the
     wide gap between SAT-based exact synthesis and heuristic cut enumeration
-    techniques. We show that \shortname{} can synthesize circuits with \metric{} on
-    average over the vendor tools---without ever increasing circuit depth. We also
-    provide an empirical analysis of the runtime of \shortname{} and show that it
-    is still practical for large designs. Finally, we demonstrate that our compiler
-    infrastructure is reusable, and future work can use our compiler for RTL
-    equivalence checking or auditing the QoR of synthesis tools.
+    techniques. \shortname{}'s improvements to synthesis produced circuits with
+    \metric{} on average over the vendor tools---without ever increasing circuit
+    depth. We also provide an empirical analysis of the runtime of \shortname{} and
+    show that it is still practical for large designs. Finally, we demonstrate that
+    our compiler infrastructure is reusable, and future work can use our compiler
+    for RTL equivalence checking or auditing the QoR of synthesis tools.
 \end{abstract}
 
 \input{sections/00-intro}
