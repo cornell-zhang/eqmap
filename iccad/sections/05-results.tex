@@ -69,14 +69,14 @@ their own.
         \includegraphics[width=\textwidth]{img/improvement.pdf}
         \caption{Marginal improvement in LUT count versus iteration count. The labels mark equality saturation.}\label{fig:marginal:improvement}
     \end{subfigure}
-    \hfill\vspace{4mm}
+    \hfill\vspace{2mm}
     \begin{subfigure}{0.47\textwidth}
         \centering
         \includegraphics[width=\textwidth]{img/runtime_derivative.pdf}
-        \caption{Marginal cost in compile time versus iteration count. Later iterations consume more time as the e-graph is larger.}\label{fig:marginal:runtime}
+        \caption{Marginal cost in compile time versus iteration count.}\label{fig:marginal:runtime}
     \end{subfigure}
     \caption{The marginal gain in QoR and marginal cost in time as the e-graph grows in size.}\label{fig:marginal}
-    \vspace{-0.5mm}
+    \vspace{-1.6mm}
 \end{figure}
 
 \begin{table*}[t]
@@ -103,7 +103,7 @@ Fig.~\ref{fig:marginal:improvement}, nearly all the performance gains are
 discovered within the first 10 iterations---well before equality saturation.
 Some notable exceptions occur, such as `alu4' being reduced in size after the
 40th iteration. Lastly, the marginal cost of executing an iteration of rewrites
-becomes prohibitive as the e-graph becomes larger.
+becomes prohibitive as the e-graph grows much larger.
 Fig.~\ref{fig:marginal:runtime} illustrates that after approximately the 30th
 iteration, the added cost in compile time rapidly increases. However, the far
 majority of results are reached within 20 iterations of rewriting, which on
@@ -145,9 +145,8 @@ literature, the circuits are relatively small. On average, the designs map to
 Table~\ref{tab:results}, only six exceed 1000 LUTs. Although this e-graph
 driven technology provides promising results for smaller benchmarks, FPGA
 technology mapping is especially difficult---and important---for larger designs
-Through our case study on bit-parallel designs, we demonstrate that
-\shortname{}'s benefits hold with larger design sizes, achieving area
-reductions without incurring excessive build times.
+By studying a parameterized design, we can demonstrate that \shortname{}'s
+benefits hold the same with the scaling of logic.
 
 To test how \shortname{} scales with gate count, we created a synthetic ALU
 benchmark and varied the input and output bit widths from 8 bits to 4096 bits.

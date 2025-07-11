@@ -11,12 +11,11 @@ can define De Morgan's laws as a rewrite rule:
 \end{lstlisting}
 
 On the left of \texttt{=>} is the \textit{search pattern}. The right-hand side
-of the rule is the \textit{application}. Rewrites must be merged back into the
-union-find data structure, so this is an iterative process. In the following
-subsections, we will define our netlist representation, \texttt{LutLang}, and
-the accompanying equivalence relations. Formalizing the meaning of FPGA
-netlists is critical to both verification and finding deeper insight into the
-structure of our rewrite rules under composition.
+of the rule is the \textit{application}. In the following subsections, we will
+define our netlist representation, \texttt{LutLang}, and the accompanying
+equivalence relations. Formalizing the meaning of FPGA netlists is critical to
+both verification and finding deeper insight into the structure of our rewrite
+rules under composition.
 
 \subsection{\texttt{LutLang} Representation}\label{sec:rewrites:lutlang}
 
