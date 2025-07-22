@@ -2,7 +2,7 @@
 Given the complexity of modern electronic systems, a high degree of automation
 is required to develop custom hardware within sensible timelines. At the
 highest level, FPGA and ASIC design flows can be split into logic synthesis and
-physical design (e.g., floorplanning placement and routing). This division of
+physical design (e.g., floorplanning, placement, and routing). This division of
 work produces suboptimal designs. Moreover, the individual compilation steps
 themselves may not be locally optimal. However, circuit minimization problems
 in general are NP-hard~\cite{logicmin,twolevellogic}, and modern EDA flows use
@@ -50,7 +50,7 @@ the circuit to a more compact form. Whereas typical optimizing compilers apply
 a greedy sequence of transformation passes, e-graphs rewrite terms in a
 nondestructive fashion. Our work seeks to evaluate the suitability of e-graphs
 to superoptimize logic synthesis, while still utilizing the fine-tuned
-heuristics of exisiting work as a starting point.
+heuristics of existing work as a starting point.
 
 To that end, we propose \shortname{}: a tool for remapping FPGA netlists into
 more compact forms---without increasing circuit depth. Our results show many
