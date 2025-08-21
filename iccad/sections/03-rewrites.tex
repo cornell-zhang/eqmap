@@ -202,7 +202,7 @@ look for fully disjoint decompositions in one or more variables. This rule has
 no structural element to search for, so it runs every time an e-class is
 updated. Our implementation computes the Shannon expansion of a $k$-LUT's
 function $F$ and checks if the first variable canalizes or inverts the
-function. For instance, given $k=3$ then it is true that for $G, H \in \B^2
+function. For instance, given $k=3$ then it is true for $G, H \in \B^2
     \rightarrow \B$ that:
 
 \begin{gather}
@@ -211,9 +211,9 @@ function. For instance, given $k=3$ then it is true that for $G, H \in \B^2
     F(x_0, x_1, x_2) = x_0 \cdot G_{x_0} (H(x_1, x_2)) +  \overline{x_0} \cdot G_{\overline{x}_0} (H(x_1, x_2))
 \end{gather}
 
-In practice, our implementation calculates the truth tables for $G_{x_0}$ and
-$G_{\overline{x}_0}$ and determines if either represents a constant function or
-if they are complements of each other.
+In practice, the rule calculates the truth tables that represent the cofactors
+of $F$ and determines if either represents a constant function or if they are
+complements of each other.
 
 \subsection{Register Retiming}\label{sec:rewrites:retiming}
 
