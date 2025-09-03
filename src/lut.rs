@@ -53,10 +53,10 @@ impl LutLang {
                 if l == 0 {
                     Err("LUT must have at least one element".to_string())
                 } else if l - 1 > Self::MAX_LUT_SIZE {
-                    return Err(format!(
+                    Err(format!(
                         "Only {}-Luts or smaller supported",
                         Self::MAX_LUT_SIZE
-                    ));
+                    ))
                 } else {
                     Ok(())
                 }
