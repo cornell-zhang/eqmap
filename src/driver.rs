@@ -1144,8 +1144,8 @@ where
 /// A simple function to read from file, stdin, or a string. The `cmd` takes the most precendence, then files, then stdin.
 pub fn simple_reader(cmd: Option<String>, input_file: Option<PathBuf>) -> std::io::Result<String> {
     let mut buf = String::new();
-    if cmd.is_some() {
-        buf = cmd.unwrap();
+    if let Some(cmd) = cmd {
+        buf = cmd;
     } else if input_file.is_some() {
         std::fs::File::open(input_file.unwrap())?.read_to_string(&mut buf)?;
     } else {
