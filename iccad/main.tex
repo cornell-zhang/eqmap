@@ -1,0 +1,93 @@
+% use the base acmart.cls
+% use the sigplan proceeding template with the default 10 pt fonts
+% nonacm option removes ACM related text in the submission. 
+\documentclass[10pt,conference]{IEEEtran}
+\usepackage{csvsimple}
+\usepackage{subcaption}
+\usepackage{cite}
+\usepackage{amsmath,amsthm,amssymb,amsfonts,stmaryrd}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage[hidelinks]{hyperref}
+
+\lstdefinestyle{mystyle}{
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=false,
+    numbers=none,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\newcommand{\fullname}{EqMap: FPGA LUT Remapping using E-Graphs}
+\newcommand{\shortname}{EqMap}
+\newcommand{\metric}{12\% fewer LUTs}
+\newcommand{\fmetric}{44\%}
+\newcommand{\nimproved}{42}
+\newcommand{\nnotimproved}{53}
+\newcommand{\nbenchmarks}{95}
+\newcommand{\B}{\mathbb{Z}_{2}}
+\newcommand{\Bk}{\mathbb{Z}_{2}^{k}}
+\newcommand{\Bx}[1]{\mathbb{Z}_{2}^{#1}}
+
+\newcommand{\fixme}[1]{\textcolor{red}{#1}}
+\newcommand{\todo}[1]{\textcolor{red}{TODO:\ #1}}
+\newcommand{\zz}[1]{\textcolor{blue}{[\small zz: ~#1]}}
+
+% enable page numbers
+% \settopmatter{printfolios=true}
+
+\begin{document}
+
+\title{\fullname}
+\author{\IEEEauthorblockN{Matthew Hofmann, Berk Gokmen, Zhiru Zhang}
+\IEEEauthorblockA{Cornell University
+\\\{mrh259, bg372, zhiruz\}@cornell.edu}}
+\maketitle
+
+\begin{abstract}
+    FPGA technology mapping is a well-studied problem and has been an area of
+    interest in EDA tool design for decades. In most respects, the computational
+    complexity of technology mapping is understood, and heuristic algorithms have
+    been successfully employed to mitigate compile times. Even with an extensive
+    body of research on technology mapping, our experiments show there is still
+    substantial room for improvement in the quality of results. As a solution, we
+    introduce \shortname{}, an e-graph driven compiler that can better span the
+    wide gap between SAT-based exact synthesis and heuristic cut enumeration
+    techniques. \shortname{}'s improvements to synthesis produced circuits with
+    \metric{} on average over the vendor tools---without ever increasing circuit
+    depth. We also provide an empirical analysis of the runtime of \shortname{} and
+    show that it is still practical for large designs. Finally, we demonstrate that
+    our compiler infrastructure is reusable, and future work can use our compiler
+    for RTL equivalence checking or auditing the QoR of synthesis tools.
+\end{abstract}
+
+\input{sections/00-intro}
+\input{sections/01-background}
+\input{sections/02-related-work}
+\input{sections/03-rewrites}
+\input{sections/04-toolflow}
+\input{sections/05-results}
+\input{sections/06-conclusion}
+\input{sections/07-acknowledgements}
+
+% use the ACM bibliography style
+\bibliographystyle{IEEEtran}
+\bibliography{IEEEabrv,references}
+
+% \newpage
+%%
+%% If your work has an appendix, this is the place to put it.
+% \appendix
+
+\end{document}

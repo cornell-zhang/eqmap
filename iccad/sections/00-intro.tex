@@ -1,0 +1,76 @@
+\section{Introduction}\label{sec:intro}
+Given the complexity of modern electronic systems, a high degree of automation
+is required to develop custom hardware within sensible timelines. At the
+highest level, FPGA and ASIC design flows can be split into logic synthesis and
+physical design (e.g., floorplanning, placement, and routing). This division of
+work produces suboptimal designs. Moreover, the individual compilation steps
+themselves may not be locally optimal. However, circuit minimization problems
+in general are NP-hard~\cite{logicmin,twolevellogic}, and modern EDA flows use
+phased compilation and heuristics to bring compile times down to the human
+timescale while maintaining acceptable quality of results (QoR).
+
+With the end of Dennard scaling and Moore's Law fading, the quality of logic
+synthesis becomes more important. Hence, future synthesis tools will need to
+expand the design spaces they explore and find more optimal solutions. Still,
+finding provably optimal circuits is computationally intractable. In this
+paper, we introduce a way to augment FPGA technology mapping with e-graph data
+structures in order to find \textit{more} exact solutions, without
+significantly increasing compile times.
+
+Technology mapping is the hand-off between logic synthesis and physical design.
+It converts the abstract Boolean logic into a network of circuit elements that
+belong to the target cell library. For FPGAs, the primary target cell is the
+lookup table (LUT). Since every $k$-LUT can be reprogrammed to satisfy any $k$
+input Boolean function, FPGA technology mapping has an unmistakably large
+solution space. Whether the circuit is optimized for latency or area, most FPGA
+tools approach technology mapping as a graph covering problem~\cite{flowmap,
+    daomap, attmap, imap}. In the literature, a group of circuit nodes implemented
+by a $k$-LUT is called a $k$-feasible cut of logic, and the generation of all
+cuts is called cut enumeration. These structural mapping techniques rely on the
+topology of the input circuit, and hence they are prone to \textit{structural
+    bias}.
+
+In contrast, functional mappers attempt to decompose the Boolean functionality
+into smaller sub-functions which can be realized by $k$-LUTs. Such mappers are
+a more exact approach, and often use SAT solvers to drive
+synthesis~\cite{satmap,satmap2}. Other works employ Boolean matching to speed
+up technology mapping by identifying known Boolean
+structures~\cite{boolmatch,fastboolmatch}. However, exact synthesis tools
+cannot be scaled past tens of gates. As a consequence, cut enumeration and
+functional mapping lie on two different extremes. The former is fast but
+limited by the input structure, while the latter is unbiased but fundamentally
+unscalable.
+
+For this reason, we propose a technology mapper which uses \textit{e-graphs} as
+a way to better span the time-QoR spectrum. Equality graphs, referred to as
+e-graphs, are data structures which use union-find operations to reason about
+abstract equivalence relations~\cite{eggpaper}. By using the output of RTL
+synthesis as an initial solution, we can use e-graphs to incrementally remap
+the circuit to a more compact form. Whereas typical optimizing compilers apply
+a greedy sequence of transformation passes, e-graphs rewrite terms in a
+nondestructive fashion. Our work seeks to evaluate the suitability of e-graphs
+to superoptimize logic synthesis, while still utilizing the fine-tuned
+heuristics of existing work as a starting point.
+
+To that end, we propose \shortname{}: a tool for remapping FPGA netlists into
+more compact forms---without increasing circuit depth. Our results show many
+benchmarks, big and small, which synthesize to significantly fewer LUTs over
+vendor EDA tools. To that end, our work makes the following contributions:
+
+\begin{itemize}
+    \item We formulate an intermediate language and set of e-graph rewrite rules that can
+          explore circuit topologies that heuristic approaches miss.
+    \item We evaluate our compiler against \nbenchmarks{} benchmarks combined from three
+          sources: EPFL~\cite{epflbench}, ISCAS'85~\cite{iscasbench}, and
+          LGSynth'91~\cite{lgsynthbench}. The results show improvements in LUT count
+          without significant increases to compile time.
+    \item Finally, \shortname{} is packaged as a Verilog-to-Verilog tool that can be
+          dropped into existing RTL flows. The source code is on GitHub:
+          \href{https://github.com/cornell-zhang/eqmap}{github.com/cornell-zhang/eqmap}.
+\end{itemize}
+
+Before elaborating on our methodology and experimental setup, we first discuss
+related ideas in technology mapping and e-graph driven compilers. Then, the
+results section illustrates the typical reduction in LUT count our tool
+achieves without increasing circuit depth. Lastly, we discuss the future work
+of our compiler.

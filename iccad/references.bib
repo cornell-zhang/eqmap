@@ -1,0 +1,510 @@
+
+@article{esynth,
+  author    = {Chen, Chen and Hu, Guangyu and Zuo, Dongsheng and Yu, Cunxi and Ma, Yuzhe and Zhang, Hongce},
+  title     = {{E-Syn}: E-Graph Rewriting with Technology-Aware Cost Functions for Logic Synthesis},
+  year      = {2024},
+  isbn      = {9798400706011},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  doi       = {10.1145/3649329.3656246},
+  abstract  = {Logic synthesis plays a crucial role in the digital design flow. It has a decisive influence on the final Quality of Results (QoR) of the circuit implementations. However, existing multi-level logic optimization algorithms often employ greedy approaches with a series of local optimization steps. Each step breaks the circuit into small pieces (e.g.,k-feasible cuts) and applies incremental changes to individual pieces separately. These local optimization steps could limit the exploration space and may miss opportunities for significant improvements. To address the limitation, this paper proposes using e-graph in logic synthesis. The new workflow, named E-Syn, makes use of the well-established e-graph infrastructure to efficiently perform logic rewriting. It explores a diverse set of equivalent Boolean representations while allowing technology-aware cost functions to better support delay-oriented and area-oriented logic synthesis. Experiments over a wide range of benchmark designs show our proposed logic optimization approach reaches a wider design space compared to the commonly used AIG-based logic synthesis flow. It achieves on average 15.29\% delay saving in delay-oriented synthesis and 6.42\% area saving for area-oriented synthesis.},
+  journal   = {ACM/IEEE Design Automation Conference (DAC)},
+  articleno = {124},
+  numpages  = {6},
+  keywords  = {E-graph, technology-aware, logic synthesis},
+  location  = {San Francisco, CA, USA},
+  series    = {DAC '24}
+}
+
+
+@article{sgroup,
+  author    = {I. M. Isaacs and Thilo Zieschang},
+  title     = {Generating Symmetric Groups},
+  journal   = {The American Mathematical Monthly},
+  volume    = {102},
+  number    = {8},
+  pages     = {734--739},
+  year      = {1995},
+  publisher = {Taylor \& Francis},
+  doi       = {10.1080/00029890.1995.12004650},
+  eprint    = {https://doi.org/10.1080/00029890.1995.12004650}
+}
+
+@article{logicmin,
+  author     = {Farrahi, A. H. and Sarrafzadeh, M.},
+  title      = {Complexity of the lookup-table minimization problem for {FPGA} technology mapping},
+  year       = {2006},
+  issue_date = {November 2006},
+  publisher  = {IEEE Press},
+  volume     = {13},
+  number     = {11},
+  issn       = {0278-0070},
+  doi        = {10.1109/43.329262},
+  abstract   = {One of the main objectives in the process of mapping a digital circuit onto a LUT-based FPGA structure is minimizing the total number of lookup tables needed to implement the circuit. This will increase the size of the circuit that can be implemented using the available FPGA structure. In this paper, we show that even restricted cases of the lookup-table minimization for FPGA technology mapping are NP-complete (even when K is a small constant), and that it can be solved optimally for all values of K on a tree input in O(min{nK, nlogn}) time where n is the number of nodes in the network and K is the input capacity of the LUT's. Based on our algorithm for trees, we present a polynomial time heuristic algorithm for general Boolean networks. Experimental results confirm substantial decrease on the number of LUT's on a number of MCNC logic synthesis benchmarks compared to the algorithms that allow no or just local exploitation of Boolean properties of the circuit. We obtain 10\% to 80\% improvement on the number of LUT's compared to the previous algorithms (even though we allow very limited operations, e.g., we do not exploit Boolean properties of the circuits or decompose nodes)},
+  journal    = {IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems},
+  month      = nov,
+  pages      = {1319-1332},
+  numpages   = {14}
+}
+
+@article{qbf,
+  title        = {Circuit Minimization with {QBF}-Based Exact Synthesis},
+  volume       = {37},
+  doi          = {10.1609/aaai.v37i4.25524},
+  abstractnote = {This paper presents a rewriting method for Boolean circuits that minimizes small subcircuits with exact synthesis. Individual synthesis tasks are encoded as Quantified Boolean Formulas (QBFs) that capture the full flexibility for implementing multi-output subcircuits.
+                  This is in contrast to SAT-based resynthesis, where &quot;don't cares&quot; are computed for an individual gate, and replacements are confined to the circuitry used exclusively by that gate.
+                  An implementation of our method achieved substantial size reductions compared to state-of-the-art methods across a wide range of benchmark circuits.},
+  number       = {4},
+  journal      = {AAAI Conference on Artificial Intelligence (AAAI)},
+  author       = {Reichl, Franz-Xaver and Slivovsky, Friedrich and Szeider, Stefan},
+  year         = {2023},
+  month        = {Jun.},
+  pages        = {4087-4094}
+}
+
+@article{twolevellogic,
+  author   = {Umans, C. and Villa, T. and Sangiovanni-Vincentelli, A.L.},
+  journal  = {IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems},
+  title    = {Complexity of two-level logic minimization},
+  year     = {2006},
+  volume   = {25},
+  number   = {7},
+  pages    = {1230-1246},
+  keywords = {Minimization methods;Programmable logic arrays;Logic design;Computational complexity;Multivalued logic;Design automation;Data structures;Boolean functions;Computer science;History;Computational complexity;logic design;logic minimization;two-level logic},
+  doi      = {10.1109/TCAD.2005.855944}
+}
+
+@article{flowmap,
+  author   = {Cong, J. and Yuzheng Ding},
+  journal  = {IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems},
+  title    = {{FlowMap}: an optimal technology mapping algorithm for delay optimization in lookup-table based FPGA designs},
+  year     = {1994},
+  volume   = {13},
+  number   = {1},
+  pages    = {1-12},
+  keywords = {Delay;Field programmable gate arrays;Table lookup;Polynomials;Computer networks;Very large scale integration;Application specific integrated circuits;Heuristic algorithms;Algorithm design and analysis;Packaging},
+  doi      = {10.1109/43.273754}
+}
+
+@article{daomap,
+  author    = {Chen, D. and Cong, J.},
+  journal   = {IEEE/ACM International Conference on Computer Aided Design, 2004. ICCAD-2004.},
+  title     = {{DAOmap}: a depth-optimal area optimization mapping algorithm for {FPGA} designs},
+  year      = {2004},
+  volume    = {},
+  number    = {},
+  publisher = {IEEE},
+  address   = {New York, NY, USA},
+  pages     = {752-759},
+  keywords  = {Design optimization;Field programmable gate arrays;Algorithm design and analysis;Table lookup;Cost function;Timing;Delay;Iterative algorithms;Runtime;Minimization methods},
+  doi       = {10.1109/ICCAD.2004.1382677}
+}
+
+@article{attmap,
+  author    = {Woo, Nam-Sung},
+  title     = {A heuristic method for {FPGA} technology mapping based on the edge visibility},
+  year      = {1991},
+  isbn      = {0897913957},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  doi       = {10.1145/127601.127675},
+  journal   = {ACM/IEEE Design Automation Conference (DAC)},
+  pages     = {248-251},
+  numpages  = {4},
+  location  = {San Francisco, California, USA},
+  series    = {DAC '91}
+}
+
+@article{imap,
+  author   = {Manohararajah, V. and Brown, S.D. and Vranesic, Z.G.},
+  journal  = {IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems},
+  title    = {Heuristics for Area Minimization in {LUT}-Based {FPGA} Technology Mapping},
+  year     = {2006},
+  volume   = {25},
+  number   = {11},
+  pages    = {2331-2340},
+  keywords = {Field programmable gate arrays;Table lookup;Programmable logic arrays;Runtime;Dynamic programming;Minimization;Design optimization;Circuit synthesis;Design automation;Logic design;Circuit optimization;circuit synthesis;design automation;field programmable gate arrays;logic design},
+  doi      = {10.1109/TCAD.2006.882119}
+}
+
+@article{satmap,
+  author    = {Safarpour, Sean and Veneris, Andreas and Baeckler, Gregg and Yuan, Richard},
+  title     = {Efficient {SAT}-based Boolean matching for {FPGA} technology mapping},
+  year      = {2006},
+  isbn      = {1595933816},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  doi       = {10.1145/1146909.1147034},
+  abstract  = {Most FPGA technology mapping approaches either target Lookup Tables (LUTs) or relatively simple Programmable Logic Blocks (PLBs). Considering networks of PLBs during technology mapping has the potential of providing unique optimizations unavailable through other techniques. This paper proposes a Boolean matching approach for FPGA technology mapping targeting networks of PLBs. To overcome the demanding memory requirements of previous approaches, the Boolean matching problem is formulated as a Boolean Satisfiability (SAT) problem. Since the SAT formulation provides a trade-off between space and time, the primary objective is to increase the efficiency of the SAT-based approach. To do this, the original SAT problem is decomposed into two easier SAT problems. To reduce the problem search space, a theorem is introduced to allow conflict clauses to be shared across problems and extra constraints are generated. Experiments demonstrate a 340\% run time improvement and 27\% more success in mapping than previous SAT-based approaches.},
+  journal   = {ACM/IEEE Design Automation Conference (DAC)},
+  pages     = {466-471},
+  numpages  = {6},
+  keywords  = {FPGA technology mapping, Boolean satisfiability, Boolean matching},
+  location  = {San Francisco, CA, USA},
+  series    = {DAC '06}
+}
+
+@article{satmap2,
+  author   = {Haaswijk, Winston and Soeken, Mathias and Mishchenko, Alan and De Micheli, Giovanni},
+  journal  = {IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems},
+  title    = {{SAT}-Based Exact Synthesis: Encodings, Topology Families, and Parallelism},
+  year     = {2020},
+  volume   = {39},
+  number   = {4},
+  pages    = {871-884},
+  keywords = {Encoding;Topology;Runtime;Boolean functions;Logic gates;Computational modeling;Parallel processing;Boolean satisfiability;circuit synthesis;design automation;exact synthesis;logic synthesis;SAT},
+  doi      = {10.1109/TCAD.2019.2897703}
+}
+
+@article{epflbench,
+  title   = {The {EPFL} combinational benchmark suite},
+  author  = {Amar{\'u}, Luca and Gaillardon, Pierre-Emmanuel and De Micheli, Giovanni},
+  journal = {International Workshop on Logic \& Synthesis (IWLS)},
+  year    = {2015}
+}
+
+@article{iscasbench,
+  author  = {Brglez, Franc and Fujiwara, Hideo},
+  year    = {1985},
+  month   = {06},
+  pages   = {},
+  journal = {IEEE International Symposium on Circuits and Systems},
+  title   = {A neutral netlist of 10 combinational benchmark circuits and a targeted translator in {FORTRAN}}
+}
+
+@article{lgsynthbench,
+  title   = {Logic Synthesis and Optimization Benchmarks User Guide Version 3.0},
+  journal = {MCNC International Workshop on Logic Synthesis},
+  author  = {S. Y. Yang},
+  year    = {1991}
+}
+
+@misc{docsEgg,
+  key          = {egg},
+  title        = {egg - {R}ust --- docs.rs},
+  url          = {https://docs.rs/egg/latest/egg/},
+  year         = {2025},
+  lastaccessed = {March 3, 2025}
+}
+
+@article{verilog,
+  author   = {},
+  journal  = {IEEE Std 1364-2001},
+  title    = {{IEEE} Standard Verilog Hardware Description Language},
+  year     = {2001},
+  volume   = {},
+  number   = {},
+  pages    = {1-792},
+  keywords = {IEEE Standards;Hardware design languages;Hardware;Patents;Task analysis;Force;computer;computer languages;digital systems;electronic systems;hardware;hard-ware description languages;hardware design;HDL;PLI;programming language interface;VerilogHDL;Verilog PLI;Verilog ®},
+  doi      = {10.1109/IEEESTD.2001.93352}
+}
+
+@misc{Vivado,
+  key          = {Vivado},
+  year         = 2025,
+  title        = {Vivado},
+  url          = {https://www.amd.com/en/products/software/adaptive-socs-and-fpgas/vivado.html},
+  lastaccessed = {March 3, 2025}
+}
+
+@misc{ug574,
+  key          = {UG574},
+  year         = 2025,
+  title        = {UltraScale Architecture Configurable Logic Block User Guide (UG574)},
+  url          = {https://docs.amd.com/r/en-US/ug574-ultrascale-clb/CLB-Overview},
+  lastaccessed = {March 3, 2025}
+}
+
+@article{yosys,
+  author  = {Shah, D. and Hung, E. and Wolf, C. and Bazanski, S. and Gisselquist, D. and Milanovic, M.},
+  journal = {Int'l Symp. on Field-Programmable Custom Computing Machines (FCCM)},
+  title   = {Yosys+nextpnr: An Open Source Framework from Verilog to Bitstream for Commercial {FPGAs}},
+  year    = {2019},
+  volume  = {},
+  number  = {}
+}
+
+
+@article{eggpaper,
+  author     = {Willsey, Max and Nandi, Chandrakana and Wang, Yisu Remy and Flatt, Oliver and Tatlock, Zachary and Panchekha, Pavel},
+  title      = {egg: Fast and extensible equality saturation},
+  year       = {2021},
+  issue_date = {January 2021},
+  publisher  = {Association for Computing Machinery},
+  address    = {New York, NY, USA},
+  volume     = {5},
+  number     = {POPL},
+  doi        = {10.1145/3434304},
+  abstract   = {An e-graph efficiently represents a congruence relation over many expressions. Although they were originally developed in the late 1970s for use in automated theorem provers, a more recent technique known as equality saturation repurposes e-graphs to implement state-of-the-art, rewrite-driven compiler optimizations and program synthesizers. However, e-graphs remain unspecialized for this newer use case. Equality saturation workloads exhibit distinct characteristics and often require ad-hoc e-graph extensions to incorporate transformations beyond purely syntactic rewrites. This work contributes two techniques that make e-graphs fast and extensible, specializing them to equality saturation. A new amortized invariant restoration technique called rebuilding takes advantage of equality saturation's distinct workload, providing asymptotic speedups over current techniques in practice. A general mechanism called e-class analyses integrates domain-specific analyses into the e-graph, reducing the need for ad hoc manipulation. We implemented these techniques in a new open-source library called egg. Our case studies on three previously published applications of equality saturation highlight how egg's performance and flexibility enable state-of-the-art results across diverse domains.},
+  journal    = {Proceedings of the ACM on Programming Languages (PACMPL)},
+  month      = jan,
+  articleno  = {23},
+  numpages   = {29},
+  keywords   = {equality saturation, e-graphs}
+}
+
+@article{smoothe,
+  author    = {Cai, Yaohui and Yang, Kaixin and Deng, Chenhui and Yu, Cunxi and Zhang, Zhiru},
+  title     = {{SmoothE}: Differentiable E-Graph Extraction},
+  year      = {2025},
+  isbn      = {9798400706981},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  doi       = {10.1145/3669940.3707262},
+  abstract  = {E-graphs have gained increasing popularity in compiler optimization, program synthesis, and theorem proving tasks. They enable compact representation of many equivalent expressions and facilitate transformations via rewrite rules without phase ordering limitations. A major benefit of using e-graphs is the ability to explore a large space of equivalent expressions, allowing the extraction of an expression that best meets certain optimization objectives (or cost models). However, current e-graph extraction methods often face unfavorable scalability-quality trade-offs and only support simple linear cost functions, limiting their applicability to more realistic optimization problems.In this work, we propose SmoothE, a differentiable e-graph extraction algorithm designed to handle complex cost models and optimized for GPU acceleration. More specifically, we approach the e-graph extraction problem from a probabilistic perspective, where the original discrete optimization is relaxed to a continuous differentiable form. This formulation supports any differentiable cost functions and enables efficient searching for solutions using gradient descent. We implement SmoothE in PyTorch to leverage the advancements of the modern machine learning ecosystem. Additionally, we introduce performance optimization techniques to exploit sparsity and data parallelism. We evaluate SmoothE on a variety of realistic e-graphs from five different applications using three distinct cost models, including both linear and non-linear ones. Our experiments demonstrate that SmoothE consistently achieves a favorable trade-off between scalability and solution quality.},
+  journal   = {ACM Int'l Conf. on Architectural Support for Programming Languages and Operating Systems (ASPLOS)},
+  pages     = {1020-1034},
+  numpages  = {15},
+  keywords  = {compilers, equivalence graph, machine learning for systems, programming languages},
+  location  = {Rotterdam, Netherlands},
+  series    = {ASPLOS '25}
+}
+
+
+@article{sparsextract,
+  author     = {Goharshady, Amir Kafshdar and Lam, Chun Kit and Parreaux, Lionel},
+  title      = {Fast and Optimal Extraction for Sparse Equality Graphs},
+  year       = {2024},
+  issue_date = {October 2024},
+  publisher  = {Association for Computing Machinery},
+  address    = {New York, NY, USA},
+  volume     = {8},
+  number     = {OOPSLA2},
+  doi        = {10.1145/3689801},
+  abstract   = {Equality graphs (e-graphs) are used to compactly represent equivalence classes of terms in symbolic reasoning systems. Beyond their original roots in automated theorem proving, e-graphs have been used in a variety of applications. They have become particularly important as the key ingredient in the popular technique of equality saturation, which has notable applications in compiler optimization, program synthesis, program verification, and symbolic execution, among others. In a typical equality saturation workflow, an e-graph is used to store a large number of equalities that are generated by local rewrites during a saturation phase, after which an optimal term is extracted from the e-graph as the output of the technique. However, despite its crucial role in equality saturation, e-graph extraction has received relatively little attention in the literature, which we seek to start addressing in this paper. Extraction is a challenging problem and is notably known to be NP-hard in general, so current equality saturation tools rely either on slow optimal extraction algorithms based on integer linear programming (ILP) or on heuristics that may not always produce the optimal result. In fact, in this paper, we show that e-graph extraction is hard to approximate within any constant ratio. Thus, any such heuristic will produce wildly suboptimal results in the worst case. Fortunately, we show that the problem becomes tractable when the e-graph is sparse, which is the case in many practical applications. We present a novel parameterized algorithm for extracting optimal terms from e-graphs with low treewidth, a measure of how “tree-like” a graph is, and prove its correctness. We also present an efficient Rust implementation of our algorithm and evaluate it against ILP on a number of benchmarks extracted from the Cranelift benchmark suite, a real-world compiler optimization library based on equality saturation. Our algorithm optimally extracts e-graphs with treewidths of up to 10 in a fraction of the time taken by ILP. These results suggest that our algorithm can be a valuable tool for equality saturation users who need to extract optimal terms from sparse e-graphs.},
+  journal    = {Proceedings of the ACM on Programming Languages (PACMPL)},
+  month      = oct,
+  articleno  = {361},
+  numpages   = {27},
+  keywords   = {e-graphs, equality saturation, extraction, treewidth}
+}
+
+@article{egraphconstraints,
+  author   = {Coward, Samuel and Constantinides, George A. and Drane, Theo},
+  journal  = {2023 60th ACM/IEEE Design Automation Conference (DAC)},
+  title    = {Automating Constraint-Aware Datapath Optimization using E-Graphs},
+  year     = {2023},
+  volume   = {},
+  number   = {},
+  pages    = {1-6},
+  keywords = {Design automation;Codes;Computer architecture;Digital arithmetic;Hardware;Cognition;Delays},
+  doi      = {10.1109/DAC56929.2023.10247797}
+}
+
+@article{rover,
+  author   = {Coward, Samuel and Drane, Theo and Constantinides, George A.},
+  journal  = {IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems},
+  title    = {{ROVER}: {RTL} Optimization via Verified E-Graph Rewriting},
+  year     = {2024},
+  volume   = {43},
+  number   = {12},
+  pages    = {4687-4700},
+  keywords = {Optimization;Arithmetic;Design automation;Hardware design languages;Hardware;Space exploration;Measurement;Computer arithmetic;datapath design;design automation;hardware optimization},
+  doi      = {10.1109/TCAD.2024.3410154}
+}
+
+@article{dsd,
+  author   = {Mishchenko, Alan and Brayton, Robert and Chatterjee, Satrajit},
+  journal  = {2008 IEEE/ACM International Conference on Computer-Aided Design},
+  title    = {Boolean factoring and decomposition of logic networks},
+  year     = {2008},
+  volume   = {},
+  number   = {},
+  pages    = {38-44},
+  keywords = {Boolean functions;Logic functions;Table lookup;Logic design;Logic gates;Wires;Joining processes;Logic circuits;Inverters;Computer networks},
+  doi      = {10.1109/ICCAD.2008.4681549}
+}
+
+@article{adaptdecomp,
+  author    = {Fan, Longfei and Wu, Chang},
+  title     = {{FPGA} Technology Mapping with Adaptive Gate Decomposition},
+  year      = {2023},
+  isbn      = {9781450394178},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  doi       = {10.1145/3543622.3573048},
+  abstract  = {Most existing technology mapping algorithms use graph covering approaches and suffer from the netlist structural bias problem. Chen and Cong proposed a simultaneous simple gate decomposition with technology mapping algorithm that encodes many gate decomposition choices into the netlist. However, their algorithm suffers from the long runtime problem due to a large set of choices. Later on, A. Mishchenko et al. proposed a mapping algorithm based on choice generation with the so-called lossless synthesis. Nevertheless, their algorithm cannot guarantee to find and keep all good choices a priori before mapping. In this paper, we propose a simultaneous mapping with gate decomposition algorithm named AGDMap. Our algorithm uses cut-enumeration based engine. Bin packing algorithm is used for simple gate decomposition during cut enumeration. Input sharing based cut cost computation is used during iterative cut selection for logic duplication reduction. Based on a set of EPFL benchmark suite and HLS generated designs, our algorithm produces results with significant area improvement. Compared with the lossless synthesis algorithm, for area optimization, our average improvement is 12.4\%. For delay optimization, we get results with similar delay and 9.2\% area reduction.},
+  journal   = {ACM/SIGDA Int'l Symp. on Field Programmable Gate Arrays (FPGA)},
+  pages     = {135-140},
+  numpages  = {6},
+  keywords  = {FPGA, logic decomposition, structural bias, technology mapping},
+  location  = {Monterey, CA, USA},
+  series    = {FPGA '23}
+}
+
+@article{egraphmath,
+  author    = {Briggs, Ian and Panchekha, Pavel},
+  title     = {Synthesizing mathematical identities with e-graphs},
+  year      = {2022},
+  isbn      = {9781450392709},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  doi       = {10.1145/3520308.3534506},
+  abstract  = {Identities compactly describe properties of a mathematical expression and can be leveraged into faster and more accurate function implementations. However, identities must currently be discovered manually, which requires a lot of expertise. We propose a two-phase synthesis and deduplication pipeline that discovers these identities automatically. In the synthesis step, a set of rewrite rules is composed, using an e-graph, to discover candidate identities. However, most of these candidates are duplicates, which a secondary de-duplication step discards using integer linear programming and another e-graph. Applied to a set of 61 benchmarks, the synthesis phase generates 7215 candidate identities which the de-duplication phase then reduces down to 125 core identities.},
+  journal   = {ACM SIGPLAN Int'l Symp. on E-Graph Research, Applications, Practices, and Human-Factors},
+  pages     = {1-6},
+  numpages  = {6},
+  keywords  = {synthesis, e-graphs, approximation theory},
+  location  = {San Diego, CA, USA},
+  series    = {EGRAPHS 2022}
+}
+
+@article{cclemma,
+  author     = {Kurashige, Cole and Ji, Ruyi and Giridharan, Aditya and Barbone, Mark and Noor, Daniel and Itzhaky, Shachar and Jhala, Ranjit and Polikarpova, Nadia},
+  title      = {{CCLemma}: E-Graph Guided Lemma Discovery for Inductive Equational Proofs},
+  year       = {2024},
+  issue_date = {August 2024},
+  publisher  = {Association for Computing Machinery},
+  address    = {New York, NY, USA},
+  volume     = {8},
+  number     = {ICFP},
+  doi        = {10.1145/3674653},
+  journal    = {Proceedings of the ACM on Programming Languages (PACMPL)},
+  month      = aug,
+  articleno  = {264},
+  numpages   = {27},
+  keywords   = {Automated Theorem Proving, Equational Reasoning, Lemma Synthesis, Synthesis, Verification}
+}
+
+@article{eqsat,
+  author    = {Tate, Ross and Stepp, Michael and Tatlock, Zachary and Lerner, Sorin},
+  title     = {Equality saturation: a new approach to optimization},
+  year      = {2009},
+  isbn      = {9781605583792},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  doi       = {10.1145/1480881.1480915},
+  abstract  = {Optimizations in a traditional compiler are applied sequentially, with each optimization destructively modifying the program to produce a transformed program that is then passed to the next optimization. We present a new approach for structuring the optimization phase of a compiler. In our approach, optimizations take the form of equality analyses that add equality information to a common intermediate representation. The optimizer works by repeatedly applying these analyses to infer equivalences between program fragments, thus saturating the intermediate representation with equalities. Once saturated, the intermediate representation encodes multiple optimized versions of the input program. At this point, a profitability heuristic picks the final optimized program from the various programs represented in the saturated representation. Our proposed way of structuring optimizers has a variety of benefits over previous approaches: our approach obviates the need to worry about optimization ordering, enables the use of a global optimization heuristic that selects among fully optimized programs, and can be used to perform translation validation, even on compilers other than our own. We present our approach, formalize it, and describe our choice of intermediate representation. We also present experimental results showing that our approach is practical in terms of time and space overhead, is effective at discovering intricate optimization opportunities, and is effective at performing translation validation for a realistic optimizer.},
+  journal   = {ACM SIGPLAN-SIGACT Symp. on Principles of Programming Languages (POPL)},
+  pages     = {264-276},
+  numpages  = {13},
+  keywords  = {compiler optimization, equality reasoning, intermediate representation},
+  location  = {Savannah, GA, USA},
+  series    = {POPL '09}
+}
+
+@article{academicfpga,
+  author   = {Vansteenkiste, Elias and Kaviani, Alireza and Fraisse, Henri},
+  journal  = {Int'l Conf. on Field Programmable Technology (FPT)},
+  title    = {Analyzing the divide between {FPGA} academic and commercial results},
+  year     = {2015},
+  volume   = {},
+  number   = {},
+  pages    = {96-103},
+  keywords = {Field programmable gate arrays;Benchmark testing;Video recording;Clocks;Runtime;Optimization;Performance evaluation;FPGA;Benchmark Designs;CAD Tool Flows;Academic vs Commercial;Vivado;Ultrascale;Verilog-To-Routing;ABC},
+  doi      = {10.1109/FPT.2015.7393137}
+}
+
+@article{seer,
+  author    = {Cheng, Jianyi and Coward, Samuel and Chelini, Lorenzo and Barbalho, Rafael and Drane, Theo},
+  title     = {{SEER}: Super-Optimization Explorer for High-Level Synthesis using E-graph Rewriting},
+  year      = {2024},
+  isbn      = {9798400703850},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  doi       = {10.1145/3620665.3640392},
+  abstract  = {High-level synthesis (HLS) is a process that automatically translates a software program in a high-level language into a low-level hardware description. However, the hardware designs produced by HLS tools still suffer from a significant performance gap compared to manual implementations. This is because the input HLS programs must still be written using hardware design principles.Existing techniques either leave the program source unchanged or perform a fixed sequence of source transformation passes, potentially missing opportunities to find the optimal design. We propose a super-optimization approach for HLS that automatically rewrites an arbitrary software program into efficient HLS code that can be used to generate an optimized hardware design. We developed a toolflow named SEER, based on the e-graph data structure, to efficiently explore equivalent implementations of a program at scale. SEER provides an extensible framework, orchestrating existing software compiler passes and hardware optimizers.Our work is the first attempt to exploit e-graph rewriting for large software compiler frameworks, such as MLIR. Across a set of open-source benchmarks, we show that SEER achieves up to 38\texttimes{} the performance within 1.4\texttimes{} the area of the original program. Via an Intel-provided case study, SEER demonstrates the potential to outperform manually optimized designs produced by hardware experts.},
+  journal   = {ACM Int'l Conf. on Architectural Support for Programming Languages and Operating Systems (ASPLOS)},
+  pages     = {1029-1044},
+  numpages  = {16},
+  location  = {La Jolla, CA, USA},
+  series    = {ASPLOS '24}
+}
+
+@article{roverbl,
+  author   = {Coward, Samuel and Constantinides, George A. and Drane, Theo},
+  journal  = {2022 IEEE 29th Symposium on Computer Arithmetic (ARITH)},
+  title    = {Automatic Datapath Optimization using E-Graphs},
+  year     = {2022},
+  volume   = {},
+  number   = {},
+  pages    = {43-50},
+  keywords = {Measurement;Costs;Scalability;Manuals;Pareto optimization;Hardware;Space exploration;hardware optimization;design automation;datapath design},
+  doi      = {10.1109/ARITH54963.2022.00016}
+}
+
+@article{impress,
+  author   = {Ustun, Ecenur and San, Ismail and Yin, Jiaqi and Yu, Cunxi and Zhang, Zhiru},
+  journal  = {2022 IEEE 30th Annual International Symposium on Field-Programmable Custom Computing Machines (FCCM)},
+  title    = {{IMpress}: Large Integer Multiplication Expression Rewriting for {FPGA} {HLS}},
+  year     = {2022},
+  volume   = {},
+  number   = {},
+  pages    = {1-10},
+  keywords = {Costs;Genetic expression;Hardware;Timing;Table lookup;Complexity theory;Cryptography},
+  doi      = {10.1109/FCCM53951.2022.9786123}
+}
+
+@article{fraclut,
+  author   = {Dickin, David and Shannon, Lesley},
+  journal  = {2011 International Conference on Field-Programmable Technology},
+  title    = {Exploring {FPGA} technology mapping for fracturable LUT minimization},
+  year     = {2011},
+  volume   = {},
+  number   = {},
+  pages    = {1-8},
+  keywords = {Table lookup;Field programmable gate arrays;Benchmark testing;Routing;Cost function;Registers;Wires},
+  doi      = {10.1109/FPT.2011.6132691}
+}
+
+@article{ffpack,
+  author    = {Ahmed, Taneem and Kundarewich, Paul D. and Anderson, Jason H. and Taylor, Brad L. and Aggarwal, Rajat},
+  title     = {Architecture-specific packing for virtex-5 {FPGA}s},
+  year      = {2008},
+  isbn      = {9781595939340},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  doi       = {10.1145/1344671.1344675},
+  abstract  = {We consider packing in the commercial FPGA context and examine the speed, performance and power trade-offs associated with packing in a state-of-the art FPGA -- the Xilinx Virtex-5 FPGA. Two aspects of packing are discussed: 1)packing for general logic blocks, and 2 packing for large IP blocks. Virtex-5 logic blocks contain dual-output 6-input look-up-tables (LUTs). Such LUTs can implement any single logic function requiring no more than 6 inputs, or any two logic functions requiring no more than 5 distinct inputs. The second LUT output is associated with slower speed, and therefore, must be used judiciously. We present placement-based techniques for dual-output LUT packing that lead to improved area-efficiency and power, with minimal performance degradation. We then move on to address packing for large IP blocks, specifically, block RAMs and DSPs. We present a packing optimization that is widely applicable in DSP designs that leads to significantly improved design performance},
+  journal   = {ACM/SIGDA Int'l Symp. on Field Programmable Gate Arrays (FPGA)},
+  pages     = {5-13},
+  numpages  = {9},
+  keywords  = {power, placement, performance, packing, optimization, field-programmable gate arrays, FPGAs},
+  location  = {Monterey, California, USA},
+  series    = {FPGA '08}
+}
+
+@article{boolmatch,
+  author    = {Savoj, Hamid and Silva, M\'{a}rio J. and Brayton, Robert K. and Sangiovanni-Vincentelli, Alberto},
+  title     = {Boolean matching in logic synthesis},
+  year      = {1992},
+  isbn      = {0818627808},
+  publisher = {IEEE Computer Society Press},
+  address   = {Washington, DC, USA},
+  journal   = {Conference on European Design Automation (EURO-DAC)},
+  pages     = {168-174},
+  numpages  = {7},
+  location  = {Congress Centrum Hamburg, Hamburg, Germany},
+  series    = {EURO-DAC '92}
+}
+
+@article{fastboolmatch,
+  author   = {Huang, Zheng and Wang, Lingli and Nasikovskiy, Yakov and Mishchenko, Alan},
+  journal  = {2013 International Conference on Field-Programmable Technology (FPT)},
+  title    = {Fast Boolean matching based on {NPN} classification},
+  year     = {2013},
+  volume   = {},
+  number   = {},
+  pages    = {310-313},
+  keywords = {Boolean functions;Runtime;Algorithm design and analysis;Heuristic algorithms;Libraries;Data structures;Partitioning algorithms},
+  doi      = {10.1109/FPT.2013.6718374}
+}
+
+@article{wiremap,
+  author     = {Jang, Stephen and Chan, Billy and Chung, Kevin and Mishchenko, Alan},
+  title      = {{WireMap}: {FPGA} Technology Mapping for Improved Routability and Enhanced {LUT} Merging},
+  year       = {2009},
+  issue_date = {June 2009},
+  publisher  = {Association for Computing Machinery},
+  address    = {New York, NY, USA},
+  volume     = {2},
+  number     = {2},
+  issn       = {1936-7406},
+  doi        = {10.1145/1534916.1534924},
+  abstract   = {This article presents a new technology mapper, WireMap. The mapper uses an edge flow heuristic to improve the routability of a mapped design. The heuristic is applied during the iterative mapping optimization to reduce the total number of pin-to-pin connections (or edges). On academic benchmark (ISCAS, MCNC, and ITC designs), the average edge reduction of 9.3\% is achieved while maintaining depth and LUT count compared to state-of-the-art technology mapping. Placing and routing the resulting netlists leads to an 8.5\% reduction in the total wirelength, a 6.0\% reduction in minimum channel width, and a 2.3\% reduction in critical path delay. This technique is applied in the Xilinx ISE Design tool to evaluate its effect on industrial Virtex5 circuits. In a set of 20 large designs, we find the edge reduction is 6.8\% while total wirelength measured in the placer is reduced by 3.6\%. Applying WireMap has an additional advantage of reducing an average number of inputs of LUTs without increasing the total LUT count and depth. The percentages of 5- and 6-LUTs in a typical design are reduced, while the percentages of 2-, 3-, and 4-LUTs are increased. These smaller LUTs can be merged into pairs and implemented using the dual-output LUT structure found in commercial FPGAs. For academic benchmarks, WireMap leads to 9.4\% fewer dual-output LUTs after merging. For the industrial designs, WireMap leads to 6.3\% fewer dual-output Virtex5 LUTs.},
+  journal    = {ACM Transactions on Reconfigurable Technology and Systems (TRETS)},
+  month      = jun,
+  articleno  = {14},
+  numpages   = {24},
+  keywords   = {technology mapping, edge flow, cut enumeration, area flow, FPGA}
+}

@@ -1,0 +1,43 @@
+\section{Related Work}\label{sec:relatedwork}
+\subsection{FPGA Tech Mappers}\label{sec:relatedwork:fpga}
+Broadly speaking, FPGA mapping heuristics can be divided into
+architecture-specific and architecture-agnostic optimizations.
+Architecture-specific optimizations reduce routing congestion by more
+efficiently using intra-CLB routing resources. Examples include mapping
+dual-output functions to fractured LUTs~\cite{fraclut} or using dedicated
+multiplexers to implement functions with more than 6 inputs~\cite{ug574}. In
+the literature, these types of optimizations are known as \textit{LUT packing},
+and the rough optimization goal is to reduce the number of flip-flops driven
+across CLB boundaries~\cite{ffpack}.
+
+In contrast, other works attempt to mitigate the structural bias of the
+technology mapper in general and do not account for the specific architecture.
+As an example, AGDMap~\cite{adaptdecomp} decomposes simple logic gates with
+large fan-in to enable the exploration of better graph coverings. However,
+structural bias can take on many forms. Finding advantageous decompositions of
+logic in general requires more elaborate algorithms~\cite{dsd} that may not be
+practical for large designs. FlowMap~\cite{flowmap} cites non-monotone
+clustering of logic as the fundamental difficulty that causes bias in LUT-based
+technology mapping. In other words, this is the observation that a $k$-feasible
+cut of logic may contain subcuts that are \textit{not} $k$-feasible. Overcoming
+incidences of non-monotone clustering requires a more elaborate cut-selection
+algorithm, and our work lays the foundation for a formal, reasoning-based
+approach to the problem.
+
+\subsection{E-Graph Superoptimization}\label{sec:relatedwork:egraph}
+In recent years, e-graphs and equality saturation have enjoyed renewed
+popularity within the compilers field. Several recent works use e-graph driven
+superoptimization to improve upon existing EDA tool flows. SEER~\cite{seer}
+uses e-graphs to optimize and parallelize the control flow of high-level
+synthesis (HLS) programs. IMpress~\cite{impress} also uses e-graphs at the HLS
+level, optimizing the datapath of large bit-width multipliers. At a lower
+level, ROVER~\cite{rover,roverbl,egraphconstraints} rewrites arithmetic data
+paths at the word and bit levels. ROVER straddles the RTL and physical level of
+abstraction, making it more general purpose than IMpress. In any case, the work
+which is most similar in its goals to ours is E-Syn~\cite{esynth}. E-Syn uses
+the rules of Boolean algebra to rewrite the logic of a circuit before
+technology mapping. Ultimately, E-Syn is a predictive optimization that takes
+place during technology-independent synthesis steps, whereas \shortname{}
+applies as a post-processing step \textit{after} technology mapping.
+Furthermore, \shortname{}'s rewriting system models the netlist in terms of
+total functions, rather than as expressions over a Boolean algebra.

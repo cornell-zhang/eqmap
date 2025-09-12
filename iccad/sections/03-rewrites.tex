@@ -1,0 +1,238 @@
+\section{E-Graph Construction}\label{sec:rewrites}
+As an overview, an e-graph is built by accumulating new equivalences through
+the iterative rewriting of terms. Rewrite rules define the equivalence
+relations in full generality by defining search patterns of terms to rewrite.
+This prompts the creation of a grammar that can represent the structure of
+digital circuits and lends itself well to pattern matching. As an example, one
+can define De Morgan's laws as a rewrite rule:
+
+\begin{lstlisting}
+(NOT (AND x y)) => (OR (NOT x) (NOT y))
+\end{lstlisting}
+
+On the left of \texttt{=>} is the \textit{search pattern}. The right-hand side
+of the rule is the \textit{application}. In the following subsections, we will
+define our netlist representation, \texttt{LutLang}, and the accompanying
+equivalence relations. While none of \shortname{}'s rewrite rules are
+particularly novel at face value, together they define a transformation space
+that can discover compacted circuits. Hence, formalizing our language and rules
+is critical to both verification and finding deeper insight into the structure
+of our rewrite rules under composition.
+
+\subsection{\texttt{LutLang} Representation}\label{sec:rewrites:lutlang}
+
+Input Verilog netlists are converted to our internal format, called
+\texttt{LutLang}, which is compatible with e-graph structures. When printed to
+text, \texttt{LutLang} takes on a Lisp-like syntax and our rewrite rules are
+written in such style. As an example, a 2-LUT cascaded into a 3-LUT is written
+as follows:
+
+\begin{lstlisting}
+(LUT G x2 x3 (LUT F x0 x1))
+\end{lstlisting}
+
+\texttt{G} and \texttt{F} are the truth-tables of the LUTs.
+We also call them the \textit{program} or \textit{function} interchangeably.
+Truth tables are stored as 64-bit integers, but we analyze them as total functions $F: \Bk \rightarrow \B$.
+To clarify notation, $\mathbb{Z}_2 = \mathbb{Z}/2\mathbb{Z} = \mathbb{B} = \{0,1\}$.
+To that end, the denotational semantics $\llbracket \cdot \rrbracket : \texttt{LutLang} \rightarrow \mathbb{Z}_2$ of a LUT is simply applying its Boolean inputs to the function:
+
+\begin{equation}
+    \llbracket \texttt{(LUT F x0 x1)} \rrbracket = F(\llbracket \texttt{x0} \rrbracket, \llbracket \texttt{x1} \rrbracket)
+\end{equation}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.47\textwidth]{img/rewrites.pdf}
+    \caption{Transition diagram of rewrite rules. A solid arrow means that the application of the source rule always becomes an instance of the target rule.}\label{fig:rewrites}
+\end{figure}
+
+\subsection{Simplifying Degenerate LUTs}\label{sec:rewrites:degen}
+
+\textbf{Definition:} A LUT's configuration $F : \Bk \rightarrow \B$ is \textit{degenerate} if there exists a Shannon expansion $F = x_i \cdot F_{x_i} + \overline{x_i} \cdot F_{\overline{x}_i}$
+such that $F_{x_i} = F_{\overline{x}_i}$ for some input position $i \in \{ 0, \ldots, k -1\}$. In other words, $F = F_{x_i} = F_{\overline{x}_i}$.
+
+The output of a degenerate LUT is not dependent on one of its inputs. Hence, it
+can be rewritten into a LUT which uses fewer inputs. This rule is applied by
+computing the Shannon expansions of LUTs and checking for equivalence. As an
+example, the rule takes on the following form for $k=3$:
+
+\begin{lstlisting}
+(LUT F x0 x1 x2) => (LUT F' x0 x1)
+    if F(x0, x1, false) == F(x0, x1, true)
+    where F'(x0, x1) := F(x0, x1, true)
+\end{lstlisting}
+
+One rule is instantiated for each LUT size $k =1$ through 6. One should notice
+that LUTs which are constant functions are also handled by this rule.
+
+% Since this rule is computationally expensive, it is applied greedily as a
+% pre-processing step before the e-graph is built. None of the other rewrite
+% rules create degenerate LUTs, so this has no impact on results.
+
+\subsection{Partial Application}\label{sec:rewrites:application}
+A LUT with a constant input can be partially evaluated to a LUT with one less
+input. It computes the Shannon expansion along the constant variable and
+chooses the cofactor that matches the state of the constant input. One could
+show that applying this rule greedily in combination with the previous one is
+equivalent to constant propagation. As an example, the pseudocode for $k=3$ is
+written as follows:
+
+\begin{lstlisting}
+(LUT F x0 x1 false) => (LUT F' x0 x1)
+    where F'(x0, x1) := F(x0, x1, false)
+\end{lstlisting}
+
+\subsection{LUT Symmetries}\label{sec:rewrites:symmetry}
+
+The semantics of LUTs should not depend on the order of their inputs. If two
+LUTs have permuted inputs but are otherwise functionally identical, they should
+belong to the same e-class in the graph. That is, \mbox{\texttt{(LUT F .. xi ..
+        xj ..)}} is semantically equivalent to \mbox{\texttt{(LUT G .. xj .. xi ..)}}
+if and only if $G = F \odot \sigma^{-1}$, where $\sigma \in S_k$ is the
+permutation applied to the inputs.
+
+\begin{proof}
+    $\odot$ is a right-action defined for the sake of permuting the inputs to a function before they are applied:
+    \begin{equation*} \odot : \big (\Bk \rightarrow \mathbb{Z}_2 \big ) \times S_k \rightarrow \big (\Bk \rightarrow \mathbb{Z}_2 \big ) \end{equation*}
+    \begin{equation*} F \odot \sigma : (x_0, x_1, \ldots, x_{k-1}) \mapsto F(x_{\sigma(0)}, x_{\sigma(1)}, \ldots, x_{\sigma(k-1)}) \end{equation*}
+
+    It is trivial to prove that this right-action is associative:
+    \begin{align*}
+        (F \odot \sigma_1) \odot \sigma_2 & = F(x_{\sigma_2(\sigma_1(0))}, x_{\sigma_2(\sigma_1(1))}, \ldots, x_{\sigma_2(\sigma_1(k-1))}) \\
+        (F \odot \sigma_1) \odot \sigma_2 & = F \odot (\sigma_2 \circ \sigma_1)
+    \end{align*}
+    With this property, the rest follows directly:
+    \begin{equation}
+        F = G \odot
+        \sigma \iff F \odot \sigma^{-1} = (G \odot \sigma) \odot \sigma^{-1} = G
+    \end{equation}
+\end{proof}
+
+Therefore, we can conclude that $k$-LUTs have as much symmetry as can be
+generated by the group $S_k$. This insight has two main consequences. First, it
+precisely reveals how many e-graph rewrite rules are needed to generate all the
+symmetries of a LUT. For any $k$-LUT with program $F$, we need exactly as many
+rules as it takes to generate $F \odot S_k$. It is a well-known fact in algebra
+that the $k-1$ adjacent transpositions generate $S_k$~\cite{sgroup}.In total,
+there are $\sum_{k=2}^{6} (k-1) = 15$ rules to encapsulate symmetry for every
+LUT size. The second consequence is that every other rewrite rule can be
+defined for one input position, without loss of generality. This reduces the
+total number of rewrite rules, making it easier to rationalize about the rule
+system and which types of optimizations are reachable.
+
+\subsection{Function Composition}\label{sec:rewrites:composition}
+
+Cascaded LUTs can be packed into a single LUT, as long as the size of the cut
+of logic has at most 6 leaf nodes. This is the crucial observation to LUT
+remapping. For instance, a circuit that implements $F(x_0, G(x_1, x_2))$ with
+two 2-LUTs can be rewritten as a 3-LUT that implements some $H(x_0, x_1, x_2)$.
+In pseudocode, this would take on the following form:
+
+\begin{lstlisting}
+(LUT F x0 (LUT G x1 x2)) => (LUT H x0 x1 x2)
+    where H(x0, x1, x2) := F(x0, G(x1, x2))
+\end{lstlisting}
+
+The search patterns \texttt{x0}, \texttt{x1} and \texttt{x1} can match any
+node. They are not necessarily principal inputs, and hence can be outputs from
+other LUTs. As a consequence, this rule can be chained together many times in
+different orders to pack a sub-circuit into a single LUT. As an example, this
+rule would match the 3-LUT and 4-LUT in Fig.~\ref{fig:eg:bad} and combine them
+into the single 4-LUT in Fig.~\ref{fig:eg:good}. Since the previous rule
+captures LUT symmetry, we can write compositions for one specific input
+position, without loss of generality. Therefore, we only need to sweep over the
+size of the two LUTs in the search pattern. In total, there are $6 \cdot 6 =
+    36$ LUT packing rules. When the cut of logic is larger than 6 leaves, the rule
+exits gracefully and does not interfere with reaching equality saturation.
+
+\subsection{LUTs with Domain Restrictions}\label{sec:rewrites:restrict}
+
+\textbf{Definition:} A lookup table \texttt{(LUT F x0 x1 \ldots)} is
+\textit{restricted} if $\llbracket \texttt{xi} \rrbracket = \llbracket \texttt{xj} \rrbracket$
+for some $ i, j \in \{0, \ldots, k-1\}, \; i \neq j$. In other words, the
+domain of the LUT is restricted.
+
+The main advantage of using e-graphs is the compact way in which it represents
+notions of equality. Whenever a new equivalence is found between two of the
+inputs to a $k$-LUT, it can be rewritten with a $(k-1)$-LUT. We simply need to
+define and compute $\texttt{restrict(F, i, j)}$ which maps $F : \Bx{k}
+    \rightarrow \B$ to the domain-restricted $F \vert_{x_i = x_j} : \Bx{k-1}
+    \rightarrow \B$. In pseudocode, the rewrite rule can be written as follows:
+
+\begin{lstlisting}
+(LUT F x0 x1 x1) => (LUT F' x0 x1)
+    where F' := restrict(F, 1, 2)
+\end{lstlisting}
+
+Since rewrite search patterns already match `modulo' e-class, this rule is
+automatically triggered when e-classes are merged. For instance, if the e-graph
+proved in Fig.~\ref{fig:eg} that $A_i = B_i$, then all the LUTs would shrink by
+one input---causing the next wave of rewrites to fire. Again, only one rule is
+needed for each LUT size $k=2$ through 6, because LUT symmetry is represented
+in the graph. Considering the entire rewriting system as a whole,
+Fig.~\ref{fig:rewrites} visualizes the ways in which rules can be sequentially
+composed.
+
+\begin{figure*}[tb]
+    \begin{subfigure}{0.31\textwidth}
+        \centering
+        \includegraphics[width=0.88\textwidth]{img/mux_4_1.pdf}
+        \caption{Three 3-LUT, three FF topology.}\label{fig:retiming:a}
+    \end{subfigure}
+    \begin{subfigure}{0.38\textwidth}
+        \centering
+        \includegraphics[width=0.9\textwidth]{img/mux_4_1_retime_dsd.pdf}
+        \caption{Two 4-LUT, four FF topology.}\label{fig:retiming:b}
+    \end{subfigure}
+    \begin{subfigure}{0.30\textwidth}
+        \centering
+        \includegraphics[width=0.80\textwidth]{img/mux_4_1_retime.pdf}
+        \caption{One 6-LUT, one FF topology.}\label{fig:retiming:c}
+    \end{subfigure}
+    \caption{Three different circuit topologies for a 4:1 MUX with flip-flop.}\label{fig:retiming}
+\end{figure*}
+
+\subsection{Functional Decomposition}\label{sec:rewrites:decomp}
+
+Decomposing boolean functions and logic minimization in general is
+NP-complete~\cite{logicmin}. Correspondingly, decomposing LUTs explodes the
+size and build time of the e-graph. However, we can still define rewrites that
+look for fully disjoint decompositions in one or more variables. This rule has
+no structural element to search for, so it runs every time an e-class is
+updated. Our implementation computes the Shannon expansion of a $k$-LUT's
+function $F$ and checks if the first variable canalizes or inverts the
+function. For instance, given $k=3$ then it is true for $G, H \in \B^2
+    \rightarrow \B$ that:
+
+\begin{gather}
+    F(x_0, x_1, x_2) = G(x_0, H(x_1, x_2)) \nonumber \\
+    \Big\Updownarrow                       \nonumber \\
+    F(x_0, x_1, x_2) = x_0 \cdot G_{x_0} (H(x_1, x_2)) +  \overline{x_0} \cdot G_{\overline{x}_0} (H(x_1, x_2))
+\end{gather}
+
+In practice, the rule calculates the truth tables that represent the cofactors
+of $F$ and determines if either represents a constant function or if they are
+complements of each other.
+
+\subsection{Register Retiming}\label{sec:rewrites:retiming}
+
+Register retiming is a purely structural rule, meaning it can be implemented
+with a simple search and apply pattern. An example for $k=1$ would be written
+as follows:
+
+\begin{lstlisting}
+(LUT F (REG x0)) <=> (REG (LUT F x0))
+\end{lstlisting}
+
+Unlike the other rules, this rule is searched for in both directions.
+Figure~\ref{fig:retiming} illustrates an example of how register retiming can
+compose with LUT rewrite rules to reduce LUT count and register count
+simultaneously. In this case, the 3-LUTs implementing 2:1 multiplexers are
+pushed across register boundaries. Since this logic happens to have a 6-LUT
+mapping and a two 4-LUT mapping, we can explore a circuit topology that reduces
+cell count (Fig.~\ref{fig:retiming:c}) or adjusts the delay paths
+(Fig.~\ref{fig:retiming:b}). To best utilize register retiming, the e-graph
+extraction technique must have some sense of timing information. Our e-graph
+extractor is explained in the next section, but it should be noted that in our
+experiments the area of LUTs and registers are weighted equally.
