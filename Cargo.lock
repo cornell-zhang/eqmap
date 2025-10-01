@@ -227,7 +227,7 @@ dependencies = [
  "smallvec",
  "symbol_table",
  "symbolic_expressions",
- "thiserror",
+ "thiserror 1.0.64",
 ]
 
 [[package]]
@@ -254,6 +254,7 @@ dependencies = [
  "ctrlc",
  "egg",
  "indicatif",
+ "safety-net",
  "serde",
  "serde_json",
  "sv-parser",
@@ -615,6 +616,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f3cb5ba0dc43242ce17de99c180e96db90b235b8a9fdc9543c96d2209116bd9f"
 
 [[package]]
+name = "safety-net"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "61c0d8c71eaafae25294224cba9f4d25ef9d9e29f0613b1b3c02cca518fcf882"
+dependencies = [
+ "bitvec",
+ "thiserror 2.0.17",
+]
+
+[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -699,7 +710,7 @@ version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d702ef215611db3c9cbd57c39a543fc72924eff9defb2b5e0461617929ef1a86"
 dependencies = [
- "thiserror",
+ "thiserror 1.0.64",
 ]
 
 [[package]]
@@ -804,7 +815,16 @@ version = "1.0.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d50af8abc119fb8bb6dbabcfa89656f46f84aa0ac7688088608076ad2b459a84"
 dependencies = [
- "thiserror-impl",
+ "thiserror-impl 1.0.64",
+]
+
+[[package]]
+name = "thiserror"
+version = "2.0.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f63587ca0f12b72a0600bcba1d40081f830876000bb46dd2337a3051618f4fc8"
+dependencies = [
+ "thiserror-impl 2.0.17",
 ]
 
 [[package]]
@@ -812,6 +832,17 @@ name = "thiserror-impl"
 version = "1.0.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08904e7672f5eb876eaaf87e0ce17857500934f4981c4a0ab2b4aa98baac7fc3"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.89",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "2.0.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ff15c8ecd7de3849db632e14d18d2571fa09dfc5ed93479bc4485c7a517c913"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -957,7 +988,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
