@@ -578,7 +578,7 @@ impl SVPrimitive {
 
     /// Returns the logic function of the primitive if it exists
     pub fn get_logic(&self) -> Option<PrimitiveType> {
-        self.logic.clone()
+        self.logic
     }
 
     /// Create a unconnected primitive `prim` with instance name `name` and `n_inputs` inputs
@@ -593,7 +593,7 @@ impl SVPrimitive {
             attributes: BTreeMap::new(),
         };
 
-        if let Some(l) = prim.logic.clone() {
+        if let Some(l) = prim.logic {
             match l {
                 PrimitiveType::VCC => {
                     prim.set_attribute("VAL".to_string(), "1'b1".to_string());
@@ -634,7 +634,7 @@ impl SVPrimitive {
         // Special cases
         let mut prim = SVPrimitive {
             prim: logic.to_string(),
-            logic: Some(logic.clone()),
+            logic: Some(logic),
             name,
             n_inputs,
             inputs: BTreeMap::new(),
@@ -885,8 +885,7 @@ impl VerilogEmission for CellLang {
                     .ok_or("CellLang gates should have a primitive type".to_string())?;
                 let port_list = gate_type.get_input_list();
                 // TODO(matth2k): Carry through drive strength
-                let mut prim =
-                    SVPrimitive::new_gate_with_strength(gate_type.clone(), fresh_prim_name(), 1);
+                let mut prim = SVPrimitive::new_gate_with_strength(gate_type, fresh_prim_name(), 1);
                 for (input, port) in inputs.iter().zip(port_list) {
                     let signal = lookup(input)
                         .ok_or(format!("Could not find signal {input} in the module"))?;
@@ -964,7 +963,7 @@ impl VerilogEmission for LutLang {
                     .get_gate_type()
                     .ok_or("LutLang gates should have a primitive type".to_string())?;
                 let port_list = gate_type.get_input_list();
-                let mut prim = SVPrimitive::new_gate(gate_type.clone(), fresh_prim_name());
+                let mut prim = SVPrimitive::new_gate(gate_type, fresh_prim_name());
                 for (input, port) in inputs.iter().zip(port_list) {
                     let signal = lookup(input)
                         .ok_or(format!("Could not find signal {input} in the module"))?;
@@ -978,7 +977,7 @@ impl VerilogEmission for LutLang {
                     .get_gate_type()
                     .expect("CellLang gates should have a primitive type");
                 let port_list = gate_type.get_input_list();
-                let mut prim = SVPrimitive::new_gate(gate_type.clone(), fresh_prim_name());
+                let mut prim = SVPrimitive::new_gate(gate_type, fresh_prim_name());
                 for (input, port) in l.iter().skip(1).zip(port_list) {
                     let signal = lookup(input)
                         .ok_or(format!("Could not find signal {input} in the module"))?;
