@@ -198,7 +198,7 @@ impl SVSignal {
 }
 
 #[allow(missing_docs)]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PrimitiveType {
     AND,
     NAND,

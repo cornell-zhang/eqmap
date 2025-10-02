@@ -201,7 +201,11 @@ impl Explanable for CellLang {
     }
 }
 
-impl CircuitLang for CellLang {}
+impl CircuitLang for CellLang {
+    fn var(sym: Symbol) -> Self {
+        CellLang::Var(sym)
+    }
+}
 
 /// An empty analysis for CellLang
 #[derive(Default, Clone)]
