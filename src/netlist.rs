@@ -81,6 +81,22 @@ where
 impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
     /// Add a mapping for a specific net
     pub fn insert(&mut self, net: DrivenNet<I>) -> Result<RecExpr<L>, String> {
+        if net.is_an_input() {
+            return Err("Inputs have trivial mappings".to_string());
+        }
+
+        if net
+            .get_instance_type()
+            .unwrap()
+            .get_logic_func(net.get_output_index().unwrap())
+            .is_none()
+        {
+            return Err(format!(
+                "Root instance type {} does not have a logic function",
+                net.get_instance_type().unwrap().get_name()
+            ));
+        }
+
         let mut expr = RecExpr::<L>::default();
         let mut mapping: HashMap<DrivenNet<I>, Id> = HashMap::new();
         let mut leaves: HashMap<Symbol, DrivenNet<I>> = HashMap::new();
