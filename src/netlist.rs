@@ -253,6 +253,10 @@ mod tests {
 
     use super::*;
 
+    fn and_gate() -> PrimitiveCell {
+        PrimitiveCell::new(PrimitiveType::AND2)
+    }
+
     fn and_netlist() -> Rc<Netlist<PrimitiveCell>> {
         let netlist = Netlist::new("example".to_string());
 
@@ -262,11 +266,25 @@ mod tests {
 
         // Instantiate an AND gate
         let instance = netlist
-            .insert_gate(
-                PrimitiveCell::new(PrimitiveType::AND2),
-                "inst_0".into(),
-                &[a, b],
-            )
+            .insert_gate(and_gate(), "inst_0".into(), &[a, b])
+            .unwrap();
+
+        // Make this AND gate an output
+        instance.expose_with_name("y".into());
+
+        netlist
+    }
+
+    fn and_const_netlist() -> Rc<Netlist<PrimitiveCell>> {
+        let netlist = Netlist::new("example".to_string());
+
+        // Add the the two inputs
+        let a = netlist.insert_constant(Logic::True, "a".into()).unwrap();
+        let b = netlist.insert_constant(Logic::False, "a".into()).unwrap();
+
+        // Instantiate an AND gate
+        let instance = netlist
+            .insert_gate(and_gate(), "inst_0".into(), &[a, b])
             .unwrap();
 
         // Make this AND gate an output
@@ -296,5 +314,31 @@ mod tests {
         let mapping = mapping.unwrap();
         assert_eq!(mapping.root_net(), output);
         assert_eq!(netlist.objects().count(), mapping.get_expr().as_ref().len());
+
+        // Check the leaves
+        let l0 = mapping.get_leaf(&"a".into());
+        let l1 = mapping.get_leaf_by_id(&1.into());
+        assert!(l0.is_some());
+        assert!(l1.is_some());
+        let l0 = l0.unwrap();
+        let l1 = l1.unwrap();
+        assert_eq!(l0, netlist.first().unwrap().into());
+        assert_eq!(l1.to_string(), "b");
+    }
+
+    #[test]
+    fn test_consts() {
+        let netlist = and_const_netlist();
+        let output = netlist.last().unwrap().get_output(0);
+
+        let mapper = netlist.get_analysis::<'_, LogicMapper<'_, CellLang, _>>();
+        assert!(mapper.is_ok());
+        let mut mapper = mapper.unwrap();
+
+        // Check the RecExpr is correct
+        let expr = mapper.insert(output.clone());
+        assert!(expr.is_ok());
+        let expr = expr.unwrap();
+        assert_eq!(expr.to_string(), "(AND2 true false)");
     }
 }
