@@ -240,6 +240,7 @@ impl LogicFunc<CellLang> for PrimitiveCell {
             PrimitiveType::GND => Some(CellLang::Const(false)),
             PrimitiveType::OR => Some(CellLang::Or([0.into(); 2])),
             PrimitiveType::NOT => Some(CellLang::Inv([0.into()])),
+            _ if self.ptype.is_lut() => None,
             _ => Some(CellLang::Cell(
                 self.ptype.to_string().into(),
                 vec![0.into(); self.ptype.get_num_inputs()],
@@ -284,9 +285,18 @@ mod tests {
         let mapper = netlist.get_analysis::<'_, LogicMapper<'_, CellLang, _>>();
         assert!(mapper.is_ok());
         let mut mapper = mapper.unwrap();
-        let expr = mapper.insert(output);
+
+        // Check the RecExpr is correct
+        let expr = mapper.insert(output.clone());
         assert!(expr.is_ok());
         let expr = expr.unwrap();
         assert_eq!(expr.to_string(), "(AND2 a b)");
+
+        // Check the root properties are correct
+        let mapping = mapper.get(&output);
+        assert!(mapping.is_some());
+        let mapping = mapping.unwrap();
+        assert_eq!(mapping.root_net(), output);
+        assert_eq!(netlist.objects().count(), mapping.get_expr().as_ref().len());
     }
 }
