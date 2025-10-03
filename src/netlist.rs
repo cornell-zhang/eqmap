@@ -18,17 +18,45 @@ use std::collections::HashMap;
 
 /// Trait for circuit elements that can provide a logic function
 pub trait LogicFunc<L: CircuitLang> {
-    /// Get the logic function associated with this element.
-    /// The children IDs are invalid.
-    fn get_logic_func(&self) -> Option<L>;
+    /// Get the logic function/variant associated with the output at position `ind`.
+    /// The children IDs are invalid/nulled in the returned [CircuitLang].
+    fn get_logic_func(&self, ind: usize) -> Option<L>;
 }
 
 /// Maps a circuit element to its expression, root, and leaf mappings
-struct LogicMapping<L: CircuitLang, I: Instantiable + LogicFunc<L>> {
+#[derive(Debug, Clone)]
+pub struct LogicMapping<L: CircuitLang, I: Instantiable + LogicFunc<L>> {
     expr: RecExpr<L>,
-    mapping: HashMap<DrivenNet<I>, Id>,
     root: DrivenNet<I>,
     leaves: HashMap<Symbol, DrivenNet<I>>,
+    leaves_by_id: HashMap<Id, DrivenNet<I>>,
+}
+
+impl<L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapping<L, I> {
+    /// Get the expression
+    pub fn get_expr(&self) -> RecExpr<L> {
+        self.expr.clone()
+    }
+
+    /// Returns the circuit node at the root of this expression
+    pub fn root_net(&self) -> DrivenNet<I> {
+        self.root.clone()
+    }
+
+    /// Returns the Id of the root of the expression
+    pub fn root_id(&self) -> Id {
+        (self.expr.as_ref().len() - 1).into()
+    }
+
+    /// Returns the driven net associated with the variable leaf called `sym`
+    pub fn get_leaf(&self, sym: &Symbol) -> Option<DrivenNet<I>> {
+        self.leaves.get(sym).cloned()
+    }
+
+    /// Returns the driven net associated with the variable leaf with id `id` in the expressions
+    pub fn get_leaf_by_id(&self, id: &Id) -> Option<DrivenNet<I>> {
+        self.leaves_by_id.get(id).cloned()
+    }
 }
 
 /// Extracts the logic equation from a portion of a netlist.
@@ -56,6 +84,7 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
         let mut expr = RecExpr::<L>::default();
         let mut mapping: HashMap<DrivenNet<I>, Id> = HashMap::new();
         let mut leaves: HashMap<Symbol, DrivenNet<I>> = HashMap::new();
+        let mut leaves_by_id: HashMap<Id, DrivenNet<I>> = HashMap::new();
         let mut dfs = DFSIterator::new(self._netlist, net.clone().unwrap());
         let mut nodes: Vec<DrivenNet<I>> = Vec::new();
         while let Some(n) = dfs.next() {
@@ -67,39 +96,11 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
         nodes.reverse();
 
         for n in nodes {
-            if n.is_an_input()
-                || n.clone()
-                    .unwrap()
-                    .get_instance_type()
-                    .unwrap()
-                    .get_logic_func()
-                    .is_none()
+            if let Some(inst_type) = n.get_instance_type()
+                && let Some(mut logic) = inst_type.get_logic_func(n.get_output_index().unwrap())
             {
-                let sym = n.get_identifier();
-                let id = expr.add(L::var(sym.to_string().into()));
-                mapping.insert(n.clone(), id);
-                leaves.insert(sym.to_string().into(), n.clone());
-            } else {
-                let mut logic = n
-                    .clone()
-                    .unwrap()
-                    .get_instance_type()
-                    .unwrap()
-                    .get_logic_func()
-                    .unwrap();
-                let ninputs = n
-                    .clone()
-                    .unwrap()
-                    .get_instance_type()
-                    .unwrap()
-                    .get_input_ports()
-                    .into_iter()
-                    .count();
-                for i in 0..ninputs {
-                    let cid = n
-                        .clone()
-                        .unwrap()
-                        .get_input(i)
+                for (i, c) in n.clone().unwrap().inputs().enumerate() {
+                    let cid = c
                         .get_driver()
                         .ok_or(format!("Failed to get driver for input {} of net {}", i, n))?;
                     let cid = mapping[&cid];
@@ -108,6 +109,12 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
 
                 let id = expr.add(logic);
                 mapping.insert(n.clone(), id);
+            } else {
+                let sym = n.get_identifier();
+                let id = expr.add(L::var(sym.to_string().into()));
+                mapping.insert(n.clone(), id);
+                leaves.insert(sym.to_string().into(), n.clone());
+                leaves_by_id.insert(id, n.clone());
             }
         }
 
@@ -115,9 +122,9 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
             net.clone(),
             LogicMapping {
                 expr: expr.clone(),
-                mapping,
                 root: net.clone(),
                 leaves,
+                leaves_by_id,
             },
         );
 
@@ -125,8 +132,8 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
     }
 
     /// Get the mapped expression
-    pub fn get_expr(&self, net: &DrivenNet<I>) -> Option<RecExpr<L>> {
-        self.mappings.get(net).map(|m| m.expr.clone())
+    pub fn get(&self, net: &DrivenNet<I>) -> Option<LogicMapping<L, I>> {
+        self.mappings.get(net).cloned()
     }
 }
 
@@ -206,7 +213,7 @@ impl Instantiable for PrimitiveCell {
 }
 
 impl LogicFunc<CellLang> for PrimitiveCell {
-    fn get_logic_func(&self) -> Option<CellLang> {
+    fn get_logic_func(&self, _ind: usize) -> Option<CellLang> {
         match self.ptype {
             PrimitiveType::AND => Some(CellLang::And([0.into(); 2])),
             PrimitiveType::VCC => Some(CellLang::Const(true)),
