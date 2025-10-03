@@ -164,6 +164,7 @@ pub struct PrimitiveCell {
     ptype: PrimitiveType,
     inputs: Vec<Net>,
     outputs: Vec<Net>,
+    params: HashMap<Identifier, Parameter>,
 }
 
 impl PrimitiveCell {
@@ -178,6 +179,7 @@ impl PrimitiveCell {
                 .map(|s| Net::new_logic(Identifier::new(s)))
                 .collect(),
             outputs: vec![Net::new_logic(Identifier::new(ptype.get_output()))],
+            params: HashMap::new(),
         }
     }
 }
@@ -195,20 +197,16 @@ impl Instantiable for PrimitiveCell {
         self.outputs.iter()
     }
 
-    fn has_parameter(&self, _id: &Identifier) -> bool {
-        false
+    fn has_parameter(&self, id: &Identifier) -> bool {
+        self.params.contains_key(id)
     }
 
-    fn get_parameter(&self, _id: &Identifier) -> Option<safety_net::attribute::Parameter> {
-        None
+    fn get_parameter(&self, id: &Identifier) -> Option<Parameter> {
+        self.params.get(id).cloned()
     }
 
-    fn set_parameter(
-        &mut self,
-        _id: &Identifier,
-        _val: safety_net::attribute::Parameter,
-    ) -> Option<safety_net::attribute::Parameter> {
-        None
+    fn set_parameter(&mut self, id: &Identifier, val: Parameter) -> Option<Parameter> {
+        self.params.insert(id.clone(), val)
     }
 
     fn parameters(&self) -> impl Iterator<Item = (Identifier, Parameter)> {
