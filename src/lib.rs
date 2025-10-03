@@ -48,6 +48,7 @@ pub mod cost;
 pub mod driver;
 pub mod logic;
 pub mod lut;
+pub mod netlist;
 pub mod rewrite;
 #[cfg(feature = "graph_dumps")]
 pub mod serialize;

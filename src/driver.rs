@@ -10,7 +10,7 @@ use super::lut::{CircuitStats, LutExprInfo, LutLang};
 use super::serialize::serialize_egraph;
 use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
-    RecExpr, RecExprParseError, Rewrite, Runner, StopReason, TreeTerm,
+    RecExpr, RecExprParseError, Rewrite, Runner, StopReason, Symbol, TreeTerm,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::collections::{BTreeMap, HashSet};
@@ -473,6 +473,8 @@ pub trait CircuitLang:
     + std::fmt::Display
     + egg::FromOp<Error = FromOpError>
 {
+    /// Returns a fresh variable with name `sym`.
+    fn var(sym: Symbol) -> Self;
 }
 
 type PurgeFn<L> = Arc<dyn Fn(&L) -> bool + 'static>;

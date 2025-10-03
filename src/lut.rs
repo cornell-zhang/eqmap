@@ -1129,4 +1129,8 @@ impl EquivCheck for LutLang {
     }
 }
 
-impl CircuitLang for LutLang {}
+impl CircuitLang for LutLang {
+    fn var(sym: Symbol) -> Self {
+        LutLang::Var(sym)
+    }
+}
