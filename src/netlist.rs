@@ -91,6 +91,10 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
             if dfs.check_cycles() {
                 return Err("Cycle detected in netlist".to_string());
             }
+            if n.is_multi_output() {
+                // TODO(matth2k): safety-net should have dfs by [DrivenNet]
+                return Err("Cannot map multi-output cells".to_string());
+            }
             nodes.push(n.into());
         }
         nodes.reverse();
