@@ -8,6 +8,7 @@ use crate::asic::CellLang;
 use crate::driver::CircuitLang;
 use crate::verilog::PrimitiveType;
 use egg::{Id, RecExpr, Symbol};
+use nl_compiler::cells::FromId;
 use safety_net::attribute::Parameter;
 use safety_net::circuit::{Identifier, Instantiable, Net};
 use safety_net::error::Error;
@@ -355,6 +356,15 @@ impl LogicCell<PrimitiveCell> for CellLang {
                 Err(_) => None,
             },
             _ => None,
+        }
+    }
+}
+
+impl FromId for PrimitiveCell {
+    fn from_id(s: &Identifier) -> Result<Self, Error> {
+        match PrimitiveType::from_str(&s.to_string()) {
+            Ok(ptype) => Ok(PrimitiveCell::new(ptype)),
+            Err(e) => Err(Error::ParseError(e)),
         }
     }
 }

@@ -2,11 +2,14 @@ use clap::Parser;
 use eqmap::{
     asic::{CellLang, CellRpt, asic_rewrites, expr_is_mapped},
     driver::{SynthRequest, process_expression},
+    netlist::{LogicMapper, PrimitiveCell},
     verilog::{SVModule, sv_parse_wrapper},
 };
+use safety_net::netlist::Netlist;
 use std::{
     io::{Read, Write, stdin},
     path::PathBuf,
+    rc::Rc,
 };
 
 /// ASIC Technology Mapping Optimization with E-Graphs
@@ -91,12 +94,13 @@ fn main() -> std::io::Result<()> {
 
     let ast = sv_parse_wrapper(&buf, path).map_err(std::io::Error::other)?;
 
-    let f = SVModule::from_ast(&ast).map_err(std::io::Error::other)?;
+    let f: Rc<Netlist<PrimitiveCell>> =
+        nl_compiler::verilog::from_ast(&ast).map_err(std::io::Error::other)?;
 
     eprintln!(
         "INFO: Module {} has {} outputs",
         f.get_name(),
-        f.get_outputs().len()
+        f.get_output_ports().len()
     );
 
     let rules = asic_rewrites();
@@ -159,11 +163,21 @@ fn main() -> std::io::Result<()> {
     }
 
     eprintln!("INFO: Compiling Verilog...");
-    let expr = f.to_single_cell_expr().map_err(std::io::Error::other)?;
+    if f.get_output_ports().len() != 1 {
+        return Err(std::io::Error::other("Only supporting one output for now"));
+    }
+    let mapper = f.get_analysis::<'_, LogicMapper<'_, CellLang, _>>();
+    assert!(mapper.is_ok());
+    let mut mapper = mapper.unwrap();
+
+    // Check the RecExpr is correct
+    let expr = mapper
+        .insert(f.outputs()[0].0.clone())
+        .map_err(std::io::Error::other)?;
 
     eprintln!("INFO: Building e-graph...");
     let result = process_expression::<CellLang, _, CellRpt>(expr, req, true, args.verbose)?
-        .with_name(f.get_name());
+        .with_name(&f.get_name());
 
     if !(args.no_assert || expr_is_mapped(result.get_expr())) {
         return Err(std::io::Error::other(
@@ -177,7 +191,7 @@ fn main() -> std::io::Result<()> {
     }
 
     eprintln!("INFO: Writing output to Verilog...");
-    let output_names: Vec<String> = f.get_outputs().iter().map(|x| x.to_string()).collect();
+    let output_names: Vec<String> = f.get_output_ports().iter().map(|x| x.to_string()).collect();
     let mut module = SVModule::from_cells(
         result.get_expr().to_owned(),
         f.get_name().to_string(),
@@ -187,7 +201,7 @@ fn main() -> std::io::Result<()> {
 
     // Unused inputs from the original module are lost upon conversion to a LutLang expression so
     // they must be readded to the module here.
-    module.append_inputs_from_module(&f);
+    // module.append_inputs_from_module(&f);
 
     if let Some(p) = args.output {
         let mut file = std::fs::File::create(p)?;
