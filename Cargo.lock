@@ -420,7 +420,7 @@ dependencies = [
 [[package]]
 name = "nl-compiler"
 version = "0.1.0"
-source = "git+ssh://git@github.com/matth2k/nl-compiler.git#161e88ca261ca37358254fd082ebad7f27326379"
+source = "git+ssh://git@github.com/matth2k/nl-compiler.git#3aec8bc21e70ee8a34af833f8d43053e7c385650"
 dependencies = [
  "flussab-aiger",
  "safety-net",
@@ -675,9 +675,9 @@ checksum = "f3cb5ba0dc43242ce17de99c180e96db90b235b8a9fdc9543c96d2209116bd9f"
 
 [[package]]
 name = "safety-net"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "665c8b6a288c730fa95d495cc2ef0313f96af5e9125102c2062e1124d1839804"
+checksum = "7c0903a80a2ab34c32e247120040361d545877fcdbf9d0ffa2c00b429a78f3b6"
 dependencies = [
  "bitvec",
  "petgraph",
@@ -1047,7 +1047,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
