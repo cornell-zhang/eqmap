@@ -205,6 +205,14 @@ impl CircuitLang for CellLang {
     fn var(sym: Symbol) -> Self {
         CellLang::Var(sym)
     }
+
+    fn bus(ids: impl Iterator<Item = egg::Id>) -> Self {
+        Self::Bus(ids.collect())
+    }
+
+    fn is_bus(&self) -> bool {
+        matches!(self, Self::Bus(_))
+    }
 }
 
 /// An empty analysis for CellLang

@@ -1133,4 +1133,12 @@ impl CircuitLang for LutLang {
     fn var(sym: Symbol) -> Self {
         LutLang::Var(sym)
     }
+
+    fn bus(ids: impl Iterator<Item = egg::Id>) -> Self {
+        Self::Bus(ids.collect())
+    }
+
+    fn is_bus(&self) -> bool {
+        matches!(self, Self::Bus(_))
+    }
 }

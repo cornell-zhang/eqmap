@@ -27,7 +27,7 @@ pub trait LogicFunc<L: CircuitLang> {
 #[derive(Debug, Clone)]
 pub struct LogicMapping<L: CircuitLang, I: Instantiable + LogicFunc<L>> {
     expr: RecExpr<L>,
-    root: DrivenNet<I>,
+    roots: Vec<DrivenNet<I>>,
     leaves: HashMap<Symbol, DrivenNet<I>>,
     leaves_by_id: HashMap<Id, DrivenNet<I>>,
 }
@@ -38,14 +38,26 @@ impl<L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapping<L, I> {
         self.expr.clone()
     }
 
-    /// Returns the circuit node at the root of this expression
-    pub fn root_net(&self) -> DrivenNet<I> {
-        self.root.clone()
+    /// Returns true if multiple nets are mapped
+    pub fn is_multi_mapping(&self) -> bool {
+        self.roots.len() > 1
     }
 
-    /// Returns the Id of the root of the expression
-    pub fn root_id(&self) -> Id {
-        (self.expr.as_ref().len() - 1).into()
+    /// Returns the circuit nodes at the root of this expression
+    pub fn root_nets(&self) -> impl Iterator<Item = DrivenNet<I>> {
+        self.roots.clone().into_iter()
+    }
+
+    /// Returns the Ids of the roots of the expression
+    pub fn root_ids(&self) -> impl Iterator<Item = Id> {
+        let last = self.expr.last().unwrap();
+        if last.is_bus() {
+            last.children().to_vec().into_iter()
+        } else {
+            let id: Id = (self.expr.len() - 1).into();
+            let id = vec![id];
+            id.into_iter()
+        }
     }
 
     /// Returns the driven net associated with the variable leaf called `sym`
@@ -142,7 +154,7 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
             net.clone(),
             LogicMapping {
                 expr: expr.clone(),
-                root: net.clone(),
+                roots: vec![net.clone()],
                 leaves,
                 leaves_by_id,
             },
@@ -312,7 +324,7 @@ mod tests {
         let mapping = mapper.get(&output);
         assert!(mapping.is_some());
         let mapping = mapping.unwrap();
-        assert_eq!(mapping.root_net(), output);
+        assert_eq!(mapping.root_nets().next().unwrap(), output);
         assert_eq!(netlist.objects().count(), mapping.get_expr().as_ref().len());
 
         // Check the leaves
