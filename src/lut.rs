@@ -1158,7 +1158,7 @@ mod tests {
         let lut = LutLang::Lut(vec![prog, a, b].into());
 
         // Gate with a program input
-        let gate = LutLang::And([a, prog].into());
+        let gate = LutLang::And([a, prog]);
 
         assert!(LutLang::verify_rec(&lut, &expr).is_err());
         assert!(LutLang::verify_rec(&gate, &expr).is_err());
