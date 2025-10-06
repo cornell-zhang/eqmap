@@ -475,6 +475,12 @@ pub trait CircuitLang:
 {
     /// Returns a fresh variable with name `sym`.
     fn var(sym: Symbol) -> Self;
+
+    /// Capture multiple expressions in a single node
+    fn bus(ids: impl Iterator<Item = egg::Id>) -> Self;
+
+    /// Returns true is the node is a bus
+    fn is_bus(&self) -> bool;
 }
 
 type PurgeFn<L> = Arc<dyn Fn(&L) -> bool + 'static>;

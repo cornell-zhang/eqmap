@@ -27,7 +27,7 @@ pub trait LogicFunc<L: CircuitLang> {
 #[derive(Debug, Clone)]
 pub struct LogicMapping<L: CircuitLang, I: Instantiable + LogicFunc<L>> {
     expr: RecExpr<L>,
-    root: DrivenNet<I>,
+    roots: Vec<DrivenNet<I>>,
     leaves: HashMap<Symbol, DrivenNet<I>>,
     leaves_by_id: HashMap<Id, DrivenNet<I>>,
 }
@@ -38,14 +38,26 @@ impl<L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapping<L, I> {
         self.expr.clone()
     }
 
-    /// Returns the circuit node at the root of this expression
-    pub fn root_net(&self) -> DrivenNet<I> {
-        self.root.clone()
+    /// Returns true if multiple nets are mapped
+    pub fn is_multi_mapping(&self) -> bool {
+        self.roots.len() > 1
     }
 
-    /// Returns the Id of the root of the expression
-    pub fn root_id(&self) -> Id {
-        (self.expr.as_ref().len() - 1).into()
+    /// Returns the circuit nodes at the root of this expression
+    pub fn root_nets(&self) -> impl Iterator<Item = DrivenNet<I>> {
+        self.roots.clone().into_iter()
+    }
+
+    /// Returns the Ids of the roots of the expression
+    pub fn root_ids(&self) -> impl Iterator<Item = Id> {
+        let last = self.expr.last().unwrap();
+        if last.is_bus() {
+            last.children().to_vec().into_iter()
+        } else {
+            let id: Id = (self.expr.len() - 1).into();
+            let id = vec![id];
+            id.into_iter()
+        }
     }
 
     /// Returns the driven net associated with the variable leaf called `sym`
@@ -142,7 +154,7 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
             net.clone(),
             LogicMapping {
                 expr: expr.clone(),
-                root: net.clone(),
+                roots: vec![net.clone()],
                 leaves,
                 leaves_by_id,
             },
@@ -257,6 +269,10 @@ mod tests {
         PrimitiveCell::new(PrimitiveType::AND2)
     }
 
+    fn reg_cell() -> PrimitiveCell {
+        PrimitiveCell::new(PrimitiveType::FDRE)
+    }
+
     fn and_netlist() -> Rc<Netlist<PrimitiveCell>> {
         let netlist = Netlist::new("example".to_string());
 
@@ -271,6 +287,28 @@ mod tests {
 
         // Make this AND gate an output
         instance.expose_with_name("y".into());
+
+        netlist
+    }
+
+    fn divider_netlist() -> Rc<Netlist<PrimitiveCell>> {
+        let netlist = Netlist::new("example".to_string());
+
+        // Add the the input
+        let a = netlist.insert_input("a".into());
+
+        // Instantiate a reg
+        let reg = netlist.insert_gate_disconnected(reg_cell(), "inst_0".into());
+
+        // And last val and input
+        let and = netlist
+            .insert_gate(and_gate(), "inst_1".into(), &[a, reg.get_output(0)])
+            .unwrap();
+
+        reg.find_input(&"D".into()).unwrap().connect(and.into());
+
+        // Make this Reg an output
+        reg.expose_with_name("y".into());
 
         netlist
     }
@@ -312,7 +350,7 @@ mod tests {
         let mapping = mapper.get(&output);
         assert!(mapping.is_some());
         let mapping = mapping.unwrap();
-        assert_eq!(mapping.root_net(), output);
+        assert_eq!(mapping.root_nets().next().unwrap(), output);
         assert_eq!(netlist.objects().count(), mapping.get_expr().as_ref().len());
 
         // Check the leaves
@@ -340,5 +378,22 @@ mod tests {
         assert!(expr.is_ok());
         let expr = expr.unwrap();
         assert_eq!(expr.to_string(), "(AND2 true false)");
+    }
+
+    #[test]
+    fn test_divider() {
+        let netlist = divider_netlist();
+        let output = netlist.last().unwrap().get_output(0);
+
+        let mapper = netlist.get_analysis::<'_, LogicMapper<'_, CellLang, _>>();
+        assert!(mapper.is_ok());
+        let mut mapper = mapper.unwrap();
+
+        let mapping = mapper.insert(output);
+        assert!(mapping.is_err());
+
+        let err = mapping.unwrap_err();
+        // TODO(matth2k): Eventually simple cycles should be supported by breaking them up
+        assert!(err.contains("Cycle"));
     }
 }

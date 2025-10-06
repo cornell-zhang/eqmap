@@ -1133,4 +1133,34 @@ impl CircuitLang for LutLang {
     fn var(sym: Symbol) -> Self {
         LutLang::Var(sym)
     }
+
+    fn bus(ids: impl Iterator<Item = egg::Id>) -> Self {
+        Self::Bus(ids.collect())
+    }
+
+    fn is_bus(&self) -> bool {
+        matches!(self, Self::Bus(_))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bad_cells() {
+        let mut expr = RecExpr::<LutLang>::default();
+        let prog = expr.add(LutLang::Program(12345));
+        let a = expr.add(LutLang::Var("a".into()));
+        let b = expr.add(LutLang::Var("b".into()));
+
+        // Program too big
+        let lut = LutLang::Lut(vec![prog, a, b].into());
+
+        // Gate with a program input
+        let gate = LutLang::And([a, prog]);
+
+        assert!(LutLang::verify_rec(&lut, &expr).is_err());
+        assert!(LutLang::verify_rec(&gate, &expr).is_err());
+    }
 }
