@@ -269,6 +269,10 @@ mod tests {
         PrimitiveCell::new(PrimitiveType::AND2)
     }
 
+    fn reg_cell() -> PrimitiveCell {
+        PrimitiveCell::new(PrimitiveType::FDRE)
+    }
+
     fn and_netlist() -> Rc<Netlist<PrimitiveCell>> {
         let netlist = Netlist::new("example".to_string());
 
@@ -283,6 +287,28 @@ mod tests {
 
         // Make this AND gate an output
         instance.expose_with_name("y".into());
+
+        netlist
+    }
+
+    fn divider_netlist() -> Rc<Netlist<PrimitiveCell>> {
+        let netlist = Netlist::new("example".to_string());
+
+        // Add the the input
+        let a = netlist.insert_input("a".into());
+
+        // Instantiate a reg
+        let reg = netlist.insert_gate_disconnected(reg_cell(), "inst_0".into());
+
+        // And last val and input
+        let and = netlist
+            .insert_gate(and_gate(), "inst_1".into(), &[a, reg.get_output(0)])
+            .unwrap();
+
+        reg.find_input(&"D".into()).unwrap().connect(and.into());
+
+        // Make this Reg an output
+        reg.expose_with_name("y".into());
 
         netlist
     }
@@ -352,5 +378,22 @@ mod tests {
         assert!(expr.is_ok());
         let expr = expr.unwrap();
         assert_eq!(expr.to_string(), "(AND2 true false)");
+    }
+
+    #[test]
+    fn test_divider() {
+        let netlist = divider_netlist();
+        let output = netlist.last().unwrap().get_output(0);
+
+        let mapper = netlist.get_analysis::<'_, LogicMapper<'_, CellLang, _>>();
+        assert!(mapper.is_ok());
+        let mut mapper = mapper.unwrap();
+
+        let mapping = mapper.insert(output);
+        assert!(mapping.is_err());
+
+        let err = mapping.unwrap_err();
+        // TODO(matth2k): Eventually simple cycles should be supported by breaking them up
+        assert!(err.contains("Cycle"));
     }
 }
