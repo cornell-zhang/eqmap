@@ -326,9 +326,14 @@ impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping
             .map(|n| n.as_net().clone())
             .collect::<Vec<_>>();
 
-        for (old, new) in self.root_nets().zip(new_roots.iter()) {
-            // TODO: update replace API
-            netlist.replace_net_uses(old.clone().unwrap(), &new.clone().unwrap())?;
+        let old_roots: Vec<_> = self.root_nets().collect();
+
+        drop(self);
+
+        for (old, new) in old_roots.into_iter().zip(new_roots.iter()) {
+            // TODO: update replace API, rename net in replace()
+            old.as_net_mut().set_identifier("deleted".into());
+            netlist.replace_net_uses(old.unwrap(), &new.clone().unwrap())?;
         }
 
         netlist.clean()?;
