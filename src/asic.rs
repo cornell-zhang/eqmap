@@ -213,6 +213,13 @@ impl CircuitLang for CellLang {
     fn is_bus(&self) -> bool {
         matches!(self, Self::Bus(_))
     }
+
+    fn get_var(&self) -> Option<Symbol> {
+        match self {
+            Self::Var(s) => Some(*s),
+            _ => None,
+        }
+    }
 }
 
 /// An empty analysis for CellLang

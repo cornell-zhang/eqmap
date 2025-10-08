@@ -10,11 +10,15 @@ use crate::verilog::PrimitiveType;
 use egg::{Id, RecExpr, Symbol};
 use safety_net::attribute::Parameter;
 use safety_net::circuit::{Identifier, Instantiable, Net};
+use safety_net::error::Error;
+use safety_net::format_id;
 use safety_net::graph::Analysis;
 use safety_net::logic::Logic;
 use safety_net::netlist::iter::DFSIterator;
 use safety_net::netlist::{DrivenNet, Netlist};
 use std::collections::HashMap;
+use std::rc::Rc;
+use std::str::FromStr;
 
 /// Trait for circuit elements that can provide a logic function
 pub trait LogicFunc<L: CircuitLang> {
@@ -68,6 +72,30 @@ impl<L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapping<L, I> {
     /// Returns the driven net associated with the variable leaf with id `id` in the expressions
     pub fn get_leaf_by_id(&self, id: &Id) -> Option<DrivenNet<I>> {
         self.leaves_by_id.get(id).cloned()
+    }
+
+    /// Replaces the expression with a rewritten one
+    ///
+    /// # Panics
+    /// Panics if the new expression does not have the same number of roots as the old one
+    pub fn with_expr(self, expr: RecExpr<L>) -> Self {
+        if self.expr.last().unwrap().is_bus() != expr.last().unwrap().is_bus() {
+            panic!("New expression must have the same number of roots as the old one");
+        }
+
+        let mut leaves_by_id = HashMap::new();
+        for (i, n) in expr.iter().enumerate() {
+            if let Some(sym) = n.get_var() {
+                let id: Id = i.into();
+                leaves_by_id.insert(id, self.leaves[&sym].clone());
+            }
+        }
+
+        Self {
+            expr,
+            leaves_by_id,
+            ..self
+        }
     }
 }
 
@@ -255,6 +283,78 @@ impl LogicFunc<CellLang> for PrimitiveCell {
                 self.ptype.to_string().into(),
                 vec![0.into(); self.ptype.get_num_inputs()],
             )),
+        }
+    }
+}
+
+/// Trait to create instantiable cell from the logic node
+pub trait LogicCell<I: Instantiable> {
+    /// Returns the instantiable cell type associated with this logic node
+    fn get_cell(&self) -> Option<I>;
+}
+
+impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping<L, I> {
+    /// Reinsert the expression into the netlist
+    pub fn reinsert(self, netlist: Rc<Netlist<I>>) -> Result<Vec<DrivenNet<I>>, Error> {
+        let mut mapping: HashMap<Id, DrivenNet<I>> = HashMap::new();
+
+        for (i, n) in self.expr.iter().enumerate() {
+            if let Some(var) = n.get_var() {
+                mapping.insert(i.into(), self.leaves[&var].clone());
+            } else if !n.is_bus() {
+                let cell = n.get_cell().ok_or(Error::ParseError(format!(
+                    "Cannot reinsert node {} without associated cell",
+                    n
+                )))?;
+                let operands = n
+                    .children()
+                    .iter()
+                    .map(|c| mapping[c].clone())
+                    .collect::<Vec<_>>();
+                let inst_name = format_id!("reinst_{}", i);
+                let instance = netlist.insert_gate(cell, inst_name, &operands)?;
+                // TODO(matth2k): Support multi-output cells
+                assert!(!instance.is_multi_output());
+                let out = instance.get_output(0);
+                mapping.insert(i.into(), out);
+            }
+        }
+
+        let new_roots: Vec<_> = self.root_ids().map(|id| mapping[&id].clone()).collect();
+        let old_net_names = self
+            .root_nets()
+            .map(|n| n.as_net().clone())
+            .collect::<Vec<_>>();
+
+        for (old, new) in self.root_nets().zip(new_roots.iter()) {
+            // TODO: update replace API
+            netlist.replace_net_uses(old.clone().unwrap(), &new.clone().unwrap())?;
+        }
+
+        netlist.clean()?;
+
+        for (new, n) in new_roots.iter().zip(old_net_names.into_iter()) {
+            *new.as_net_mut() = n;
+        }
+
+        Ok(new_roots)
+    }
+}
+
+impl LogicCell<PrimitiveCell> for CellLang {
+    fn get_cell(&self) -> Option<PrimitiveCell> {
+        match self {
+            CellLang::And(_) => Some(PrimitiveCell::new(PrimitiveType::AND)),
+            CellLang::Or(_) => Some(PrimitiveCell::new(PrimitiveType::OR)),
+            CellLang::Inv(_) => Some(PrimitiveCell::new(PrimitiveType::NOT)),
+            CellLang::Const(b) => {
+                PrimitiveCell::from_constant(if *b { Logic::True } else { Logic::False })
+            }
+            CellLang::Cell(name, _) => match PrimitiveType::from_str(name.as_str()) {
+                Ok(ptype) => Some(PrimitiveCell::new(ptype)),
+                Err(_) => None,
+            },
+            _ => None,
         }
     }
 }
