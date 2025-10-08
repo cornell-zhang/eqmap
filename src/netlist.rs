@@ -296,7 +296,7 @@ pub trait LogicCell<I: Instantiable> {
 
 impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping<L, I> {
     /// Reinsert the expression into the netlist
-    pub fn reinsert(self, netlist: Rc<Netlist<I>>) -> Result<Vec<DrivenNet<I>>, Error> {
+    pub fn reinsert(self, netlist: &Rc<Netlist<I>>) -> Result<Vec<DrivenNet<I>>, Error> {
         let mut mapping: HashMap<Id, DrivenNet<I>> = HashMap::new();
 
         for (i, n) in self.expr.iter().enumerate() {
@@ -327,9 +327,13 @@ impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping
             .map(|n| n.as_net().clone())
             .collect::<Vec<_>>();
 
-        for (old, new) in self.root_nets().zip(new_roots.iter()) {
+        let old_roots: Vec<_> = self.root_nets().collect();
+
+        drop(self);
+
+        for (old, new) in old_roots.into_iter().zip(new_roots.iter()) {
             // TODO: update replace API
-            netlist.replace_net_uses(old.clone().unwrap(), &new.clone().unwrap())?;
+            netlist.replace_net_uses(old.unwrap(), &new.clone().unwrap())?;
         }
 
         netlist.clean()?;
