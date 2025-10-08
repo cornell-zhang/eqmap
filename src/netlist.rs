@@ -295,7 +295,7 @@ pub trait LogicCell<I: Instantiable> {
 
 impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping<L, I> {
     /// Reinsert the expression into the netlist
-    pub fn reinsert(self, netlist: Rc<Netlist<I>>) -> Result<Vec<DrivenNet<I>>, Error> {
+    pub fn reinsert(self, netlist: &Rc<Netlist<I>>) -> Result<Vec<DrivenNet<I>>, Error> {
         let mut mapping: HashMap<Id, DrivenNet<I>> = HashMap::new();
 
         for (i, n) in self.expr.iter().enumerate() {
