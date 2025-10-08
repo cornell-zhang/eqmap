@@ -352,9 +352,7 @@ impl LogicCell<PrimitiveCell> for CellLang {
             CellLang::And(_) => Some(PrimitiveCell::new(PrimitiveType::AND)),
             CellLang::Or(_) => Some(PrimitiveCell::new(PrimitiveType::OR)),
             CellLang::Inv(_) => Some(PrimitiveCell::new(PrimitiveType::NOT)),
-            CellLang::Const(b) => {
-                PrimitiveCell::from_constant(if *b { Logic::True } else { Logic::False })
-            }
+            CellLang::Const(b) => PrimitiveCell::from_constant(Logic::from(*b)),
             CellLang::Cell(name, _) => match PrimitiveType::from_str(name.as_str()) {
                 Ok(ptype) => Some(PrimitiveCell::new(ptype)),
                 Err(_) => None,
