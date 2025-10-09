@@ -331,8 +331,11 @@ impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping
         drop(self);
 
         for (old, new) in old_roots.into_iter().zip(new_roots.iter()) {
-            // TODO: update replace API, rename net in replace()
-            old.as_net_mut().set_identifier("deleted".into());
+            if old.is_top_level_output() {
+                let id = old.get_identifier() + "_old".into();
+                old.as_net_mut().set_identifier(id);
+            }
+
             netlist.replace_net_uses(old, &new)?;
         }
 
@@ -364,12 +367,11 @@ impl LogicCell<PrimitiveCell> for CellLang {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use std::rc::Rc;
 
-    use super::*;
-
     fn and_gate() -> PrimitiveCell {
-        PrimitiveCell::new(PrimitiveType::AND2)
+        PrimitiveCell::new(PrimitiveType::AND)
     }
 
     fn reg_cell() -> PrimitiveCell {
@@ -389,6 +391,11 @@ mod tests {
             .unwrap();
 
         // Make this AND gate an output
+        // Setting both the net and output name to "y" tests more edge cases
+        instance
+            .get_output(0)
+            .as_net_mut()
+            .set_identifier("y".into());
         instance.expose_with_name("y".into());
 
         netlist
@@ -447,7 +454,7 @@ mod tests {
         let expr = mapper.insert(output.clone());
         assert!(expr.is_ok());
         let expr = expr.unwrap();
-        assert_eq!(expr.to_string(), "(AND2 a b)");
+        assert_eq!(expr.to_string(), "(AND a b)");
 
         // Check the root properties are correct
         let mapping = mapper.get(&output);
@@ -480,7 +487,7 @@ mod tests {
         let expr = mapper.insert(output.clone());
         assert!(expr.is_ok());
         let expr = expr.unwrap();
-        assert_eq!(expr.to_string(), "(AND2 true false)");
+        assert_eq!(expr.to_string(), "(AND true false)");
     }
 
     #[test]
@@ -498,5 +505,33 @@ mod tests {
         let err = mapping.unwrap_err();
         // TODO(matth2k): Eventually simple cycles should be supported by breaking them up
         assert!(err.contains("Cycle"));
+    }
+
+    #[test]
+    fn test_and_flip() {
+        let netlist = and_netlist();
+        let output = netlist.last().unwrap().get_output(0);
+
+        let mapper = netlist.get_analysis::<'_, LogicMapper<'_, CellLang, _>>();
+        assert!(mapper.is_ok());
+        let mut mapper = mapper.unwrap();
+
+        // Check the RecExpr is correct
+        let _ = mapper.insert(output.clone());
+
+        let mapping = mapper.get(&output);
+        assert!(mapping.is_some());
+        let mapping = mapping.unwrap();
+
+        drop(mapper);
+        drop(output);
+
+        let rewrite: RecExpr<CellLang> = "(AND b a)".parse().unwrap();
+        eprintln!("{rewrite:?}");
+        let mapping = mapping.with_expr(rewrite);
+
+        let rewrite = mapping.rewrite(&netlist);
+        assert!(rewrite.is_ok());
+        assert!(netlist.objects().count() == 3);
     }
 }
