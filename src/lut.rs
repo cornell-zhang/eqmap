@@ -1170,4 +1170,23 @@ mod tests {
         assert!(LutLang::verify_rec(&lut, &expr).is_err());
         assert!(LutLang::verify_rec(&gate, &expr).is_err());
     }
+
+    #[test]
+    fn test_clone_subexpression() {
+        let mut expr = RecExpr::<LutLang>::default();
+        let a = expr.add(LutLang::Var("a".into()));
+        let b = expr.add(LutLang::Var("b".into()));
+        let and = expr.add(LutLang::And([a, b]));
+
+        let info = LutExprInfo::new(&expr);
+        let a_e = info.clone_subexpression(a);
+        assert!(a_e.is_ok());
+        let a_e = a_e.unwrap();
+        assert_eq!(a_e.to_string(), "a");
+
+        let full = info.clone_subexpression(and);
+        assert!(full.is_ok());
+        let full = full.unwrap();
+        assert_eq!(full.to_string(), "(AND a b)");
+    }
 }
