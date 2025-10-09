@@ -336,7 +336,7 @@ impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping
                 old.as_net_mut().set_identifier(id);
             }
 
-            netlist.replace_net_uses(old, &new)?;
+            netlist.replace_net_uses(old, new)?;
         }
 
         netlist.clean()?;
