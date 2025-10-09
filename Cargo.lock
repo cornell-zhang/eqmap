@@ -617,9 +617,9 @@ checksum = "f3cb5ba0dc43242ce17de99c180e96db90b235b8a9fdc9543c96d2209116bd9f"
 
 [[package]]
 name = "safety-net"
-version = "0.2.6"
+version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "665c8b6a288c730fa95d495cc2ef0313f96af5e9125102c2062e1124d1839804"
+checksum = "2baa8c425fc833bdc0c0c13a72aecf4a333f0d21b377f59a093b99cdcac50622"
 dependencies = [
  "bitvec",
  "thiserror 2.0.17",

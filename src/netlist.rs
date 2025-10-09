@@ -10,11 +10,15 @@ use crate::verilog::PrimitiveType;
 use egg::{Id, RecExpr, Symbol};
 use safety_net::attribute::Parameter;
 use safety_net::circuit::{Identifier, Instantiable, Net};
+use safety_net::error::Error;
+use safety_net::format_id;
 use safety_net::graph::Analysis;
 use safety_net::logic::Logic;
 use safety_net::netlist::iter::DFSIterator;
 use safety_net::netlist::{DrivenNet, Netlist};
 use std::collections::HashMap;
+use std::rc::Rc;
+use std::str::FromStr;
 
 /// Trait for circuit elements that can provide a logic function
 pub trait LogicFunc<L: CircuitLang> {
@@ -68,6 +72,30 @@ impl<L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapping<L, I> {
     /// Returns the driven net associated with the variable leaf with id `id` in the expressions
     pub fn get_leaf_by_id(&self, id: &Id) -> Option<DrivenNet<I>> {
         self.leaves_by_id.get(id).cloned()
+    }
+
+    /// Replaces the expression with a rewritten one
+    ///
+    /// # Panics
+    /// Panics if the new expression does not have the same number of roots as the old one
+    pub fn with_expr(self, expr: RecExpr<L>) -> Self {
+        if self.expr.last().unwrap().is_bus() != expr.last().unwrap().is_bus() {
+            panic!("New expression must have the same number of roots as the old one");
+        }
+
+        let mut leaves_by_id = HashMap::new();
+        for (i, n) in expr.iter().enumerate() {
+            if let Some(sym) = n.get_var() {
+                let id: Id = i.into();
+                leaves_by_id.insert(id, self.leaves[&sym].clone());
+            }
+        }
+
+        Self {
+            expr,
+            leaves_by_id,
+            ..self
+        }
     }
 }
 
@@ -259,14 +287,91 @@ impl LogicFunc<CellLang> for PrimitiveCell {
     }
 }
 
+/// Trait to create instantiable cell from the logic node
+pub trait LogicCell<I: Instantiable> {
+    /// Returns the instantiable cell type associated with this logic node
+    fn get_cell(&self) -> Option<I>;
+}
+
+impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping<L, I> {
+    /// Rewrite the expression into the netlist
+    pub fn rewrite(self, netlist: &Rc<Netlist<I>>) -> Result<Vec<DrivenNet<I>>, Error> {
+        let mut mapping: HashMap<Id, DrivenNet<I>> = HashMap::new();
+
+        for (i, n) in self.expr.iter().enumerate() {
+            if let Some(var) = n.get_var() {
+                mapping.insert(i.into(), self.leaves[&var].clone());
+            } else if !n.is_bus() {
+                let cell = n.get_cell().ok_or(Error::ParseError(format!(
+                    "Cannot reinsert node {} without associated cell",
+                    n
+                )))?;
+                let operands = n
+                    .children()
+                    .iter()
+                    .map(|c| mapping[c].clone())
+                    .collect::<Vec<_>>();
+                let inst_name = format_id!("reinst_{}", i);
+                let instance = netlist.insert_gate(cell, inst_name, &operands)?;
+                // TODO(matth2k): Support multi-output cells
+                assert!(!instance.is_multi_output());
+                let out = instance.get_output(0);
+                mapping.insert(i.into(), out);
+            }
+        }
+
+        let new_roots: Vec<_> = self.root_ids().map(|id| mapping[&id].clone()).collect();
+        let old_net_names = self
+            .root_nets()
+            .map(|n| n.as_net().clone())
+            .collect::<Vec<_>>();
+
+        let old_roots: Vec<_> = self.root_nets().collect();
+
+        drop(self);
+
+        for (old, new) in old_roots.into_iter().zip(new_roots.iter()) {
+            if old.is_top_level_output() {
+                let id = old.get_identifier() + "_old".into();
+                old.as_net_mut().set_identifier(id);
+            }
+
+            netlist.replace_net_uses(old, new)?;
+        }
+
+        netlist.clean()?;
+
+        for (new, n) in new_roots.iter().zip(old_net_names.into_iter()) {
+            *new.as_net_mut() = n;
+        }
+
+        Ok(new_roots)
+    }
+}
+
+impl LogicCell<PrimitiveCell> for CellLang {
+    fn get_cell(&self) -> Option<PrimitiveCell> {
+        match self {
+            CellLang::And(_) => Some(PrimitiveCell::new(PrimitiveType::AND)),
+            CellLang::Or(_) => Some(PrimitiveCell::new(PrimitiveType::OR)),
+            CellLang::Inv(_) => Some(PrimitiveCell::new(PrimitiveType::NOT)),
+            CellLang::Const(b) => PrimitiveCell::from_constant(Logic::from(*b)),
+            CellLang::Cell(name, _) => match PrimitiveType::from_str(name.as_str()) {
+                Ok(ptype) => Some(PrimitiveCell::new(ptype)),
+                Err(_) => None,
+            },
+            _ => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
     use std::rc::Rc;
 
-    use super::*;
-
     fn and_gate() -> PrimitiveCell {
-        PrimitiveCell::new(PrimitiveType::AND2)
+        PrimitiveCell::new(PrimitiveType::AND)
     }
 
     fn reg_cell() -> PrimitiveCell {
@@ -286,6 +391,11 @@ mod tests {
             .unwrap();
 
         // Make this AND gate an output
+        // Setting both the net and output name to "y" tests more edge cases
+        instance
+            .get_output(0)
+            .as_net_mut()
+            .set_identifier("y".into());
         instance.expose_with_name("y".into());
 
         netlist
@@ -344,7 +454,7 @@ mod tests {
         let expr = mapper.insert(output.clone());
         assert!(expr.is_ok());
         let expr = expr.unwrap();
-        assert_eq!(expr.to_string(), "(AND2 a b)");
+        assert_eq!(expr.to_string(), "(AND a b)");
 
         // Check the root properties are correct
         let mapping = mapper.get(&output);
@@ -377,7 +487,7 @@ mod tests {
         let expr = mapper.insert(output.clone());
         assert!(expr.is_ok());
         let expr = expr.unwrap();
-        assert_eq!(expr.to_string(), "(AND2 true false)");
+        assert_eq!(expr.to_string(), "(AND true false)");
     }
 
     #[test]
@@ -395,5 +505,33 @@ mod tests {
         let err = mapping.unwrap_err();
         // TODO(matth2k): Eventually simple cycles should be supported by breaking them up
         assert!(err.contains("Cycle"));
+    }
+
+    #[test]
+    fn test_and_flip() {
+        let netlist = and_netlist();
+        let output = netlist.last().unwrap().get_output(0);
+
+        let mapper = netlist.get_analysis::<'_, LogicMapper<'_, CellLang, _>>();
+        assert!(mapper.is_ok());
+        let mut mapper = mapper.unwrap();
+
+        // Check the RecExpr is correct
+        let _ = mapper.insert(output.clone());
+
+        let mapping = mapper.get(&output);
+        assert!(mapping.is_some());
+        let mapping = mapping.unwrap();
+
+        drop(mapper);
+        drop(output);
+
+        let rewrite: RecExpr<CellLang> = "(AND b a)".parse().unwrap();
+        eprintln!("{rewrite:?}");
+        let mapping = mapping.with_expr(rewrite);
+
+        let rewrite = mapping.rewrite(&netlist);
+        assert!(rewrite.is_ok());
+        assert!(netlist.objects().count() == 3);
     }
 }

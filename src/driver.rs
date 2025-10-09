@@ -481,6 +481,9 @@ pub trait CircuitLang:
 
     /// Returns true is the node is a bus
     fn is_bus(&self) -> bool;
+
+    /// Returns the symbol of the node, if is a variable
+    fn get_var(&self) -> Option<Symbol>;
 }
 
 type PurgeFn<L> = Arc<dyn Fn(&L) -> bool + 'static>;
