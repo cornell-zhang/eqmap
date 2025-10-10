@@ -102,7 +102,7 @@ impl<L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapping<L, I> {
 /// Extracts the logic equation from a portion of a netlist.
 pub struct LogicMapper<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> {
     _netlist: &'a Netlist<I>,
-    mappings: HashMap<DrivenNet<I>, LogicMapping<L, I>>,
+    mappings: Vec<LogicMapping<L, I>>,
 }
 
 impl<'a, L, I> Analysis<'a, I> for LogicMapper<'a, L, I>
@@ -113,87 +113,88 @@ where
     fn build(netlist: &'a Netlist<I>) -> Result<Self, safety_net::error::Error> {
         Ok(Self {
             _netlist: netlist,
-            mappings: HashMap::new(),
+            mappings: Vec::new(),
         })
     }
 }
 
 impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
     /// Add a mapping for a specific net
-    pub fn insert(&mut self, net: DrivenNet<I>) -> Result<RecExpr<L>, String> {
-        if net.is_an_input() {
-            return Err("Inputs have trivial mappings".to_string());
-        }
-
-        if net
-            .get_instance_type()
-            .unwrap()
-            .get_logic_func(net.get_output_index().unwrap())
-            .is_none()
-        {
-            return Err(format!(
-                "Root instance type {} does not have a logic function",
-                net.get_instance_type().unwrap().get_name()
-            ));
-        }
-
+    pub fn insert(&mut self, nets: Vec<DrivenNet<I>>) -> Result<RecExpr<L>, String> {
         let mut expr = RecExpr::<L>::default();
         let mut mapping: HashMap<DrivenNet<I>, Id> = HashMap::new();
         let mut leaves: HashMap<Symbol, DrivenNet<I>> = HashMap::new();
         let mut leaves_by_id: HashMap<Id, DrivenNet<I>> = HashMap::new();
-        let mut dfs = DFSIterator::new(self._netlist, net.clone().unwrap());
-        let mut nodes: Vec<DrivenNet<I>> = Vec::new();
-        while let Some(n) = dfs.next() {
-            if dfs.check_cycles() {
-                return Err("Cycle detected in netlist".to_string());
-            }
-            if n.is_multi_output() {
-                // TODO(matth2k): safety-net should have dfs by [DrivenNet]
-                return Err("Cannot map multi-output cells".to_string());
-            }
-            nodes.push(n.into());
-        }
-        nodes.reverse();
 
-        for n in nodes {
-            if let Some(inst_type) = n.get_instance_type()
-                && let Some(mut logic) = inst_type.get_logic_func(n.get_output_index().unwrap())
-            {
-                for (i, c) in n.clone().unwrap().inputs().enumerate() {
-                    let cid = c
-                        .get_driver()
-                        .ok_or(format!("Failed to get driver for input {} of net {}", i, n))?;
-                    let cid = mapping[&cid];
-                    logic.children_mut()[i] = cid;
+        for net in &nets {
+            let mut dfs = DFSIterator::new(self._netlist, net.clone().unwrap());
+            let mut nodes: Vec<DrivenNet<I>> = Vec::new();
+
+            while let Some(n) = dfs.next() {
+                if dfs.check_cycles() {
+                    return Err("Cycle detected in netlist".to_string());
                 }
+                if n.is_multi_output() {
+                    // TODO(matth2k): safety-net should have dfs by [DrivenNet]
+                    return Err("Cannot map multi-output cells".to_string());
+                }
+                nodes.push(n.into());
+            }
+            nodes.reverse();
 
-                let id = expr.add(logic);
-                mapping.insert(n.clone(), id);
-            } else {
-                let sym = n.get_identifier();
-                let id = expr.add(L::var(sym.to_string().into()));
-                mapping.insert(n.clone(), id);
-                leaves.insert(sym.to_string().into(), n.clone());
-                leaves_by_id.insert(id, n.clone());
+            for n in nodes {
+                if mapping.contains_key(&n) {
+                    continue;
+                } else if let Some(inst_type) = n.get_instance_type()
+                    && let Some(mut logic) = inst_type.get_logic_func(n.get_output_index().unwrap())
+                {
+                    for (i, c) in n.clone().unwrap().inputs().enumerate() {
+                        let cid = c
+                            .get_driver()
+                            .ok_or(format!("Failed to get driver for input {} of net {}", i, n))?;
+                        let cid = mapping[&cid];
+                        logic.children_mut()[i] = cid;
+                    }
+
+                    let id = expr.add(logic);
+                    mapping.insert(n.clone(), id);
+                } else {
+                    let sym = n.get_identifier();
+                    let id = expr.add(L::var(sym.to_string().into()));
+                    mapping.insert(n.clone(), id);
+                    leaves.insert(sym.to_string().into(), n.clone());
+                    leaves_by_id.insert(id, n.clone());
+                }
             }
         }
 
-        self.mappings.insert(
-            net.clone(),
-            LogicMapping {
-                expr: expr.clone(),
-                roots: vec![net.clone()],
-                leaves,
-                leaves_by_id,
-            },
-        );
+        if nets.len() > 1 {
+            let bus = L::bus(nets.iter().map(|n| mapping[n]));
+            expr.add(bus);
+        }
+
+        self.mappings.push(LogicMapping {
+            expr: expr.clone(),
+            roots: nets,
+            leaves,
+            leaves_by_id,
+        });
 
         Ok(expr)
     }
 
-    /// Get the mapped expression
-    pub fn get(&self, net: &DrivenNet<I>) -> Option<LogicMapping<L, I>> {
-        self.mappings.get(net).cloned()
+    /// Add a mapping for a specific net
+    pub fn insert_single_net(&mut self, net: DrivenNet<I>) -> Result<RecExpr<L>, String> {
+        if net.is_an_input() {
+            return Err("Inputs have trivial mappings".to_string());
+        }
+
+        self.insert(vec![net])
+    }
+
+    /// Get the mapped expressions
+    pub fn mappings(self) -> Vec<LogicMapping<L, I>> {
+        self.mappings
     }
 }
 
@@ -451,15 +452,15 @@ mod tests {
         let mut mapper = mapper.unwrap();
 
         // Check the RecExpr is correct
-        let expr = mapper.insert(output.clone());
+        let expr = mapper.insert_single_net(output.clone());
         assert!(expr.is_ok());
         let expr = expr.unwrap();
         assert_eq!(expr.to_string(), "(AND a b)");
 
         // Check the root properties are correct
-        let mapping = mapper.get(&output);
-        assert!(mapping.is_some());
-        let mapping = mapping.unwrap();
+        let mut mapping = mapper.mappings();
+        assert!(!mapping.is_empty());
+        let mapping = mapping.pop().unwrap();
         assert_eq!(mapping.root_nets().next().unwrap(), output);
         assert_eq!(netlist.objects().count(), mapping.get_expr().as_ref().len());
 
@@ -484,7 +485,7 @@ mod tests {
         let mut mapper = mapper.unwrap();
 
         // Check the RecExpr is correct
-        let expr = mapper.insert(output.clone());
+        let expr = mapper.insert_single_net(output.clone());
         assert!(expr.is_ok());
         let expr = expr.unwrap();
         assert_eq!(expr.to_string(), "(AND true false)");
@@ -499,7 +500,7 @@ mod tests {
         assert!(mapper.is_ok());
         let mut mapper = mapper.unwrap();
 
-        let mapping = mapper.insert(output);
+        let mapping = mapper.insert_single_net(output);
         assert!(mapping.is_err());
 
         let err = mapping.unwrap_err();
@@ -517,17 +518,13 @@ mod tests {
         let mut mapper = mapper.unwrap();
 
         // Check the RecExpr is correct
-        let _ = mapper.insert(output.clone());
+        let _ = mapper.insert_single_net(output);
 
-        let mapping = mapper.get(&output);
-        assert!(mapping.is_some());
-        let mapping = mapping.unwrap();
-
-        drop(mapper);
-        drop(output);
+        let mut mapping = mapper.mappings();
+        assert!(!mapping.is_empty());
+        let mapping = mapping.pop().unwrap();
 
         let rewrite: RecExpr<CellLang> = "(AND b a)".parse().unwrap();
-        eprintln!("{rewrite:?}");
         let mapping = mapping.with_expr(rewrite);
 
         let rewrite = mapping.rewrite(&netlist);
