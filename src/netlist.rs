@@ -385,11 +385,6 @@ impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping
                 old.as_net_mut().set_identifier(id);
             }
 
-            eprintln!(
-                "DEBUG: Replacing net {} with {}",
-                old.get_identifier(),
-                new.get_identifier()
-            );
             netlist.replace_net_uses(old, new)?;
         }
 

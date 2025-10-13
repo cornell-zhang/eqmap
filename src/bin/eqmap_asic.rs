@@ -188,7 +188,6 @@ fn main() -> std::io::Result<()> {
 
     eprintln!("INFO: Writing output to Verilog...");
     let mapping = mapping.with_expr(result.get_expr().to_owned());
-    eprintln!("{}", mapping.get_expr());
     mapping.rewrite(&f).map_err(std::io::Error::other)?;
 
     if let Some(p) = args.output {
