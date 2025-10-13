@@ -195,7 +195,7 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
         }
 
         if roots.len() > 1 {
-            let bus = L::bus(nets.iter().map(|n| mapping[n]));
+            let bus = L::bus(roots.iter().map(|n| mapping[n]));
             expr.add(bus);
         }
 
