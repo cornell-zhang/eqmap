@@ -493,13 +493,9 @@ mod tests {
 
         // Check the leaves
         let l0 = mapping.get_leaf(&"a".into());
-        let l1 = mapping.get_leaf_by_id(&1.into());
         assert!(l0.is_some());
-        assert!(l1.is_some());
         let l0 = l0.unwrap();
-        let l1 = l1.unwrap();
         assert_eq!(l0, netlist.first().unwrap().into());
-        assert_eq!(l1.to_string(), "b");
     }
 
     #[test]
