@@ -16,7 +16,7 @@ use safety_net::graph::Analysis;
 use safety_net::logic::Logic;
 use safety_net::netlist::iter::DFSIterator;
 use safety_net::netlist::{DrivenNet, Netlist};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use std::str::FromStr;
 
@@ -126,10 +126,25 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
         let mut leaves: HashMap<Symbol, DrivenNet<I>> = HashMap::new();
         let mut leaves_by_id: HashMap<Id, DrivenNet<I>> = HashMap::new();
 
-        for net in &nets {
-            let mut dfs = DFSIterator::new(self._netlist, net.clone().unwrap());
-            let mut nodes: Vec<DrivenNet<I>> = Vec::new();
+        let roots = nets.clone();
+        let mut nets = nets;
+        let mut topo = Vec::new();
+        let mut sorted = HashSet::new();
 
+        while let Some(net) = nets.pop() {
+            if sorted.contains(&net) {
+                continue;
+            }
+
+            if net.is_an_input() {
+                sorted.insert(net.clone());
+                topo.push(net);
+                continue;
+            }
+
+            let mut dfs = DFSIterator::new(self._netlist, net.clone().unwrap());
+            let mut rdy = true;
+            dfs.next(); // Skip the root node
             while let Some(n) = dfs.next() {
                 if dfs.check_cycles() {
                     return Err("Cycle detected in netlist".to_string());
@@ -138,44 +153,55 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
                     // TODO(matth2k): safety-net should have dfs by [DrivenNet]
                     return Err("Cannot map multi-output cells".to_string());
                 }
-                nodes.push(n.into());
-            }
-            nodes.reverse();
 
-            for n in nodes {
-                if mapping.contains_key(&n) {
-                    continue;
-                } else if let Some(inst_type) = n.get_instance_type()
-                    && let Some(mut logic) = inst_type.get_logic_func(n.get_output_index().unwrap())
-                {
-                    for (i, c) in n.clone().unwrap().inputs().enumerate() {
-                        let cid = c
-                            .get_driver()
-                            .ok_or(format!("Failed to get driver for input {} of net {}", i, n))?;
-                        let cid = mapping[&cid];
-                        logic.children_mut()[i] = cid;
-                    }
-
-                    let id = expr.add(logic);
-                    mapping.insert(n.clone(), id);
-                } else {
-                    let sym = n.get_identifier();
-                    let id = expr.add(L::var(sym.to_string().into()));
-                    mapping.insert(n.clone(), id);
-                    leaves.insert(sym.to_string().into(), n.clone());
-                    leaves_by_id.insert(id, n.clone());
+                let n = n.get_output(0);
+                if !sorted.contains(&n) {
+                    rdy = false;
+                    nets.push(net.clone());
+                    nets.push(n);
+                    break;
                 }
+            }
+
+            if rdy {
+                sorted.insert(net.clone());
+                topo.push(net);
             }
         }
 
-        if nets.len() > 1 {
+        for n in topo {
+            if mapping.contains_key(&n) {
+                continue;
+            } else if let Some(inst_type) = n.get_instance_type()
+                && let Some(mut logic) = inst_type.get_logic_func(n.get_output_index().unwrap())
+            {
+                for (i, c) in n.clone().unwrap().inputs().enumerate() {
+                    let cid = c
+                        .get_driver()
+                        .ok_or(format!("Failed to get driver for input {} of net {}", i, n))?;
+                    let cid = mapping[&cid];
+                    logic.children_mut()[i] = cid;
+                }
+
+                let id = expr.add(logic);
+                mapping.insert(n.clone(), id);
+            } else {
+                let sym = n.get_identifier();
+                let id = expr.add(L::var(sym.to_string().into()));
+                mapping.insert(n.clone(), id);
+                leaves.insert(sym.to_string().into(), n.clone());
+                leaves_by_id.insert(id, n.clone());
+            }
+        }
+
+        if roots.len() > 1 {
             let bus = L::bus(nets.iter().map(|n| mapping[n]));
             expr.add(bus);
         }
 
         self.mappings.push(LogicMapping {
             expr: expr.clone(),
-            roots: nets,
+            roots,
             leaves,
             leaves_by_id,
         });
@@ -330,6 +356,7 @@ impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping
         let old_roots: Vec<_> = self.root_nets().collect();
 
         drop(self);
+        drop(mapping);
 
         for (old, new) in old_roots.into_iter().zip(new_roots.iter()) {
             if old.is_top_level_output() {
