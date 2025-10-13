@@ -6,8 +6,10 @@
 
 use crate::asic::CellLang;
 use crate::driver::CircuitLang;
+use crate::lut::LutLang;
 use crate::verilog::PrimitiveType;
 use egg::{Id, RecExpr, Symbol};
+use nl_compiler::cells::FromId;
 use safety_net::attribute::Parameter;
 use safety_net::circuit::{Identifier, Instantiable, Net};
 use safety_net::error::Error;
@@ -314,6 +316,25 @@ impl LogicFunc<CellLang> for PrimitiveCell {
     }
 }
 
+impl LogicFunc<LutLang> for PrimitiveCell {
+    fn get_logic_func(&self, _ind: usize) -> Option<LutLang> {
+        match self.ptype {
+            PrimitiveType::AND => Some(LutLang::And([0.into(); 2])),
+            PrimitiveType::VCC => Some(LutLang::Const(true)),
+            PrimitiveType::GND => Some(LutLang::Const(false)),
+            PrimitiveType::NOR => Some(LutLang::Nor([0.into(); 2])),
+            PrimitiveType::XOR => Some(LutLang::Xor([0.into(); 2])),
+            PrimitiveType::MUX => Some(LutLang::Mux([0.into(); 3])),
+            PrimitiveType::NOT => Some(LutLang::Not([0.into()])),
+            PrimitiveType::FDRE => Some(LutLang::Reg([0.into()])),
+            _ if self.ptype.is_lut() => Some(LutLang::Lut(
+                vec![0.into(); self.ptype.get_num_inputs() + 1].into(),
+            )),
+            _ => None,
+        }
+    }
+}
+
 /// Trait to create instantiable cell from the logic node
 pub trait LogicCell<I: Instantiable> {
     /// Returns the instantiable cell type associated with this logic node
@@ -364,6 +385,11 @@ impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping
                 old.as_net_mut().set_identifier(id);
             }
 
+            eprintln!(
+                "DEBUG: Replacing net {} with {}",
+                old.get_identifier(),
+                new.get_identifier()
+            );
             netlist.replace_net_uses(old, new)?;
         }
 
@@ -389,6 +415,40 @@ impl LogicCell<PrimitiveCell> for CellLang {
                 Err(_) => None,
             },
             _ => None,
+        }
+    }
+}
+
+impl LogicCell<PrimitiveCell> for LutLang {
+    fn get_cell(&self) -> Option<PrimitiveCell> {
+        match self {
+            LutLang::And(_) => Some(PrimitiveCell::new(PrimitiveType::AND)),
+            LutLang::Mux(_) => Some(PrimitiveCell::new(PrimitiveType::MUX)),
+            LutLang::Nor(_) => Some(PrimitiveCell::new(PrimitiveType::NOR)),
+            LutLang::Not(_) => Some(PrimitiveCell::new(PrimitiveType::NOT)),
+            LutLang::Const(b) => PrimitiveCell::from_constant(Logic::from(*b)),
+            LutLang::DC => PrimitiveCell::from_constant(Logic::X),
+            LutLang::Reg(_) => Some(PrimitiveCell::new(PrimitiveType::FDRE)),
+            LutLang::Xor(_) => Some(PrimitiveCell::new(PrimitiveType::XOR)),
+            LutLang::Lut(l) => match l.len() {
+                2 => Some(PrimitiveCell::new(PrimitiveType::LUT1)),
+                3 => Some(PrimitiveCell::new(PrimitiveType::LUT2)),
+                4 => Some(PrimitiveCell::new(PrimitiveType::LUT3)),
+                5 => Some(PrimitiveCell::new(PrimitiveType::LUT4)),
+                6 => Some(PrimitiveCell::new(PrimitiveType::LUT5)),
+                7 => Some(PrimitiveCell::new(PrimitiveType::LUT6)),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+}
+
+impl FromId for PrimitiveCell {
+    fn from_id(s: &Identifier) -> Result<Self, Error> {
+        match PrimitiveType::from_str(&s.to_string()) {
+            Ok(ptype) => Ok(PrimitiveCell::new(ptype)),
+            Err(e) => Err(Error::ParseError(e)),
         }
     }
 }
