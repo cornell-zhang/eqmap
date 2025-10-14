@@ -8,12 +8,14 @@ use super::cost::NegativeCostFn;
 use super::lut::{CircuitStats, LutExprInfo, LutLang};
 #[cfg(feature = "graph_dumps")]
 use super::serialize::serialize_egraph;
+use super::verilog::PrimitiveType;
 use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
     RecExpr, RecExprParseError, Rewrite, Runner, StopReason, Symbol, TreeTerm,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::collections::{BTreeMap, HashSet};
+use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
@@ -368,12 +370,7 @@ enum ExtractStrat {
 }
 
 /// The list of gates that must be reachable by the disassembling rewrite rule system.
-pub const GATE_WHITELIST_STR: &str = "MUX,AND,OR,XOR,NOT,INV,REG,NAND,NOR";
-
-/// The list of gates that must be reachable by the disassembling rewrite rule system.
-pub const GATE_WHITELIST: [&str; 9] = [
-    "MUX", "AND", "OR", "XOR", "NOT", "INV", "REG", "NAND", "NOR",
-];
+pub const GATE_WHITELIST_STR: &str = "MUX,AND,OR,XOR,NOT,INV,FDRE,NAND,NOR";
 
 impl OptStrat {
     /// Create an extraction strategy from a comma-separated list of gates.
@@ -386,10 +383,8 @@ impl OptStrat {
         // list is a comma-deliminted string
         let gates: HashSet<String> = list.split(',').map(|s| s.to_string()).collect();
         for gate in &gates {
-            if !GATE_WHITELIST.contains(&gate.as_str()) {
-                return Err(format!(
-                    "Gate {gate} is not in the whitelist {GATE_WHITELIST_STR}"
-                ));
+            if PrimitiveType::from_str(gate).is_err() {
+                return Err(format!("Gate {gate} is not a valid cell type"));
             }
         }
         Ok(OptStrat::Disassemble(gates))

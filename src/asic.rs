@@ -5,12 +5,13 @@
 */
 
 use super::check::Check;
+use super::cost::GateCostFn;
 use super::driver::Comparison;
 use super::driver::Report;
 use super::driver::{Canonical, CircuitLang, EquivCheck, Explanable, Extractable};
 use super::verilog::PrimitiveType;
 use egg::{
-    Analysis, AstSize, CostFunction, DidMerge, EGraph, Id, Language, RecExpr, Rewrite, Symbol,
+    Analysis, CostFunction, DidMerge, EGraph, Id, Language, RecExpr, Rewrite, Symbol,
     define_language, rewrite,
 };
 use serde::Serialize;
@@ -158,9 +159,8 @@ impl Extractable for CellLang {
         AreaFn
     }
 
-    fn filter_cost_fn(_set: std::collections::HashSet<String>) -> impl CostFunction<Self> {
-        eprintln!("TODO: CellLang::filter_cost_fn");
-        AstSize
+    fn filter_cost_fn(set: std::collections::HashSet<String>) -> impl CostFunction<Self> {
+        GateCostFn::new(set)
     }
 }
 
@@ -459,7 +459,8 @@ where
     );
 
     // Negation Rules
-    rules.append(&mut rewrite!("negation"; "?a" <=> "(INV (INV ?a))"));
+    rules.append(&mut rewrite!("negation-cancel"; "?a" <=> "(INV (INV ?a))"));
+    rules.append(&mut rewrite!("negation-nand"; "(INV ?a)" <=> "(INV (AND ?a ?a))"));
     rules
 }
 

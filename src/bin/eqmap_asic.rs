@@ -28,6 +28,10 @@ struct Args {
     #[arg(long)]
     dump_graph: Option<PathBuf>,
 
+    /// Comma separated list of cell types to extract
+    #[arg(long)]
+    filter: Option<String>,
+
     /// Use a cost model that weighs the cells by exact area
     #[arg(short = 'a', long, default_value_t = false)]
     area: bool,
@@ -134,7 +138,10 @@ fn main() -> std::io::Result<()> {
         None => req,
     };
 
-    let req = if args.min_depth {
+    let req = if let Some(l) = args.filter {
+        req.with_disassembly_into(&l)
+            .map_err(std::io::Error::other)?
+    } else if args.min_depth {
         req.with_min_depth()
     } else if args.area {
         req.with_area()
