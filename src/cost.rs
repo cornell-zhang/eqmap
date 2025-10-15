@@ -227,7 +227,7 @@ impl CostFunction<CellLang> for GateCostFn {
                 }
             }
             CellLang::Or(_) => {
-                if self.set.contains("AND") {
+                if self.set.contains("OR") {
                     1
                 } else {
                     u64::MAX

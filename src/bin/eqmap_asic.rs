@@ -139,7 +139,8 @@ fn main() -> std::io::Result<()> {
     };
 
     let req = if let Some(l) = args.filter {
-        req.with_disassembly_into(&l)
+        req.with_purge_fn(|n| matches!(n, CellLang::And(_) | CellLang::Or(_) | CellLang::Inv(_)))
+            .with_disassembly_into(&l)
             .map_err(std::io::Error::other)?
     } else if args.min_depth {
         req.with_min_depth()
