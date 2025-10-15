@@ -246,7 +246,7 @@ pub enum PrimitiveType {
     VCC,
     GND,
     FDRE,
-    MAJ,
+    MAJ3,
 }
 
 impl PrimitiveType {
@@ -274,7 +274,7 @@ impl PrimitiveType {
             Self::LUT6 => 6,
             Self::VCC | Self::GND => 0,
             Self::FDRE => 1,
-            Self::MAJ => 3,
+            Self::MAJ3 => 3,
         }
     }
 
@@ -295,7 +295,7 @@ impl PrimitiveType {
             Self::AND2 | Self::NAND2 | Self::OR2 | Self::NOR2 => {
                 vec!["A1".to_string(), "A2".to_string()]
             }
-            Self::AND3 | Self::NAND3 | Self::OR3 | Self::NOR3 | Self::MAJ => {
+            Self::AND3 | Self::NAND3 | Self::OR3 | Self::NOR3 | Self::MAJ3 => {
                 vec!["A1".to_string(), "A2".to_string(), "A3".to_string()]
             }
             Self::AND4 | Self::NAND4 | Self::OR4 | Self::NOR4 => {
@@ -447,7 +447,7 @@ impl PrimitiveType {
             Self::OR4 => Some(1.596),
             Self::XNOR2 => Some(1.596),
             Self::XOR2 => Some(1.596),
-            Self::MAJ => Some(1.064),
+            Self::MAJ3 => Some(1.064),
             _ => None,
         }
     }
@@ -509,7 +509,7 @@ impl FromStr for PrimitiveType {
             "VCC" => Ok(Self::VCC),
             "GND" => Ok(Self::GND),
             "FDRE" => Ok(Self::FDRE),
-            "MAJ" => Ok(Self::MAJ),
+            "MAJ3" => Ok(Self::MAJ3),
             _ => Err(format!("Unknown primitive type {pre}")),
         }
     }
