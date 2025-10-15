@@ -14,10 +14,10 @@ fn get_main_runner(
     let rules = asic_rewrites();
 
     Ok(SynthRequest::default()
+        .with_asserts()
         .with_expr(expr)
         .with_rules(rules)
         .with_k(4)
-        .with_asserts()
         .without_progress_bar()
         .with_joint_limits(20, 20_000, 30))
 }

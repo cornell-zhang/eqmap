@@ -1,6 +1,6 @@
 use clap::Parser;
 use eqmap::{
-    asic::{CellLang, CellRpt, asic_rewrites, expr_is_mapped},
+    asic::{CellLang, CellRpt, asic_rewrites, expansion_rewrites, expr_is_mapped},
     driver::{SynthRequest, process_expression},
     verilog::{SVModule, sv_parse_wrapper},
 };
@@ -27,6 +27,10 @@ struct Args {
     #[cfg(feature = "graph_dumps")]
     #[arg(long)]
     dump_graph: Option<PathBuf>,
+
+    /// Comma separated list of cell types to extract
+    #[arg(long)]
+    filter: Option<String>,
 
     /// Use a cost model that weighs the cells by exact area
     #[arg(short = 'a', long, default_value_t = false)]
@@ -99,7 +103,11 @@ fn main() -> std::io::Result<()> {
         f.get_outputs().len()
     );
 
-    let rules = asic_rewrites();
+    let mut rules = asic_rewrites();
+
+    if args.filter.is_some() {
+        rules.append(&mut expansion_rewrites());
+    }
 
     if args.verbose {
         eprintln!("INFO: Running with {} rewrite rules", rules.len());
@@ -134,7 +142,12 @@ fn main() -> std::io::Result<()> {
         None => req,
     };
 
-    let req = if args.min_depth {
+    let req = if let Some(l) = args.filter {
+        req.with_algebraic_scheduler()
+            .with_purge_fn(|n| matches!(n, CellLang::And(_) | CellLang::Or(_) | CellLang::Inv(_)))
+            .with_disassembly_into(&l)
+            .map_err(std::io::Error::other)?
+    } else if args.min_depth {
         req.with_min_depth()
     } else if args.area {
         req.with_area()

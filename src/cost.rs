@@ -3,6 +3,7 @@
   Simple cost functions that extracts LUTs with at most `k` fan-in.
 
 */
+use super::asic::CellLang;
 use super::lut::LutLang;
 use egg::{CostFunction, Id, Language};
 use std::collections::HashSet;
@@ -199,6 +200,49 @@ impl CostFunction<LutLang> for GateCostFn {
             LutLang::Var(_) => 1,
             LutLang::DC => 0,
             LutLang::Lut(l) => 10 * l.len() as u64 * l.len() as u64,
+        };
+        enode.fold(op_cost, |sum, id| sum.saturating_add(costs(id)))
+    }
+}
+
+impl CostFunction<CellLang> for GateCostFn {
+    type Cost = u64;
+    fn cost<C>(&mut self, enode: &CellLang, mut costs: C) -> Self::Cost
+    where
+        C: FnMut(Id) -> Self::Cost,
+    {
+        let op_cost = match enode {
+            CellLang::Inv(_) => {
+                if self.set.contains("INV") {
+                    1
+                } else {
+                    u64::MAX
+                }
+            }
+            CellLang::And(_) => {
+                if self.set.contains("AND") {
+                    1
+                } else {
+                    u64::MAX
+                }
+            }
+            CellLang::Or(_) => {
+                if self.set.contains("OR") {
+                    1
+                } else {
+                    u64::MAX
+                }
+            }
+            CellLang::Var(_) | CellLang::Const(_) => 1,
+            CellLang::Bus(_) => 0,
+            CellLang::Cell(c, _) => {
+                let pre = match c.as_str().split_once("_X") {
+                    Some((p, _)) => p,
+                    None => c.as_str(),
+                };
+
+                if self.set.contains(pre) { 1 } else { u64::MAX }
+            }
         };
         enode.fold(op_cost, |sum, id| sum.saturating_add(costs(id)))
     }

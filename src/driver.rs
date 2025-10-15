@@ -8,12 +8,14 @@ use super::cost::NegativeCostFn;
 use super::lut::{CircuitStats, LutExprInfo, LutLang};
 #[cfg(feature = "graph_dumps")]
 use super::serialize::serialize_egraph;
+use super::verilog::PrimitiveType;
 use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
     RecExpr, RecExprParseError, Rewrite, Runner, StopReason, Symbol, TreeTerm,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::collections::{BTreeMap, HashSet};
+use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
@@ -367,13 +369,36 @@ enum ExtractStrat {
     Exact(u64),
 }
 
-/// The list of gates that must be reachable by the disassembling rewrite rule system.
-pub const GATE_WHITELIST_STR: &str = "MUX,AND,OR,XOR,NOT,INV,REG,NAND,NOR";
+/// An enum for the rewrite scheduling properties.
+#[derive(Debug, Clone)]
+enum RewriteStrat {
+    /// Rewrite with flat ban every 960 matches.
+    Boolean,
+    /// Rewrite with exponential ban every 16 matches.
+    Algebraic,
+}
+
+impl RewriteStrat {
+    /// Apply the rewrite strategy to a runner.
+    fn apply<L, A>(&self, runner: Runner<L, A>) -> Runner<L, A>
+    where
+        L: Language,
+        A: Analysis<L> + std::default::Default,
+    {
+        let bos = BackoffScheduler::default();
+
+        // Use back-off scheduling on runner to avoid some rules starving others
+        let bos = match self {
+            RewriteStrat::Boolean => bos.with_ban_length(1).with_initial_match_limit(960),
+            RewriteStrat::Algebraic => bos.with_ban_length(2).with_initial_match_limit(16),
+        };
+
+        runner.with_scheduler(bos)
+    }
+}
 
 /// The list of gates that must be reachable by the disassembling rewrite rule system.
-pub const GATE_WHITELIST: [&str; 9] = [
-    "MUX", "AND", "OR", "XOR", "NOT", "INV", "REG", "NAND", "NOR",
-];
+pub const GATE_WHITELIST_STR: &str = "MUX,AND,OR,XOR,NOT,INV,FDRE,NAND,NOR";
 
 impl OptStrat {
     /// Create an extraction strategy from a comma-separated list of gates.
@@ -386,10 +411,8 @@ impl OptStrat {
         // list is a comma-deliminted string
         let gates: HashSet<String> = list.split(',').map(|s| s.to_string()).collect();
         for gate in &gates {
-            if !GATE_WHITELIST.contains(&gate.as_str()) {
-                return Err(format!(
-                    "Gate {gate} is not in the whitelist {GATE_WHITELIST_STR}"
-                ));
+            if PrimitiveType::from_str(gate).is_err() {
+                return Err(format!("Gate {gate} is not a valid cell type"));
             }
         }
         Ok(OptStrat::Disassemble(gates))
@@ -511,6 +534,9 @@ where
     /// The e-graph build strategy to use.
     build_strat: BuildStrat,
 
+    /// The rewrite scheduling strategy to use.
+    rewrite_strat: RewriteStrat,
+
     /// If true, do not canonicalize the input expression.
     no_canonicalize: bool,
 
@@ -552,6 +578,7 @@ impl<L: Language, A: Analysis<L>> std::default::Default for SynthRequest<L, A> {
             opt_strat: OptStrat::CellCount(6),
             extract_strat: ExtractStrat::Greedy,
             build_strat: BuildStrat::Custom(10, 20_000, 16),
+            rewrite_strat: RewriteStrat::Boolean,
             no_canonicalize: false,
             assert_sat: false,
             gen_proof: false,
@@ -575,6 +602,7 @@ impl<L: Language, A: Analysis<L> + std::clone::Clone> std::clone::Clone for Synt
             opt_strat: self.opt_strat.clone(),
             extract_strat: self.extract_strat.clone(),
             build_strat: self.build_strat.clone(),
+            rewrite_strat: self.rewrite_strat.clone(),
             no_canonicalize: self.no_canonicalize,
             assert_sat: self.assert_sat,
             gen_proof: self.gen_proof,
@@ -742,6 +770,24 @@ where
         }
     }
 
+    /// Schedule rewrites with Boolean strategy.
+    pub fn with_boolean_scheduler(self) -> Self {
+        Self {
+            rewrite_strat: RewriteStrat::Boolean,
+            result: None,
+            ..self
+        }
+    }
+
+    /// Schedule rewrites with Algebraic strategy.
+    pub fn with_algebraic_scheduler(self) -> Self {
+        Self {
+            rewrite_strat: RewriteStrat::Algebraic,
+            result: None,
+            ..self
+        }
+    }
+
     /// Collect additional stats with e-graph build.
     #[cfg(feature = "graph_dumps")]
     pub fn with_graph_dump(self, p: PathBuf) -> Self {
@@ -844,12 +890,7 @@ where
         // Print a progress bar to get a sense of growth
         let mp = MultiProgress::new();
 
-        // Use back-off scheduling on runner to avoid transpositions taking too much time
-        let bos = BackoffScheduler::default()
-            .with_ban_length(1)
-            .with_initial_match_limit(960);
-
-        let runner = runner.with_scheduler(bos);
+        let runner = self.rewrite_strat.apply(runner);
 
         let runner = match self.build_strat {
             BuildStrat::TimeLimited(t) => runner
