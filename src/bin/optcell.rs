@@ -14,10 +14,10 @@ fn get_main_runner(
     let rules = asic_rewrites();
 
     Ok(SynthRequest::default()
+        .with_algebraic_scheduler()
         .with_expr(expr)
         .with_rules(rules)
         .with_k(4)
-        .with_asserts()
         .without_progress_bar()
         .with_joint_limits(20, 20_000, 30))
 }
@@ -118,6 +118,7 @@ fn main() -> std::io::Result<()> {
     }
 
     let req = SynthRequest::default()
+        .with_algebraic_scheduler()
         .with_rules(rules)
         .without_canonicalization();
 

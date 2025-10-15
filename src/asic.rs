@@ -461,6 +461,9 @@ where
     // Negation Rules
     rules.append(&mut rewrite!("negation-cancel"; "?a" <=> "(INV (INV ?a))"));
     rules.append(&mut rewrite!("negation-nand"; "(INV ?a)" <=> "(INV (AND ?a ?a))"));
+    rules.append(
+        &mut rewrite!("negation-xnor"; "(INV ?a)" <=> "(OR (AND false ?a) (AND (INV ?a) true))"),
+    );
     rules
 }
 
