@@ -118,7 +118,6 @@ fn main() -> std::io::Result<()> {
     }
 
     let req = SynthRequest::default()
-        .with_algebraic_scheduler()
         .with_rules(rules)
         .without_canonicalization();
 
