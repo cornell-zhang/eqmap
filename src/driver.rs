@@ -707,7 +707,7 @@ where
         }
     }
 
-    /// Extract by disassembling into basic logic gates. The exact list can be found at [GATE_WHITELIST].
+    /// Extract by disassembling into basic logic gates. The exact list can be found at [GATE_WHITELIST_STR].
     pub fn with_disassembler(self) -> Self {
         Self {
             opt_strat: OptStrat::from_gate_set(GATE_WHITELIST_STR).unwrap(),
@@ -716,7 +716,7 @@ where
         }
     }
 
-    /// Extract by disassembling into logic gates in the `list`. Elements in the list must be matched against elements in [GATE_WHITELIST].
+    /// Extract by disassembling into the logic gates in `list`. Elements in the list will be matched against [PrimitiveType::from_str].
     pub fn with_disassembly_into(self, list: &str) -> Result<Self, String> {
         Ok(Self {
             opt_strat: OptStrat::from_gate_set(list)?,
