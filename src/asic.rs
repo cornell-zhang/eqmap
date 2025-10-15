@@ -495,6 +495,12 @@ where
         &mut rewrite!("negation-xnor"; "(INV ?a)" <=> "(OR (AND false ?a) (AND (INV ?a) true))"),
     );
     rules.append(&mut rewrite!("or-mux"; "(OR ?a ?b)" <=> "(OR (AND (INV ?a) ?b) (AND ?a true))"));
+    rules.append(
+        &mut rewrite!("or-maj"; "(OR ?a ?b)" <=> "(OR (OR (AND ?a ?b) (AND ?a true)) (AND ?b true))"),
+    );
+    rules.append(
+        &mut rewrite!("and-maj"; "(AND ?a ?b)" <=> "(OR (OR (AND ?a ?b) (AND ?a false)) (AND ?b false))"),
+    );
 
     rules
 }
