@@ -378,6 +378,25 @@ enum RewriteStrat {
     Algebraic,
 }
 
+impl RewriteStrat {
+    /// Apply the rewrite strategy to a runner.
+    fn apply<L, A>(&self, runner: Runner<L, A>) -> Runner<L, A>
+    where
+        L: Language,
+        A: Analysis<L> + std::default::Default,
+    {
+        let bos = BackoffScheduler::default();
+
+        // Use back-off scheduling on runner to avoid some rules starving others
+        let bos = match self {
+            RewriteStrat::Boolean => bos.with_ban_length(1).with_initial_match_limit(960),
+            RewriteStrat::Algebraic => bos.with_ban_length(2).with_initial_match_limit(16),
+        };
+
+        runner.with_scheduler(bos)
+    }
+}
+
 /// The list of gates that must be reachable by the disassembling rewrite rule system.
 pub const GATE_WHITELIST_STR: &str = "MUX,AND,OR,XOR,NOT,INV,FDRE,NAND,NOR";
 
@@ -871,15 +890,7 @@ where
         // Print a progress bar to get a sense of growth
         let mp = MultiProgress::new();
 
-        let bos = BackoffScheduler::default();
-
-        // Use back-off scheduling on runner to avoid some rules starving others
-        let bos = match self.rewrite_strat {
-            RewriteStrat::Boolean => bos.with_ban_length(1).with_initial_match_limit(960),
-            RewriteStrat::Algebraic => bos.with_ban_length(2).with_initial_match_limit(16),
-        };
-
-        let runner = runner.with_scheduler(bos);
+        let runner = self.rewrite_strat.apply(runner);
 
         let runner = match self.build_strat {
             BuildStrat::TimeLimited(t) => runner
