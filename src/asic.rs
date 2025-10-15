@@ -397,6 +397,9 @@ where
         rewrite!("oai222_x1"; "(INV (AND (OR ?e ?f) (AND (OR ?a ?b) (OR ?c ?d))))" <=> "(OAI222_X1 ?a ?b ?c ?d ?e ?f)"),
     );
     rules.push(rewrite!("mux2_x1"; "(OR (AND (INV ?s) ?b) (AND ?s ?a))" <=> "(MUX2_X1 ?s ?a ?b)"));
+    rules.push(
+        rewrite!("maj_x1"; "(OR (OR (AND ?a ?b) (AND ?a ?c)) (AND ?b ?c))" <=> "(MAJ_X1 ?a ?b ?c)"),
+    );
 
     rules
         .into_iter()
