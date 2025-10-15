@@ -1,6 +1,6 @@
 use clap::Parser;
 use eqmap::{
-    asic::{CellLang, CellRpt, asic_rewrites, expr_is_mapped},
+    asic::{CellLang, CellRpt, asic_rewrites, expansion_rewrites, expr_is_mapped},
     driver::{SynthRequest, process_expression},
     verilog::{SVModule, sv_parse_wrapper},
 };
@@ -103,7 +103,11 @@ fn main() -> std::io::Result<()> {
         f.get_outputs().len()
     );
 
-    let rules = asic_rewrites();
+    let mut rules = asic_rewrites();
+
+    if args.filter.is_some() {
+        rules.append(&mut expansion_rewrites());
+    }
 
     if args.verbose {
         eprintln!("INFO: Running with {} rewrite rules", rules.len());
@@ -112,7 +116,7 @@ fn main() -> std::io::Result<()> {
     let req = SynthRequest::default().with_rules(rules);
 
     let req = match (args.timeout, args.node_limit, args.iter_limit) {
-        (None, None, None) => req.with_joint_limits(10, 48_000, 40),
+        (None, None, None) => req.with_joint_limits(10, 48_000, 32),
         (Some(t), None, None) => req.time_limited(t),
         (None, Some(n), None) => req.node_limited(n),
         (None, None, Some(i)) => req.iter_limited(i),
@@ -139,7 +143,8 @@ fn main() -> std::io::Result<()> {
     };
 
     let req = if let Some(l) = args.filter {
-        req.with_purge_fn(|n| matches!(n, CellLang::And(_) | CellLang::Or(_) | CellLang::Inv(_)))
+        req.with_algebraic_scheduler()
+            .with_purge_fn(|n| matches!(n, CellLang::And(_) | CellLang::Or(_) | CellLang::Inv(_)))
             .with_disassembly_into(&l)
             .map_err(std::io::Error::other)?
     } else if args.min_depth {

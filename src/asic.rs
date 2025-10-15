@@ -460,10 +460,7 @@ where
 
     // Negation Rules
     rules.append(&mut rewrite!("negation-cancel"; "?a" <=> "(INV (INV ?a))"));
-    rules.append(&mut rewrite!("negation-nand"; "(INV ?a)" <=> "(INV (AND ?a ?a))"));
-    rules.append(
-        &mut rewrite!("negation-xnor"; "(INV ?a)" <=> "(OR (AND false ?a) (AND (INV ?a) true))"),
-    );
+
     rules
 }
 
@@ -479,6 +476,21 @@ pub fn asic_rewrites() -> Vec<egg::Rewrite<CellLang, CellAnalysis>> {
         let [f, _] = r;
         rules.push(f)
     });
+
+    rules
+}
+
+/// For rewrites that expand cells syntactically and prevent saturation from being possible
+pub fn expansion_rewrites<A>() -> Vec<egg::Rewrite<CellLang, A>>
+where
+    A: Analysis<CellLang>,
+{
+    let mut rules: Vec<Rewrite<CellLang, A>> = Vec::new();
+
+    rules.append(&mut rewrite!("negation-nand"; "(INV ?a)" <=> "(INV (AND ?a ?a))"));
+    rules.append(
+        &mut rewrite!("negation-xnor"; "(INV ?a)" <=> "(OR (AND false ?a) (AND (INV ?a) true))"),
+    );
 
     rules
 }

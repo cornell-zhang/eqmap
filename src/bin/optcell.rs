@@ -14,7 +14,7 @@ fn get_main_runner(
     let rules = asic_rewrites();
 
     Ok(SynthRequest::default()
-        .with_algebraic_scheduler()
+        .with_asserts()
         .with_expr(expr)
         .with_rules(rules)
         .with_k(4)

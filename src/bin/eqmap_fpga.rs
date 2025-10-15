@@ -152,9 +152,7 @@ fn main() -> std::io::Result<()> {
         );
     }
 
-    let req = SynthRequest::default()
-        .with_algebraic_scheduler()
-        .with_rules(rules);
+    let req = SynthRequest::default().with_rules(rules);
 
     let req = match (args.timeout, args.node_limit, args.iter_limit) {
         (None, None, None) => req.with_joint_limits(10, 48_000, 32),
