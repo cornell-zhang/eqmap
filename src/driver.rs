@@ -13,6 +13,8 @@ use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
     RecExpr, RecExprParseError, Rewrite, Runner, StopReason, Symbol, TreeTerm,
 };
+#[cfg(feature = "exactness")]
+use good_lp::coin_cbc;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
@@ -1168,7 +1170,7 @@ where
                 self.extract_with(|egraph, root| {
                     eprintln!("INFO: ILP ON");
                     let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                    L::canonicalize_expr(e.timeout(t as f64).solve(root))
+                    L::canonicalize_expr(e.solve_with(root, coin_cbc, t as f64))
                 })
             }
             #[cfg(feature = "exactness")]
@@ -1176,14 +1178,14 @@ where
                 self.extract_with(|egraph, root| {
                     eprintln!("INFO: ILP ON");
                     let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                    L::canonicalize_expr(e.timeout(t as f64).solve(root))
+                    L::canonicalize_expr(e.solve_with(root, coin_cbc, t as f64))
                 })
             }
             #[cfg(feature = "exactness")]
             (OptStrat::AstSize, ExtractStrat::Exact(t)) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                L::canonicalize_expr(e.timeout(t as f64).solve(root))
+                L::canonicalize_expr(e.solve_with(root, coin_cbc, t as f64))
             }),
             _ => Err(format!(
                 "{:?} optimization strategy is incomptabile with {:?} extraction.",

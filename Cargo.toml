@@ -8,7 +8,8 @@ license = "Apache-2.0"
 [dependencies]
 bitvec = "1.0.1"
 clap = { version = "4.5.31", features = ["derive"] }
-egg = "0.10.0"
+egg = { git = "https://github.com/jk2997/egg_fork" }
+good_lp = "1"
 indicatif = "0.17.11"
 serde = { version = "1.0.218", features = ["derive"] }
 serde_json = "1.0.140"
@@ -25,7 +26,7 @@ default = [ "dyn_decomp" ]
 # It is too expensive
 # default = [ "dyn_decomp", "egraph_fold" ]
 egraph_fold = []
-exactness = [ "egg/lp" ]
+exactness = [ "egg/lp", "good_lp/coin_cbc" ]
 cut_analysis = []
 dyn_decomp = [ "cut_analysis" ]
 graph_dumps = []

@@ -127,8 +127,8 @@ mod tests {
         let const_true = LutLang::Const(const_val);
         let prog_node = LutLang::Program(prog);
         let mut egraph = egg::EGraph::default();
-        let const_analysis = LutAnalysis::make(&mut egraph, &const_true);
-        let prog_analysis = LutAnalysis::make(&mut egraph, &prog_node);
+        let const_analysis = LutAnalysis::make(&mut egraph, &const_true, egg::Id::from(0));
+        let prog_analysis = LutAnalysis::make(&mut egraph, &prog_node, egg::Id::from(1));
         assert_eq!(const_analysis.get_as_const(), Ok(const_val));
         assert_eq!(prog_analysis.get_program(), Ok(prog));
         assert!(const_analysis.get_program().is_err());
@@ -151,7 +151,7 @@ mod tests {
         let input = "a";
         let input_node = LutLang::Var(input.to_string().into());
         let mut egraph = egg::EGraph::default();
-        let input_analysis = LutAnalysis::make(&mut egraph, &input_node);
+        let input_analysis = LutAnalysis::make(&mut egraph, &input_node, egg::Id::from(0));
         assert!(input_analysis.is_an_input());
         assert!(input_analysis.get_as_const().is_err());
         assert!(input_analysis.get_program().is_err());
