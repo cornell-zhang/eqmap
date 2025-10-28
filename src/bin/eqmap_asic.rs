@@ -50,6 +50,11 @@ struct Args {
     #[arg(short = 'i', long, default_value_t = false)]
     highs: bool,
 
+    /// Perform ILP extraction using HiGHS solver (requires installing C compiler)   
+    #[cfg(feature = "lpsolve")]
+    #[arg(short = 'l', long, default_value_t = false)]
+    lpsolve: bool,
+
     /// Print explanations (generates a proof and runs slower)
     #[arg(short = 'v', long, default_value_t = false)]
     verbose: bool,
@@ -184,6 +189,13 @@ fn main() -> std::io::Result<()> {
         req
     };
 
+    #[cfg(feature = "lpsolve")]
+    let req = if args.lpsolve {
+        req.with_lpsolve(args.timeout.unwrap_or(600))
+            .with_purge_fn(|n| matches!(n, CellLang::And(_) | CellLang::Or(_) | CellLang::Inv(_)))
+    } else {
+        req
+    };
 
     eprintln!("INFO: Compiling Verilog...");
     let expr = f.to_single_cell_expr().map_err(std::io::Error::other)?;

@@ -74,6 +74,11 @@ struct Args {
     #[arg(short = 'i', long, default_value_t = false)]
     highs: bool,
 
+    /// Perform ILP extraction using HiGHS solver (requires installing C compiler)   
+    #[cfg(feature = "lpsolve")]
+    #[arg(short = 'l', long, default_value_t = false)]
+    lpsolve: bool,
+
     /// Print explanations (this generates a proof and runs longer)
     #[arg(short = 'v', long, default_value_t = false)]
     verbose: bool,
@@ -167,6 +172,13 @@ fn main() -> std::io::Result<()> {
     #[cfg(feature = "highs")]
     let req = if args.highs {
         req.with_highs(args.timeout.unwrap_or(600))
+    } else {
+        req
+    };
+
+    #[cfg(feature = "lpsolve")]
+    let req = if args.lpsolve {
+        req.with_lpsolve(args.timeout.unwrap_or(600))
     } else {
         req
     };

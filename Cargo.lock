@@ -79,7 +79,7 @@ version = "0.71.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f58bf3d7db68cfbac37cfc485a8d711e87e064c3d0fe0435b92f7a407f9d6b3"
 dependencies = [
- "bitflags",
+ "bitflags 2.10.0",
  "cexpr",
  "clang-sys",
  "itertools",
@@ -92,6 +92,12 @@ dependencies = [
  "shlex",
  "syn 2.0.108",
 ]
+
+[[package]]
+name = "bitflags"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f67931368edf3a9a51d29886d245f1c3db2f1ef0dcc9e35ff70341b78c10d23"
 
 [[package]]
 name = "bitflags"
@@ -278,7 +284,7 @@ checksum = "bd0c93bb4b0c6d9b77f4435b0ae98c24d17f1c45b2ff844c6151a07256ca923b"
 [[package]]
 name = "egg"
 version = "0.10.0"
-source = "git+https://github.com/jk2997/egg_fork#1bbb9c32b3190ea065c5a9a18571b438334fd64a"
+source = "git+https://github.com/jk2997/egg_fork#a693fa6093052695f3c21a53d1f29ea9f09cc7ec"
 dependencies = [
  "env_logger",
  "good_lp",
@@ -363,6 +369,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
 
 [[package]]
+name = "gcc"
+version = "0.3.55"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f5f3913fa0bfe7ee1fd8248b6b9f42a5af4b9d65ec2dd2c3c26132b950ecfc2"
+
+[[package]]
 name = "glob"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -371,12 +383,12 @@ checksum = "0cc23270f6e1808e30a928bdc84dea0b9b4136a8bc82338574f23baf47bbd280"
 [[package]]
 name = "good_lp"
 version = "1.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d976304a59dd741fa234623e96473cf399e10f3f91f0487215fc561f6131d362"
+source = "git+https://github.com/jk2997/good_lp_fork#7cf1be9fdf30016feaa5f9a060b238ab64d4c0b8"
 dependencies = [
  "coin_cbc",
  "fnv",
  "highs",
+ "lpsolve",
 ]
 
 [[package]]
@@ -505,6 +517,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34080505efa8e45a4b816c349525ebe327ceaa8559756f0356cba97ef3bf7432"
 
 [[package]]
+name = "lpsolve"
+version = "0.1.0"
+source = "git+https://gitlab.com/jk2997/rust_lpsolve_fork#9c3dc6ea899cb5af07dcedff428297b742ee65c1"
+dependencies = [
+ "bitflags 0.5.0",
+ "libc",
+ "lpsolve-sys",
+]
+
+[[package]]
+name = "lpsolve-sys"
+version = "5.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0776862d06b54bdea2ed14227f56a2913b39903e06849dce7b805d609ef6a85d"
+dependencies = [
+ "gcc",
+ "libc",
+]
+
+[[package]]
 name = "memchr"
 version = "2.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -522,7 +554,7 @@ version = "0.30.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "74523f3a35e05aba87a1d978330aef40f67b0304ac79c1c00b294c9830543db6"
 dependencies = [
- "bitflags",
+ "bitflags 2.10.0",
  "cfg-if",
  "cfg_aliases",
  "libc",
@@ -733,7 +765,7 @@ version = "11.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "498cd0dc59d73224351ee52a95fee0f1a617a2eae0e7d9d720cc622c73a54186"
 dependencies = [
- "bitflags",
+ "bitflags 2.10.0",
 ]
 
 [[package]]
