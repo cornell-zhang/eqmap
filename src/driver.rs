@@ -15,6 +15,8 @@ use egg::{
 };
 #[cfg(feature = "exactness")]
 use good_lp::coin_cbc;
+#[cfg(feature = "highs")]
+use good_lp::highs;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
@@ -369,6 +371,10 @@ enum ExtractStrat {
     #[allow(dead_code)]
     /// Use exact ILP extraction with timeout in seconds.
     Exact(u64),
+    #[allow(dead_code)]
+    /// Use HiGHS ILP extraction with timeout in seconds.
+    /// Requires installing a C compiler.
+    Highs(u64),
 }
 
 /// An enum for the rewrite scheduling properties.
@@ -687,6 +693,16 @@ where
     pub fn with_exactness(self, timeout: u64) -> Self {
         Self {
             extract_strat: ExtractStrat::Exact(timeout),
+            ..self
+        }
+    }
+
+    /// Request HiGHS extraction using ILP with `timeout` in seconds.
+    /// Requires installing a C compiler.
+    #[cfg(feature = "highs")]
+    pub fn with_highs(self, timeout: u64) -> Self {
+        Self {
+            extract_strat: ExtractStrat::Highs(timeout),
             ..self
         }
     }
@@ -1173,6 +1189,14 @@ where
                     L::canonicalize_expr(e.solve_with(root, coin_cbc, t as f64))
                 })
             }
+            #[cfg(feature = "highs")]
+            (OptStrat::CellCount(6), ExtractStrat::Highs(t)) => {
+                self.extract_with(|egraph, root| {
+                    eprintln!("INFO: HiGHS ILP ON");
+                    let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                    L::canonicalize_expr(e.solve_with(root, highs, t as f64))
+                })
+            }
             #[cfg(feature = "exactness")]
             (OptStrat::CellCountRegWeighted(6, 1), ExtractStrat::Exact(t)) => {
                 self.extract_with(|egraph, root| {
@@ -1181,11 +1205,25 @@ where
                     L::canonicalize_expr(e.solve_with(root, coin_cbc, t as f64))
                 })
             }
+            #[cfg(feature = "highs")]
+            (OptStrat::CellCountRegWeighted(6, 1), ExtractStrat::Highs(t)) => {
+                self.extract_with(|egraph, root| {
+                    eprintln!("INFO: HiGHS ILP ON");
+                    let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                    L::canonicalize_expr(e.solve_with(root, highs, t as f64))
+                })
+            }
             #[cfg(feature = "exactness")]
             (OptStrat::AstSize, ExtractStrat::Exact(t)) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
                 L::canonicalize_expr(e.solve_with(root, coin_cbc, t as f64))
+            }),
+            #[cfg(feature = "highs")]
+            (OptStrat::AstSize, ExtractStrat::Highs(t)) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: HiGHS ILP ON");
+                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                L::canonicalize_expr(e.solve_with(root, highs, t as f64))
             }),
             _ => Err(format!(
                 "{:?} optimization strategy is incomptabile with {:?} extraction.",

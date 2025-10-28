@@ -57,6 +57,11 @@ struct Args {
     #[arg(short = 'e', long, default_value_t = false)]
     exact: bool,
 
+    /// Perform ILP extraction using HiGHS solver (requires installing C compiler)   
+    #[cfg(feature = "highs")]
+    #[arg(short = 'i', long, default_value_t = false)]
+    highs: bool,
+
     /// Do not use register retiming
     #[arg(short = 'r', long, default_value_t = false)]
     no_retime: bool,
@@ -222,6 +227,13 @@ fn main() -> std::io::Result<()> {
             "Stdout is reserved for cbc solver. Specify an output file",
         ));
     }
+
+    #[cfg(feature = "highs")]
+    let req = if args.highs {
+        req.with_highs(args.timeout.unwrap_or(600))
+    } else {
+        req
+    };
 
     eprintln!("INFO: Compiling Verilog...");
     let expr = f.to_single_lut_expr().map_err(std::io::Error::other)?;

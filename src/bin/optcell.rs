@@ -68,6 +68,11 @@ struct Args {
     #[cfg(feature = "exactness")]
     #[arg(short = 'e', long, default_value_t = false)]
     exact: bool,
+    
+    /// Perform ILP extraction using HiGHS solver (requires installing C compiler)   
+    #[cfg(feature = "highs")]
+    #[arg(short = 'i', long, default_value_t = false)]
+    highs: bool,
 
     /// Print explanations (this generates a proof and runs longer)
     #[arg(short = 'v', long, default_value_t = false)]
@@ -155,6 +160,13 @@ fn main() -> std::io::Result<()> {
     #[cfg(feature = "exactness")]
     let req = if args.exact {
         req.with_exactness(args.timeout.unwrap_or(600))
+    } else {
+        req
+    };
+
+    #[cfg(feature = "highs")]
+    let req = if args.highs {
+        req.with_highs(args.timeout.unwrap_or(600))
     } else {
         req
     };
