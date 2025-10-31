@@ -19,6 +19,8 @@ use good_lp::coin_cbc;
 use good_lp::highs;
 #[cfg(feature = "lpsolve")]
 use good_lp::lp_solve;
+#[cfg(any(feature = "glpk", feature = "gurobi"))]
+use good_lp::solvers::lp_solvers::{GlpkSolver, GurobiSolver, LpSolver};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
@@ -381,6 +383,14 @@ enum ExtractStrat {
     /// Use lpsolve ILP extraction with timeout in seconds.
     /// Requires installing a C compiler.
     Lpsolve(u64),
+    #[allow(dead_code)]
+    /// Use GLPK ILP extraction with timeout in seconds.
+    /// Requires an external solver binary.
+    Glpk(u64),
+    #[allow(dead_code)]
+    /// Use Gurobi ILP extraction with timeout in seconds.
+    /// Requires an external solver binary.
+    Gurobi(u64),
 }
 
 /// An enum for the rewrite scheduling properties.
@@ -719,6 +729,26 @@ where
     pub fn with_lpsolve(self, timeout: u64) -> Self {
         Self {
             extract_strat: ExtractStrat::Lpsolve(timeout),
+            ..self
+        }
+    }
+
+    /// Request GLPK extraction using ILP with `timeout` in seconds.
+    /// Requires an external solver binary.
+    #[cfg(feature = "glpk")]
+    pub fn with_glpk(self, timeout: u64) -> Self {
+        Self {
+            extract_strat: ExtractStrat::Glpk(timeout),
+            ..self
+        }
+    }
+
+    /// Request Gurobi extraction using ILP with `timeout` in seconds.
+    /// Requires an external solver binary.
+    #[cfg(feature = "gurobi")]
+    pub fn with_gurobi(self, timeout: u64) -> Self {
+        Self {
+            extract_strat: ExtractStrat::Gurobi(timeout),
             ..self
         }
     }
@@ -1221,6 +1251,24 @@ where
                     L::canonicalize_expr(e.solve_with(root, lp_solve, t as f64))
                 })
             }
+            #[cfg(feature = "glpk")]
+            (OptStrat::CellCount(6), ExtractStrat::Glpk(t)) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: GLPK ILP ON");
+                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                L::canonicalize_expr(e.solve_with(root, LpSolver(GlpkSolver::new()), t as f64))
+            }),
+            #[cfg(feature = "gurobi")]
+            (OptStrat::CellCount(6), ExtractStrat::Gurobi(t)) => {
+                self.extract_with(|egraph, root| {
+                    eprintln!("INFO: Gurobi ILP ON");
+                    let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                    L::canonicalize_expr(e.solve_with(
+                        root,
+                        LpSolver(GurobiSolver::new()),
+                        t as f64,
+                    ))
+                })
+            }
             #[cfg(feature = "exactness")]
             (OptStrat::CellCountRegWeighted(6, 1), ExtractStrat::Exact(t)) => {
                 self.extract_with(|egraph, root| {
@@ -1245,6 +1293,26 @@ where
                     L::canonicalize_expr(e.solve_with(root, lp_solve, t as f64))
                 })
             }
+            #[cfg(feature = "glpk")]
+            (OptStrat::CellCountRegWeighted(6, 1), ExtractStrat::Glpk(t)) => {
+                self.extract_with(|egraph, root| {
+                    eprintln!("INFO: GLPK ILP ON");
+                    let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                    L::canonicalize_expr(e.solve_with(root, LpSolver(GlpkSolver::new()), t as f64))
+                })
+            }
+            #[cfg(feature = "gurobi")]
+            (OptStrat::CellCountRegWeighted(6, 1), ExtractStrat::Gurobi(t)) => {
+                self.extract_with(|egraph, root| {
+                    eprintln!("INFO: Gurobi ILP ON");
+                    let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                    L::canonicalize_expr(e.solve_with(
+                        root,
+                        LpSolver(GurobiSolver::new()),
+                        t as f64,
+                    ))
+                })
+            }
             #[cfg(feature = "exactness")]
             (OptStrat::AstSize, ExtractStrat::Exact(t)) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP ON");
@@ -1262,6 +1330,18 @@ where
                 eprintln!("INFO: lpsolve ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
                 L::canonicalize_expr(e.solve_with(root, lp_solve, t as f64))
+            }),
+            #[cfg(feature = "glpk")]
+            (OptStrat::AstSize, ExtractStrat::Glpk(t)) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: GLPK ILP ON");
+                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                L::canonicalize_expr(e.solve_with(root, LpSolver(GlpkSolver::new()), t as f64))
+            }),
+            #[cfg(feature = "gurobi")]
+            (OptStrat::AstSize, ExtractStrat::Gurobi(t)) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: Gurobi ILP ON");
+                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                L::canonicalize_expr(e.solve_with(root, LpSolver(GurobiSolver::new()), t as f64))
             }),
             _ => Err(format!(
                 "{:?} optimization strategy is incomptabile with {:?} extraction.",

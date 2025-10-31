@@ -57,12 +57,22 @@ struct Args {
     #[arg(short = 'e', long, default_value_t = false)]
     exact: bool,
 
+    /// Perform ILP extraction using GLPK solver (requires external solver binary)
+    #[cfg(feature = "glpk")]
+    #[arg(short = 'g', long, default_value_t = false)]
+    glpk: bool,
+
+    /// Perform ILP extraction using Gurobi solver (requires external solver binary)
+    #[cfg(feature = "gurobi")]
+    #[arg(short = 'u', long, default_value_t = false)]
+    gurobi: bool,
+
     /// Perform ILP extraction using HiGHS solver (requires installing C compiler)   
     #[cfg(feature = "highs")]
     #[arg(short = 'i', long, default_value_t = false)]
     highs: bool,
 
-    /// Perform ILP extraction using HiGHS solver (requires installing C compiler)   
+    /// Perform ILP extraction using lpsolve solver (requires installing C compiler)   
     #[cfg(feature = "lpsolve")]
     #[arg(short = 'l', long, default_value_t = false)]
     lpsolve: bool,
@@ -233,13 +243,27 @@ fn main() -> std::io::Result<()> {
         ));
     }
 
+    #[cfg(feature = "glpk")]
+    let req = if args.glpk {
+        req.with_glpk(args.timeout.unwrap_or(600))
+    } else {
+        req
+    };
+
+    #[cfg(feature = "gurobi")]
+    let req = if args.gurobi {
+        req.with_gurobi(args.timeout.unwrap_or(600))
+    } else {
+        req
+    };
+
     #[cfg(feature = "highs")]
     let req = if args.highs {
         req.with_highs(args.timeout.unwrap_or(600))
     } else {
         req
     };
-    
+
     #[cfg(feature = "lpsolve")]
     let req = if args.lpsolve {
         req.with_lpsolve(args.timeout.unwrap_or(600))
