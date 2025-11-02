@@ -77,9 +77,20 @@ struct Args {
     #[arg(short = 'l', long, default_value_t = false)]
     lpsolve: bool,
 
+    /// Perform ILP extraction using microlp solver
+    #[cfg(feature = "microlp")]
+    #[arg(short = 'M', long, default_value_t = false)]
+    microlp: bool,
+
     /// Do not use register retiming
     #[arg(short = 'r', long, default_value_t = false)]
     no_retime: bool,
+
+    /// Perform ILP extraction using SCIP solver (must meet bindgen requirements)
+    /// For details, see https://rust-lang.github.io/rust-bindgen/requirements.html
+    #[cfg(feature = "scip")]
+    #[arg(short = 'S', long, default_value_t = false)]
+    scip: bool,
 
     /// Print explanations (generates a proof and runs slower)
     #[arg(short = 'v', long, default_value_t = false)]
@@ -267,6 +278,20 @@ fn main() -> std::io::Result<()> {
     #[cfg(feature = "lpsolve")]
     let req = if args.lpsolve {
         req.with_lpsolve(args.timeout.unwrap_or(600))
+    } else {
+        req
+    };
+
+    #[cfg(feature = "microlp")]
+    let req = if args.microlp {
+        req.with_microlp()
+    } else {
+        req
+    };
+
+    #[cfg(feature = "scip")]
+    let req = if args.scip {
+        req.with_scip(args.timeout.unwrap_or(600))
     } else {
         req
     };

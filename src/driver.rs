@@ -19,6 +19,10 @@ use good_lp::coin_cbc;
 use good_lp::highs;
 #[cfg(feature = "lpsolve")]
 use good_lp::lp_solve;
+#[cfg(feature = "microlp")]
+use good_lp::microlp;
+#[cfg(feature = "scip")]
+use good_lp::scip;
 #[cfg(any(feature = "glpk", feature = "gurobi"))]
 use good_lp::solvers::lp_solvers::{GlpkSolver, GurobiSolver, LpSolver};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -391,6 +395,13 @@ enum ExtractStrat {
     /// Use Gurobi ILP extraction with timeout in seconds.
     /// Requires an external solver binary.
     Gurobi(u64),
+    #[allow(dead_code)]
+    /// Use microlp ILP extraction.
+    Microlp,
+    #[allow(dead_code)]
+    /// Use SCIP ILP extraction with timeout in seconds.
+    /// Requires meeting bindgen requirements.
+    Scip(u64),
 }
 
 /// An enum for the rewrite scheduling properties.
@@ -749,6 +760,25 @@ where
     pub fn with_gurobi(self, timeout: u64) -> Self {
         Self {
             extract_strat: ExtractStrat::Gurobi(timeout),
+            ..self
+        }
+    }
+
+    /// Request microlp extraction using ILP.
+    #[cfg(feature = "microlp")]
+    pub fn with_microlp(self) -> Self {
+        Self {
+            extract_strat: ExtractStrat::Microlp,
+            ..self
+        }
+    }
+
+    /// Request SCIP extraction using ILP with `timeout` in seconds.
+    /// Requires meeting bindgen requirements.
+    #[cfg(feature = "scip")]
+    pub fn with_scip(self, timeout: u64) -> Self {
+        Self {
+            extract_strat: ExtractStrat::Scip(timeout),
             ..self
         }
     }
@@ -1269,6 +1299,18 @@ where
                     ))
                 })
             }
+            #[cfg(feature = "microlp")]
+            (OptStrat::CellCount(6), ExtractStrat::Microlp) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: microlp ILP ON");
+                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                L::canonicalize_expr(e.solve_with(root, microlp, 0.0))
+            }),
+            #[cfg(feature = "scip")]
+            (OptStrat::CellCount(6), ExtractStrat::Scip(t)) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: SCIP ILP ON");
+                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                L::canonicalize_expr(e.solve_with(root, scip, t as f64))
+            }),
             #[cfg(feature = "exactness")]
             (OptStrat::CellCountRegWeighted(6, 1), ExtractStrat::Exact(t)) => {
                 self.extract_with(|egraph, root| {
@@ -1313,6 +1355,22 @@ where
                     ))
                 })
             }
+            #[cfg(feature = "microlp")]
+            (OptStrat::CellCountRegWeighted(6, 1), ExtractStrat::Microlp) => {
+                self.extract_with(|egraph, root| {
+                    eprintln!("INFO: microlp ILP ON");
+                    let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                    L::canonicalize_expr(e.solve_with(root, microlp, 0.0))
+                })
+            }
+            #[cfg(feature = "scip")]
+            (OptStrat::CellCountRegWeighted(6, 1), ExtractStrat::Scip(t)) => {
+                self.extract_with(|egraph, root| {
+                    eprintln!("INFO: SCIP ILP ON");
+                    let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                    L::canonicalize_expr(e.solve_with(root, scip, t as f64))
+                })
+            }
             #[cfg(feature = "exactness")]
             (OptStrat::AstSize, ExtractStrat::Exact(t)) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP ON");
@@ -1342,6 +1400,18 @@ where
                 eprintln!("INFO: Gurobi ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
                 L::canonicalize_expr(e.solve_with(root, LpSolver(GurobiSolver::new()), t as f64))
+            }),
+            #[cfg(feature = "microlp")]
+            (OptStrat::AstSize, ExtractStrat::Microlp) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: microlp ILP ON");
+                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                L::canonicalize_expr(e.solve_with(root, microlp, 0.0))
+            }),
+            #[cfg(feature = "scip")]
+            (OptStrat::AstSize, ExtractStrat::Scip(t)) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: SCIP ILP ON");
+                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                L::canonicalize_expr(e.solve_with(root, scip, t as f64))
             }),
             _ => Err(format!(
                 "{:?} optimization strategy is incomptabile with {:?} extraction.",
