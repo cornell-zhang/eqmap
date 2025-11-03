@@ -42,6 +42,11 @@ struct Args {
     #[arg(short = 'c', long, default_value_t = false)]
     no_canonicalize: bool,
 
+    /// Perform ILP extraction using CPLEX solver (requires CPLEX installation and bindgen requirements)
+    #[cfg(feature = "cplex")]
+    #[arg(short = 'C', long, default_value_t = false)]
+    cplex: bool,
+
     /// Find new decompositions at runtime
     #[cfg(feature = "dyn_decomp")]
     #[arg(short = 'd', long, default_value_t = false)]
@@ -237,6 +242,13 @@ fn main() -> std::io::Result<()> {
             .with_disassembly_into(&list)
             .map_err(std::io::Error::other)?,
         None => req,
+    };
+
+    #[cfg(feature = "cplex")]
+    let req = if args.cplex {
+        req.with_cplex(args.timeout.unwrap_or(600))
+    } else {
+        req
     };
 
     #[cfg(feature = "exactness")]

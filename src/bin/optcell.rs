@@ -64,6 +64,11 @@ struct Args {
     #[arg(long)]
     command: Option<String>,
 
+    /// Perform ILP extraction using CPLEX solver (requires CPLEX installation and bindgen requirements)
+    #[cfg(feature = "cplex")]
+    #[arg(short = 'C', long, default_value_t = false)]
+    cplex: bool,
+
     /// Perform an exact extraction using ILP (much slower)
     #[cfg(feature = "exactness")]
     #[arg(short = 'e', long, default_value_t = false)]
@@ -181,6 +186,13 @@ fn main() -> std::io::Result<()> {
         req.with_area()
     } else {
         req.with_k(args.k)
+    };
+
+    #[cfg(feature = "cplex")]
+    let req = if args.cplex {
+        req.with_cplex(args.timeout.unwrap_or(600))
+    } else {
+        req
     };
 
     #[cfg(feature = "exactness")]

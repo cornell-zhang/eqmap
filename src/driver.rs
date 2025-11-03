@@ -13,6 +13,8 @@ use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
     RecExpr, RecExprParseError, Rewrite, Runner, StopReason, Symbol, TreeTerm,
 };
+#[cfg(feature = "cplex")]
+use good_lp::solvers::cplex::cplex;
 #[cfg(feature = "exactness")]
 use good_lp::coin_cbc;
 #[cfg(feature = "highs")]
@@ -377,6 +379,10 @@ enum ExtractStrat {
     /// Use greedy extraction algorithm.
     Greedy,
     #[allow(dead_code)]
+    /// Use CPLEX ILP extraction with timeout in seconds.
+    /// Requires CPLEX installation and bindgen requirements.
+    Cplex(u64),
+    #[allow(dead_code)]
     /// Use exact ILP extraction with timeout in seconds.
     Exact(u64),
     #[allow(dead_code)]
@@ -711,6 +717,16 @@ where
         Self {
             opt_strat: OptStrat::AstSize,
             extract_strat: ExtractStrat::Greedy,
+            ..self
+        }
+    }
+
+    /// Request CPLEX extraction using ILP with `timeout` in seconds.
+    /// Requires CPLEX installation and bindgen requirements.
+    #[cfg(feature = "cplex")]
+    pub fn with_cplex(self, timeout: u64) -> Self {
+        Self {
+            extract_strat: ExtractStrat::Cplex(timeout),
             ..self
         }
     }
@@ -1257,6 +1273,14 @@ where
             (OptStrat::Disassemble(set), ExtractStrat::Greedy) => {
                 self.greedy_extract_with(L::filter_cost_fn(set))
             }
+            #[cfg(feature = "cplex")]
+            (OptStrat::CellCount(6), ExtractStrat::Cplex(t)) => {
+                self.extract_with(|egraph, root| {
+                    eprintln!("INFO: CPLEX ILP ON");
+                    let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                    L::canonicalize_expr(e.solve_with(root, cplex, t as f64))
+                })
+            }
             #[cfg(feature = "exactness")]
             (OptStrat::CellCount(6), ExtractStrat::Exact(t)) => {
                 self.extract_with(|egraph, root| {
@@ -1311,6 +1335,14 @@ where
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
                 L::canonicalize_expr(e.solve_with(root, scip, t as f64))
             }),
+            #[cfg(feature = "cplex")]
+            (OptStrat::CellCountRegWeighted(6, 1), ExtractStrat::Cplex(t)) => {
+                self.extract_with(|egraph, root| {
+                    eprintln!("INFO: CPLEX ILP ON");
+                    let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                    L::canonicalize_expr(e.solve_with(root, cplex, t as f64))
+                })
+            }
             #[cfg(feature = "exactness")]
             (OptStrat::CellCountRegWeighted(6, 1), ExtractStrat::Exact(t)) => {
                 self.extract_with(|egraph, root| {
@@ -1371,6 +1403,12 @@ where
                     L::canonicalize_expr(e.solve_with(root, scip, t as f64))
                 })
             }
+            #[cfg(feature = "cplex")]
+            (OptStrat::AstSize, ExtractStrat::Cplex(t)) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: CPLEX ILP ON");
+                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                L::canonicalize_expr(e.solve_with(root, cplex, t as f64))
+            }),
             #[cfg(feature = "exactness")]
             (OptStrat::AstSize, ExtractStrat::Exact(t)) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP ON");

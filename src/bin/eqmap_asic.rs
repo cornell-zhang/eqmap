@@ -36,6 +36,11 @@ struct Args {
     #[arg(short = 'a', long, default_value_t = false)]
     area: bool,
 
+    /// Perform ILP extraction using CPLEX solver (requires CPLEX installation and bindgen requirements)
+    #[cfg(feature = "cplex")]
+    #[arg(short = 'C', long, default_value_t = false)]
+    cplex: bool,
+
     /// Do not check that all cells have been mapped
     #[arg(short = 'm', long, default_value_t = false)]
     no_assert: bool,
@@ -184,6 +189,14 @@ fn main() -> std::io::Result<()> {
         req.with_area()
     } else {
         req.with_k(args.k)
+    };
+
+    #[cfg(feature = "cplex")]
+    let req = if args.cplex {
+        req.with_cplex(args.timeout.unwrap_or(600))
+            .with_purge_fn(|n| matches!(n, CellLang::And(_) | CellLang::Or(_) | CellLang::Inv(_)))
+    } else {
+        req
     };
 
     #[cfg(feature = "exactness")]
