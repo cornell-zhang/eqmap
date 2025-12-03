@@ -95,14 +95,15 @@ You can generate most of the documentation with `cargo doc`.
 ### Citation
 
 ```bibtex
-@INPROCEEDINGS{11240672,
-  author={Hofmann, Matthew and Gokmen, Berk and Zhang, Zhiru},
-  booktitle={2025 IEEE/ACM International Conference On Computer Aided Design (ICCAD)}, 
-  title={EqMap: FPGA LUT Remapping using E-Graphs}, 
-  year={2025},
-  volume={},
-  number={},
-  pages={1-9},
-  keywords={Runtime;Design automation;Heuristic algorithms;Circuits;Table lookup;Computational complexity;Field programmable gate arrays},
-  doi={10.1109/ICCAD66269.2025.11240672}}
+ @inproceedings{11240672,
+  author    = {Hofmann, Matthew and Gokmen, Berk and Zhang, Zhiru},
+  booktitle = {2025 IEEE/ACM International Conference On Computer Aided Design (ICCAD)},
+  title     = {EqMap: FPGA LUT Remapping using E-Graphs},
+  year      = {2025},
+  volume    = {},
+  number    = {},
+  pages     = {1-9},
+  keywords  = {Runtime;Design automation;Heuristic algorithms;Circuits;Table lookup;Computational complexity;Field programmable gate arrays},
+  doi       = {10.1109/ICCAD66269.2025.11240672}
+}
 ```
