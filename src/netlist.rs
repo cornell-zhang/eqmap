@@ -295,6 +295,10 @@ impl Instantiable for PrimitiveCell {
             _ => None,
         }
     }
+
+    fn is_seq(&self) -> bool {
+        self.ptype.is_reg()
+    }
 }
 
 impl LogicFunc<CellLang> for PrimitiveCell {
