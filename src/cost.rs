@@ -185,20 +185,6 @@ impl GateCostFn {
     }
 }
 
-fn fold_deduped<L, F, T>(node: &L, init: T, mut f: F) -> T
-where
-    F: FnMut(T, Id) -> T,
-    L: Language,
-{
-    let mut acc = init;
-    let mut c = node.children().to_vec();
-    c.dedup();
-    for id in c {
-        acc = f(acc, id)
-    }
-    acc
-}
-
 impl CostFunction<LutLang> for GateCostFn {
     type Cost = u64;
     fn cost<C>(&mut self, enode: &LutLang, mut costs: C) -> Self::Cost
