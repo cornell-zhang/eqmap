@@ -5,14 +5,14 @@
 */
 
 use super::check::Check;
-use super::cost::GateCostFn;
+use super::cost::{GateCostFn, fold_deduped};
 use super::driver::Comparison;
 use super::driver::Report;
 use super::driver::{Canonical, CircuitLang, EquivCheck, Explanable, Extractable};
 use super::verilog::PrimitiveType;
 use egg::{
-    Analysis, CostFunction, DidMerge, EGraph, Id, Language, RecExpr, Rewrite, Symbol,
-    define_language, rewrite,
+    Analysis, CostFunction, DidMerge, EGraph, Id, RecExpr, Rewrite, Symbol, define_language,
+    rewrite,
 };
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -79,7 +79,7 @@ impl CostFunction<CellLang> for DepthCostFn {
             CellLang::Cell(_, _) => 1,
             _ => i64::MAX,
         };
-        let rt = enode.fold(0, |l, id| l.max(costs(id)));
+        let rt = fold_deduped(enode, 0, |l, id| l.max(costs(id)));
         rt.saturating_add(op_cost)
     }
 }
@@ -118,7 +118,7 @@ impl CostFunction<CellLang> for CellCountFn {
             _ => usize::MAX,
         };
 
-        enode.fold(op_cost, |sum, id| sum.saturating_add(costs(id)))
+        fold_deduped(enode, op_cost, |sum, id| sum.saturating_add(costs(id)))
     }
 }
 
@@ -142,7 +142,7 @@ impl CostFunction<CellLang> for AreaFn {
             _ => f32::MAX,
         };
 
-        enode.fold(op_cost, |sum, id| sum + costs(id))
+        fold_deduped(enode, op_cost, |sum, id| sum + costs(id))
     }
 }
 
