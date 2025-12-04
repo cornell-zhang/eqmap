@@ -390,7 +390,7 @@ impl RewriteStrat {
         // Use back-off scheduling on runner to avoid some rules starving others
         let bos = match self {
             RewriteStrat::Boolean => bos.with_ban_length(1).with_initial_match_limit(960),
-            RewriteStrat::Algebraic => bos.with_ban_length(1).with_initial_match_limit(120),
+            RewriteStrat::Algebraic => bos.with_ban_length(1).with_initial_match_limit(960),
         };
 
         runner.with_scheduler(bos)
