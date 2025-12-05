@@ -7,11 +7,12 @@ use super::analysis::LutAnalysis;
 use super::check::{Check, equivalent, inconclusive, not_equivalent};
 use super::cost::DepthCostFn;
 use super::cost::{GateCostFn, KLUTCostFn};
-use super::driver::{Canonical, CircuitLang, EquivCheck, Explanable, Extractable};
+use super::driver::{Canonical, CircuitLang, EquivCheck, Explanable, Extractable, LpExtractable};
 use bitvec::prelude::*;
 use egg::CostFunction;
 use egg::Id;
 use egg::Language;
+use egg::LpCostFunction;
 use egg::RecExpr;
 use egg::Symbol;
 use egg::define_language;
@@ -1103,6 +1104,29 @@ impl Extractable for LutLang {
     }
 
     fn filter_cost_fn(set: std::collections::HashSet<String>) -> impl CostFunction<Self> {
+        GateCostFn::new(set)
+    }
+}
+
+impl LpExtractable<LutAnalysis> for LutLang {
+    fn lp_depth_cost_fn() -> impl LpCostFunction<Self, LutAnalysis> {
+        DepthCostFn
+    }
+
+    fn lp_cell_cost_with_reg_weight_fn(
+        cut_size: usize,
+        w: u64,
+    ) -> impl LpCostFunction<Self, LutAnalysis> {
+        KLUTCostFn::new(cut_size).with_reg_weight(w)
+    }
+
+    fn lp_exact_area_cost_fn() -> impl LpCostFunction<Self, LutAnalysis> {
+        KLUTCostFn::new(6).with_reg_weight(1)
+    }
+
+    fn lp_filter_cost_fn(
+        set: std::collections::HashSet<String>,
+    ) -> impl LpCostFunction<Self, LutAnalysis> {
         GateCostFn::new(set)
     }
 }

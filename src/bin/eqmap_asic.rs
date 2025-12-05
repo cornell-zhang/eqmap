@@ -207,14 +207,6 @@ fn main() -> std::io::Result<()> {
         req
     };
 
-    #[cfg(feature = "exactness")]
-    if args.exact && args.output.is_none() {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "Stdout is reserved for cbc solver. Specify an output file",
-        ));
-    }
-
     #[cfg(feature = "glpk")]
     let req = if args.glpk {
         req.with_glpk(args.timeout.unwrap_or(600))

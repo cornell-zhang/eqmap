@@ -295,6 +295,13 @@ impl Instantiable for PrimitiveCell {
             _ => None,
         }
     }
+
+    fn is_seq(&self) -> bool {
+        match self.ptype {
+            PrimitiveType::FDRE => true,
+            _ => false,
+        }
+    }
 }
 
 impl LogicFunc<CellLang> for PrimitiveCell {
