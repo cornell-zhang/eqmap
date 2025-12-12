@@ -583,3 +583,35 @@ where
 
     rules
 }
+
+/// Implementation of FileRewrites for CellLang
+///
+/// This enables dynamic loading of rewrite rules from external text files
+/// for cell-based technology mapping.
+#[cfg(feature = "rewrite_file")]
+impl crate::file_rewrites::FileRewrites for CellLang {
+    type Analysis = CellAnalysis;
+
+    fn file_rewrites(
+        path: &str,
+    ) -> Result<Vec<egg::Rewrite<CellLang, Self::Analysis>>, Box<dyn std::error::Error>> {
+        use crate::rewrite_file::parse_rewrite_file;
+        use crate::file_rewrites::create_pattern_rewrites;
+
+        let (_filter_list, rules) = parse_rewrite_file(path)?;
+
+        let mut rewrites = Vec::new();
+
+        for rule_def in rules {
+            let mut rule_rewrites = create_pattern_rewrites::<CellLang, CellAnalysis>(
+                &rule_def.name,
+                &rule_def.searcher,
+                &rule_def.applier,
+                rule_def.bidirectional,
+            )?;
+            rewrites.append(&mut rule_rewrites);
+        }
+
+        Ok(rewrites)
+    }
+}

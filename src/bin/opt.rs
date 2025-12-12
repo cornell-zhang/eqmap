@@ -2,6 +2,8 @@ use clap::Parser;
 use egg::*;
 #[cfg(feature = "dyn_decomp")]
 use eqmap::rewrite::dyn_decompositions;
+#[cfg(feature = "rewrite_file")]
+use eqmap::file_rewrites::FileRewrites;
 use eqmap::{
     analysis::LutAnalysis,
     driver::{SynthReport, SynthRequest, process_string_expression, simple_reader},
@@ -151,6 +153,11 @@ struct Args {
     /// Maximum number of rewrite iterations
     #[arg(short = 'n', long)]
     iter_limit: Option<usize>,
+
+    /// Path to a text file containing custom rewrite rules
+    #[cfg(feature = "rewrite_file")]
+    #[arg(short = 'F', long)]
+    rewrite_file: Option<PathBuf>,
 }
 
 fn main() -> std::io::Result<()> {
@@ -176,6 +183,25 @@ fn main() -> std::io::Result<()> {
 
     if !args.no_retime {
         rules.append(&mut register_retiming());
+    }
+
+    #[cfg(feature = "rewrite_file")]
+    if let Some(rewrite_path) = &args.rewrite_file {
+        match LutLang::file_rewrites(rewrite_path.to_str().ok_or(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "Invalid rewrite file path",
+        ))?) {
+            Ok(file_rules) => {
+                eprintln!("INFO: Loaded {} rewrite rules from file", file_rules.len());
+                rules = file_rules;
+            }
+            Err(e) => {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Failed to load rewrite file: {}", e),
+                ));
+            }
+        }
     }
 
     if args.verbose {

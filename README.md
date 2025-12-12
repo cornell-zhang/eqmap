@@ -5,19 +5,19 @@
 
 EqMap is Verilog-to-Verilog tool that attempts to superoptimize FPGA technology mapping using E-Graphs. Our experiments show that equality saturation techniques can improve logic sut selection and ultimately produce smaller circuits than the commercial tools.
 
-You can read the docs [here](https://cornell-zhang.github.io/eqmap/).
+You might also want to check out the [docs](https://cornell-zhang.github.io/eqmap/) or the [ICCAD publication](https://github.com/cornell-zhang/eqmap/blob/main/eqmap_iccad.pdf).
 
 ## Getting Started
 
 ### Dependencies for Users
 
 - [rustup](https://rustup.rs/)
-  - Crate Used (these are fetched automatically)
-    - [egg](https://docs.rs/egg/latest/egg/), [bitvec](https://docs.rs/bitvec/latest/bitvec/), [clap](https://docs.rs/clap/latest/clap/), [indicatif](https://docs.rs/indicatif/latest/indicatif/), [sv-parser](https://docs.rs/sv-parser/latest/sv_parser/), [serde_json](https://docs.rs/serde_json/latest/serde_json/)
-- [Yosys 0.33](https://github.com/YosysHQ/yosys)
+  - Crates (fetched automatically)
+    - [egg](https://docs.rs/egg/latest/egg/), [safety-net](https://docs.rs/safety-net/latest/safety_net/), [bitvec](https://docs.rs/bitvec/latest/bitvec/), [clap](https://docs.rs/clap/latest/clap/), [indicatif](https://docs.rs/indicatif/latest/indicatif/), [sv-parser](https://docs.rs/sv-parser/latest/sv_parser/), [serde_json](https://docs.rs/serde_json/latest/serde_json/)
+- [Yosys 0.33](https://github.com/YosysHQ/yosys/releases/tag/yosys-0.33)
 - *Optional* [CBC Solver](https://github.com/coin-or/Cbc)
 
-## Dependencies For Developers
+### Dependencies for Devs
 
 - VSCode Extensions
   - [Rust Analyzer Extension](https://rust-analyzer.github.io/)
@@ -36,7 +36,7 @@ First, check the prerequisites for building. For basic functionality, you will n
 
 ### Bring Your Own RTL
 
-You can also try to synthesize your own verilog module `my_file.v` as long as there are no multi-bit top-level ports:
+You can also try to synthesize your own verilog module `my_file.v`, but it must confirm to a strict subset of Verilog. For example, the module must have a flat hierarchy and all top-level ports must be 1 bit signals.
 
 `source utils/setup.sh # Add eqmap script to PATH`
 
@@ -91,3 +91,19 @@ To build with any of these features enabled:
 ### Docs
 
 You can generate most of the documentation with `cargo doc`.
+
+### Citation
+
+```bibtex
+ @inproceedings{11240672,
+  author    = {Hofmann, Matthew and Gokmen, Berk and Zhang, Zhiru},
+  booktitle = {2025 IEEE/ACM International Conference On Computer Aided Design (ICCAD)},
+  title     = {EqMap: FPGA LUT Remapping using E-Graphs},
+  year      = {2025},
+  volume    = {},
+  number    = {},
+  pages     = {1-9},
+  keywords  = {Runtime;Design automation;Heuristic algorithms;Circuits;Table lookup;Computational complexity;Field programmable gate arrays},
+  doi       = {10.1109/ICCAD66269.2025.11240672}
+}
+```

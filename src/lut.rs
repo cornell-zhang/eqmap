@@ -14,6 +14,8 @@ use egg::Id;
 use egg::Language;
 use egg::LpCostFunction;
 use egg::RecExpr;
+#[cfg(feature = "rewrite_file")]
+use egg::Rewrite;
 use egg::Symbol;
 use egg::define_language;
 use serde::Serialize;
@@ -1174,6 +1176,38 @@ impl CircuitLang for LutLang {
     }
 }
 
+
+/// Implementation of FileRewrites for LutLang
+///
+/// This enables dynamic loading of rewrite rules from external text files
+/// for LUT-based logic optimization.
+#[cfg(feature = "rewrite_file")]
+impl crate::file_rewrites::FileRewrites for LutLang {
+    type Analysis = LutAnalysis;
+
+    fn file_rewrites(
+        path: &str,
+    ) -> Result<Vec<Rewrite<LutLang, Self::Analysis>>, Box<dyn std::error::Error>> {
+        use crate::rewrite_file::parse_rewrite_file;
+        use crate::file_rewrites::create_pattern_rewrites;
+
+        let (_filter_list, rules) = parse_rewrite_file(path)?;
+
+        let mut rewrites = Vec::new();
+
+        for rule_def in rules {
+            let mut rule_rewrites = create_pattern_rewrites::<LutLang, LutAnalysis>(
+                &rule_def.name,
+                &rule_def.searcher,
+                &rule_def.applier,
+                rule_def.bidirectional,
+            )?;
+            rewrites.append(&mut rule_rewrites);
+        }
+
+        Ok(rewrites)
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
