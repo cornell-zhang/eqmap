@@ -7,7 +7,9 @@ use super::analysis::LutAnalysis;
 use super::lut;
 use super::lut::to_bitvec;
 use bitvec::{bitvec, order::Lsb0, vec::BitVec};
-use egg::{Analysis, Applier, Pattern, PatternAst, Rewrite, Subst, Var, rewrite};
+use egg::{
+    Analysis, Applier, FromOp, Language, Pattern, PatternAst, Rewrite, Subst, Symbol, Var, rewrite,
+};
 use std::collections::{HashMap, HashSet};
 
 /// Returns a list of structural mappings of logic functions to LUTs.
@@ -928,4 +930,183 @@ pub mod decomp {
         let ans = req.synth::<SynthReport>().unwrap().get_expr().to_string();
         assert_eq!(ans, "(LUT 202 s1 s0 (LUT 202 s0 c d))");
     }
+}
+
+/// Load and manage groups of rewrite rules
+#[derive(Clone)]
+pub struct RewriteManager<L, A>
+where
+    L: Language + FromOp,
+    A: Analysis<L> + Clone,
+{
+    db: HashMap<String, Rewrite<L, A>>,
+    active: HashMap<String, Rewrite<L, A>>,
+    categories: HashMap<String, Vec<String>>,
+}
+
+impl<L, A> Default for RewriteManager<L, A>
+where
+    L: Language + FromOp,
+    A: Analysis<L> + Clone,
+ {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<L, A> RewriteManager<L, A>
+where
+    L: Language + FromOp,
+    A: Analysis<L> + Clone,
+{
+    /// Create a new empty [RewriteManager]
+    pub fn new() -> Self {
+        Self {
+            db: HashMap::new(),
+            active: HashMap::new(),
+            categories: HashMap::new(),
+        }
+    }
+
+    /// Insert a category of rewrites from an iterator.
+    /// Returns an error if any rewrite name already exists in the database (by name)
+    pub fn insert_category<I>(&mut self, category: String, rewrites: I) -> Result<(), Rewrite<L, A>>
+    where
+        I: IntoIterator<Item = Rewrite<L, A>>,
+    {
+        let category = self.categories.entry(category).or_default();
+        for rw in rewrites {
+            let name = rw.name.to_string();
+            if self.db.contains_key(&name) {
+                return Err(rw);
+            }
+            self.db.insert(name.clone(), rw);
+            category.push(name);
+        }
+        Ok(())
+    }
+
+    /// Inserts an individual rewrite rule into the category.
+    /// Returns an error if the rewrite name already exists in the database (by name)
+    pub fn insert_into_category(
+        &mut self,
+        category: String,
+        rewrite: Rewrite<L, A>,
+    ) -> Result<(), Rewrite<L, A>> {
+        let name = rewrite.name.to_string();
+        if self.db.contains_key(&name) {
+            return Err(rewrite);
+        }
+        self.db.insert(name.clone(), rewrite);
+        let category = self.categories.entry(category).or_default();
+        category.push(name);
+        Ok(())
+    }
+
+    /// Insert a rule on its own.
+    /// Returns an error if the rewrite name already exists in the database (by name)
+    pub fn insert_rule(&mut self, rewrite: Rewrite<L, A>) -> Result<(), Rewrite<L, A>> {
+        let name = rewrite.name.to_string();
+        if self.db.contains_key(&name) {
+            return Err(rewrite);
+        }
+        self.db.insert(name, rewrite);
+        Ok(())
+    }
+
+    /// Enables an entire category of rewrites.
+    /// Returns the number of rewrite rules added to the active set.
+    pub fn enable_category(&mut self, category: &str) -> Result<usize, ()> {
+        if let Some(rw_names) = self.categories.get(category) {
+            let mut count = 0;
+            for name in rw_names {
+                if self
+                    .active
+                    .insert(name.clone(), self.db[name].clone())
+                    .is_none()
+                {
+                    count += 1;
+                }
+            }
+            Ok(count)
+        } else {
+            Err(())
+        }
+    }
+
+    /// Disables an entire category of rewrites.
+    /// Returns the number of rewrite rules removed from the active set.
+    pub fn disable_category(&mut self, category: &str) -> Result<usize, ()> {
+        if let Some(rw_names) = self.categories.get(category) {
+            let mut count = 0;
+            for name in rw_names {
+                if self.active.remove(name).is_some() {
+                    count += 1;
+                }
+            }
+            Ok(count)
+        } else {
+            Err(())
+        }
+    }
+
+    /// Disables an individual rewrite rule by name.
+    /// Returns true if the rule was removed from the active set.
+    pub fn disable_rule(&mut self, name: &str) -> bool {
+        self.active.remove(name).is_some()
+    }
+
+    /// Returns the active rewrite rules
+    pub fn active_rules(self) -> Vec<Rewrite<L, A>> {
+        self.active.into_values().collect()
+    }
+}
+
+impl<L, A> RewriteManager<L, A>
+where
+    L: Language + FromOp + Send + Sync + 'static,
+    A: Analysis<L> + Clone + Send + Sync + 'static,
+{
+    /// Constructs and inserts a rewrite rule in place
+    fn construct_rule(
+        &mut self,
+        name: &str,
+        lhs: &str,
+        rhs: &str,
+        bidirectional: bool,
+        category: Option<String>,
+    ) -> Result<(), String> {
+        let lhsp: Pattern<L> = lhs.parse().map_err(|_| "Lhs parse error".to_string())?;
+        let rhsp: Pattern<L> = rhs.parse().map_err(|_| "Rhs parse error".to_string())?;
+        let rw: Rewrite<L, A> = Rewrite::new(Symbol::new(name), lhsp, rhsp).unwrap();
+        if let Some(cat) = category.clone() {
+            self.insert_into_category(cat, rw)
+                .map_err(|_| "Rule with this name already exists".to_string())?;
+        } else {
+            self.insert_rule(rw)
+                .map_err(|_| "Rule with this name already exists".to_string())?;
+        }
+
+        if bidirectional {
+            self.construct_rule(&format!("{name}_bwd"), rhs, lhs, false, category)?;
+        }
+
+        Ok(())
+    }
+}
+
+#[test]
+fn test_parse_rules() {
+    let mut manager = RewriteManager::<lut::LutLang, LutAnalysis>::new();
+    assert!(
+        manager
+            .construct_rule(
+                "test-rule",
+                "(LUT 3 ?a)",
+                "true",
+                false,
+                Some("constant-folding".to_string())
+            )
+            .is_ok()
+    );
 }
