@@ -3,6 +3,7 @@ use egg::{FromOpError, RecExpr, RecExprParseError};
 use eqmap::{
     asic::{CellAnalysis, CellLang, CellRpt, asic_rewrites, get_boolean_algebra_rewrites},
     driver::{SynthRequest, process_string_expression, simple_reader},
+    rewrite::RewriteManager,
     verilog::SVModule,
 };
 use std::path::PathBuf;
@@ -107,11 +108,21 @@ fn main() -> std::io::Result<()> {
 
     let buf = simple_reader(args.command, args.input)?;
 
-    let rules = if args.canonicalize {
-        get_boolean_algebra_rewrites()
+    let mut rules = RewriteManager::<CellLang, _>::new();
+
+    if args.canonicalize {
+        rules
+            .insert_category("asic_rewrites".to_string(), get_boolean_algebra_rewrites())
+            .map_err(|r| std::io::Error::other(format!("Repeat rule: {:?}", r)))?;
+        rules.enable_category("asic_rewrites");
     } else {
-        asic_rewrites()
+        rules
+            .insert_category("asic_rewrites".to_string(), asic_rewrites())
+            .map_err(|r| std::io::Error::other(format!("Repeat rule: {:?}", r)))?;
+        rules.enable_category("asic_rewrites");
     };
+
+    let rules = rules.active_rules();
 
     if args.verbose {
         eprintln!("INFO: Running with {} rewrite rules", rules.len());

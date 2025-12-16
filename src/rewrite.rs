@@ -10,7 +10,10 @@ use bitvec::{bitvec, order::Lsb0, vec::BitVec};
 use egg::{
     Analysis, Applier, FromOp, Language, Pattern, PatternAst, Rewrite, Subst, Symbol, Var, rewrite,
 };
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    io::{BufRead, BufReader, Read},
+};
 
 /// Returns a list of structural mappings of logic functions to LUTs.
 /// For example, MUXes are mapped to 3-LUTs and AND gates to 2-LUTs.
@@ -1070,6 +1073,11 @@ where
     pub fn active_rules(self) -> Vec<Rewrite<L, A>> {
         self.active.into_values().collect()
     }
+
+    /// Returns an iterator to all the categories of rewrites
+    pub fn categories(&self) -> impl Iterator<Item = &String> {
+        self.categories.keys()
+    }
 }
 
 impl<L, A> RewriteManager<L, A>
@@ -1106,6 +1114,59 @@ where
         }
 
         Ok(rw)
+    }
+
+    /// Parse rewrite rules from a reader, line by line.
+    /// Lines starting with `#` are comments and ignored.
+    /// Category lines end with a colon `:` and set the category for subsequent rules.
+    /// Rules are formatted as `name: lhs => rhs` or `name: lhs <=> rhs` for bidirectional rules.
+    /// Here is an example file:
+    /// ```text
+    /// # Algebraic rules
+    /// algebraic:
+    ///     commutative-and: (AND2 ?a ?b) => (AND2 ?b ?a)
+    /// ```
+    pub fn parse_rules(&mut self, file: impl Read) -> Result<(), String> {
+        let mut category: Option<String> = None;
+        for line in BufReader::new(file).lines() {
+            let line = line.map_err(|e| format!("Rewrite reader: {:?}", e))?;
+
+            // Skip comments and empty lines
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
+
+            // Category line has no rule. Only colon.
+            if let Some(line) = line.strip_suffix(':') {
+                category = Some(line.to_string());
+                continue;
+            }
+
+            let bidrectional = line.contains("<=>");
+
+            let (name, rule) = line
+                .split_once(":")
+                .ok_or_else(|| format!("Rule misformatted: {}", line))?;
+
+            let (lhs, rhs) = if bidrectional {
+                rule.split_once("<=>")
+                    .ok_or_else(|| format!("Bidirectional rule misformatted: {}", line))?
+            } else {
+                rule.split_once("=>")
+                    .ok_or_else(|| format!("Rule misformatted: {}", line))?
+            };
+
+            self.construct_rule(
+                name.trim(),
+                lhs.trim(),
+                rhs.trim(),
+                bidrectional,
+                category.clone(),
+            )?;
+        }
+
+        Ok(())
     }
 }
 
