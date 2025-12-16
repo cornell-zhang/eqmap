@@ -3,6 +3,7 @@ use egg::{FromOpError, RecExpr, RecExprParseError};
 use eqmap::{
     asic::{CellAnalysis, CellLang, CellRpt, asic_rewrites, get_boolean_algebra_rewrites},
     driver::{SynthRequest, process_string_expression, simple_reader},
+    rewrite::RewriteManager,
     verilog::SVModule,
 };
 use std::path::PathBuf;
@@ -47,6 +48,10 @@ struct Args {
     #[cfg(feature = "graph_dumps")]
     #[arg(long)]
     dump_graph: Option<PathBuf>,
+
+    /// If provided, use rules compiled from file instead of built-in rules
+    #[arg(long)]
+    rules: Option<PathBuf>,
 
     /// Use a cost model that weighs the cells by exact area
     #[arg(short = 'a', long, default_value_t = false)]
@@ -107,11 +112,28 @@ fn main() -> std::io::Result<()> {
 
     let buf = simple_reader(args.command, args.input)?;
 
-    let rules = if args.canonicalize {
-        get_boolean_algebra_rewrites()
+    let mut rules = RewriteManager::<CellLang, _>::new();
+
+    if let Some(p) = args.rules {
+        let file = std::fs::File::open(p)?;
+        rules.parse_rules(file).map_err(std::io::Error::other)?;
+        let categories = rules.categories().cloned().collect::<Vec<_>>();
+        for cat in categories {
+            rules.enable_category(&cat);
+        }
+    } else if args.canonicalize {
+        rules
+            .insert_category("asic_rewrites".to_string(), get_boolean_algebra_rewrites())
+            .map_err(|r| std::io::Error::other(format!("Repeat rule: {:?}", r)))?;
+        rules.enable_category("asic_rewrites");
     } else {
-        asic_rewrites()
+        rules
+            .insert_category("asic_rewrites".to_string(), asic_rewrites())
+            .map_err(|r| std::io::Error::other(format!("Repeat rule: {:?}", r)))?;
+        rules.enable_category("asic_rewrites");
     };
+
+    let rules = rules.active_rules();
 
     if args.verbose {
         eprintln!("INFO: Running with {} rewrite rules", rules.len());

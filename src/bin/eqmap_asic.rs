@@ -2,6 +2,7 @@ use clap::Parser;
 use eqmap::{
     asic::{CellLang, CellRpt, asic_rewrites, expansion_rewrites, expr_is_mapped},
     driver::{SynthRequest, process_expression},
+    rewrite::RewriteManager,
     verilog::{SVModule, sv_parse_wrapper},
 };
 use std::{
@@ -22,6 +23,10 @@ struct Args {
     /// If provided, output a JSON file with result data
     #[arg(long)]
     report: Option<PathBuf>,
+
+    /// If provided, use rules compiled from file instead of built-in rules
+    #[arg(long)]
+    rules: Option<PathBuf>,
 
     /// If provided, output a condensed JSON file with the e-graph
     #[cfg(feature = "graph_dumps")]
@@ -103,11 +108,30 @@ fn main() -> std::io::Result<()> {
         f.get_outputs().len()
     );
 
-    let mut rules = asic_rewrites();
+    let mut rules = RewriteManager::<CellLang, _>::new();
+
+    if let Some(p) = args.rules {
+        let file = std::fs::File::open(p)?;
+        rules.parse_rules(file).map_err(std::io::Error::other)?;
+        let categories = rules.categories().cloned().collect::<Vec<_>>();
+        for cat in categories {
+            rules.enable_category(&cat);
+        }
+    } else {
+        rules
+            .insert_category("asic_rewrites".to_string(), asic_rewrites())
+            .map_err(|r| std::io::Error::other(format!("Repeat rule: {:?}", r)))?;
+        rules.enable_category("asic_rewrites");
+    }
 
     if args.filter.is_some() {
-        rules.append(&mut expansion_rewrites());
+        rules
+            .insert_category("expansion_rewrites".to_string(), expansion_rewrites())
+            .map_err(|r| std::io::Error::other(format!("Repeat rule: {:?}", r)))?;
+        rules.enable_category("expansion_rewrites");
     }
+
+    let rules = rules.active_rules();
 
     if args.verbose {
         eprintln!("INFO: Running with {} rewrite rules", rules.len());
