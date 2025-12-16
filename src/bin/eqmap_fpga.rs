@@ -217,8 +217,7 @@ fn main() -> std::io::Result<()> {
 
     #[cfg(feature = "exactness")]
     if args.exact && args.output.is_none() {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
+        return Err(std::io::Error::other(
             "Stdout is reserved for cbc solver. Specify an output file",
         ));
     }

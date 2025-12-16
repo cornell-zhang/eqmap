@@ -274,6 +274,7 @@ dependencies = [
  "clap",
  "ctrlc",
  "egg",
+ "good_lp",
  "indicatif",
  "safety-net",
  "serde",
