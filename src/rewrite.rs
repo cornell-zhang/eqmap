@@ -1034,6 +1034,16 @@ where
         }
     }
 
+    /// Enables an individual rewrite rule by name.
+    /// Returns true if the rule was added to the active set.
+    pub fn enable_rule(&mut self, name: &str) -> bool {
+        if let Some(rw) = self.db.get(name) {
+            self.active.insert(name.to_string(), rw.clone()).is_none()
+        } else {
+            false
+        }
+    }
+
     /// Disables an entire category of rewrites.
     /// Returns the number of rewrite rules removed from the active set.
     pub fn disable_category(&mut self, category: &str) -> Option<usize> {
@@ -1065,7 +1075,7 @@ where
 impl<L, A> RewriteManager<L, A>
 where
     L: Language + FromOp + Send + Sync + 'static,
-    A: Analysis<L> + Clone + Send + Sync + 'static,
+    A: Analysis<L> + Clone,
 {
     /// Constructs and inserts a rewrite rule in place
     fn construct_rule(
@@ -1102,6 +1112,7 @@ where
 #[test]
 fn test_parse_rules() {
     let mut manager = RewriteManager::<lut::LutLang, LutAnalysis>::new();
+
     assert!(
         manager
             .construct_rule(
@@ -1113,13 +1124,47 @@ fn test_parse_rules() {
             )
             .is_ok()
     );
+
+    // Repeated rule
     assert!(
         manager
             .construct_rule(
                 "test-rule",
+                "(LUT 3 ?a)",
+                "true",
+                false,
+                Some("constant-folding".to_string())
+            )
+            .is_err()
+    );
+
+    // Bad syntax
+    assert!(
+        manager
+            .construct_rule(
+                "test-rule2",
                 "(LUTf 3 ?a)",
                 "true",
                 false,
+                Some("constant-folding".to_string())
+            )
+            .is_err()
+    );
+
+    assert_eq!(manager.clone().active_rules().len(), 0);
+
+    manager.enable_rule("test-rule");
+
+    assert_eq!(manager.clone().active_rules().len(), 1);
+
+    // Can't be bidirectional
+    assert!(
+        manager
+            .construct_rule(
+                "test-rule3",
+                "(LUT 3 ?a)",
+                "true",
+                true,
                 Some("constant-folding".to_string())
             )
             .is_err()
