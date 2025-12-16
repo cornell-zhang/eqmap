@@ -1,0 +1,2 @@
+extra_file:
+    cool_and: (AND ?a ?b) => (COOLAND ?a ?b)

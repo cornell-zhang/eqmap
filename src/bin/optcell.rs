@@ -49,6 +49,10 @@ struct Args {
     #[arg(long)]
     dump_graph: Option<PathBuf>,
 
+    /// If provided, use rules compiled from file instead of built-in rules
+    #[arg(long)]
+    rules: Option<PathBuf>,
+
     /// Use a cost model that weighs the cells by exact area
     #[arg(short = 'a', long, default_value_t = false)]
     area: bool,
@@ -110,7 +114,14 @@ fn main() -> std::io::Result<()> {
 
     let mut rules = RewriteManager::<CellLang, _>::new();
 
-    if args.canonicalize {
+    if let Some(p) = args.rules {
+        let file = std::fs::File::open(p)?;
+        rules.parse_rules(file).map_err(std::io::Error::other)?;
+        let categories = rules.categories().cloned().collect::<Vec<_>>();
+        for cat in categories {
+            rules.enable_category(&cat);
+        }
+    } else if args.canonicalize {
         rules
             .insert_category("asic_rewrites".to_string(), get_boolean_algebra_rewrites())
             .map_err(|r| std::io::Error::other(format!("Repeat rule: {:?}", r)))?;
