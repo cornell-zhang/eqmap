@@ -1168,7 +1168,8 @@ where
                 self.extract_with(|egraph, root| {
                     eprintln!("INFO: ILP ON");
                     let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                    L::canonicalize_expr(e.timeout(t as f64).solve(root))
+                    // TODO(matth2k): Refactor to use different solvers
+                    L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
                 })
             }
             #[cfg(feature = "exactness")]
@@ -1176,14 +1177,16 @@ where
                 self.extract_with(|egraph, root| {
                     eprintln!("INFO: ILP ON");
                     let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                    L::canonicalize_expr(e.timeout(t as f64).solve(root))
+                    // TODO(matth2k): Refactor to use different solvers
+                    L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
                 })
             }
             #[cfg(feature = "exactness")]
             (OptStrat::AstSize, ExtractStrat::Exact(t)) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                L::canonicalize_expr(e.timeout(t as f64).solve(root))
+                // TODO(matth2k): Refactor to use different solvers
+                L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
             }),
             _ => Err(format!(
                 "{:?} optimization strategy is incomptabile with {:?} extraction.",

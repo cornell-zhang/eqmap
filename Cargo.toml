@@ -15,6 +15,7 @@ serde_json = "1.0.145"
 sv-parser = "0.13.4"
 ctrlc = "3.5.1"
 safety-net = "0.3.0"
+good_lp = { version = "1", optional = true }
 
 [lints.clippy]
 manual_range_contains = "allow"
@@ -25,7 +26,7 @@ default = [ "dyn_decomp" ]
 # It is too expensive
 # default = [ "dyn_decomp", "egraph_fold" ]
 egraph_fold = []
-exactness = [ "egg/lp" ]
+exactness = [ "egg/lp", "good_lp/coin_cbc" ]
 cut_analysis = []
 dyn_decomp = [ "cut_analysis" ]
 graph_dumps = []
