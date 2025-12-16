@@ -948,7 +948,7 @@ impl<L, A> Default for RewriteManager<L, A>
 where
     L: Language + FromOp,
     A: Analysis<L> + Clone,
- {
+{
     fn default() -> Self {
         Self::new()
     }
@@ -1016,7 +1016,7 @@ where
 
     /// Enables an entire category of rewrites.
     /// Returns the number of rewrite rules added to the active set.
-    pub fn enable_category(&mut self, category: &str) -> Result<usize, ()> {
+    pub fn enable_category(&mut self, category: &str) -> Option<usize> {
         if let Some(rw_names) = self.categories.get(category) {
             let mut count = 0;
             for name in rw_names {
@@ -1028,15 +1028,15 @@ where
                     count += 1;
                 }
             }
-            Ok(count)
+            Some(count)
         } else {
-            Err(())
+            None
         }
     }
 
     /// Disables an entire category of rewrites.
     /// Returns the number of rewrite rules removed from the active set.
-    pub fn disable_category(&mut self, category: &str) -> Result<usize, ()> {
+    pub fn disable_category(&mut self, category: &str) -> Option<usize> {
         if let Some(rw_names) = self.categories.get(category) {
             let mut count = 0;
             for name in rw_names {
@@ -1044,9 +1044,9 @@ where
                     count += 1;
                 }
             }
-            Ok(count)
+            Some(count)
         } else {
-            Err(())
+            None
         }
     }
 
@@ -1075,23 +1075,27 @@ where
         rhs: &str,
         bidirectional: bool,
         category: Option<String>,
-    ) -> Result<(), String> {
-        let lhsp: Pattern<L> = lhs.parse().map_err(|_| "Lhs parse error".to_string())?;
-        let rhsp: Pattern<L> = rhs.parse().map_err(|_| "Rhs parse error".to_string())?;
-        let rw: Rewrite<L, A> = Rewrite::new(Symbol::new(name), lhsp, rhsp).unwrap();
+    ) -> Result<Rewrite<L, A>, String> {
+        let lhsp: Pattern<L> = lhs
+            .parse()
+            .map_err(|e: egg::RecExprParseError<_>| format!("lhs: {:?}", e))?;
+        let rhsp: Pattern<L> = rhs
+            .parse()
+            .map_err(|e: egg::RecExprParseError<_>| format!("rhs: {:?}", e))?;
+        let rw: Rewrite<L, A> = Rewrite::new(Symbol::new(name), lhsp, rhsp)?;
         if let Some(cat) = category.clone() {
-            self.insert_into_category(cat, rw)
-                .map_err(|_| "Rule with this name already exists".to_string())?;
+            self.insert_into_category(cat, rw.clone())
+                .map_err(|r| format!("Rule already exists: {}", r.name))?;
         } else {
-            self.insert_rule(rw)
-                .map_err(|_| "Rule with this name already exists".to_string())?;
+            self.insert_rule(rw.clone())
+                .map_err(|r| format!("Rule already exists: {}", r.name))?;
         }
 
         if bidirectional {
             self.construct_rule(&format!("{name}_bwd"), rhs, lhs, false, category)?;
         }
 
-        Ok(())
+        Ok(rw)
     }
 }
 
@@ -1108,5 +1112,16 @@ fn test_parse_rules() {
                 Some("constant-folding".to_string())
             )
             .is_ok()
+    );
+    assert!(
+        manager
+            .construct_rule(
+                "test-rule",
+                "(LUTf 3 ?a)",
+                "true",
+                false,
+                Some("constant-folding".to_string())
+            )
+            .is_err()
     );
 }
