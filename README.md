@@ -13,7 +13,7 @@ You might also want to check out the [docs](https://cornell-zhang.github.io/eqma
 
 - [rustup](https://rustup.rs/)
   - Crates (fetched automatically)
-    - [egg](https://docs.rs/egg/latest/egg/), [safety-net](https://docs.rs/safety-net/latest/safety_net/), [bitvec](https://docs.rs/bitvec/latest/bitvec/), [clap](https://docs.rs/clap/latest/clap/), [indicatif](https://docs.rs/indicatif/latest/indicatif/), [sv-parser](https://docs.rs/sv-parser/latest/sv_parser/), [serde_json](https://docs.rs/serde_json/latest/serde_json/)
+    - [egg](https://docs.rs/egg/latest/egg/), [safety-net](https://docs.rs/safety-net/latest/safety_net/), [good_lp](https://docs.rs/good_lp/latest/good_lp/), [bitvec](https://docs.rs/bitvec/latest/bitvec/), [clap](https://docs.rs/clap/latest/clap/), [indicatif](https://docs.rs/indicatif/latest/indicatif/), [sv-parser](https://docs.rs/sv-parser/latest/sv_parser/), [serde_json](https://docs.rs/serde_json/latest/serde_json/)
 - [Yosys 0.33](https://github.com/YosysHQ/yosys/releases/tag/yosys-0.33)
 - *Optional* [CBC Solver](https://github.com/coin-or/Cbc)
 
@@ -73,7 +73,7 @@ Options:
   -V, --version                    Print version
 ```
 
-You will likely want to use the `--report <file>` flag to measure improvements in LUT count and circuit depth.
+You will likely want to use the `--report <file>` flag to measure improvements in LUT count and circuit depth. You can also try compiling with the `exact_highs` feature, which will enable `--exact highs` as a EqMap flag.
 
 ### Features
 
