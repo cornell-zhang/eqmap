@@ -1,4 +1,6 @@
-use clap::{Parser, ValueEnum};
+#[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+use clag::ValueEnum;
+use clap::Parser;
 use egg::*;
 #[cfg(feature = "dyn_decomp")]
 use eqmap::rewrite::dyn_decompositions;

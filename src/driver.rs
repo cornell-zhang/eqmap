@@ -1193,6 +1193,7 @@ where
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
                 L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
             }),
+            #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
             _ => Err(format!(
                 "{:?} optimization strategy is incomptabile with {:?} extraction.",
                 self.opt_strat, self.extract_strat

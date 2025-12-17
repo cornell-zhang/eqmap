@@ -1,4 +1,6 @@
-use clap::{Parser, ValueEnum};
+#[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+use clag::ValueEnum;
+use clap::Parser;
 use egg::{FromOpError, RecExpr, RecExprParseError};
 use eqmap::{
     asic::{CellAnalysis, CellLang, CellRpt, asic_rewrites, get_boolean_algebra_rewrites},

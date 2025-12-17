@@ -1,4 +1,6 @@
-use clap::{Parser, ValueEnum};
+#[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+use clag::ValueEnum;
+use clap::Parser;
 use eqmap::{
     asic::{CellLang, CellRpt, asic_rewrites, expansion_rewrites, expr_is_mapped},
     driver::{SynthRequest, process_expression},
