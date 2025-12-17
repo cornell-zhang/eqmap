@@ -345,7 +345,7 @@ enum BuildStrat {
 enum OptStrat {
     /// Extract the circuit by the syntax of the expression
     AstSize,
-    /// Extract the cirucit using exact cell areas.
+    /// Extract the cirucit using *real* cell areas.
     Area,
     /// Extract maximum circuit depth (RAM bomb).
     MaxDepth,
@@ -364,9 +364,12 @@ enum OptStrat {
 enum ExtractStrat {
     /// Use greedy extraction algorithm.
     Greedy,
-    #[allow(dead_code)]
-    /// Use exact ILP extraction with timeout in seconds.
-    Exact(u64),
+    /// Use exact HiGHS ILP extraction with timeout in seconds.
+    #[cfg(feature = "exact_highs")]
+    Highs(u64),
+    /// Use exact CBC ILP extraction with timeout in seconds.
+    #[cfg(feature = "exact_cbc")]
+    Cbc(u64),
 }
 
 /// An enum for the rewrite scheduling properties.
@@ -463,7 +466,7 @@ where
         Self::cell_cost_with_reg_weight_fn(cut_size, 1)
     }
 
-    /// Returns the cost function using exact cell areas.
+    /// Returns the cost function using *real* cell areas.
     fn exact_area_cost_fn() -> impl CostFunction<Self>;
 
     /// Returns a cost function used for extracting only certain types nodes.
@@ -662,7 +665,7 @@ where
         }
     }
 
-    /// Request greedy extraction using exact cell areas.
+    /// Request greedy extraction using *real* cell areas.
     pub fn with_area(self) -> Self {
         Self {
             opt_strat: OptStrat::Area,
@@ -680,11 +683,20 @@ where
         }
     }
 
-    /// Request exact extraction using ILP with `timeout` in seconds.
-    #[cfg(feature = "exactness")]
-    pub fn with_exactness(self, timeout: u64) -> Self {
+    /// Request exact extraction using HiGHS to solve ILP with `timeout` in seconds.
+    #[cfg(feature = "exact_highs")]
+    pub fn with_highs(self, timeout: u64) -> Self {
         Self {
-            extract_strat: ExtractStrat::Exact(timeout),
+            extract_strat: ExtractStrat::Highs(timeout),
+            ..self
+        }
+    }
+
+    /// Request exact extraction using CBC to solve ILP with `timeout` in seconds.
+    #[cfg(feature = "exact_cbc")]
+    pub fn with_cbc(self, timeout: u64) -> Self {
+        Self {
+            extract_strat: ExtractStrat::Cbc(timeout),
             ..self
         }
     }
@@ -1163,30 +1175,23 @@ where
             (OptStrat::Disassemble(set), ExtractStrat::Greedy) => {
                 self.greedy_extract_with(L::filter_cost_fn(set))
             }
-            #[cfg(feature = "exactness")]
-            (OptStrat::CellCount(6), ExtractStrat::Exact(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: ILP ON");
-                    let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                    // TODO(matth2k): Refactor to use different solvers
-                    L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
-                })
-            }
-            #[cfg(feature = "exactness")]
-            (OptStrat::CellCountRegWeighted(6, 1), ExtractStrat::Exact(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: ILP ON");
-                    let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                    // TODO(matth2k): Refactor to use different solvers
-                    L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
-                })
-            }
-            #[cfg(feature = "exactness")]
-            (OptStrat::AstSize, ExtractStrat::Exact(t)) => self.extract_with(|egraph, root| {
+            #[cfg(feature = "exact_cbc")]
+            (
+                OptStrat::CellCount(6) | OptStrat::CellCountRegWeighted(6, 1) | OptStrat::AstSize,
+                ExtractStrat::Cbc(t),
+            ) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                // TODO(matth2k): Refactor to use different solvers
                 L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
+            }),
+            #[cfg(feature = "exact_highs")]
+            (
+                OptStrat::CellCount(6) | OptStrat::CellCountRegWeighted(6, 1) | OptStrat::AstSize,
+                ExtractStrat::Highs(t),
+            ) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: ILP ON");
+                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
+                L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
             }),
             _ => Err(format!(
                 "{:?} optimization strategy is incomptabile with {:?} extraction.",

@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use egg::*;
 #[cfg(feature = "dyn_decomp")]
 use eqmap::rewrite::dyn_decompositions;
@@ -41,6 +41,15 @@ fn simplify_w_proof(s: &str) -> String {
     req.synth::<SynthReport>().unwrap().get_expr().to_string()
 }
 
+#[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+#[derive(Debug, Clone, ValueEnum)]
+enum Solver {
+    #[cfg(feature = "exact_cbc")]
+    Cbc,
+    #[cfg(feature = "exact_highs")]
+    Highs,
+}
+
 /// Technology Mapping Optimization with E-Graphs
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -80,9 +89,9 @@ struct Args {
     disassemble: Option<String>,
 
     /// Perform an exact extraction using ILP (much slower)
-    #[cfg(feature = "exactness")]
-    #[arg(short = 'e', long, default_value_t = false)]
-    exact: bool,
+    #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+    #[arg(long, value_enum)]
+    exact: Option<Solver>,
 
     /// Don't use register retiming
     #[arg(short = 'r', long, default_value_t = false)]
@@ -201,9 +210,15 @@ fn main() -> std::io::Result<()> {
         None => req,
     };
 
-    #[cfg(feature = "exactness")]
-    let req = if args.exact {
-        req.with_exactness(args.timeout.unwrap_or(600))
+    #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+    let req = if let Some(solver) = &args.exact {
+        let timeout = args.timeout.unwrap_or(600);
+        match solver {
+            #[cfg(feature = "exact_cbc")]
+            Solver::Cbc => req.with_cbc(timeout),
+            #[cfg(feature = "exact_highs")]
+            Solver::Highs => req.with_highs(timeout),
+        }
     } else {
         req
     };

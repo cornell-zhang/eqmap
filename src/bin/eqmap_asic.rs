@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use eqmap::{
     asic::{CellLang, CellRpt, asic_rewrites, expansion_rewrites, expr_is_mapped},
     driver::{SynthRequest, process_expression},
@@ -9,6 +9,15 @@ use std::{
     io::{Read, Write, stdin},
     path::PathBuf,
 };
+
+#[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+#[derive(Debug, Clone, ValueEnum)]
+enum Solver {
+    #[cfg(feature = "exact_cbc")]
+    Cbc,
+    #[cfg(feature = "exact_highs")]
+    Highs,
+}
 
 /// ASIC Technology Mapping Optimization with E-Graphs
 #[derive(Parser, Debug)]
@@ -46,9 +55,9 @@ struct Args {
     no_assert: bool,
 
     /// Perform an exact extraction using ILP (much slower)
-    #[cfg(feature = "exactness")]
-    #[arg(short = 'e', long, default_value_t = false)]
-    exact: bool,
+    #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+    #[arg(long, value_enum)]
+    exact: Option<Solver>,
 
     /// Print explanations (generates a proof and runs slower)
     #[arg(short = 'v', long, default_value_t = false)]
@@ -179,18 +188,24 @@ fn main() -> std::io::Result<()> {
         req.with_k(args.k)
     };
 
-    #[cfg(feature = "exactness")]
-    let req = if args.exact {
-        req.with_exactness(args.timeout.unwrap_or(600))
-            .with_purge_fn(|n| matches!(n, CellLang::And(_) | CellLang::Or(_) | CellLang::Inv(_)))
+    #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+    let req = if let Some(solver) = &args.exact {
+        let timeout = args.timeout.unwrap_or(600);
+        let req = match solver {
+            #[cfg(feature = "exact_cbc")]
+            Solver::Cbc => req.with_cbc(timeout),
+            #[cfg(feature = "exact_highs")]
+            Solver::Highs => req.with_highs(timeout),
+        };
+        req.with_purge_fn(|n| matches!(n, CellLang::And(_) | CellLang::Or(_) | CellLang::Inv(_)))
     } else {
         req
     };
 
-    #[cfg(feature = "exactness")]
-    if args.exact && args.output.is_none() {
+    #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+    if args.exact.is_some() && args.output.is_none() {
         return Err(std::io::Error::other(
-            "Stdout is reserved for cbc solver. Specify an output file",
+            "Stdout is clutterd by ILP solver. Specify an output file",
         ));
     }
 

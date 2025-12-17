@@ -80,9 +80,10 @@ You will likely want to use the `--report <file>` flag to measure improvements i
 The project has three conditionally compiled features:
 
 1. `egraph_fold` (deprecated)
-2. `exactness` (used for ILP exact synthesis, requires [CBC](https://github.com/coin-or/Cbc))
-3. `cut_analysis` (on by default)
-4. `graph_dumps` (enables the serialization module and `--dump-graph` argument)
+2. `exact_cbc` (used for ILP exact synthesis, requires [CBC](https://github.com/coin-or/Cbc))
+3. `exact_highs` (used for ILP exact synthesis, using HiGHS)
+4. `cut_analysis` (on by default)
+5. `graph_dumps` (enables the serialization module and `--dump-graph` argument)
 
 To build with any of these features enabled:
 
