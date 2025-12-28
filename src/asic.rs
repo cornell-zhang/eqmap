@@ -491,33 +491,33 @@ where
     let mut rules: Vec<Rewrite<CellLang, A>> = Vec::new();
 
     // TODO(matth2k): This rule is a cell rule, but put it here for now since not part of all libraries
-    rules.append(&mut
-        rewrite!("maj3_x1"; "(OR (OR (AND ?a ?b) (AND ?a ?c)) (AND ?b ?c))" <=> "(MAJ3_X1 ?a ?b ?c)"),
-    );
+    //rules.append(&mut
+    //    rewrite!("maj3_x1"; "(OR (OR (AND ?a ?b) (AND ?a ?c)) (AND ?b ?c))" <=> "(MAJ3_X1 ?a ?b ?c)"),
+    //);
 
-    rules.append(&mut
-        rewrite!("maj3_x1_xor"; "(OR (AND ?a ?b) (AND ?c (OR (AND ?b (INV ?a)) (AND ?a (INV ?b)))))" <=> "(MAJ3_X1 ?a ?b ?c)"),
-    );
+    //rules.append(&mut
+    //    rewrite!("maj3_x1_xor"; "(OR (AND ?a ?b) (AND ?c (OR (AND ?b (INV ?a)) (AND ?a (INV ?b)))))" <=> "(MAJ3_X1 ?a ?b ?c)"),
+    //);
 
-    rules.append(&mut
-        rewrite!("maj3_x1_alt"; "(OR (AND ?b ?c) (AND ?a (OR ?b ?c)))" <=> "(MAJ3_X1 ?a ?b ?c)"),
-    );
+    //rules.append(&mut
+    //    rewrite!("maj3_x1_alt"; "(OR (AND ?b ?c) (AND ?a (OR ?b ?c)))" <=> "(MAJ3_X1 ?a ?b ?c)"),
+    //);
 
-    rules.append(&mut rewrite!("xor-mux"; "(XOR2_X1 ?a ?b)" <=> "(MUX2_X1 ?a (INV ?b) ?b)"));
+    //rules.append(&mut rewrite!("xor-mux"; "(XOR2_X1 ?a ?b)" <=> "(MUX2_X1 ?a (INV ?b) ?b)"));
 
-    rules.append(&mut rewrite!("xor-mux-raw"; "(OR (AND ?b (INV ?a)) (AND ?a (INV ?b)))" <=> "(MUX2_X1 ?a (INV ?b) ?b)"));
+    //rules.append(&mut rewrite!("xor-mux-raw"; "(OR (AND ?b (INV ?a)) (AND ?a (INV ?b)))" <=> "(MUX2_X1 ?a (INV ?b) ?b)"));
 
-    rules.append(&mut rewrite!("negation-nand"; "(INV ?a)" <=> "(INV (AND ?a ?a))"));
-    rules.append(
-        &mut rewrite!("negation-xnor"; "(INV ?a)" <=> "(OR (AND false ?a) (AND (INV ?a) true))"),
-    );
-    rules.append(&mut rewrite!("or-mux"; "(OR ?a ?b)" <=> "(OR (AND (INV ?a) ?b) (AND ?a true))"));
-    rules.append(
-        &mut rewrite!("or-maj"; "(OR ?a ?b)" <=> "(OR (OR (AND ?a ?b) (AND ?a true)) (AND ?b true))"),
-    );
-    rules.append(
-        &mut rewrite!("and-maj"; "(AND ?a ?b)" <=> "(OR (OR (AND ?a ?b) (AND ?a false)) (AND ?b false))"),
-    );
+    //rules.append(&mut rewrite!("negation-nand"; "(INV ?a)" <=> "(INV (AND ?a ?a))"));
+    //rules.append(
+    //    &mut rewrite!("negation-xnor"; "(INV ?a)" <=> "(OR (AND false ?a) (AND (INV ?a) true))"),
+    //);
+    //rules.append(&mut rewrite!("or-mux"; "(OR ?a ?b)" <=> "(OR (AND (INV ?a) ?b) (AND ?a true))"));
+    //rules.append(
+    //    &mut rewrite!("or-maj"; "(OR ?a ?b)" <=> "(OR (OR (AND ?a ?b) (AND ?a true)) (AND ?b true))"),
+    //);
+    //rules.append(
+    //    &mut rewrite!("and-maj"; "(AND ?a ?b)" <=> "(OR (OR (AND ?a ?b) (AND ?a false)) (AND ?b false))"),
+    //);
 
     rules
 }
