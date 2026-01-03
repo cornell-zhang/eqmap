@@ -23,7 +23,7 @@ PIMLIB="$(dirname $0)/../verilog/pim-submodules"
 PIMLIB="$(realpath $PIMLIB)"
 BITBLAST="$(dirname $0)/../verilog/bitblast.v"
 BITBLAST="$(realpath $BITBLAST)"
-RULES="$(dirname $0)/../rules/maj-inv.celllang"
+RULES="$(dirname $0)/../rules/analog-pim.celllang"
 RULES="$(realpath $RULES)"
 MKFILE=$1.mk
 PIMFILES="$PIMLIB/*.v"
@@ -107,6 +107,6 @@ else
 
 
     make -f $MKFILE $1.$FSTEM 1>&2
-    $TOOL $1.$FSTEM --rules $RULES --unique-gate-consts --filter INV,MAJ3 $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} ${16}
+    $TOOL $1.$FSTEM --rules $RULES --filter INV,MAJ3,AND2,OR2 $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} ${16}
     rm -f $1.$FSTEM $MKFILE
 fi

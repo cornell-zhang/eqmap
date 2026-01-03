@@ -13,8 +13,7 @@ module adder_1bit_half #(
 
     generate
     if (IMPL_TYPE == 0) begin : impl_xor
-
-        assign Sum = A ^ B;
+        assign Sum = (A & ~B) | (~A & B);
         assign Cout = A & B;
 
     end else if (IMPL_TYPE == 1) begin : impl_maj

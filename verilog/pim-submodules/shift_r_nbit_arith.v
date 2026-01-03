@@ -17,9 +17,9 @@ genvar i;
 generate
     for (i = 0; i < SHIFT_WIDTH; i = i + 1) begin : gen_shift
         if (i == 0) begin
-            assign shift[i] = B[i] ? ($signed(A) >>> (1 << i)) : A;
+            assign shift[i] = (B[i] & ($signed(A) >>> (1 << i))) | (~B[i] & A);
         end else begin
-            assign shift[i] = B[i] ? ($signed(shift[i-1]) >>> (1 << i)) : shift[i-1];
+            assign shift[i] = (B[i] & ($signed(shift[i-1]) >>> (1 << i))) | (~B[i] & shift[i-1]);
         end
     end
 endgenerate

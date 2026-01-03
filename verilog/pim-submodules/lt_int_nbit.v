@@ -23,7 +23,7 @@ module lt_int_nbit #(
     );
 
     // handle sign bit
-    wire tmp2 = A[WIDTH-1] ^ B[WIDTH-1];
-    assign Y = tmp2 ? A[WIDTH-1] : tmp1;
+    wire tmp2 = (A[WIDTH-1] & ~B[WIDTH-1]) | (~A[WIDTH-1] & B[WIDTH-1]);
+    assign Y = (tmp2 & A[WIDTH-1]) | (~tmp2 & tmp1);
 
 endmodule

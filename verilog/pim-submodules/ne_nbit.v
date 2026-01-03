@@ -15,7 +15,7 @@ module ne_nbit #(
     genvar i;
     generate
         for (i = 0; i < WIDTH; i = i + 1) begin : eq_chain
-            assign ne[i+1] = ne[i] | (A[i] ^ B[i]);
+            assign ne[i+1] = ne[i] | ((A[i] & ~B[i]) | (~A[i] & B[i]));
         end
     endgenerate
 

@@ -10,6 +10,6 @@ module xor_nbit #(
     output [WIDTH-1:0] Y
 );
 
-    assign Y = A ^ B;
+    assign Y = (A & ~B) | (~A & B);
 
 endmodule
