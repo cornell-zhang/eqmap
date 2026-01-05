@@ -3,7 +3,7 @@
 
 # EqMap: FPGA LUT Technology Mapping w/ E-Graphs
 
-EqMap is Verilog-to-Verilog tool that attempts to superoptimize FPGA technology mapping using E-Graphs. Our experiments show that equality saturation techniques can improve logic sut selection and ultimately produce smaller circuits than the commercial tools.
+EqMap is Verilog-to-Verilog tool that attempts to superoptimize FPGA technology mapping using E-Graphs. Our experiments show that equality saturation techniques can improve cut selection and ultimately produce smaller circuits than the commercial tools.
 
 You might also want to check out the [docs](https://cornell-zhang.github.io/eqmap/) or the [ICCAD publication](https://github.com/cornell-zhang/eqmap/blob/main/eqmap_iccad.pdf).
 
@@ -13,7 +13,7 @@ You might also want to check out the [docs](https://cornell-zhang.github.io/eqma
 
 - [rustup](https://rustup.rs/)
   - Crates (fetched automatically)
-    - [egg](https://docs.rs/egg/latest/egg/), [safety-net](https://docs.rs/safety-net/latest/safety_net/), [bitvec](https://docs.rs/bitvec/latest/bitvec/), [clap](https://docs.rs/clap/latest/clap/), [indicatif](https://docs.rs/indicatif/latest/indicatif/), [sv-parser](https://docs.rs/sv-parser/latest/sv_parser/), [serde_json](https://docs.rs/serde_json/latest/serde_json/)
+    - [egg](https://docs.rs/egg/latest/egg/), [safety-net](https://docs.rs/safety-net/latest/safety_net/), [good_lp](https://docs.rs/good_lp/latest/good_lp/), [bitvec](https://docs.rs/bitvec/latest/bitvec/), [clap](https://docs.rs/clap/latest/clap/), [indicatif](https://docs.rs/indicatif/latest/indicatif/), [sv-parser](https://docs.rs/sv-parser/latest/sv_parser/), [serde_json](https://docs.rs/serde_json/latest/serde_json/)
 - [Yosys 0.33](https://github.com/YosysHQ/yosys/releases/tag/yosys-0.33)
 - *Optional* [CBC Solver](https://github.com/coin-or/Cbc)
 
@@ -73,16 +73,17 @@ Options:
   -V, --version                    Print version
 ```
 
-You will likely want to use the `--report <file>` flag to measure improvements in LUT count and circuit depth.
+You will likely want to use the `--report <file>` flag to measure improvements in LUT count and circuit depth. You can also try compiling with the `exact_highs` feature, which will enable `--exact highs` as a EqMap flag.
 
 ### Features
 
 The project has three conditionally compiled features:
 
 1. `egraph_fold` (deprecated)
-2. `exactness` (used for ILP exact synthesis, requires [CBC](https://github.com/coin-or/Cbc))
-3. `cut_analysis` (on by default)
-4. `graph_dumps` (enables the serialization module and `--dump-graph` argument)
+2. `exact_cbc` (used for ILP exact synthesis, requires [CBC](https://github.com/coin-or/Cbc))
+3. `exact_highs` (used for ILP exact synthesis, using HiGHS)
+4. `cut_analysis` (on by default)
+5. `graph_dumps` (enables the serialization module and `--dump-graph` argument)
 
 To build with any of these features enabled:
 

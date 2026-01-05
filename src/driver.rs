@@ -13,20 +13,6 @@ use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
     LpCostFunction, RecExpr, RecExprParseError, Rewrite, Runner, StopReason, Symbol, TreeTerm,
 };
-#[cfg(feature = "exactness")]
-use good_lp::coin_cbc;
-#[cfg(feature = "highs")]
-use good_lp::highs;
-#[cfg(feature = "lpsolve")]
-use good_lp::lp_solve;
-#[cfg(feature = "microlp")]
-use good_lp::microlp;
-#[cfg(feature = "scip")]
-use good_lp::scip;
-#[cfg(feature = "cplex")]
-use good_lp::solvers::cplex::cplex;
-#[cfg(any(feature = "glpk", feature = "gurobi"))]
-use good_lp::solvers::lp_solvers::{GlpkSolver, GurobiSolver, LpSolver};
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
@@ -359,7 +345,7 @@ enum BuildStrat {
 enum OptStrat {
     /// Extract the circuit by the syntax of the expression
     AstSize,
-    /// Extract the cirucit using exact cell areas.
+    /// Extract the cirucit using *real* cell areas.
     Area,
     /// Extract maximum circuit depth (RAM bomb).
     MaxDepth,
@@ -378,36 +364,12 @@ enum OptStrat {
 enum ExtractStrat {
     /// Use greedy extraction algorithm.
     Greedy,
-    #[allow(dead_code)]
-    /// Use CPLEX ILP extraction with timeout in seconds.
-    /// Requires CPLEX installation and bindgen requirements.
-    Cplex(u64),
-    #[allow(dead_code)]
-    /// Use exact ILP extraction with timeout in seconds.
-    Exact(u64),
-    #[allow(dead_code)]
-    /// Use HiGHS ILP extraction with timeout in seconds.
-    /// Requires installing a C compiler.
+    /// Use exact HiGHS ILP extraction with timeout in seconds.
+    #[cfg(feature = "exact_highs")]
     Highs(u64),
-    #[allow(dead_code)]
-    /// Use lpsolve ILP extraction with timeout in seconds.
-    /// Requires installing a C compiler.
-    Lpsolve(u64),
-    #[allow(dead_code)]
-    /// Use GLPK ILP extraction with timeout in seconds.
-    /// Requires an external solver binary.
-    Glpk(u64),
-    #[allow(dead_code)]
-    /// Use Gurobi ILP extraction with timeout in seconds.
-    /// Requires an external solver binary.
-    Gurobi(u64),
-    #[allow(dead_code)]
-    /// Use microlp ILP extraction.
-    Microlp,
-    #[allow(dead_code)]
-    /// Use SCIP ILP extraction with timeout in seconds.
-    /// Requires meeting bindgen requirements.
-    Scip(u64),
+    /// Use exact CBC ILP extraction with timeout in seconds.
+    #[cfg(feature = "exact_cbc")]
+    Cbc(u64),
 }
 
 /// An enum for the rewrite scheduling properties.
@@ -431,7 +393,7 @@ impl RewriteStrat {
         // Use back-off scheduling on runner to avoid some rules starving others
         let bos = match self {
             RewriteStrat::Boolean => bos.with_ban_length(1).with_initial_match_limit(960),
-            RewriteStrat::Algebraic => bos.with_ban_length(1).with_initial_match_limit(120),
+            RewriteStrat::Algebraic => bos.with_ban_length(1).with_initial_match_limit(960),
         };
 
         runner.with_scheduler(bos)
@@ -504,7 +466,7 @@ where
         Self::cell_cost_with_reg_weight_fn(cut_size, 1)
     }
 
-    /// Returns the cost function using exact cell areas.
+    /// Returns the cost function using *real* cell areas.
     fn exact_area_cost_fn() -> impl CostFunction<Self>;
 
     /// Returns a cost function used for extracting only certain types nodes.
@@ -729,7 +691,7 @@ where
         }
     }
 
-    /// Request greedy extraction using exact cell areas.
+    /// Request greedy extraction using *real* cell areas.
     pub fn with_area(self) -> Self {
         Self {
             opt_strat: OptStrat::Area,
@@ -747,80 +709,20 @@ where
         }
     }
 
-    /// Request CPLEX extraction using ILP with `timeout` in seconds.
-    /// Requires CPLEX installation and bindgen requirements.
-    #[cfg(feature = "cplex")]
-    pub fn with_cplex(self, timeout: u64) -> Self {
+    /// Request exact extraction using CBC to solve ILP with `timeout` in seconds.
+    #[cfg(feature = "exact_cbc")]
+    pub fn with_cbc(self, timeout: u64) -> Self {
         Self {
-            extract_strat: ExtractStrat::Cplex(timeout),
+            extract_strat: ExtractStrat::Cbc(timeout),
             ..self
         }
     }
-
-    /// Request exact extraction using ILP with `timeout` in seconds.
-    #[cfg(feature = "exactness")]
-    pub fn with_exactness(self, timeout: u64) -> Self {
-        Self {
-            extract_strat: ExtractStrat::Exact(timeout),
-            ..self
-        }
-    }
-
-    /// Request HiGHS extraction using ILP with `timeout` in seconds.
-    /// Requires installing a C compiler.
-    #[cfg(feature = "highs")]
+    
+    /// Request exact extraction using HiGHS to solve ILP with `timeout` in seconds.
+    #[cfg(feature = "exact_highs")]
     pub fn with_highs(self, timeout: u64) -> Self {
         Self {
             extract_strat: ExtractStrat::Highs(timeout),
-            ..self
-        }
-    }
-
-    /// Request lpsolve extraction using ILP with `timeout` in seconds.
-    /// Requires installing a C compiler.
-    #[cfg(feature = "lpsolve")]
-    pub fn with_lpsolve(self, timeout: u64) -> Self {
-        Self {
-            extract_strat: ExtractStrat::Lpsolve(timeout),
-            ..self
-        }
-    }
-
-    /// Request GLPK extraction using ILP with `timeout` in seconds.
-    /// Requires an external solver binary.
-    #[cfg(feature = "glpk")]
-    pub fn with_glpk(self, timeout: u64) -> Self {
-        Self {
-            extract_strat: ExtractStrat::Glpk(timeout),
-            ..self
-        }
-    }
-
-    /// Request Gurobi extraction using ILP with `timeout` in seconds.
-    /// Requires an external solver binary.
-    #[cfg(feature = "gurobi")]
-    pub fn with_gurobi(self, timeout: u64) -> Self {
-        Self {
-            extract_strat: ExtractStrat::Gurobi(timeout),
-            ..self
-        }
-    }
-
-    /// Request microlp extraction using ILP.
-    #[cfg(feature = "microlp")]
-    pub fn with_microlp(self) -> Self {
-        Self {
-            extract_strat: ExtractStrat::Microlp,
-            ..self
-        }
-    }
-
-    /// Request SCIP extraction using ILP with `timeout` in seconds.
-    /// Requires meeting bindgen requirements.
-    #[cfg(feature = "scip")]
-    pub fn with_scip(self, timeout: u64) -> Self {
-        Self {
-            extract_strat: ExtractStrat::Scip(timeout),
             ..self
         }
     }
@@ -1299,464 +1201,109 @@ where
             (OptStrat::Disassemble(set), ExtractStrat::Greedy) => {
                 self.greedy_extract_with(L::filter_cost_fn(set))
             }
-            #[cfg(feature = "cplex")]
-            (OptStrat::AstSize, ExtractStrat::Cplex(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: CPLEX ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                L::canonicalize_expr(e.solve_with_timeout(root, cplex, t as f64))
-            }),
-            #[cfg(feature = "cplex")]
-            (OptStrat::Area, ExtractStrat::Cplex(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: CPLEX ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, L::lp_exact_area_cost_fn());
-                L::canonicalize_expr(e.solve_with_timeout(root, cplex, t as f64))
-            }),
-            #[cfg(feature = "cplex")]
-            (OptStrat::MinDepth, ExtractStrat::Cplex(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: CPLEX ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, L::lp_depth_cost_fn());
-                L::canonicalize_expr(e.solve_with_timeout(root, cplex, t as f64))
-            }),
-            #[cfg(feature = "cplex")]
-            (OptStrat::MaxDepth, ExtractStrat::Cplex(t)) => self.extract_with(|egraph, root| {
-                eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");
-                eprintln!("INFO: CPLEX ILP ON");
-                let mut e =
-                    egg::LpExtractor::new(egraph, NegativeCostFn::new(L::lp_depth_cost_fn()));
-                L::canonicalize_expr(e.solve_with_timeout(root, cplex, t as f64))
-            }),
-            #[cfg(feature = "cplex")]
-            (OptStrat::CellCount(k), ExtractStrat::Cplex(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: CPLEX ILP ON");
-                    let mut e = egg::LpExtractor::new(egraph, L::lp_cell_cost_fn(k));
-                    L::canonicalize_expr(e.solve_with_timeout(root, cplex, t as f64))
-                })
-            }
-            #[cfg(feature = "cplex")]
-            (OptStrat::CellCountRegWeighted(k, w), ExtractStrat::Cplex(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: CPLEX ILP ON");
-                    let mut e =
-                        egg::LpExtractor::new(egraph, L::lp_cell_cost_with_reg_weight_fn(k, w));
-                    L::canonicalize_expr(e.solve_with_timeout(root, cplex, t as f64))
-                })
-            }
-            #[cfg(feature = "cplex")]
-            (OptStrat::Disassemble(set), ExtractStrat::Cplex(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: CPLEX ILP ON");
-                    let mut e = egg::LpExtractor::new(egraph, L::lp_filter_cost_fn(set));
-                    L::canonicalize_expr(e.solve_with_timeout(root, cplex, t as f64))
-                })
-            }
-            #[cfg(feature = "exactness")]
-            (OptStrat::AstSize, ExtractStrat::Exact(t)) => self.extract_with(|egraph, root| {
+            #[cfg(feature = "exact_cbc")]
+            (OptStrat::AstSize, ExtractStrat::Cbc(t)) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: CBC ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                L::canonicalize_expr(e.solve_with_timeout(root, coin_cbc, t as f64))
+                L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
             }),
-            #[cfg(feature = "exactness")]
-            (OptStrat::Area, ExtractStrat::Exact(t)) => self.extract_with(|egraph, root| {
+            #[cfg(feature = "exact_cbc")]
+            (OptStrat::Area, ExtractStrat::Cbc(t)) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: CBC ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, L::lp_exact_area_cost_fn());
-                L::canonicalize_expr(e.solve_with_timeout(root, coin_cbc, t as f64))
+                L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
             }),
-            #[cfg(feature = "exactness")]
-            (OptStrat::MinDepth, ExtractStrat::Exact(t)) => self.extract_with(|egraph, root| {
+            #[cfg(feature = "exact_cbc")]
+            (OptStrat::MinDepth, ExtractStrat::Cbc(t)) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: CBC ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, L::lp_depth_cost_fn());
-                L::canonicalize_expr(e.solve_with_timeout(root, coin_cbc, t as f64))
+                L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
             }),
-            #[cfg(feature = "exactness")]
-            (OptStrat::MaxDepth, ExtractStrat::Exact(t)) => self.extract_with(|egraph, root| {
+            #[cfg(feature = "exact_cbc")]
+            (OptStrat::MaxDepth, ExtractStrat::Cbc(t)) => self.extract_with(|egraph, root| {
                 eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");
                 eprintln!("INFO: CBC ILP ON");
                 let mut e =
                     egg::LpExtractor::new(egraph, NegativeCostFn::new(L::lp_depth_cost_fn()));
-                L::canonicalize_expr(e.solve_with_timeout(root, coin_cbc, t as f64))
+                L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
             }),
-            #[cfg(feature = "exactness")]
-            (OptStrat::CellCount(k), ExtractStrat::Exact(t)) => {
+            #[cfg(feature = "exact_cbc")]
+            (OptStrat::CellCount(k), ExtractStrat::Cbc(t)) => {
                 self.extract_with(|egraph, root| {
                     eprintln!("INFO: CBC ILP ON");
                     let mut e = egg::LpExtractor::new(egraph, L::lp_cell_cost_fn(k));
-                    L::canonicalize_expr(e.solve_with_timeout(root, coin_cbc, t as f64))
+                    L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
                 })
             }
-            #[cfg(feature = "exactness")]
-            (OptStrat::CellCountRegWeighted(k, w), ExtractStrat::Exact(t)) => {
+            #[cfg(feature = "exact_cbc")]
+            (OptStrat::CellCountRegWeighted(k, w), ExtractStrat::Cbc(t)) => {
                 self.extract_with(|egraph, root| {
                     eprintln!("INFO: CBC ILP ON");
                     let mut e =
                         egg::LpExtractor::new(egraph, L::lp_cell_cost_with_reg_weight_fn(k, w));
-                    L::canonicalize_expr(e.solve_with_timeout(root, coin_cbc, t as f64))
+                    L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
                 })
             }
-            #[cfg(feature = "exactness")]
-            (OptStrat::Disassemble(set), ExtractStrat::Exact(t)) => {
+            #[cfg(feature = "exact_cbc")]
+            (OptStrat::Disassemble(set), ExtractStrat::Cbc(t)) => {
                 self.extract_with(|egraph, root| {
                     eprintln!("INFO: CBC ILP ON");
                     let mut e = egg::LpExtractor::new(egraph, L::lp_filter_cost_fn(set));
-                    L::canonicalize_expr(e.solve_with_timeout(root, coin_cbc, t as f64))
+                    L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
                 })
             }
-            #[cfg(feature = "highs")]
+            #[cfg(feature = "exact_highs")]
             (OptStrat::AstSize, ExtractStrat::Highs(t)) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: HiGHS ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                L::canonicalize_expr(e.solve_with_timeout(root, highs, t as f64))
+                L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
             }),
-            #[cfg(feature = "highs")]
+            #[cfg(feature = "exact_highs")]
             (OptStrat::Area, ExtractStrat::Highs(t)) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: HiGHS ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, L::lp_exact_area_cost_fn());
-                L::canonicalize_expr(e.solve_with_timeout(root, highs, t as f64))
+                L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
             }),
-            #[cfg(feature = "highs")]
+            #[cfg(feature = "exact_highs")]
             (OptStrat::MinDepth, ExtractStrat::Highs(t)) => self.extract_with(|egraph, root| {
                 eprintln!("INFO: HiGHS ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, L::lp_depth_cost_fn());
-                L::canonicalize_expr(e.solve_with_timeout(root, highs, t as f64))
+                L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
             }),
-            #[cfg(feature = "highs")]
+            #[cfg(feature = "exact_highs")]
             (OptStrat::MaxDepth, ExtractStrat::Highs(t)) => self.extract_with(|egraph, root| {
                 eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");
                 eprintln!("INFO: HiGHS ILP ON");
                 let mut e =
                     egg::LpExtractor::new(egraph, NegativeCostFn::new(L::lp_depth_cost_fn()));
-                L::canonicalize_expr(e.solve_with_timeout(root, highs, t as f64))
+                L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
             }),
-            #[cfg(feature = "highs")]
+            #[cfg(feature = "exact_highs")]
             (OptStrat::CellCount(k), ExtractStrat::Highs(t)) => {
                 self.extract_with(|egraph, root| {
                     eprintln!("INFO: HiGHS ILP ON");
                     let mut e = egg::LpExtractor::new(egraph, L::lp_cell_cost_fn(k));
-                    L::canonicalize_expr(e.solve_with_timeout(root, highs, t as f64))
+                    L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
                 })
             }
-            #[cfg(feature = "highs")]
+            #[cfg(feature = "exact_highs")]
             (OptStrat::CellCountRegWeighted(k, w), ExtractStrat::Highs(t)) => {
                 self.extract_with(|egraph, root| {
                     eprintln!("INFO: HiGHS ILP ON");
                     let mut e =
                         egg::LpExtractor::new(egraph, L::lp_cell_cost_with_reg_weight_fn(k, w));
-                    L::canonicalize_expr(e.solve_with_timeout(root, highs, t as f64))
+                    L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
                 })
             }
-            #[cfg(feature = "highs")]
+            #[cfg(feature = "exact_highs")]
             (OptStrat::Disassemble(set), ExtractStrat::Highs(t)) => {
                 self.extract_with(|egraph, root| {
                     eprintln!("INFO: HiGHS ILP ON");
                     let mut e = egg::LpExtractor::new(egraph, L::lp_filter_cost_fn(set));
-                    L::canonicalize_expr(e.solve_with_timeout(root, highs, t as f64))
+                    L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
                 })
             }
-            #[cfg(feature = "lpsolve")]
-            (OptStrat::AstSize, ExtractStrat::Lpsolve(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: lpsolve ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                L::canonicalize_expr(e.solve_with_timeout(root, lp_solve, t as f64))
-            }),
-            #[cfg(feature = "lpsolve")]
-            (OptStrat::Area, ExtractStrat::Lpsolve(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: lpsolve ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, L::lp_exact_area_cost_fn());
-                L::canonicalize_expr(e.solve_with_timeout(root, lp_solve, t as f64))
-            }),
-            #[cfg(feature = "lpsolve")]
-            (OptStrat::MinDepth, ExtractStrat::Lpsolve(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: lpsolve ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, L::lp_depth_cost_fn());
-                L::canonicalize_expr(e.solve_with_timeout(root, lp_solve, t as f64))
-            }),
-            #[cfg(feature = "lpsolve")]
-            (OptStrat::MaxDepth, ExtractStrat::Lpsolve(t)) => self.extract_with(|egraph, root| {
-                eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");
-                eprintln!("INFO: lpsolve ILP ON");
-                let mut e =
-                    egg::LpExtractor::new(egraph, NegativeCostFn::new(L::lp_depth_cost_fn()));
-                L::canonicalize_expr(e.solve_with_timeout(root, lp_solve, t as f64))
-            }),
-            #[cfg(feature = "lpsolve")]
-            (OptStrat::CellCount(k), ExtractStrat::Lpsolve(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: lpsolve ILP ON");
-                    let mut e = egg::LpExtractor::new(egraph, L::lp_cell_cost_fn(k));
-                    L::canonicalize_expr(e.solve_with_timeout(root, lp_solve, t as f64))
-                })
-            }
-            #[cfg(feature = "lpsolve")]
-            (OptStrat::CellCountRegWeighted(k, w), ExtractStrat::Lpsolve(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: lpsolve ILP ON");
-                    let mut e =
-                        egg::LpExtractor::new(egraph, L::lp_cell_cost_with_reg_weight_fn(k, w));
-                    L::canonicalize_expr(e.solve_with_timeout(root, lp_solve, t as f64))
-                })
-            }
-            #[cfg(feature = "lpsolve")]
-            (OptStrat::Disassemble(set), ExtractStrat::Lpsolve(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: lpsolve ILP ON");
-                    let mut e = egg::LpExtractor::new(egraph, L::lp_filter_cost_fn(set));
-                    L::canonicalize_expr(e.solve_with_timeout(root, lp_solve, t as f64))
-                })
-            }
-            #[cfg(feature = "glpk")]
-            (OptStrat::AstSize, ExtractStrat::Glpk(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: GLPK ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                L::canonicalize_expr(e.solve_with_timeout(
-                    root,
-                    LpSolver(GlpkSolver::new()),
-                    t as f64,
-                ))
-            }),
-            #[cfg(feature = "glpk")]
-            (OptStrat::Area, ExtractStrat::Glpk(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: GLPK ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, L::lp_exact_area_cost_fn());
-                L::canonicalize_expr(e.solve_with_timeout(
-                    root,
-                    LpSolver(GlpkSolver::new()),
-                    t as f64,
-                ))
-            }),
-            #[cfg(feature = "glpk")]
-            (OptStrat::MinDepth, ExtractStrat::Glpk(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: GLPK ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, L::lp_depth_cost_fn());
-                L::canonicalize_expr(e.solve_with_timeout(
-                    root,
-                    LpSolver(GlpkSolver::new()),
-                    t as f64,
-                ))
-            }),
-            #[cfg(feature = "glpk")]
-            (OptStrat::MaxDepth, ExtractStrat::Glpk(t)) => self.extract_with(|egraph, root| {
-                eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");
-                eprintln!("INFO: GLPK ILP ON");
-                let mut e =
-                    egg::LpExtractor::new(egraph, NegativeCostFn::new(L::lp_depth_cost_fn()));
-                L::canonicalize_expr(e.solve_with_timeout(
-                    root,
-                    LpSolver(GlpkSolver::new()),
-                    t as f64,
-                ))
-            }),
-            #[cfg(feature = "glpk")]
-            (OptStrat::CellCount(k), ExtractStrat::Glpk(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: GLPK ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, L::lp_cell_cost_fn(k));
-                L::canonicalize_expr(e.solve_with_timeout(
-                    root,
-                    LpSolver(GlpkSolver::new()),
-                    t as f64,
-                ))
-            }),
-            #[cfg(feature = "glpk")]
-            (OptStrat::CellCountRegWeighted(k, w), ExtractStrat::Glpk(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: GLPK ILP ON");
-                    let mut e =
-                        egg::LpExtractor::new(egraph, L::lp_cell_cost_with_reg_weight_fn(k, w));
-                    L::canonicalize_expr(e.solve_with_timeout(
-                        root,
-                        LpSolver(GlpkSolver::new()),
-                        t as f64,
-                    ))
-                })
-            }
-            #[cfg(feature = "glpk")]
-            (OptStrat::Disassemble(set), ExtractStrat::Glpk(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: GLPK ILP ON");
-                    let mut e = egg::LpExtractor::new(egraph, L::lp_filter_cost_fn(set));
-                    L::canonicalize_expr(e.solve_with_timeout(
-                        root,
-                        LpSolver(GlpkSolver::new()),
-                        t as f64,
-                    ))
-                })
-            }
-            #[cfg(feature = "gurobi")]
-            (OptStrat::AstSize, ExtractStrat::Gurobi(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: Gurobi ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                L::canonicalize_expr(e.solve_with_timeout(
-                    root,
-                    LpSolver(GurobiSolver::new()),
-                    t as f64,
-                ))
-            }),
-            #[cfg(feature = "gurobi")]
-            (OptStrat::Area, ExtractStrat::Gurobi(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: Gurobi ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, L::lp_exact_area_cost_fn());
-                L::canonicalize_expr(e.solve_with_timeout(
-                    root,
-                    LpSolver(GurobiSolver::new()),
-                    t as f64,
-                ))
-            }),
-            #[cfg(feature = "gurobi")]
-            (OptStrat::MinDepth, ExtractStrat::Gurobi(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: Gurobi ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, L::lp_depth_cost_fn());
-                L::canonicalize_expr(e.solve_with_timeout(
-                    root,
-                    LpSolver(GurobiSolver::new()),
-                    t as f64,
-                ))
-            }),
-            #[cfg(feature = "gurobi")]
-            (OptStrat::MaxDepth, ExtractStrat::Gurobi(t)) => self.extract_with(|egraph, root| {
-                eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");
-                eprintln!("INFO: Gurobi ILP ON");
-                let mut e =
-                    egg::LpExtractor::new(egraph, NegativeCostFn::new(L::lp_depth_cost_fn()));
-                L::canonicalize_expr(e.solve_with_timeout(
-                    root,
-                    LpSolver(GurobiSolver::new()),
-                    t as f64,
-                ))
-            }),
-            #[cfg(feature = "gurobi")]
-            (OptStrat::CellCount(k), ExtractStrat::Gurobi(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: Gurobi ILP ON");
-                    let mut e = egg::LpExtractor::new(egraph, L::lp_cell_cost_fn(k));
-                    L::canonicalize_expr(e.solve_with(
-                        root,
-                        LpSolver(GurobiSolver::new()),
-                        t as f64,
-                    ))
-                })
-            }
-            #[cfg(feature = "gurobi")]
-            (OptStrat::CellCountRegWeighted(k, w), ExtractStrat::Gurobi(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: Gurobi ILP ON");
-                    let mut e =
-                        egg::LpExtractor::new(egraph, L::lp_cell_cost_with_reg_weight_fn(k, w));
-                    L::canonicalize_expr(e.solve_with(
-                        root,
-                        LpSolver(GurobiSolver::new()),
-                        t as f64,
-                    ))
-                })
-            }
-            #[cfg(feature = "gurobi")]
-            (OptStrat::Disassemble(set), ExtractStrat::Gurobi(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: Gurobi ILP ON");
-                    let mut e = egg::LpExtractor::new(egraph, L::lp_filter_cost_fn(set));
-                    L::canonicalize_expr(e.solve_with(
-                        root,
-                        LpSolver(GurobiSolver::new()),
-                        t as f64,
-                    ))
-                })
-            }
-            #[cfg(feature = "microlp")]
-            (OptStrat::AstSize, ExtractStrat::Microlp) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: microlp ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                L::canonicalize_expr(e.solve_with(root, microlp))
-            }),
-            #[cfg(feature = "microlp")]
-            (OptStrat::Area, ExtractStrat::Microlp) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: microlp ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, L::lp_exact_area_cost_fn());
-                L::canonicalize_expr(e.solve_with(root, microlp))
-            }),
-            #[cfg(feature = "microlp")]
-            (OptStrat::MinDepth, ExtractStrat::Microlp) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: microlp ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, L::lp_depth_cost_fn());
-                L::canonicalize_expr(e.solve_with(root, microlp))
-            }),
-            #[cfg(feature = "microlp")]
-            (OptStrat::MaxDepth, ExtractStrat::Microlp) => self.extract_with(|egraph, root| {
-                eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");
-                eprintln!("INFO: microlp ILP ON");
-                let mut e =
-                    egg::LpExtractor::new(egraph, NegativeCostFn::new(L::lp_depth_cost_fn()));
-                L::canonicalize_expr(e.solve_with(root, microlp))
-            }),
-            #[cfg(feature = "microlp")]
-            (OptStrat::CellCount(k), ExtractStrat::Microlp) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: microlp ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, L::lp_cell_cost_fn(k));
-                L::canonicalize_expr(e.solve_with(root, microlp))
-            }),
-            #[cfg(feature = "microlp")]
-            (OptStrat::CellCountRegWeighted(k, w), ExtractStrat::Microlp) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: microlp ILP ON");
-                    let mut e =
-                        egg::LpExtractor::new(egraph, L::lp_cell_cost_with_reg_weight_fn(k, w));
-                    L::canonicalize_expr(e.solve_with(root, microlp))
-                })
-            }
-            #[cfg(feature = "microlp")]
-            (OptStrat::Disassemble(set), ExtractStrat::Microlp) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: microlp ILP ON");
-                    let mut e = egg::LpExtractor::new(egraph, L::lp_filter_cost_fn(set));
-                    L::canonicalize_expr(e.solve_with(root, microlp))
-                })
-            }
-            #[cfg(feature = "scip")]
-            (OptStrat::AstSize, ExtractStrat::Scip(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: SCIP ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
-                L::canonicalize_expr(e.solve_with_timeout(root, scip, t as f64))
-            }),
-            #[cfg(feature = "scip")]
-            (OptStrat::Area, ExtractStrat::Scip(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: SCIP ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, L::lp_exact_area_cost_fn());
-                L::canonicalize_expr(e.solve_with_timeout(root, scip, t as f64))
-            }),
-            #[cfg(feature = "scip")]
-            (OptStrat::MinDepth, ExtractStrat::Scip(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: SCIP ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, L::lp_depth_cost_fn());
-                L::canonicalize_expr(e.solve_with_timeout(root, scip, t as f64))
-            }),
-            #[cfg(feature = "scip")]
-            (OptStrat::MaxDepth, ExtractStrat::Scip(t)) => self.extract_with(|egraph, root| {
-                eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");
-                eprintln!("INFO: SCIP ILP ON");
-                let mut e =
-                    egg::LpExtractor::new(egraph, NegativeCostFn::new(L::lp_depth_cost_fn()));
-                L::canonicalize_expr(e.solve_with_timeout(root, scip, t as f64))
-            }),
-            #[cfg(feature = "scip")]
-            (OptStrat::CellCount(k), ExtractStrat::Scip(t)) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: SCIP ILP ON");
-                let mut e = egg::LpExtractor::new(egraph, L::lp_cell_cost_fn(k));
-                L::canonicalize_expr(e.solve_with_timeout(root, scip, t as f64))
-            }),
-            #[cfg(feature = "scip")]
-            (OptStrat::CellCountRegWeighted(k, w), ExtractStrat::Scip(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: SCIP ILP ON");
-                    let mut e =
-                        egg::LpExtractor::new(egraph, L::lp_cell_cost_with_reg_weight_fn(k, w));
-                    L::canonicalize_expr(e.solve_with_timeout(root, scip, t as f64))
-                })
-            }
-            #[cfg(feature = "scip")]
-            (OptStrat::Disassemble(set), ExtractStrat::Scip(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: SCIP ILP ON");
-                    let mut e = egg::LpExtractor::new(egraph, L::lp_filter_cost_fn(set));
-                    L::canonicalize_expr(e.solve_with_timeout(root, scip, t as f64))
-                })
-            }
+            #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
             _ => Err(format!(
                 "{:?} optimization strategy is incomptabile with {:?} extraction.",
                 self.opt_strat, self.extract_strat

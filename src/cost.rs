@@ -9,6 +9,21 @@ use super::lut::LutLang;
 use egg::{Analysis, CostFunction, Id, Language, LpCostFunction};
 use std::collections::HashSet;
 
+/// Folds over the deduplicated children of a node.
+pub fn fold_deduped<L, F, T>(node: &L, init: T, mut f: F) -> T
+where
+    F: FnMut(T, Id) -> T,
+    L: Language,
+{
+    let mut acc = init;
+    let mut c = node.children().to_vec();
+    c.dedup();
+    for id in c {
+        acc = f(acc, id)
+    }
+    acc
+}
+
 /// A cost function that extracts LUTs with at most `k` fan-in.
 /// Gates have cost [u64::MAX] to prevent their extraction.
 /// Registers have cost one.
@@ -85,7 +100,7 @@ impl CostFunction<LutLang> for KLUTCostFn {
     where
         C: FnMut(Id) -> Self::Cost,
     {
-        enode.fold(self.op_cost(enode), |sum, id| sum.saturating_add(costs(id)))
+        fold_deduped(enode, self.op_cost(enode), |sum, id| sum.saturating_add(costs(id)))
     }
 }
 
@@ -126,7 +141,7 @@ impl CostFunction<LutLang> for DepthCostFn {
     where
         C: FnMut(Id) -> Self::Cost,
     {
-        let rt = enode.fold(0, |l, id| l.max(costs(id)));
+        let rt = fold_deduped(enode, 0, |l, id| l.max(costs(id)));
         rt + self.op_cost(enode)
     }
 }
@@ -290,9 +305,7 @@ impl CostFunction<LutLang> for GateCostFn {
     where
         C: FnMut(Id) -> Self::Cost,
     {
-        enode.fold(self.op_cost_lut(enode), |sum, id| {
-            sum.saturating_add(costs(id))
-        })
+        fold_deduped(enode, self.op_cost_lut(enode), |sum, id| sum.saturating_add(costs(id)))
     }
 }
 
@@ -318,9 +331,7 @@ impl CostFunction<CellLang> for GateCostFn {
     where
         C: FnMut(Id) -> Self::Cost,
     {
-        enode.fold(self.op_cost_cell(enode), |sum, id| {
-            sum.saturating_add(costs(id))
-        })
+       fold_deduped(enode, self.op_cost_cell(enode), |sum, id| sum.saturating_add(costs(id)))
     }
 }
 

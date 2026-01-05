@@ -1,4 +1,6 @@
 use clap::Parser;
+#[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+use clap::ValueEnum;
 #[cfg(feature = "dyn_decomp")]
 use eqmap::rewrite::dyn_decompositions;
 #[cfg(feature = "rewrite_file")]
@@ -12,6 +14,15 @@ use std::{
     io::{Read, Write, stdin},
     path::PathBuf,
 };
+
+#[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+#[derive(Debug, Clone, ValueEnum)]
+enum Solver {
+    #[cfg(feature = "exact_cbc")]
+    Cbc,
+    #[cfg(feature = "exact_highs")]
+    Highs,
+}
 
 /// Technology Mapping Optimization with E-Graphs
 #[derive(Parser, Debug)]
@@ -44,11 +55,6 @@ struct Args {
     #[arg(short = 'c', long, default_value_t = false)]
     no_canonicalize: bool,
 
-    /// Perform ILP extraction using CPLEX solver (requires CPLEX installation and bindgen requirements)
-    #[cfg(feature = "cplex")]
-    #[arg(short = 'C', long, default_value_t = false)]
-    cplex: bool,
-
     /// Find new decompositions at runtime
     #[cfg(feature = "dyn_decomp")]
     #[arg(short = 'd', long, default_value_t = false)]
@@ -60,44 +66,13 @@ struct Args {
     disassemble: Option<String>,
 
     /// Perform an exact extraction using ILP (much slower)
-    #[cfg(feature = "exactness")]
-    #[arg(short = 'e', long, default_value_t = false)]
-    exact: bool,
-
-    /// Perform ILP extraction using GLPK solver (requires external solver binary)
-    #[cfg(feature = "glpk")]
-    #[arg(short = 'g', long, default_value_t = false)]
-    glpk: bool,
-
-    /// Perform ILP extraction using Gurobi solver (requires external solver binary)
-    #[cfg(feature = "gurobi")]
-    #[arg(short = 'u', long, default_value_t = false)]
-    gurobi: bool,
-
-    /// Perform ILP extraction using HiGHS solver (requires installing C compiler)   
-    #[cfg(feature = "highs")]
-    #[arg(short = 'i', long, default_value_t = false)]
-    highs: bool,
-
-    /// Perform ILP extraction using lpsolve solver (requires installing C compiler)   
-    #[cfg(feature = "lpsolve")]
-    #[arg(short = 'l', long, default_value_t = false)]
-    lpsolve: bool,
-
-    /// Perform ILP extraction using microlp solver
-    #[cfg(feature = "microlp")]
-    #[arg(short = 'M', long, default_value_t = false)]
-    microlp: bool,
+    #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+    #[arg(long, value_enum)]
+    exact: Option<Solver>,
 
     /// Do not use register retiming
     #[arg(short = 'r', long, default_value_t = false)]
     no_retime: bool,
-
-    /// Perform ILP extraction using SCIP solver (must meet bindgen requirements)
-    /// For details, see https://rust-lang.github.io/rust-bindgen/requirements.html
-    #[cfg(feature = "scip")]
-    #[arg(short = 'S', long, default_value_t = false)]
-    scip: bool,
 
     /// Print explanations (generates a proof and runs slower)
     #[arg(short = 'v', long, default_value_t = false)]
@@ -270,61 +245,25 @@ fn main() -> std::io::Result<()> {
         None => req,
     };
 
-    #[cfg(feature = "cplex")]
-    let req = if args.cplex {
-        req.with_cplex(args.timeout.unwrap_or(600))
+    #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+    let req = if let Some(solver) = &args.exact {
+        let timeout = args.timeout.unwrap_or(600);
+        match solver {
+            #[cfg(feature = "exact_cbc")]
+            Solver::Cbc => req.with_cbc(timeout),
+            #[cfg(feature = "exact_highs")]
+            Solver::Highs => req.with_highs(timeout),
+        }
     } else {
         req
     };
 
-    #[cfg(feature = "exactness")]
-    let req = if args.exact {
-        req.with_exactness(args.timeout.unwrap_or(600))
-    } else {
-        req
-    };
-
-    #[cfg(feature = "glpk")]
-    let req = if args.glpk {
-        req.with_glpk(args.timeout.unwrap_or(600))
-    } else {
-        req
-    };
-
-    #[cfg(feature = "gurobi")]
-    let req = if args.gurobi {
-        req.with_gurobi(args.timeout.unwrap_or(600))
-    } else {
-        req
-    };
-
-    #[cfg(feature = "highs")]
-    let req = if args.highs {
-        req.with_highs(args.timeout.unwrap_or(600))
-    } else {
-        req
-    };
-
-    #[cfg(feature = "lpsolve")]
-    let req = if args.lpsolve {
-        req.with_lpsolve(args.timeout.unwrap_or(600))
-    } else {
-        req
-    };
-
-    #[cfg(feature = "microlp")]
-    let req = if args.microlp {
-        req.with_microlp()
-    } else {
-        req
-    };
-
-    #[cfg(feature = "scip")]
-    let req = if args.scip {
-        req.with_scip(args.timeout.unwrap_or(600))
-    } else {
-        req
-    };
+    #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+    if args.exact.is_some() && args.output.is_none() {
+        return Err(std::io::Error::other(
+            "Stdout is clutterd by ILP solver. Specify an output file",
+        ));
+    }
 
     eprintln!("INFO: Compiling Verilog...");
     let expr = f.to_single_lut_expr().map_err(std::io::Error::other)?;

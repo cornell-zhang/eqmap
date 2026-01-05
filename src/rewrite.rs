@@ -7,8 +7,13 @@ use super::analysis::LutAnalysis;
 use super::lut;
 use super::lut::to_bitvec;
 use bitvec::{bitvec, order::Lsb0, vec::BitVec};
-use egg::{Analysis, Applier, Pattern, PatternAst, Rewrite, Subst, Var, rewrite};
-use std::collections::{HashMap, HashSet};
+use egg::{
+    Analysis, Applier, FromOp, Language, Pattern, PatternAst, Rewrite, Subst, Symbol, Var, rewrite,
+};
+use std::{
+    collections::{HashMap, HashSet},
+    io::{BufRead, BufReader, Read},
+};
 
 /// Returns a list of structural mappings of logic functions to LUTs.
 /// For example, MUXes are mapped to 3-LUTs and AND gates to 2-LUTs.
@@ -928,4 +933,301 @@ pub mod decomp {
         let ans = req.synth::<SynthReport>().unwrap().get_expr().to_string();
         assert_eq!(ans, "(LUT 202 s1 s0 (LUT 202 s0 c d))");
     }
+}
+
+/// Load and manage groups of rewrite rules
+#[derive(Clone)]
+pub struct RewriteManager<L, A>
+where
+    L: Language + FromOp,
+    A: Analysis<L> + Clone,
+{
+    db: HashMap<String, Rewrite<L, A>>,
+    active: HashMap<String, Rewrite<L, A>>,
+    categories: HashMap<String, Vec<String>>,
+}
+
+impl<L, A> Default for RewriteManager<L, A>
+where
+    L: Language + FromOp,
+    A: Analysis<L> + Clone,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<L, A> RewriteManager<L, A>
+where
+    L: Language + FromOp,
+    A: Analysis<L> + Clone,
+{
+    /// Create a new empty [RewriteManager]
+    pub fn new() -> Self {
+        Self {
+            db: HashMap::new(),
+            active: HashMap::new(),
+            categories: HashMap::new(),
+        }
+    }
+
+    /// Insert a category of rewrites from an iterator.
+    /// Returns an error if any rewrite name already exists in the database (by name)
+    pub fn insert_category<I>(&mut self, category: String, rewrites: I) -> Result<(), Rewrite<L, A>>
+    where
+        I: IntoIterator<Item = Rewrite<L, A>>,
+    {
+        let category = self.categories.entry(category).or_default();
+        for rw in rewrites {
+            let name = rw.name.to_string();
+            if self.db.contains_key(&name) {
+                return Err(rw);
+            }
+            self.db.insert(name.clone(), rw);
+            category.push(name);
+        }
+        Ok(())
+    }
+
+    /// Inserts an individual rewrite rule into the category.
+    /// Returns an error if the rewrite name already exists in the database (by name)
+    pub fn insert_into_category(
+        &mut self,
+        category: String,
+        rewrite: Rewrite<L, A>,
+    ) -> Result<(), Rewrite<L, A>> {
+        let name = rewrite.name.to_string();
+        if self.db.contains_key(&name) {
+            return Err(rewrite);
+        }
+        self.db.insert(name.clone(), rewrite);
+        let category = self.categories.entry(category).or_default();
+        category.push(name);
+        Ok(())
+    }
+
+    /// Insert a rule on its own.
+    /// Returns an error if the rewrite name already exists in the database (by name)
+    pub fn insert_rule(&mut self, rewrite: Rewrite<L, A>) -> Result<(), Rewrite<L, A>> {
+        let name = rewrite.name.to_string();
+        if self.db.contains_key(&name) {
+            return Err(rewrite);
+        }
+        self.db.insert(name, rewrite);
+        Ok(())
+    }
+
+    /// Enables an entire category of rewrites.
+    /// Returns the number of rewrite rules added to the active set.
+    pub fn enable_category(&mut self, category: &str) -> Option<usize> {
+        if let Some(rw_names) = self.categories.get(category) {
+            let mut count = 0;
+            for name in rw_names {
+                if self
+                    .active
+                    .insert(name.clone(), self.db[name].clone())
+                    .is_none()
+                {
+                    count += 1;
+                }
+            }
+            Some(count)
+        } else {
+            None
+        }
+    }
+
+    /// Enables an individual rewrite rule by name.
+    /// Returns true if the rule was added to the active set.
+    pub fn enable_rule(&mut self, name: &str) -> bool {
+        if let Some(rw) = self.db.get(name) {
+            self.active.insert(name.to_string(), rw.clone()).is_none()
+        } else {
+            false
+        }
+    }
+
+    /// Disables an entire category of rewrites.
+    /// Returns the number of rewrite rules removed from the active set.
+    pub fn disable_category(&mut self, category: &str) -> Option<usize> {
+        if let Some(rw_names) = self.categories.get(category) {
+            let mut count = 0;
+            for name in rw_names {
+                if self.active.remove(name).is_some() {
+                    count += 1;
+                }
+            }
+            Some(count)
+        } else {
+            None
+        }
+    }
+
+    /// Disables an individual rewrite rule by name.
+    /// Returns true if the rule was removed from the active set.
+    pub fn disable_rule(&mut self, name: &str) -> bool {
+        self.active.remove(name).is_some()
+    }
+
+    /// Returns the active rewrite rules
+    pub fn active_rules(self) -> Vec<Rewrite<L, A>> {
+        self.active.into_values().collect()
+    }
+
+    /// Returns an iterator to all the categories of rewrites
+    pub fn categories(&self) -> impl Iterator<Item = &String> {
+        self.categories.keys()
+    }
+}
+
+impl<L, A> RewriteManager<L, A>
+where
+    L: Language + FromOp + Send + Sync + 'static,
+    A: Analysis<L> + Clone,
+{
+    /// Constructs and inserts a rewrite rule in place
+    fn construct_rule(
+        &mut self,
+        name: &str,
+        lhs: &str,
+        rhs: &str,
+        bidirectional: bool,
+        category: Option<String>,
+    ) -> Result<Rewrite<L, A>, String> {
+        let lhsp: Pattern<L> = lhs
+            .parse()
+            .map_err(|e: egg::RecExprParseError<_>| format!("lhs: {:?}", e))?;
+        let rhsp: Pattern<L> = rhs
+            .parse()
+            .map_err(|e: egg::RecExprParseError<_>| format!("rhs: {:?}", e))?;
+        let rw: Rewrite<L, A> = Rewrite::new(Symbol::new(name), lhsp, rhsp)?;
+        if let Some(cat) = category.clone() {
+            self.insert_into_category(cat, rw.clone())
+                .map_err(|r| format!("Rule already exists: {}", r.name))?;
+        } else {
+            self.insert_rule(rw.clone())
+                .map_err(|r| format!("Rule already exists: {}", r.name))?;
+        }
+
+        if bidirectional {
+            self.construct_rule(&format!("{name}_bwd"), rhs, lhs, false, category)?;
+        }
+
+        Ok(rw)
+    }
+
+    /// Parse rewrite rules from a reader, line by line.
+    /// Lines starting with `#` are comments and ignored.
+    /// Category lines end with a colon `:` and set the category for subsequent rules.
+    /// Rules are formatted as `name: lhs => rhs` or `name: lhs <=> rhs` for bidirectional rules.
+    /// Here is an example file:
+    /// ```text
+    /// # Algebraic rules
+    /// algebraic:
+    ///     commutative-and: (AND2 ?a ?b) => (AND2 ?b ?a)
+    /// ```
+    pub fn parse_rules(&mut self, file: impl Read) -> Result<(), String> {
+        let mut category: Option<String> = None;
+        for line in BufReader::new(file).lines() {
+            let line = line.map_err(|e| format!("Rewrite reader: {:?}", e))?;
+
+            // Skip comments and empty lines
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
+
+            // Category line has no rule. Only colon.
+            if let Some(line) = line.strip_suffix(':') {
+                category = Some(line.to_string());
+                continue;
+            }
+
+            let bidrectional = line.contains("<=>");
+
+            let (name, rule) = line
+                .split_once(":")
+                .ok_or_else(|| format!("Rule misformatted: {}", line))?;
+
+            let (lhs, rhs) = if bidrectional {
+                rule.split_once("<=>")
+                    .ok_or_else(|| format!("Bidirectional rule misformatted: {}", line))?
+            } else {
+                rule.split_once("=>")
+                    .ok_or_else(|| format!("Rule misformatted: {}", line))?
+            };
+
+            self.construct_rule(
+                name.trim(),
+                lhs.trim(),
+                rhs.trim(),
+                bidrectional,
+                category.clone(),
+            )?;
+        }
+
+        Ok(())
+    }
+}
+
+#[test]
+fn test_parse_rules() {
+    let mut manager = RewriteManager::<lut::LutLang, LutAnalysis>::new();
+
+    assert!(
+        manager
+            .construct_rule(
+                "test-rule",
+                "(LUT 3 ?a)",
+                "true",
+                false,
+                Some("constant-folding".to_string())
+            )
+            .is_ok()
+    );
+
+    // Repeated rule
+    assert!(
+        manager
+            .construct_rule(
+                "test-rule",
+                "(LUT 3 ?a)",
+                "true",
+                false,
+                Some("constant-folding".to_string())
+            )
+            .is_err()
+    );
+
+    // Bad syntax
+    assert!(
+        manager
+            .construct_rule(
+                "test-rule2",
+                "(LUTf 3 ?a)",
+                "true",
+                false,
+                Some("constant-folding".to_string())
+            )
+            .is_err()
+    );
+
+    assert_eq!(manager.clone().active_rules().len(), 0);
+
+    manager.enable_rule("test-rule");
+
+    assert_eq!(manager.clone().active_rules().len(), 1);
+
+    // Can't be bidirectional
+    assert!(
+        manager
+            .construct_rule(
+                "test-rule3",
+                "(LUT 3 ?a)",
+                "true",
+                true,
+                Some("constant-folding".to_string())
+            )
+            .is_err()
+    );
 }

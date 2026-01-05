@@ -8,14 +8,10 @@ use crate::asic::CellLang;
 use crate::driver::CircuitLang;
 use crate::verilog::PrimitiveType;
 use egg::{Id, RecExpr, Symbol};
-use safety_net::attribute::Parameter;
-use safety_net::circuit::{Identifier, Instantiable, Net};
-use safety_net::error::Error;
-use safety_net::format_id;
-use safety_net::graph::Analysis;
-use safety_net::logic::Logic;
-use safety_net::netlist::iter::DFSIterator;
-use safety_net::netlist::{DrivenNet, Netlist};
+use safety_net::{
+    Analysis, DrivenNet, Error, Identifier, Instantiable, Logic, Net, Netlist, Parameter,
+    format_id, iter::DFSIterator,
+};
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use std::str::FromStr;
@@ -110,7 +106,7 @@ where
     L: CircuitLang + 'a,
     I: Instantiable + LogicFunc<L> + 'a,
 {
-    fn build(netlist: &'a Netlist<I>) -> Result<Self, safety_net::error::Error> {
+    fn build(netlist: &'a Netlist<I>) -> Result<Self, Error> {
         Ok(Self {
             _netlist: netlist,
             mappings: Vec::new(),

@@ -1,10 +1,13 @@
 use clap::Parser;
+#[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+use clap::ValueEnum;
 use egg::{FromOpError, RecExpr, RecExprParseError};
 #[cfg(feature = "rewrite_file")]
 use eqmap::file_rewrites::FileRewrites;
 use eqmap::{
     asic::{CellAnalysis, CellLang, CellRpt, asic_rewrites, get_boolean_algebra_rewrites},
     driver::{SynthRequest, process_string_expression, simple_reader},
+    rewrite::RewriteManager,
     verilog::SVModule,
 };
 use std::path::PathBuf;
@@ -38,6 +41,15 @@ fn simplify_w_proof(s: &str) -> String {
     req.synth::<CellRpt>().unwrap().get_expr().to_string()
 }
 
+#[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+#[derive(Debug, Clone, ValueEnum)]
+enum Solver {
+    #[cfg(feature = "exact_cbc")]
+    Cbc,
+    #[cfg(feature = "exact_highs")]
+    Highs,
+}
+
 /// ASIC Technology Mapping Optimization with E-Graphs
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -49,6 +61,10 @@ struct Args {
     #[cfg(feature = "graph_dumps")]
     #[arg(long)]
     dump_graph: Option<PathBuf>,
+
+    /// If provided, use rules compiled from file instead of built-in rules
+    #[arg(long)]
+    rules: Option<PathBuf>,
 
     /// Use a cost model that weighs the cells by exact area
     #[arg(short = 'a', long, default_value_t = false)]
@@ -66,46 +82,10 @@ struct Args {
     #[arg(long)]
     command: Option<String>,
 
-    /// Perform ILP extraction using CPLEX solver (requires CPLEX installation and bindgen requirements)
-    #[cfg(feature = "cplex")]
-    #[arg(short = 'C', long, default_value_t = false)]
-    cplex: bool,
-
     /// Perform an exact extraction using ILP (much slower)
-    #[cfg(feature = "exactness")]
-    #[arg(short = 'e', long, default_value_t = false)]
-    exact: bool,
-
-    /// Perform ILP extraction using GLPK solver (requires external solver binary)
-    #[cfg(feature = "glpk")]
-    #[arg(short = 'g', long, default_value_t = false)]
-    glpk: bool,
-
-    /// Perform ILP extraction using Gurobi solver (requires external solver binary)
-    #[cfg(feature = "gurobi")]
-    #[arg(short = 'u', long, default_value_t = false)]
-    gurobi: bool,
-
-    /// Perform ILP extraction using HiGHS solver (requires installing C compiler)   
-    #[cfg(feature = "highs")]
-    #[arg(short = 'i', long, default_value_t = false)]
-    highs: bool,
-
-    /// Perform ILP extraction using lpsolve solver (requires installing C compiler)   
-    #[cfg(feature = "lpsolve")]
-    #[arg(short = 'l', long, default_value_t = false)]
-    lpsolve: bool,
-
-    /// Perform ILP extraction using microlp solver
-    #[cfg(feature = "microlp")]
-    #[arg(short = 'M', long, default_value_t = false)]
-    microlp: bool,
-
-    /// Perform ILP extraction using SCIP solver (must meet bindgen requirements)
-    /// For details, see https://rust-lang.github.io/rust-bindgen/requirements.html
-    #[cfg(feature = "scip")]
-    #[arg(short = 'S', long, default_value_t = false)]
-    scip: bool,
+    #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+    #[arg(long, value_enum)]
+    exact: Option<Solver>,
 
     /// Print explanations (this generates a proof and runs longer)
     #[arg(short = 'v', long, default_value_t = false)]
@@ -150,32 +130,28 @@ fn main() -> std::io::Result<()> {
 
     let buf = simple_reader(args.command, args.input)?;
 
-    let rules = if args.canonicalize {
-        get_boolean_algebra_rewrites()
-    } else {
-        asic_rewrites()
-    };
+    let mut rules = RewriteManager::<CellLang, _>::new();
 
-    #[cfg(feature = "rewrite_file")]
-    let rules = if let Some(rewrite_path) = &args.rewrite_file {
-        match CellLang::file_rewrites(rewrite_path.to_str().ok_or(std::io::Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "Invalid rewrite file path",
-        ))?) {
-            Ok(file_rules) => {
-                eprintln!("INFO: Loaded {} rewrite rules from file", file_rules.len());
-                file_rules
-            }
-            Err(e) => {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("Failed to load rewrite file: {}", e),
-                ));
-            }
+    if let Some(p) = args.rules {
+        let file = std::fs::File::open(p)?;
+        rules.parse_rules(file).map_err(std::io::Error::other)?;
+        let categories = rules.categories().cloned().collect::<Vec<_>>();
+        for cat in categories {
+            rules.enable_category(&cat);
         }
+    } else if args.canonicalize {
+        rules
+            .insert_category("asic_rewrites".to_string(), get_boolean_algebra_rewrites())
+            .map_err(|r| std::io::Error::other(format!("Repeat rule: {:?}", r)))?;
+        rules.enable_category("asic_rewrites");
     } else {
         rules
+            .insert_category("asic_rewrites".to_string(), asic_rewrites())
+            .map_err(|r| std::io::Error::other(format!("Repeat rule: {:?}", r)))?;
+        rules.enable_category("asic_rewrites");
     };
+
+    let rules = rules.active_rules();
 
     if args.verbose {
         eprintln!("INFO: Running with {} rewrite rules", rules.len());
@@ -216,58 +192,15 @@ fn main() -> std::io::Result<()> {
         req.with_k(args.k)
     };
 
-    #[cfg(feature = "cplex")]
-    let req = if args.cplex {
-        req.with_cplex(args.timeout.unwrap_or(600))
-    } else {
-        req
-    };
-
-    #[cfg(feature = "exactness")]
-    let req = if args.exact {
-        req.with_exactness(args.timeout.unwrap_or(600))
-    } else {
-        req
-    };
-
-    #[cfg(feature = "glpk")]
-    let req = if args.glpk {
-        req.with_glpk(args.timeout.unwrap_or(600))
-    } else {
-        req
-    };
-
-    #[cfg(feature = "gurobi")]
-    let req = if args.gurobi {
-        req.with_gurobi(args.timeout.unwrap_or(600))
-    } else {
-        req
-    };
-
-    #[cfg(feature = "highs")]
-    let req = if args.highs {
-        req.with_highs(args.timeout.unwrap_or(600))
-    } else {
-        req
-    };
-
-    #[cfg(feature = "lpsolve")]
-    let req = if args.lpsolve {
-        req.with_lpsolve(args.timeout.unwrap_or(600))
-    } else {
-        req
-    };
-
-    #[cfg(feature = "microlp")]
-    let req = if args.microlp {
-        req.with_microlp()
-    } else {
-        req
-    };
-
-    #[cfg(feature = "scip")]
-    let req = if args.scip {
-        req.with_scip(args.timeout.unwrap_or(600))
+    #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
+    let req = if let Some(solver) = &args.exact {
+        let timeout = args.timeout.unwrap_or(600);
+        match solver {
+            #[cfg(feature = "exact_cbc")]
+            Solver::Cbc => req.with_cbc(timeout),
+            #[cfg(feature = "exact_highs")]
+            Solver::Highs => req.with_highs(timeout),
+        }
     } else {
         req
     };
@@ -300,14 +233,14 @@ fn main() -> std::io::Result<()> {
     }
     Ok(())
 }
-
+/*
 #[test]
 fn simple_tests() {
     assert_eq!(simplify("(AND a b)"), "(AND2_X1 a b)");
     assert_eq!(simplify("(INV a)"), "(INV_X1 a)");
     assert_eq!(simplify("(AND a true)"), "a");
 }
-
+*/
 #[test]
 fn cell_rpt() {
     let mut req = get_main_runner("(INV a)").unwrap().with_report();

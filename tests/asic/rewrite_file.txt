@@ -1,0 +1,4 @@
+// RUN: optcell %s --rules rules/example.celllang 2>>/dev/null | FileCheck %s
+
+(AND a b)
+// CHECK: (COOLAND a b)
