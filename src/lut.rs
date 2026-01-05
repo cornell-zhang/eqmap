@@ -7,12 +7,15 @@ use super::analysis::LutAnalysis;
 use super::check::{Check, equivalent, inconclusive, not_equivalent};
 use super::cost::DepthCostFn;
 use super::cost::{GateCostFn, KLUTCostFn};
-use super::driver::{Canonical, CircuitLang, EquivCheck, Explanable, Extractable};
+use super::driver::{Canonical, CircuitLang, EquivCheck, Explanable, Extractable, LpExtractable};
 use bitvec::prelude::*;
 use egg::CostFunction;
 use egg::Id;
 use egg::Language;
+use egg::LpCostFunction;
 use egg::RecExpr;
+#[cfg(feature = "rewrite_file")]
+use egg::Rewrite;
 use egg::Symbol;
 use egg::define_language;
 use serde::Serialize;
@@ -1107,6 +1110,29 @@ impl Extractable for LutLang {
     }
 }
 
+impl LpExtractable<LutAnalysis> for LutLang {
+    fn lp_depth_cost_fn() -> impl LpCostFunction<Self, LutAnalysis> {
+        DepthCostFn
+    }
+
+    fn lp_cell_cost_with_reg_weight_fn(
+        cut_size: usize,
+        w: u64,
+    ) -> impl LpCostFunction<Self, LutAnalysis> {
+        KLUTCostFn::new(cut_size).with_reg_weight(w)
+    }
+
+    fn lp_exact_area_cost_fn() -> impl LpCostFunction<Self, LutAnalysis> {
+        KLUTCostFn::new(6).with_reg_weight(1)
+    }
+
+    fn lp_filter_cost_fn(
+        set: std::collections::HashSet<String>,
+    ) -> impl LpCostFunction<Self, LutAnalysis> {
+        GateCostFn::new(set)
+    }
+}
+
 impl Canonical for LutLang {
     fn expr_is_canonical(expr: &RecExpr<Self>) -> bool {
         let info = LutExprInfo::new(expr);
@@ -1150,6 +1176,38 @@ impl CircuitLang for LutLang {
     }
 }
 
+
+/// Implementation of FileRewrites for LutLang
+///
+/// This enables dynamic loading of rewrite rules from external text files
+/// for LUT-based logic optimization.
+#[cfg(feature = "rewrite_file")]
+impl crate::file_rewrites::FileRewrites for LutLang {
+    type Analysis = LutAnalysis;
+
+    fn file_rewrites(
+        path: &str,
+    ) -> Result<Vec<Rewrite<LutLang, Self::Analysis>>, Box<dyn std::error::Error>> {
+        use crate::rewrite_file::parse_rewrite_file;
+        use crate::file_rewrites::create_pattern_rewrites;
+
+        let (_filter_list, rules) = parse_rewrite_file(path)?;
+
+        let mut rewrites = Vec::new();
+
+        for rule_def in rules {
+            let mut rule_rewrites = create_pattern_rewrites::<LutLang, LutAnalysis>(
+                &rule_def.name,
+                &rule_def.searcher,
+                &rule_def.applier,
+                rule_def.bidirectional,
+            )?;
+            rewrites.append(&mut rule_rewrites);
+        }
+
+        Ok(rewrites)
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;

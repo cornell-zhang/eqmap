@@ -21,13 +21,14 @@ good_lp = { version = "1.14.2", optional = true }
 manual_range_contains = "allow"
 
 [features]
-default = [ "dyn_decomp" ]
+default = [ "dyn_decomp", "egg/lp"]
 # We probably don't want the compiler to apply folding on LUTs.
 # It is too expensive
 # default = [ "dyn_decomp", "egraph_fold" ]
 egraph_fold = []
-exact_cbc = [ "egg/lp", "good_lp/coin_cbc" ]
-exact_highs = [ "egg/lp", "good_lp/highs" ]
+exact_cbc = [ "good_lp/coin_cbc" ]
+exact_highs = [ "good_lp/highs" ]
 cut_analysis = []
 dyn_decomp = [ "cut_analysis" ]
 graph_dumps = []
+rewrite_file = []

@@ -2,6 +2,8 @@ use clap::Parser;
 #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
 use clap::ValueEnum;
 use egg::{FromOpError, RecExpr, RecExprParseError};
+#[cfg(feature = "rewrite_file")]
+use eqmap::file_rewrites::FileRewrites;
 use eqmap::{
     asic::{CellAnalysis, CellLang, CellRpt, asic_rewrites, get_boolean_algebra_rewrites},
     driver::{SynthRequest, process_string_expression, simple_reader},
@@ -112,6 +114,11 @@ struct Args {
     /// Maximum number of rewrite iterations
     #[arg(short = 'n', long)]
     iter_limit: Option<usize>,
+
+    /// Path to a text file containing custom rewrite rules
+    #[cfg(feature = "rewrite_file")]
+    #[arg(short = 'F', long)]
+    rewrite_file: Option<PathBuf>,
 }
 
 fn main() -> std::io::Result<()> {

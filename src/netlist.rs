@@ -293,7 +293,10 @@ impl Instantiable for PrimitiveCell {
     }
 
     fn is_seq(&self) -> bool {
-        self.ptype.is_reg()
+        match self.ptype {
+            PrimitiveType::FDRE => true,
+            _ => false,
+        }
     }
 }
 

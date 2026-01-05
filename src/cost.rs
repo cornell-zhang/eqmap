@@ -3,9 +3,10 @@
   Simple cost functions that extracts LUTs with at most `k` fan-in.
 
 */
-use super::asic::CellLang;
+use super::analysis::LutAnalysis;
+use super::asic::{CellAnalysis, CellLang};
 use super::lut::LutLang;
-use egg::{CostFunction, Id, Language};
+use egg::{Analysis, CostFunction, Id, Language, LpCostFunction};
 use std::collections::HashSet;
 
 /// Folds over the deduplicated children of a node.
@@ -54,15 +55,10 @@ impl KLUTCostFn {
             ..self
         }
     }
-}
 
-impl CostFunction<LutLang> for KLUTCostFn {
-    type Cost = u64;
-    fn cost<C>(&mut self, enode: &LutLang, mut costs: C) -> Self::Cost
-    where
-        C: FnMut(Id) -> Self::Cost,
-    {
-        let op_cost = match enode {
+    /// Returns the cost of an e-node.
+    pub fn op_cost(&self, enode: &LutLang) -> u64 {
+        match enode {
             LutLang::Lut(l) => {
                 if l.len() <= self.k + 1 {
                     1
@@ -79,21 +75,42 @@ impl CostFunction<LutLang> for KLUTCostFn {
             LutLang::Var(_) => 1,
             LutLang::DC => 0,
             _ => u64::MAX,
-        };
-        fold_deduped(enode, op_cost, |sum, id| sum.saturating_add(costs(id)))
+        }
+    }
+}
+
+impl LpCostFunction<LutLang, LutAnalysis> for KLUTCostFn {
+    fn node_cost(
+        &mut self,
+        _egraph: &egg::EGraph<LutLang, LutAnalysis>,
+        _eclass: Id,
+        enode: &LutLang,
+    ) -> f64 {
+        if self.op_cost(enode) == u64::MAX {
+            f64::INFINITY
+        } else {
+            self.op_cost(enode) as f64
+        }
+    }
+}
+
+impl CostFunction<LutLang> for KLUTCostFn {
+    type Cost = u64;
+    fn cost<C>(&mut self, enode: &LutLang, mut costs: C) -> Self::Cost
+    where
+        C: FnMut(Id) -> Self::Cost,
+    {
+        fold_deduped(enode, self.op_cost(enode), |sum, id| sum.saturating_add(costs(id)))
     }
 }
 
 /// A cost function that extracts a circuit with the least depth
 pub struct DepthCostFn;
 
-impl CostFunction<LutLang> for DepthCostFn {
-    type Cost = i64;
-    fn cost<C>(&mut self, enode: &LutLang, mut costs: C) -> Self::Cost
-    where
-        C: FnMut(Id) -> Self::Cost,
-    {
-        let op_cost = match enode {
+impl DepthCostFn {
+    /// Returns the cost of an e-node.
+    pub fn op_cost(&self, enode: &LutLang) -> i64 {
+        match enode {
             LutLang::Lut(l) => {
                 if l.len() <= 2 {
                     0
@@ -103,9 +120,29 @@ impl CostFunction<LutLang> for DepthCostFn {
             }
             LutLang::And(_) | LutLang::Mux(_) | LutLang::Nor(_) | LutLang::Xor(_) => 1,
             _ => 0,
-        };
+        }
+    }
+}
+
+impl LpCostFunction<LutLang, LutAnalysis> for DepthCostFn {
+    fn node_cost(
+        &mut self,
+        _egraph: &egg::EGraph<LutLang, LutAnalysis>,
+        _eclass: Id,
+        enode: &LutLang,
+    ) -> f64 {
+        self.op_cost(enode) as f64
+    }
+}
+
+impl CostFunction<LutLang> for DepthCostFn {
+    type Cost = i64;
+    fn cost<C>(&mut self, enode: &LutLang, mut costs: C) -> Self::Cost
+    where
+        C: FnMut(Id) -> Self::Cost,
+    {
         let rt = fold_deduped(enode, 0, |l, id| l.max(costs(id)));
-        rt + op_cost
+        rt + self.op_cost(enode)
     }
 }
 
@@ -119,6 +156,17 @@ impl<C> NegativeCostFn<C> {
     /// Returns a new cost function that takes the complement of the given cost function.
     pub fn new(c: C) -> Self {
         Self { c }
+    }
+}
+
+impl<L, N, M> LpCostFunction<L, N> for NegativeCostFn<M>
+where
+    L: Language,
+    N: Analysis<L>,
+    M: LpCostFunction<L, N>,
+{
+    fn node_cost(&mut self, egraph: &egg::EGraph<L, N>, eclass: Id, enode: &L) -> f64 {
+        -self.c.node_cost(egraph, eclass, enode)
     }
 }
 
@@ -183,15 +231,10 @@ impl GateCostFn {
     pub fn new(set: HashSet<String>) -> Self {
         Self { set }
     }
-}
 
-impl CostFunction<LutLang> for GateCostFn {
-    type Cost = u64;
-    fn cost<C>(&mut self, enode: &LutLang, mut costs: C) -> Self::Cost
-    where
-        C: FnMut(Id) -> Self::Cost,
-    {
-        let op_cost = match enode {
+    /// Returns the cost of a LutLang e-node.
+    pub fn op_cost_lut(&self, enode: &LutLang) -> u64 {
+        match enode {
             LutLang::Not(_) => {
                 if self.set.contains("INV") || self.set.contains(&enode.get_prim_name().unwrap()) {
                     2
@@ -214,19 +257,13 @@ impl CostFunction<LutLang> for GateCostFn {
             LutLang::Const(_) => 0,
             LutLang::Var(_) => 1,
             LutLang::DC => 0,
-            LutLang::Lut(l) => 10 * l.len() as u64 * l.len() as u64,
-        };
-        fold_deduped(enode, op_cost, |sum, id| sum.saturating_add(costs(id)))
+            LutLang::Lut(_) => u64::MAX,
+        }
     }
-}
 
-impl CostFunction<CellLang> for GateCostFn {
-    type Cost = u64;
-    fn cost<C>(&mut self, enode: &CellLang, mut costs: C) -> Self::Cost
-    where
-        C: FnMut(Id) -> Self::Cost,
-    {
-        let op_cost = match enode {
+    /// Returns the cost of a CellLang e-node.
+    pub fn op_cost_cell(&self, enode: &CellLang) -> u64 {
+        match enode {
             CellLang::Inv(_) => {
                 if self.set.contains("INV") {
                     1
@@ -258,7 +295,58 @@ impl CostFunction<CellLang> for GateCostFn {
 
                 if self.set.contains(pre) { 1 } else { u64::MAX }
             }
-        };
-        fold_deduped(enode, op_cost, |sum, id| sum.saturating_add(costs(id)))
+        }
+    }
+}
+
+impl CostFunction<LutLang> for GateCostFn {
+    type Cost = u64;
+    fn cost<C>(&mut self, enode: &LutLang, mut costs: C) -> Self::Cost
+    where
+        C: FnMut(Id) -> Self::Cost,
+    {
+        fold_deduped(enode, self.op_cost_lut(enode), |sum, id| sum.saturating_add(costs(id)))
+    }
+}
+
+impl LpCostFunction<LutLang, LutAnalysis> for GateCostFn {
+    fn node_cost(
+        &mut self,
+        _egraph: &egg::EGraph<LutLang, LutAnalysis>,
+        _eclass: Id,
+        enode: &LutLang,
+    ) -> f64 {
+        let node_cost = self.op_cost_lut(enode);
+        if node_cost == u64::MAX {
+            f64::INFINITY
+        } else {
+            node_cost as f64
+        }
+    }
+}
+
+impl CostFunction<CellLang> for GateCostFn {
+    type Cost = u64;
+    fn cost<C>(&mut self, enode: &CellLang, mut costs: C) -> Self::Cost
+    where
+        C: FnMut(Id) -> Self::Cost,
+    {
+       fold_deduped(enode, self.op_cost_cell(enode), |sum, id| sum.saturating_add(costs(id)))
+    }
+}
+
+impl LpCostFunction<CellLang, CellAnalysis> for GateCostFn {
+    fn node_cost(
+        &mut self,
+        _egraph: &egg::EGraph<CellLang, CellAnalysis>,
+        _eclass: Id,
+        enode: &CellLang,
+    ) -> f64 {
+        let node_cost = self.op_cost_cell(enode);
+        if node_cost == u64::MAX {
+            f64::INFINITY
+        } else {
+            node_cost as f64
+        }
     }
 }

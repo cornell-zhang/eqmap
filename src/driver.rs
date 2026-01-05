@@ -11,7 +11,7 @@ use super::serialize::serialize_egraph;
 use super::verilog::PrimitiveType;
 use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
-    RecExpr, RecExprParseError, Rewrite, Runner, StopReason, Symbol, TreeTerm,
+    LpCostFunction, RecExpr, RecExprParseError, Rewrite, Runner, StopReason, Symbol, TreeTerm,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::collections::{BTreeMap, HashSet};
@@ -473,6 +473,32 @@ where
     fn filter_cost_fn(set: HashSet<String>) -> impl CostFunction<Self>;
 }
 
+/// A trait to represent a language that is extractable for ILP-based extraction.
+pub trait LpExtractable<N>
+where
+    Self: Language,
+    N: Analysis<Self>,
+{
+    /// Returns the depth cost function for the language.
+    fn lp_depth_cost_fn() -> impl LpCostFunction<Self, N>;
+
+    /// Returns the area cost function for the language, only selecting cells with fewer than `cut_size` inputs.
+    /// Additionally, registers have a parameterized weight `w`.
+    fn lp_cell_cost_with_reg_weight_fn(cut_size: usize, w: u64) -> impl LpCostFunction<Self, N>;
+
+    /// Returns the area cost function for the language, only selecting cells with fewer than `cut_size` inputs.
+    /// In this case, registers have weight 1.
+    fn lp_cell_cost_fn(cut_size: usize) -> impl LpCostFunction<Self, N> {
+        Self::lp_cell_cost_with_reg_weight_fn(cut_size, 1)
+    }
+
+    /// Returns the cost function using exact cell areas.
+    fn lp_exact_area_cost_fn() -> impl LpCostFunction<Self, N>;
+
+    /// Returns a cost function used for extracting only certain types nodes.
+    fn lp_filter_cost_fn(set: HashSet<String>) -> impl LpCostFunction<Self, N>;
+}
+
 /// A trait to represent that an expression is not best explained by relating its roots.
 /// As an example, explanations of [LutLang::Bus] are not useful.
 pub trait Explanable
@@ -644,7 +670,7 @@ where
 
 impl<L, A> SynthRequest<L, A>
 where
-    L: CircuitLang,
+    L: CircuitLang + LpExtractable<A>,
     A: Analysis<L> + Default,
 {
     /// Request greedy extraction of cells/LUTs with at most `k` inputs.
@@ -683,20 +709,20 @@ where
         }
     }
 
-    /// Request exact extraction using HiGHS to solve ILP with `timeout` in seconds.
-    #[cfg(feature = "exact_highs")]
-    pub fn with_highs(self, timeout: u64) -> Self {
-        Self {
-            extract_strat: ExtractStrat::Highs(timeout),
-            ..self
-        }
-    }
-
     /// Request exact extraction using CBC to solve ILP with `timeout` in seconds.
     #[cfg(feature = "exact_cbc")]
     pub fn with_cbc(self, timeout: u64) -> Self {
         Self {
             extract_strat: ExtractStrat::Cbc(timeout),
+            ..self
+        }
+    }
+    
+    /// Request exact extraction using HiGHS to solve ILP with `timeout` in seconds.
+    #[cfg(feature = "exact_highs")]
+    pub fn with_highs(self, timeout: u64) -> Self {
+        Self {
+            extract_strat: ExtractStrat::Highs(timeout),
             ..self
         }
     }
@@ -1176,23 +1202,107 @@ where
                 self.greedy_extract_with(L::filter_cost_fn(set))
             }
             #[cfg(feature = "exact_cbc")]
-            (
-                OptStrat::CellCount(6) | OptStrat::CellCountRegWeighted(6, 1) | OptStrat::AstSize,
-                ExtractStrat::Cbc(t),
-            ) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: ILP ON");
+            (OptStrat::AstSize, ExtractStrat::Cbc(t)) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: CBC ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
                 L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
             }),
+            #[cfg(feature = "exact_cbc")]
+            (OptStrat::Area, ExtractStrat::Cbc(t)) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: CBC ILP ON");
+                let mut e = egg::LpExtractor::new(egraph, L::lp_exact_area_cost_fn());
+                L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
+            }),
+            #[cfg(feature = "exact_cbc")]
+            (OptStrat::MinDepth, ExtractStrat::Cbc(t)) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: CBC ILP ON");
+                let mut e = egg::LpExtractor::new(egraph, L::lp_depth_cost_fn());
+                L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
+            }),
+            #[cfg(feature = "exact_cbc")]
+            (OptStrat::MaxDepth, ExtractStrat::Cbc(t)) => self.extract_with(|egraph, root| {
+                eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");
+                eprintln!("INFO: CBC ILP ON");
+                let mut e =
+                    egg::LpExtractor::new(egraph, NegativeCostFn::new(L::lp_depth_cost_fn()));
+                L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
+            }),
+            #[cfg(feature = "exact_cbc")]
+            (OptStrat::CellCount(k), ExtractStrat::Cbc(t)) => {
+                self.extract_with(|egraph, root| {
+                    eprintln!("INFO: CBC ILP ON");
+                    let mut e = egg::LpExtractor::new(egraph, L::lp_cell_cost_fn(k));
+                    L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
+                })
+            }
+            #[cfg(feature = "exact_cbc")]
+            (OptStrat::CellCountRegWeighted(k, w), ExtractStrat::Cbc(t)) => {
+                self.extract_with(|egraph, root| {
+                    eprintln!("INFO: CBC ILP ON");
+                    let mut e =
+                        egg::LpExtractor::new(egraph, L::lp_cell_cost_with_reg_weight_fn(k, w));
+                    L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
+                })
+            }
+            #[cfg(feature = "exact_cbc")]
+            (OptStrat::Disassemble(set), ExtractStrat::Cbc(t)) => {
+                self.extract_with(|egraph, root| {
+                    eprintln!("INFO: CBC ILP ON");
+                    let mut e = egg::LpExtractor::new(egraph, L::lp_filter_cost_fn(set));
+                    L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
+                })
+            }
             #[cfg(feature = "exact_highs")]
-            (
-                OptStrat::CellCount(6) | OptStrat::CellCountRegWeighted(6, 1) | OptStrat::AstSize,
-                ExtractStrat::Highs(t),
-            ) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: ILP ON");
+            (OptStrat::AstSize, ExtractStrat::Highs(t)) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: HiGHS ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
                 L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
             }),
+            #[cfg(feature = "exact_highs")]
+            (OptStrat::Area, ExtractStrat::Highs(t)) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: HiGHS ILP ON");
+                let mut e = egg::LpExtractor::new(egraph, L::lp_exact_area_cost_fn());
+                L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
+            }),
+            #[cfg(feature = "exact_highs")]
+            (OptStrat::MinDepth, ExtractStrat::Highs(t)) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: HiGHS ILP ON");
+                let mut e = egg::LpExtractor::new(egraph, L::lp_depth_cost_fn());
+                L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
+            }),
+            #[cfg(feature = "exact_highs")]
+            (OptStrat::MaxDepth, ExtractStrat::Highs(t)) => self.extract_with(|egraph, root| {
+                eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");
+                eprintln!("INFO: HiGHS ILP ON");
+                let mut e =
+                    egg::LpExtractor::new(egraph, NegativeCostFn::new(L::lp_depth_cost_fn()));
+                L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
+            }),
+            #[cfg(feature = "exact_highs")]
+            (OptStrat::CellCount(k), ExtractStrat::Highs(t)) => {
+                self.extract_with(|egraph, root| {
+                    eprintln!("INFO: HiGHS ILP ON");
+                    let mut e = egg::LpExtractor::new(egraph, L::lp_cell_cost_fn(k));
+                    L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
+                })
+            }
+            #[cfg(feature = "exact_highs")]
+            (OptStrat::CellCountRegWeighted(k, w), ExtractStrat::Highs(t)) => {
+                self.extract_with(|egraph, root| {
+                    eprintln!("INFO: HiGHS ILP ON");
+                    let mut e =
+                        egg::LpExtractor::new(egraph, L::lp_cell_cost_with_reg_weight_fn(k, w));
+                    L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
+                })
+            }
+            #[cfg(feature = "exact_highs")]
+            (OptStrat::Disassemble(set), ExtractStrat::Highs(t)) => {
+                self.extract_with(|egraph, root| {
+                    eprintln!("INFO: HiGHS ILP ON");
+                    let mut e = egg::LpExtractor::new(egraph, L::lp_filter_cost_fn(set));
+                    L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
+                })
+            }
             #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
             _ => Err(format!(
                 "{:?} optimization strategy is incomptabile with {:?} extraction.",
@@ -1235,7 +1345,7 @@ pub fn process_expression<L, A, R>(
     verbose: bool,
 ) -> std::io::Result<SynthOutput<L, R>>
 where
-    L: CircuitLang,
+    L: CircuitLang + LpExtractable<A>,
     A: Analysis<L> + Clone + Default,
     R: Report<L>,
 {
@@ -1311,7 +1421,7 @@ pub fn process_string_expression<L, A, R>(
     verbose: bool,
 ) -> std::io::Result<SynthOutput<L, R>>
 where
-    L: CircuitLang,
+    L: CircuitLang + LpExtractable<A>,
     <L as egg::FromOp>::Error: serde::ser::StdError + Sync + Send + 'static,
     A: Analysis<L> + Clone + Default,
     R: Report<L>,

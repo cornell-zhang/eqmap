@@ -1,0 +1,6 @@
+FILTER_LIST="lut6-shannon"
+"and-decompose"; "(LUT ?p ?a ?b)" <=> "(AND ?a ?b)"
+"or-decompose"; "(LUT ?p ?a ?b)" <=> "(OR ?a ?b)"
+"xor-decompose"; "(LUT ?p ?a ?b)" <=> "(XOR ?a ?b)"
+"not-decompose"; "(LUT 1 ?a)" <=> "(NOT ?a)"
+"mux-decompose"; "(LUT 14 ?a ?b)" <=> "(MUX ?a ?b)"
