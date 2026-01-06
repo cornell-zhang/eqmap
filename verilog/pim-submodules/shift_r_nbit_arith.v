@@ -1,5 +1,5 @@
 // n-bit Right Shift Submodule
-// Dependencies: None
+// Dependencies: mux_nbit.v
 // deyuan, 05/26/2025
 
 module shift_r_nbit_arith #(
@@ -17,9 +17,9 @@ genvar i;
 generate
     for (i = 0; i < SHIFT_WIDTH; i = i + 1) begin : gen_shift
         if (i == 0) begin
-            assign shift[i] = (B[i] & ($signed(A) >>> (1 << i))) | (~B[i] & A);
+            mux_nbit #(.WIDTH(WIDTH)) u_mux_nbit_0 ( .A($signed(A) >>> (1 << i)), .B(A), .sel(B[i]), .Y(shift[i]));
         end else begin
-            assign shift[i] = (B[i] & ($signed(shift[i-1]) >>> (1 << i))) | (~B[i] & shift[i-1]);
+            mux_nbit #(.WIDTH(WIDTH)) u_mux_nbit_1 ( .A($signed(shift[i-1]) >>> (1 << i)), .B(shift[i-1]), .sel(B[i]), .Y(shift[i]));
         end
     end
 endgenerate
