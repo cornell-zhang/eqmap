@@ -312,19 +312,6 @@ impl CircuitLang for CellLang {
     }
 }
 
-/// An empty analysis for CellLang
-#[derive(Default, Clone)]
-pub struct CellAnalysis;
-impl Analysis<CellLang> for CellAnalysis {
-    type Data = ();
-
-    fn merge(&mut self, to: &mut Self::Data, from: Self::Data) -> DidMerge {
-        egg::merge_max(to, from)
-    }
-
-    fn make(_egraph: &mut EGraph<CellLang, Self>, _enode: &CellLang, _id: egg::Id) -> Self::Data {}
-}
-
 #[derive(Debug, Serialize)]
 struct CircuitStats {
     /// AST size of the circuit
