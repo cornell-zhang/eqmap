@@ -1207,8 +1207,8 @@ pub fn simple_reader(cmd: Option<String>, input_file: Option<PathBuf>) -> std::i
     let mut buf = String::new();
     if let Some(cmd) = cmd {
         buf = cmd;
-    } else if input_file.is_some() {
-        std::fs::File::open(input_file.unwrap())?.read_to_string(&mut buf)?;
+    } else if let Some(input_file) = input_file {
+        std::fs::File::open(input_file)?.read_to_string(&mut buf)?;
     } else {
         let mut stdin = std::io::stdin();
         if stdin.is_terminal() {
