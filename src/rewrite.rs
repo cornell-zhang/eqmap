@@ -1103,6 +1103,11 @@ where
         let hash_value = s.finish();
         format!("{:x}", hash_value)
     }
+
+    /// Returns the number of activated rewrite rules
+    pub fn num_active(&self) -> usize {
+        self.active.len()
+    }
 }
 
 impl<L, A> RewriteManager<L, A>

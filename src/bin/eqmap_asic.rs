@@ -151,11 +151,15 @@ fn main() -> std::io::Result<()> {
         rules.enable_category("expansion_rewrites");
     }
 
-    let rules = rules.active_rules();
-
     if args.verbose {
-        eprintln!("INFO: Running with {} rewrite rules", rules.len());
+        eprintln!(
+            "INFO: Running with {} rewrite rules. Hash: {}",
+            rules.num_active(),
+            rules.rules_hash()
+        );
     }
+
+    let rules = rules.active_rules();
 
     let req = SynthRequest::default().with_rules(rules);
 
