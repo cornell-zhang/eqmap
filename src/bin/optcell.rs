@@ -126,16 +126,18 @@ fn main() -> std::io::Result<()> {
     let path = if let Some(p) = args.rules {
         p
     } else {
-        let cpath = std::env::current_exe()?;
-        // TODO(matth2k): check for an env variable to override this path
-        cpath
-            .parent()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .join("rules/asic.celllang")
+        let root = match std::env::var("EQMAP_ROOT") {
+            Ok(root) => PathBuf::from(root),
+            Err(_) => std::env::current_exe()?
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .to_path_buf(),
+        };
+        root.join("rules/asic.celllang")
     };
 
     eprintln!("INFO: Loading rewrite rules from {path:?}");
