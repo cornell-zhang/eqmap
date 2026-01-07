@@ -1135,7 +1135,7 @@ where
         }
 
         if bidirectional {
-            self.construct_rule(&format!("{name}_bwd"), rhs, lhs, false, category)?;
+            self.construct_rule(&format!("{name}-rev"), rhs, lhs, false, category)?;
         }
 
         Ok(rw)

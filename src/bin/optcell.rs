@@ -3,7 +3,7 @@ use clap::Parser;
 use clap::ValueEnum;
 use egg::{FromOpError, RecExpr, RecExprParseError};
 use eqmap::{
-    asic::{CellAnalysis, CellLang, CellRpt, asic_rewrites, get_boolean_algebra_rewrites},
+    asic::{CellAnalysis, CellLang, CellRpt, asic_rewrites},
     driver::{SynthRequest, process_string_expression, simple_reader},
     rewrite::RewriteManager,
     verilog::SVModule,
@@ -123,26 +123,35 @@ fn main() -> std::io::Result<()> {
 
     let buf = simple_reader(args.command, args.input)?;
 
-    let mut rules = RewriteManager::<CellLang, _>::new();
+    let path = if let Some(p) = args.rules {
+        p
+    } else {
+        let cpath = std::env::current_exe()?;
+        // TODO(matth2k): check for an env variable to override this path
+        cpath
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("rules/asic.celllang")
+    };
 
-    if let Some(p) = args.rules {
-        let file = std::fs::File::open(p)?;
-        rules.parse_rules(file).map_err(std::io::Error::other)?;
+    eprintln!("INFO: Loading rewrite rules from {path:?}");
+
+    let mut rules = RewriteManager::<CellLang, CellAnalysis>::new();
+    let file = std::fs::File::open(path)?;
+    rules.parse_rules(file).map_err(std::io::Error::other)?;
+
+    if args.canonicalize {
+        rules.enable_category("algebraic");
+    } else {
         let categories = rules.categories().cloned().collect::<Vec<_>>();
         for cat in categories {
             rules.enable_category(&cat);
         }
-    } else if args.canonicalize {
-        rules
-            .insert_category("asic_rewrites".to_string(), get_boolean_algebra_rewrites())
-            .map_err(|r| std::io::Error::other(format!("Repeat rule: {:?}", r)))?;
-        rules.enable_category("asic_rewrites");
-    } else {
-        rules
-            .insert_category("asic_rewrites".to_string(), asic_rewrites())
-            .map_err(|r| std::io::Error::other(format!("Repeat rule: {:?}", r)))?;
-        rules.enable_category("asic_rewrites");
-    };
+    }
 
     let rules = rules.active_rules();
 

@@ -2,7 +2,7 @@ use clap::Parser;
 #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
 use clap::ValueEnum;
 use eqmap::{
-    asic::{CellLang, CellRpt, asic_rewrites, expansion_rewrites, expr_is_mapped},
+    asic::{CellAnalysis, CellLang, CellRpt, expansion_rewrites, expr_is_mapped},
     driver::{SynthRequest, process_expression},
     rewrite::RewriteManager,
     verilog::{SVModule, sv_parse_wrapper},
@@ -119,20 +119,29 @@ fn main() -> std::io::Result<()> {
         f.get_outputs().len()
     );
 
-    let mut rules = RewriteManager::<CellLang, _>::new();
-
-    if let Some(p) = args.rules {
-        let file = std::fs::File::open(p)?;
-        rules.parse_rules(file).map_err(std::io::Error::other)?;
-        let categories = rules.categories().cloned().collect::<Vec<_>>();
-        for cat in categories {
-            rules.enable_category(&cat);
-        }
+    let path = if let Some(p) = args.rules {
+        p
     } else {
-        rules
-            .insert_category("asic_rewrites".to_string(), asic_rewrites())
-            .map_err(|r| std::io::Error::other(format!("Repeat rule: {:?}", r)))?;
-        rules.enable_category("asic_rewrites");
+        let cpath = std::env::current_exe()?;
+        // TODO(matth2k): check for an env variable to override this path
+        cpath
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("rules/asic.celllang")
+    };
+
+    eprintln!("INFO: Loading rewrite rules from {path:?}");
+
+    let mut rules = RewriteManager::<CellLang, CellAnalysis>::new();
+    let file = std::fs::File::open(path)?;
+    rules.parse_rules(file).map_err(std::io::Error::other)?;
+    let categories = rules.categories().cloned().collect::<Vec<_>>();
+    for cat in categories {
+        rules.enable_category(&cat);
     }
 
     if args.filter.is_some() {
