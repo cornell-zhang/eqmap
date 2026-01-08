@@ -16,8 +16,8 @@ module subtractor_1bit_cmp #(
 
         wire tmp;
         // XOR + MUX
-        assign tmp = (A & ~Bin) | (~A & Bin);
-        assign Bout = (tmp & Bin) | (~tmp & B);
+        assign tmp = A ^ Bin;
+        assign Bout = tmp ? Bin : B;
 
     end else if (IMPL_TYPE == 1) begin : impl_maj
 

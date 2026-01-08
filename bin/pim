@@ -15,7 +15,7 @@
 # limitations under the License.
 
 set -eo pipefail
-LIB="$(dirname $0)/../verilog/celllang-pim.v"
+LIB="$(dirname $0)/../verilog/celllang.v"
 LIB="$(realpath $LIB)"
 SIMLIB="$(dirname $0)/../verilog/simlib.v"
 SIMLIB="$(realpath $SIMLIB)"

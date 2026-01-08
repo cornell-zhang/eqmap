@@ -9,6 +9,7 @@ module xnor_nbit #(
     input [WIDTH-1:0] B,
     output [WIDTH-1:0] Y
 );
-    assign Y = (B & A) | (~B & ~A);
+
+    assign Y = ~(A ^ B);
 
 endmodule

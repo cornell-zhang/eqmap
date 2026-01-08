@@ -20,7 +20,7 @@ module abs_nbit #(
             adder_1bit_half #(
                 .IMPL_TYPE(IMPL_TYPE)
             ) u_adder_1bit_half (
-                .A((A[i] & ~A[WIDTH-1]) | (~A[i] & A[WIDTH-1])), // perform NOT if sign bit is 1
+                .A(A[i] ^ A[WIDTH-1]), // perform NOT if sign bit is 1
                 .B(Carry[i]),
                 .Sum(Y[i]),
                 .Cout(Carry[i+1])

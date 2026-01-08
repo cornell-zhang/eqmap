@@ -17,9 +17,9 @@ module adder_1bit #(
 
         wire tmp;
         // XOR + MUX
-        assign tmp = (A & ~Cin) | (~A & Cin);
-        assign Cout = (~tmp & Cin) | (tmp & B);
-        assign Sum = (tmp & ~B) | (~tmp & B);
+        assign tmp = A ^ Cin;
+        assign Cout = tmp ? B : Cin;
+        assign Sum = tmp ^ B;
 
     end else if (IMPL_TYPE == 1) begin : impl_maj
 
