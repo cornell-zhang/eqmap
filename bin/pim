@@ -15,7 +15,7 @@
 # limitations under the License.
 
 set -eo pipefail
-LIB="$(dirname $0)/../verilog/celllang.v"
+LIB="$(dirname $0)/../verilog/celllang-pim.v"
 LIB="$(realpath $LIB)"
 SIMLIB="$(dirname $0)/../verilog/simlib.v"
 SIMLIB="$(realpath $SIMLIB)"
@@ -107,6 +107,6 @@ else
 
 
     make -f $MKFILE $1.$FSTEM 1>&2
-    $TOOL $1.$FSTEM --rules $RULES --filter INV,MAJ3,AND2,OR2 $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} ${16}
+    $TOOL $1.$FSTEM --rules $RULES $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} ${16}
     rm -f $1.$FSTEM $MKFILE
 fi
