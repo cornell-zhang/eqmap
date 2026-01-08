@@ -2,7 +2,7 @@ use clap::Parser;
 #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
 use clap::ValueEnum;
 use eqmap::{
-    asic::{CellLang, CellRpt, asic_rewrites, expansion_rewrites, expr_is_mapped},
+    asic::{CellAnalysis, CellLang, CellRpt, expansion_rewrites, expr_is_mapped},
     driver::{SynthRequest, process_expression},
     rewrite::RewriteManager,
     verilog::{SVModule, sv_parse_wrapper},
@@ -119,20 +119,31 @@ fn main() -> std::io::Result<()> {
         f.get_outputs().len()
     );
 
-    let mut rules = RewriteManager::<CellLang, _>::new();
-
-    if let Some(p) = args.rules {
-        let file = std::fs::File::open(p)?;
-        rules.parse_rules(file).map_err(std::io::Error::other)?;
-        let categories = rules.categories().cloned().collect::<Vec<_>>();
-        for cat in categories {
-            rules.enable_category(&cat);
-        }
+    let path = if let Some(p) = args.rules {
+        p
     } else {
-        rules
-            .insert_category("asic_rewrites".to_string(), asic_rewrites())
-            .map_err(|r| std::io::Error::other(format!("Repeat rule: {:?}", r)))?;
-        rules.enable_category("asic_rewrites");
+        let root = match std::env::var("EQMAP_ROOT") {
+            Ok(root) => PathBuf::from(root),
+            Err(_) => std::env::current_exe()?
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .to_path_buf(),
+        };
+        root.join("rules/asic.celllang")
+    };
+
+    eprintln!("INFO: Loading rewrite rules from {path:?}");
+
+    let mut rules = RewriteManager::<CellLang, CellAnalysis>::new();
+    let file = std::fs::File::open(path)?;
+    rules.parse_rules(file).map_err(std::io::Error::other)?;
+    let categories = rules.categories().cloned().collect::<Vec<_>>();
+    for cat in categories {
+        rules.enable_category(&cat);
     }
 
     if args.filter.is_some() {
@@ -142,11 +153,15 @@ fn main() -> std::io::Result<()> {
         rules.enable_category("expansion_rewrites");
     }
 
-    let rules = rules.active_rules();
-
     if args.verbose {
-        eprintln!("INFO: Running with {} rewrite rules", rules.len());
+        eprintln!(
+            "INFO: Running with {} rewrite rules. Hash: {}",
+            rules.num_active(),
+            rules.rules_hash()
+        );
     }
+
+    let rules = rules.active_rules();
 
     let req = SynthRequest::default().with_rules(rules);
 
