@@ -213,8 +213,16 @@ where
         })
     }
 
-    fn get_rule_uses_rec(map: &mut BTreeMap<String, usize>, expl: &[std::rc::Rc<TreeTerm<L>>]) {
+    fn get_rule_uses_rec(
+        map: &mut BTreeMap<String, usize>,
+        expl: &[std::rc::Rc<TreeTerm<L>>],
+        visited: &mut std::collections::HashSet<*const TreeTerm<L>>,
+    ) {
         for t in expl {
+            let ptr = std::rc::Rc::as_ptr(t);
+            if !visited.insert(ptr) {
+                continue; // Already visited, skip to prevent infinite recursion
+            }
             if let Some(r) = t.backward_rule {
                 let name = r.to_string();
                 let count = map.get(&name).unwrap_or(&0) + 1;
@@ -228,7 +236,7 @@ where
             }
 
             for c in &t.child_proofs {
-                Self::get_rule_uses_rec(map, c);
+                Self::get_rule_uses_rec(map, c, visited);
             }
         }
     }
@@ -236,13 +244,11 @@ where
     /// Get an accounting of rules used in the solution.
     pub fn get_rule_uses(&self) -> Option<String> {
         self.expl.as_ref()?;
-
         let mut map: BTreeMap<String, usize> = BTreeMap::new();
-
         let expl_list = self.expl.as_ref().unwrap();
-
+        let mut visited = std::collections::HashSet::new();
         for expl in expl_list {
-            Self::get_rule_uses_rec(&mut map, &expl.explanation_trees);
+            Self::get_rule_uses_rec(&mut map, &expl.explanation_trees, &mut visited);
         }
         Some(
             map.iter()
@@ -717,7 +723,7 @@ where
             ..self
         }
     }
-    
+
     /// Request exact extraction using HiGHS to solve ILP with `timeout` in seconds.
     #[cfg(feature = "exact_highs")]
     pub fn with_highs(self, timeout: u64) -> Self {
@@ -1228,13 +1234,11 @@ where
                 L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
             }),
             #[cfg(feature = "exact_cbc")]
-            (OptStrat::CellCount(k), ExtractStrat::Cbc(t)) => {
-                self.extract_with(|egraph, root| {
-                    eprintln!("INFO: CBC ILP ON");
-                    let mut e = egg::LpExtractor::new(egraph, L::lp_cell_cost_fn(k));
-                    L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
-                })
-            }
+            (OptStrat::CellCount(k), ExtractStrat::Cbc(t)) => self.extract_with(|egraph, root| {
+                eprintln!("INFO: CBC ILP ON");
+                let mut e = egg::LpExtractor::new(egraph, L::lp_cell_cost_fn(k));
+                L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
+            }),
             #[cfg(feature = "exact_cbc")]
             (OptStrat::CellCountRegWeighted(k, w), ExtractStrat::Cbc(t)) => {
                 self.extract_with(|egraph, root| {
@@ -1383,9 +1387,7 @@ where
         let len = expr.len().min(240);
         eprintln!("INFO: {} ... => ", &expr[0..len]);
     }
-
     let simplified = result.get_expr();
-
     // Verify functionality
     if no_verify {
         eprintln!("INFO: Skipping functionality tests...");

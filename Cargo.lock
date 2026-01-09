@@ -293,8 +293,7 @@ dependencies = [
 [[package]]
 name = "egg"
 version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd40cfd4196d7a8f882ace95d623d4d6734588e502b4e188675a7c2f55eb4fb4"
+source = "git+https://github.com/jk2997/egg#3bb37310aa5edb279f86475bfd77ee9e7c85433f"
 dependencies = [
  "env_logger",
  "good_lp",
