@@ -347,18 +347,22 @@ impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping
             }
         }
 
-        let new_roots: Vec<_> = self.root_ids().map(|id| mapping[&id].clone()).collect();
-        let old_net_names = self
-            .root_nets()
-            .map(|n| n.as_net().clone())
-            .collect::<Vec<_>>();
+        let mut new_roots: Vec<_> = self.root_ids().map(|id| mapping[&id].clone()).collect();
+        let mut old_roots: Vec<_> = self.root_nets().collect();
 
-        let old_roots: Vec<_> = self.root_nets().collect();
+        new_roots.dedup();
+        old_roots.dedup();
+
+        let old_net_names: Vec<_> = old_roots.iter().map(|n| n.as_net().clone()).collect();
 
         drop(self);
         drop(mapping);
 
         for (old, new) in old_roots.into_iter().zip(new_roots.iter()) {
+            if old == *new {
+                continue;
+            }
+
             if old.is_top_level_output() {
                 let id = old.get_identifier() + "_old".into();
                 old.as_net_mut().set_identifier(id);
