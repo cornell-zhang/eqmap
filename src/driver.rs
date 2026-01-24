@@ -268,6 +268,18 @@ where
         Ok(())
     }
 
+    /// Print the report of the output in a human readable format.
+    pub fn print_report(&self, w: &mut impl Write) -> std::io::Result<()> {
+        writeln!(w, "INFO: Synthesis Report")?;
+        if let Some(rpt) = &self.rpt {
+            let s = toml::to_string_pretty(rpt).map_err(std::io::Error::other)?;
+            for line in s.lines() {
+                writeln!(w, "INFO: {}", line)?;
+            }
+        }
+        Ok(())
+    }
+
     /// Write the report of the output to a string.
     pub fn write_report_to_string(&self) -> Result<String, std::io::Error> {
         match &self.rpt {
@@ -1280,6 +1292,7 @@ where
     if no_verify {
         eprintln!("INFO: Skipping functionality tests...");
     } else {
+        eprintln!("INFO: Checking expression...");
         let check = L::check_expr(&expr, simplified);
         if check.is_inconclusive() && verbose {
             eprintln!("WARNING: Functionality verification inconclusive");

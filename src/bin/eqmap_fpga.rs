@@ -9,7 +9,7 @@ use eqmap::{
     verilog::{SVModule, sv_parse_wrapper},
 };
 use std::{
-    io::{Read, Write, stdin},
+    io::{Read, Write, stderr, stdin},
     path::PathBuf,
 };
 
@@ -249,6 +249,7 @@ fn main() -> std::io::Result<()> {
     if let Some(p) = args.report {
         let mut writer = std::fs::File::create(p)?;
         result.write_report(&mut writer)?;
+        result.print_report(&mut stderr().lock())?;
     }
 
     eprintln!("INFO: Writing output to Verilog...");
