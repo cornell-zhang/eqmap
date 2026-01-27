@@ -522,6 +522,10 @@ where
 
 /// Verify the grammar of a [LutLang] expression from its root
 fn verify_expr(expr: &RecExpr<LutLang>) -> Result<(), String> {
+    if expr.is_empty() {
+        return Ok(());
+    }
+
     expr.as_ref().last().unwrap().verify_rec(expr)?;
     Ok(())
 }
@@ -1138,8 +1142,23 @@ impl CircuitLang for LutLang {
         Self::Bus(ids.collect())
     }
 
+    fn int(x: u64) -> Option<Self> {
+        Some(Self::Program(x))
+    }
+
     fn is_bus(&self) -> bool {
         matches!(self, Self::Bus(_))
+    }
+
+    fn is_lut(&self) -> bool {
+        matches!(self, Self::Lut(_))
+    }
+
+    fn get_int(&self) -> Option<u64> {
+        match self {
+            Self::Program(p) => Some(*p),
+            _ => None,
+        }
     }
 
     fn get_var(&self) -> Option<Symbol> {
