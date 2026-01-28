@@ -21,25 +21,30 @@ module fdre (
       .R (1'h0)
   );
 
-  // CHECK: module fdre (
-  // CHECK:     d,
-  // CHECK:     clk,
-  // CHECK:     y
-  // CHECK: );
-  // CHECK:   input d;
-  // CHECK:   wire d;
-  // CHECK:   input clk;
-  // CHECK:   wire clk;
-  // CHECK:   output y;
-  // CHECK:   wire y;
-  // CHECK:   FDRE #(
-  // CHECK:       .INIT(1'hx)
-  // CHECK:   ) _4_ (
-  // CHECK:       .C(clk),
-  // CHECK:       .CE(1'h1),
-  // CHECK:       .D(d),
-  // CHECK:       .R(1'h0),
-  // CHECK:       .Q(y)
-  // CHECK:   );
-  // CHECK: endmodule
 endmodule
+
+// CHECK: module fdre (
+// CHECK:     d,
+// CHECK:     clk,
+// CHECK:     y
+// CHECK: );
+// CHECK:   input d;
+// CHECK:   wire d;
+// CHECK:   input clk;
+// CHECK:   wire clk;
+// CHECK:   output y;
+// CHECK:   wire y;
+// CHECK:   wire _4_CE_const;
+// CHECK:   wire _4_R_const;
+// CHECK:   assign _4_CE_const = 1'b1;
+// CHECK:   assign _4_R_const = 1'b0;
+// CHECK:   FDRE #(
+// CHECK:       .INIT(1'hx)
+// CHECK:   ) _4_ (
+// CHECK:       .C(clk),
+// CHECK:       .CE(_4_CE_const),
+// CHECK:       .D(d),
+// CHECK:       .R(_4_R_const),
+// CHECK:       .Q(y)
+// CHECK:   );
+// CHECK: endmodule

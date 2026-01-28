@@ -56,12 +56,12 @@ module gate_test (
       .S(_03_),
       .Y(tmp0)
   );
-  XOR _12_ (
+  XOR _10_ (
       .A(c),
       .B(f),
       .Y(_04_)
   );
-  XOR _12_ (
+  XOR _11_ (
       .A(_04_),
       .B(tmp0),
       .Y(y)
@@ -70,55 +70,57 @@ module gate_test (
 endmodule
 
 // CHECK: module gate_test (
-// CHECK:     b,
-// CHECK:     e,
-// CHECK:     d,
-// CHECK:     g,
-// CHECK:     a,
-// CHECK:     f,
-// CHECK:     c,
-// CHECK:     y
+// CHECK:   a,
+// CHECK:   b,
+// CHECK:   c,
+// CHECK:   d,
+// CHECK:   e,
+// CHECK:   f,
+// CHECK:   g,
+// CHECK:   y
 // CHECK: );
-// CHECK:   input b;
-// CHECK:   wire b;
-// CHECK:   input e;
-// CHECK:   wire e;
-// CHECK:   input d;
-// CHECK:   wire d;
-// CHECK:   input g;
-// CHECK:   wire g;
 // CHECK:   input a;
 // CHECK:   wire a;
-// CHECK:   input f;
-// CHECK:   wire f;
+// CHECK:   input b;
+// CHECK:   wire b;
 // CHECK:   input c;
 // CHECK:   wire c;
+// CHECK:   input d;
+// CHECK:   wire d;
+// CHECK:   input e;
+// CHECK:   wire e;
+// CHECK:   input f;
+// CHECK:   wire f;
+// CHECK:   input g;
+// CHECK:   wire g;
 // CHECK:   output y;
 // CHECK:   wire y;
 // CHECK:   wire __0__;
 // CHECK:   wire __1__;
+// CHECK:   wire __2__;
 // CHECK:   LUT2 #(
-// CHECK:       .INIT(4'h8)
-// CHECK:   ) __2__ (
-// CHECK:       .I0(e),
-// CHECK:       .I1(d),
-// CHECK:       .O(__0__)
+// CHECK:     .INIT(4'h8)
+// CHECK:   ) __3__ (
+// CHECK:     .I1(d),
+// CHECK:     .I0(e),
+// CHECK:     .O(__0__)
 // CHECK:   );
 // CHECK:   LUT4 #(
-// CHECK:       .INIT(16'hccc5)
-// CHECK:   ) __3__ (
-// CHECK:       .I0(b),
-// CHECK:       .I1(__0__),
-// CHECK:       .I2(g),
-// CHECK:       .I3(a),
-// CHECK:       .O(__1__)
+// CHECK:     .INIT(16'hccc5)
+// CHECK:   ) __4__ (
+// CHECK:     .I3(a),
+// CHECK:     .I2(g),
+// CHECK:     .I1(__0__),
+// CHECK:     .I0(b),
+// CHECK:     .O(__1__)
 // CHECK:   );
 // CHECK:   LUT3 #(
-// CHECK:       .INIT(8'h96)
-// CHECK:   ) __4__ (
-// CHECK:       .I0(__1__),
-// CHECK:       .I1(f),
-// CHECK:       .I2(c),
-// CHECK:       .O(y)
+// CHECK:     .INIT(8'h96)
+// CHECK:   ) __5__ (
+// CHECK:     .I2(c),
+// CHECK:     .I1(f),
+// CHECK:     .I0(__1__),
+// CHECK:     .O(__2__)
 // CHECK:   );
+// CHECK:   assign y = __2__;
 // CHECK: endmodule

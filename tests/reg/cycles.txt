@@ -1,9 +1,9 @@
 // RUN: opt %s -k 4 --no-verify 2>>/dev/null | FileCheck %s
 
 // And prev value with next value
-(CYCLE (REG (AND a (ARG 0))))
-// CHECK: (CYCLE (REG (LUT 8 a (ARG 0))))
+(CYCLE (REG (AND a (ARG 0)) clk ce rst))
+// CHECK: (CYCLE (REG (LUT 8 a (ARG 0)) clk ce rst))
 
-// Same thing but in different order
-(CYCLE (AND (REG a) (REG (ARG 0))))
-// CHECK: (CYCLE (REG (LUT 8 a (ARG 0))))
+// Same thing but in reverse order
+(CYCLE (AND (REG a clk ce rst) (REG (ARG 0) clk ce rst)))
+// CHECK: (CYCLE (REG (LUT 8 a (ARG 0)) clk ce rst))

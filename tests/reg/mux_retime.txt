@@ -1,4 +1,4 @@
 // RUN: opt %s -k 4 --no-verify 2>>/dev/null | FileCheck %s
 // 4:1 mux with register inserted
-(MUX (REG s1) (REG (MUX s0 a b)) (REG (MUX s0 c d)))
-// CHECK: (REG (LUT 51952 s1 (LUT 61642 s1 s0 c d) a b))
+(MUX (REG s1 clk ce rst) (REG (MUX s0 a b) clk ce rst) (REG (MUX s0 c d) clk ce rst))
+// CHECK: (REG (LUT 51952 s1 (LUT 61642 s1 s0 c d) a b) clk ce rst)

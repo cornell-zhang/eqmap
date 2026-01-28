@@ -35,8 +35,8 @@ module \$mux (
           .Y(_TECHMAP_REPLACE_sb)
       );
       INV _TECHMAP_REPLACE_SI (
-          .A(S),
-          .Y(_TECHMAP_REPLACE_si)
+          .A (S),
+          .ZN(_TECHMAP_REPLACE_si)
       );
       AND _TECHMAP_REPLACE_SA (
           .A(_TECHMAP_REPLACE_si),
@@ -94,12 +94,12 @@ module \$xor (
       );
     end else begin : BLOCK2
       INV _TECHMAP_REPLACE_AI (
-          .A(A),
-          .Y(_TECHMAP_REPLACE_ai)
+          .A (A),
+          .ZN(_TECHMAP_REPLACE_ai)
       );
       INV _TECHMAP_REPLACE_BI (
-          .A(B),
-          .Y(_TECHMAP_REPLACE_bi)
+          .A (B),
+          .ZN(_TECHMAP_REPLACE_bi)
       );
       AND _TECHMAP_REPLACE_C (
           .A(A),
@@ -180,13 +180,13 @@ module \$not (
           .A_WIDTH (A_WIDTH),
           .Y_WIDTH (Y_WIDTH)
       ) _TECHMAP_REPLACE_ (
-          .A(A),
-          .Y(Y)
+          .A (A),
+          .ZN(Y)
       );
     end else begin : BLOCK2
       INV _TECHMAP_REPLACE_ (
-          .A(A),
-          .Y(Y)
+          .A (A),
+          .ZN(Y)
       );
     end
   endgenerate

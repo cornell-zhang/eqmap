@@ -167,7 +167,6 @@ fn test_verilog_literals() {
     assert!(init_parser("1'hz").is_err());
 }
 
-const CLK: &str = "clk";
 const REG_NAME: &str = "FDRE";
 const LUT_ROOT: &str = "LUT";
 
@@ -273,7 +272,7 @@ impl PrimitiveType {
             Self::LUT5 => 5,
             Self::LUT6 => 6,
             Self::VCC | Self::GND => 0,
-            Self::FDRE => 1,
+            Self::FDRE => 4,
             Self::MAJ3 => 3,
         }
     }
@@ -368,7 +367,12 @@ impl PrimitiveType {
                 "I0".to_string(),
             ],
             Self::VCC | Self::GND => vec![],
-            Self::FDRE => vec!["D".to_string()],
+            Self::FDRE => vec![
+                "D".to_string(),
+                "C".to_string(),
+                "CE".to_string(),
+                "R".to_string(),
+            ],
         }
     }
 
@@ -705,7 +709,7 @@ impl SVPrimitive {
                 self.connect_input(port, signal)
             }
             "O" | "Y" | "Q" | "G" | "P" | "Z" | "ZN" => self.connect_output(port, signal),
-            "C" | "CE" | "R" => Ok(()),
+            "C" | "CE" | "R" => self.connect_input(port, signal),
             _ => Err(format!("Unknown port name {port}")),
         }
     }
@@ -766,19 +770,9 @@ impl fmt::Display for SVPrimitive {
             }
         }
         writeln!(f, "{}) {} (", indent, self.name)?;
-        // TODO(matth2k): refactor as "is clocked"
-        if self.prim.as_str() == REG_NAME {
-            let indent = " ".repeat(level + 4);
-            writeln!(f, "{indent}.C({CLK}),")?;
-            writeln!(f, "{indent}.CE(1'h1),")?;
-        }
         for (input, value) in self.inputs.iter() {
             let indent = " ".repeat(level + 4);
             writeln!(f, "{}.{}({}),", indent, input, emit_id(value.clone()))?;
-        }
-        if self.prim.as_str() == REG_NAME {
-            let indent = " ".repeat(level + 4);
-            writeln!(f, "{indent}.R(1'h0),")?;
         }
         for (i, (value, output)) in self.outputs.iter().enumerate() {
             let indent = " ".repeat(level + 4);
@@ -1154,7 +1148,9 @@ impl VerilogParsing for LutLang {
                         PrimitiveType::INV | PrimitiveType::NOT => {
                             Ok(expr.add(LutLang::Not([ids[0]])))
                         }
-                        PrimitiveType::FDRE => Ok(expr.add(LutLang::Reg([ids[0]]))),
+                        PrimitiveType::FDRE => {
+                            Ok(expr.add(LutLang::Reg([ids[0], ids[1], ids[2], ids[3]])))
+                        }
                         PrimitiveType::LUT1
                         | PrimitiveType::LUT2
                         | PrimitiveType::LUT3
@@ -1309,13 +1305,6 @@ impl SVModule {
         }
     }
 
-    fn add_clk(&mut self) {
-        if !self.clk {
-            self.clk = true;
-            self.append_inputs(&mut vec![SVSignal::new(1, CLK.to_string())]);
-        }
-    }
-
     /// From a parsed verilog ast, create a new module and fill it with its primitives and connections.
     /// This method only works on structural verilog.
     pub fn from_ast(ast: &sv_parser::SyntaxTree) -> Result<Self, String> {
@@ -1454,44 +1443,32 @@ impl SVModule {
                                 .connect_signal(port_name, arg_name.unwrap())?;
                         }
                         None => {
-                            // Ignore clock enable and reset signals,
-                            // because they are not along the data path
-                            // The verilog emitter just re-inserts them at the end
-                            // This means we can only use D Flip-flops that are constantly *ON*.
-                            if port_name == "CE" || port_name == "R" {
-                                if unwrap_node!(arg, PrimaryLiteral).is_none() {
-                                    return Err(format!(
-                                        "Non-data port {port_name} should be driven constant"
-                                    ));
-                                }
-                            } else {
-                                // If we don't have a identifier, it must be a constant connection
-                                let arg_name = cur_insts.last().unwrap().name.clone()
-                                    + port_name.as_str()
-                                    + "_const";
-                                cur_signals.push(SVSignal::new(1, arg_name.clone()));
-                                cur_insts
-                                    .last_mut()
-                                    .unwrap()
-                                    .connect_signal(port_name.clone(), arg_name.clone())?;
+                            // If we don't have a identifier, it must be a constant connection
+                            let arg_name = cur_insts.last().unwrap().name.clone()
+                                + port_name.as_str()
+                                + "_const";
+                            cur_signals.push(SVSignal::new(1, arg_name.clone()));
+                            cur_insts
+                                .last_mut()
+                                .unwrap()
+                                .connect_signal(port_name.clone(), arg_name.clone())?;
 
-                                // Create the constant
-                                let literal = unwrap_node!(arg, PrimaryLiteral);
-                                if literal.is_none() {
-                                    return Err(format!(
-                                        "Expected a literal for connection on port {port_name}"
-                                    ));
-                                }
-                                let value = parse_literal_as_logic(literal.unwrap(), ast)?;
-                                let const_inst = SVPrimitive::new_const(
-                                    value,
-                                    arg_name.clone(),
-                                    arg_name.clone() + "_inst",
-                                );
-
-                                // Insert the constant before the current instance
-                                cur_insts.insert(cur_insts.len() - 1, const_inst);
+                            // Create the constant
+                            let literal = unwrap_node!(arg, PrimaryLiteral);
+                            if literal.is_none() {
+                                return Err(format!(
+                                    "Expected a literal for connection on port {port_name}"
+                                ));
                             }
+                            let value = parse_literal_as_logic(literal.unwrap(), ast)?;
+                            let const_inst = SVPrimitive::new_const(
+                                value,
+                                arg_name.clone(),
+                                arg_name.clone() + "_inst",
+                            );
+
+                            // Insert the constant before the current instance
+                            cur_insts.insert(cur_insts.len() - 1, const_inst);
                         }
                     }
                 }
@@ -1596,9 +1573,6 @@ impl SVModule {
         }
         if sname.contains("tmp") {
             return Err("'tmp' is a reserved keyword".to_string());
-        }
-        if sname.contains(CLK) {
-            return Err(format!("'{CLK}' is a reserved keyword"));
         }
         if sname.contains("input") {
             return Err("'input' is a reserved keyword".to_string());
@@ -1755,10 +1729,6 @@ impl SVModule {
             {
                 if let LutLang::Lut(l) = node {
                     prim.set_init(programs[&l[0]]);
-                }
-
-                if matches!(node, LutLang::Reg(_)) {
-                    module.add_clk();
                 }
 
                 let sname = module.insert_instance(prim)?;

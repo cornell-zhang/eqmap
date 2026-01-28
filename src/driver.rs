@@ -517,8 +517,17 @@ pub trait CircuitLang:
     /// Capture multiple expressions in a single node
     fn bus(ids: impl Iterator<Item = egg::Id>) -> Self;
 
+    /// Returns a node that stores a constant integer parameter if the Lang supports it
+    fn int(x: u64) -> Option<Self>;
+
     /// Returns true is the node is a bus
     fn is_bus(&self) -> bool;
+
+    /// Returns true is the node is a lookup table
+    fn is_lut(&self) -> bool;
+
+    /// Returns an integer if the node stores one
+    fn get_int(&self) -> Option<u64>;
 
     /// Returns the symbol of the node, if is a variable
     fn get_var(&self) -> Option<Symbol>;

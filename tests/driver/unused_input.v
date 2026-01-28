@@ -23,24 +23,26 @@ module dropped_input (
 endmodule
 
 // CHECK: module dropped_input (
-// CHECK:     b,
-// CHECK:     a,
-// CHECK:     c,
-// CHECK:     y
+// CHECK:   a,
+// CHECK:   b,
+// CHECK:   c,
+// CHECK:   y
 // CHECK: );
-// CHECK:   input b;
-// CHECK:   wire b;
 // CHECK:   input a;
 // CHECK:   wire a;
+// CHECK:   input b;
+// CHECK:   wire b;
 // CHECK:   input c;
 // CHECK:   wire c;
 // CHECK:   output y;
 // CHECK:   wire y;
+// CHECK:   wire __0__;
 // CHECK:   LUT2 #(
-// CHECK:       .INIT(4'h8)
-// CHECK:   ) __0__ (
-// CHECK:       .I0(b),
-// CHECK:       .I1(a),
-// CHECK:       .O(y)
+// CHECK:     .INIT(4'h8)
+// CHECK:   ) __1__ (
+// CHECK:     .I1(a),
+// CHECK:     .I0(b),
+// CHECK:     .O(__0__)
 // CHECK:   );
+// CHECK:   assign y = __0__;
 // CHECK: endmodule
