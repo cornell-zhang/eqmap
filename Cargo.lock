@@ -582,9 +582,9 @@ dependencies = [
 
 [[package]]
 name = "nl-compiler"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5cc20da9fb06ddee85f06198ceb528bad49adcda226b26a86e6370c2739c9907"
+checksum = "c6fb1bf7adf4c642cbf4506b0eec54cf0f7d5f7a156f92487bf501634b36bd5e"
 dependencies = [
  "flussab",
  "flussab-aiger",
