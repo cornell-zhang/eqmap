@@ -1174,6 +1174,12 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_empty_expr() {
+        let expr = RecExpr::<LutLang>::default();
+        assert!(verify_expr(&expr).is_ok());
+    }
+
+    #[test]
     fn test_bad_cells() {
         let mut expr = RecExpr::<LutLang>::default();
         let prog = expr.add(LutLang::Program(12345));
