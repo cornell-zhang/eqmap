@@ -110,6 +110,7 @@ mod tests {
         assert_eq!(2, info.get_lut_count_k(4));
         assert_eq!(0, info.get_lut_count_k(3));
         assert_eq!(2, info.get_circuit_depth());
+        assert_eq!(6, info.get_inputs().len());
         let lut = make_four_lut();
         let info = LutExprInfo::new(&lut);
         assert_eq!(1, info.get_lut_count_k(4));
