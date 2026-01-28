@@ -273,22 +273,28 @@ mod tests {
         "module mux_4_1 (
             d,
             clk,
+            ce,
+            rst,
             y
         );
           input d;
           wire d;
           input clk;
           wire clk;
+          input ce;
+          wire ce;
+          input rst;
+          wire rst;
           output y;
           wire y;
           FDRE #(
               .INIT(1'hx)
           ) _0_ (
               .C (clk),
-              .CE(1'h1),
+              .CE(ce),
               .D (d),
               .Q (y),
-              .R (1'h0)
+              .R (rst)
           );
         endmodule"
             .to_string()
@@ -437,27 +443,33 @@ endmodule\n"
         let module = module.unwrap();
         assert_eq!(
             module.to_single_lut_expr().unwrap().to_string(),
-            "(REG d)".to_string()
+            "(REG d clk ce rst)".to_string()
         );
         let output = module.to_string();
         let golden = "module mux_4_1 (
     d,
     clk,
+    ce,
+    rst,
     y
 );
   input d;
   wire d;
   input clk;
   wire clk;
+  input ce;
+  wire ce;
+  input rst;
+  wire rst;
   output y;
   wire y;
   FDRE #(
       .INIT(1'hx)
   ) _0_ (
       .C(clk),
-      .CE(1'h1),
+      .CE(ce),
       .D(d),
-      .R(1'h0),
+      .R(rst),
       .Q(y)
   );
 endmodule\n"
@@ -700,28 +712,34 @@ endmodule\n"
 
     #[test]
     fn test_emit_reg() {
-        let reg: RecExpr<LutLang> = "(REG a)".parse().unwrap();
+        let reg: RecExpr<LutLang> = "(REG a clk ce rst)".parse().unwrap();
         let module = SVModule::from_luts(reg, "my_reg".to_string(), Vec::new());
         assert!(module.is_ok());
         let module = module.unwrap();
         let golden = "module my_reg (
     a,
     clk,
+    ce,
+    rst,
     y
 );
   input a;
   wire a;
   input clk;
   wire clk;
+  input ce;
+  wire ce;
+  input rst;
+  wire rst;
   output y;
   wire y;
   FDRE #(
       .INIT(1'hx)
   ) __0__ (
       .C(clk),
-      .CE(1'h1),
+      .CE(ce),
       .D(a),
-      .R(1'h0),
+      .R(rst),
       .Q(y)
   );
 endmodule\n"
@@ -889,51 +907,61 @@ endmodule\n"
     #[test]
     fn test_reg() {
         // Make sure any expression that include reg return inconclusive equivalence
-        let simple_reg_expr: RecExpr<LutLang> = "(REG a)".parse().unwrap();
-        assert!(LutLang::func_equiv(&simple_reg_expr, &"(REG a)".parse().unwrap()).is_equiv());
+        let simple_reg_expr: RecExpr<LutLang> = "(REG a clk ce rst)".parse().unwrap();
+        assert!(
+            LutLang::func_equiv(&simple_reg_expr, &"(REG a clk ce rst)".parse().unwrap())
+                .is_equiv()
+        );
         assert!(
             LutLang::func_equiv(&simple_reg_expr, &"(AND a b)".parse().unwrap()).is_inconclusive()
         );
         assert!(
-            LutLang::func_equiv(&simple_reg_expr, &"(XOR c (REG d))".parse().unwrap())
-                .is_inconclusive()
+            LutLang::func_equiv(
+                &simple_reg_expr,
+                &"(XOR c (REG d clk ce rst))".parse().unwrap()
+            )
+            .is_inconclusive()
         );
         let compicated_reg_expr: RecExpr<LutLang> =
-            "AND (AND a b) (XOR (AND c (REG a)) d)".parse().unwrap();
+            "AND (AND a b) (XOR (AND c (REG a clk ce rst)) d)"
+                .parse()
+                .unwrap();
         assert!(LutLang::func_equiv(&compicated_reg_expr, &simple_reg_expr).is_inconclusive());
     }
 
     #[test]
     fn test_cycle() {
-        let simple_cycle_expr: RecExpr<LutLang> = "(CYCLE (REG (AND a (ARG 0))))".parse().unwrap();
+        let simple_cycle_expr: RecExpr<LutLang> =
+            "(CYCLE (REG (AND a (ARG 0)) clk ce rst))".parse().unwrap();
         assert!(
             LutLang::func_equiv(
                 &simple_cycle_expr,
-                &"(CYCLE (REG (AND a (ARG 0))))".parse().unwrap()
+                &"(CYCLE (REG (AND a (ARG 0)) clk ce rst))".parse().unwrap()
             )
             .is_equiv()
         );
         let complex_cycle_expr: RecExpr<LutLang> =
-            "(CYCLE (XOR (ARG 0) (CYCLE (REG (AND a (ARG 1))))))"
+            "(CYCLE (XOR (ARG 0) (CYCLE (REG (AND a (ARG 1)) clk ce rst))))"
                 .parse()
                 .unwrap();
         assert!(
             LutLang::func_equiv(
                 &complex_cycle_expr,
-                &"(CYCLE (XOR (ARG 0) (CYCLE (REG (AND a (ARG 1))))))"
+                &"(CYCLE (XOR (ARG 0) (CYCLE (REG (AND a (ARG 1)) clk ce rst))))"
                     .parse()
                     .unwrap()
             )
             .is_equiv()
         );
-        let eval_cycle_expr: RecExpr<LutLang> = "(CYCLE (REG in))".parse().unwrap();
+        let eval_cycle_expr: RecExpr<LutLang> = "(CYCLE (REG in clk ce rst))".parse().unwrap();
         assert!(
-            LutLang::func_equiv(&eval_cycle_expr, &"(REG in)".parse().unwrap()).is_inconclusive()
+            LutLang::func_equiv(&eval_cycle_expr, &"(REG in clk ce rst)".parse().unwrap())
+                .is_inconclusive()
         );
         assert!(
             LutLang::func_equiv(
                 &simple_cycle_expr,
-                &"(CYCLE (REG (AND (XOR (AND a 1) (ARG 0)) (ARG 0))))"
+                &"(CYCLE (REG (AND (XOR (AND a 1) (ARG 0)) (ARG 0)) clk ce rst))"
                     .parse()
                     .unwrap()
             )
@@ -943,15 +971,19 @@ endmodule\n"
 
     #[test]
     fn test_cycle_verify() {
-        let bad_cycle: RecExpr<LutLang> = "(CYCLE (REG (AND a (ARG myarg))))".parse().unwrap();
+        let bad_cycle: RecExpr<LutLang> = "(CYCLE (REG (AND a (ARG myarg)) clk ce rst))"
+            .parse()
+            .unwrap();
         let root = bad_cycle.as_ref().last().unwrap();
         assert!(root.verify_rec(&bad_cycle).is_err());
 
-        let good_cycle: RecExpr<LutLang> = "(CYCLE (REG (AND a (ARG 0))))".parse().unwrap();
+        let good_cycle: RecExpr<LutLang> =
+            "(CYCLE (REG (AND a (ARG 0)) clk ce rst))".parse().unwrap();
         let root = good_cycle.as_ref().last().unwrap();
         assert!(root.verify_rec(&good_cycle).is_ok());
 
-        let bad_cycle: RecExpr<LutLang> = "(CYCLE (REG (AND a (ARG 1))))".parse().unwrap();
+        let bad_cycle: RecExpr<LutLang> =
+            "(CYCLE (REG (AND a (ARG 1)) clk ce rst))".parse().unwrap();
         let root = bad_cycle.as_ref().last().unwrap();
         assert!(root.verify_rec(&bad_cycle).is_err());
     }
