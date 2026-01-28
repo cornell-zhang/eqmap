@@ -74,38 +74,34 @@ module cla (
       .Y(c2)
   );
 
-  // CHECK: AOI22_X1 #(
-  // CHECK: ) __4__ (
-  // CHECK:     .A1(a1),
-  // CHECK:     .A2(b1),
-  // CHECK:     .B1(a0),
-  // CHECK:     .B2(b0),
+  // CHECK: AOI22_X1 __5__ (
+  // CHECK:     .A1(b1),
+  // CHECK:     .A2(a1),
+  // CHECK:     .B1(b0),
+  // CHECK:     .B2(a0),
   // CHECK:     .ZN(__0__)
   // CHECK: );
-  // CHECK: OAI21_X1 #(
-  // CHECK: ) __5__ (
+  // CHECK: OAI21_X1 __6__ (
   // CHECK:     .A(c0),
-  // CHECK:     .B1(a0),
-  // CHECK:     .B2(b0),
+  // CHECK:     .B1(b0),
+  // CHECK:     .B2(a0),
   // CHECK:     .ZN(__1__)
   // CHECK: );
-  // CHECK: AND2_X1 #(
-  // CHECK: ) __6__ (
+  // CHECK: AND2_X1 __7__ (
   // CHECK:     .A1(__1__),
   // CHECK:     .A2(__0__),
   // CHECK:     .ZN(__2__)
   // CHECK: );
-  // CHECK: NOR2_X1 #(
-  // CHECK: ) __7__ (
-  // CHECK:     .A1(a1),
-  // CHECK:     .A2(b1),
+  // CHECK: NOR2_X1 __8__ (
+  // CHECK:     .A1(b1),
+  // CHECK:     .A2(a1),
   // CHECK:     .ZN(__3__)
   // CHECK: );
-  // CHECK: NOR2_X1 #(
-  // CHECK: ) __8__ (
+  // CHECK: NOR2_X1 __9__ (
   // CHECK:     .A1(__3__),
   // CHECK:     .A2(__2__),
-  // CHECK:     .ZN(c2)
+  // CHECK:     .ZN(__4__)
   // CHECK: );
+  // CHECK: assign c2 = __4__;
 
 endmodule

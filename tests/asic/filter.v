@@ -19,12 +19,12 @@ module filter (
       .Y(y)
   );
 
-  // CHECK: MUX2_X1 #(
-  // CHECK: ) __0__ (
-  // CHECK:     .A(b),
-  // CHECK:     .B(a),
-  // CHECK:     .S(a),
-  // CHECK:     .Z(y)
+  // CHECK: MUX2_X1 __1__ (
+  // CHECK:     .S(b),
+  // CHECK:     .B(b),
+  // CHECK:     .A(a),
+  // CHECK:     .Z(__0__)
   // CHECK: );
+  // CHECK: assign y = __0__;
 
 endmodule

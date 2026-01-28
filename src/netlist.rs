@@ -514,7 +514,7 @@ impl LogicCell<PrimitiveCell> for LutLang {
             LutLang::And(_) => PrimitiveCell::new(PrimitiveType::AND, None),
             LutLang::Mux(_) => PrimitiveCell::new(PrimitiveType::MUX, None),
             LutLang::Nor(_) => PrimitiveCell::new(PrimitiveType::NOR, None),
-            LutLang::Not(_) => PrimitiveCell::new(PrimitiveType::NOT, None)
+            LutLang::Not(_) => PrimitiveCell::new(PrimitiveType::INV, None)
                 .remap_input(0, "I".into())
                 .remap_output(0, "O".into()),
             LutLang::Const(b) => PrimitiveCell::from_constant(Logic::from(*b))?,
