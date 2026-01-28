@@ -541,6 +541,10 @@ impl LogicCell<PrimitiveCell> for LutLang {
             return None;
         }
 
+        if cell.ptype.is_reg() && !cell.has_parameter(&"INIT".into()) {
+            cell.set_parameter(&"INIT".into(), Parameter::Logic(Logic::X));
+        }
+
         Some(cell)
     }
 }

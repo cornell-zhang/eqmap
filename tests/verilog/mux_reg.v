@@ -82,5 +82,5 @@ module mux_reg (
       .I2(s1_r),
       .O (y)
   );
-  // CHECK: (LUT 202 (REG s1) (REG (LUT 202 s0 a b)) (REG (LUT 202 s0 c d)))
+  // CHECK: (LUT 202 (REG s1 clk true false) (REG (LUT 202 s0 a b) clk true false) (REG (LUT 202 s0 c d) clk true false))
 endmodule

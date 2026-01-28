@@ -33,7 +33,7 @@ define_language! {
         "NOT" = Not([Id; 1]),
         "LUT" = Lut(Box<[Id]>), // Program is first
         "BUS" = Bus(Box<[Id]>), // a bus of nodes
-        "REG" = Reg([Id; 1]),
+        "REG" = Reg([Id; 4]), // D, C, CE, R
         "ARG" = Arg([Id; 1]),
         "CYCLE" = Cycle([Id; 1]),
     }
