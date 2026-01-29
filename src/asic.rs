@@ -210,8 +210,20 @@ impl CircuitLang for CellLang {
         Self::Bus(ids.collect())
     }
 
+    fn int(_x: u64) -> Option<Self> {
+        None
+    }
+
     fn is_bus(&self) -> bool {
         matches!(self, Self::Bus(_))
+    }
+
+    fn is_lut(&self) -> bool {
+        false
+    }
+
+    fn get_int(&self) -> Option<u64> {
+        None
     }
 
     fn get_var(&self) -> Option<Symbol> {

@@ -65,21 +65,21 @@ where
 {
     let mut rules: Vec<Rewrite<lut::LutLang, A>> = Vec::new();
     // Logic element conversions
-    rules.append(&mut rewrite!("lut1-retime"; "(LUT ?p (REG ?a))" <=> "(REG (LUT ?p ?a))"));
+    rules.append(&mut rewrite!("lut1-retime"; "(LUT ?p (REG ?a ?clk ?ce ?rst))" <=> "(REG (LUT ?p ?a) ?clk ?ce ?rst)"));
     rules.append(
-        &mut rewrite!("lut2-retime"; "(LUT ?p (REG ?a) (REG ?b))" <=> "(REG (LUT ?p ?a ?b))"),
+        &mut rewrite!("lut2-retime"; "(LUT ?p (REG ?a ?clk ?ce ?rst) (REG ?b ?clk ?ce ?rst))" <=> "(REG (LUT ?p ?a ?b) ?clk ?ce ?rst)"),
     );
     rules.append(
-        &mut rewrite!("lut3-retime"; "(LUT ?p (REG ?a) (REG ?b) (REG ?c))" <=> "(REG (LUT ?p ?a ?b ?c))"),
+        &mut rewrite!("lut3-retime"; "(LUT ?p (REG ?a ?clk ?ce ?rst) (REG ?b ?clk ?ce ?rst) (REG ?c ?clk ?ce ?rst))" <=> "(REG (LUT ?p ?a ?b ?c) ?clk ?ce ?rst)"),
     );
     rules.append(
-        &mut rewrite!("lut4-retime"; "(LUT ?p (REG ?a) (REG ?b) (REG ?c) (REG ?d))" <=> "(REG (LUT ?p ?a ?b ?c ?d))"),
+        &mut rewrite!("lut4-retime"; "(LUT ?p (REG ?a ?clk ?ce ?rst) (REG ?b ?clk ?ce ?rst) (REG ?c ?clk ?ce ?rst) (REG ?d ?clk ?ce ?rst))" <=> "(REG (LUT ?p ?a ?b ?c ?d) ?clk ?ce ?rst)"),
     );
     rules.append(
-        &mut rewrite!("lut5-retime"; "(LUT ?p (REG ?a) (REG ?b) (REG ?c) (REG ?d) (REG ?e))" <=> "(REG (LUT ?p ?a ?b ?c ?d ?e))"),
+        &mut rewrite!("lut5-retime"; "(LUT ?p (REG ?a ?clk ?ce ?rst) (REG ?b ?clk ?ce ?rst) (REG ?c ?clk ?ce ?rst) (REG ?d ?clk ?ce ?rst) (REG ?e ?clk ?ce ?rst))" <=> "(REG (LUT ?p ?a ?b ?c ?d ?e) ?clk ?ce ?rst)"),
     );
     rules.append(
-        &mut rewrite!("lut6-retime"; "(LUT ?p (REG ?a) (REG ?b) (REG ?c) (REG ?d) (REG ?e) (REG ?f))" <=> "(REG (LUT ?p ?a ?b ?c ?d ?e ?f))"),
+        &mut rewrite!("lut6-retime"; "(LUT ?p (REG ?a ?clk ?ce ?rst) (REG ?b ?clk ?ce ?rst) (REG ?c ?clk ?ce ?rst) (REG ?d ?clk ?ce ?rst) (REG ?e ?clk ?ce ?rst) (REG ?f ?clk ?ce ?rst))" <=> "(REG (LUT ?p ?a ?b ?c ?d ?e ?f) ?clk ?ce ?rst)"),
     );
 
     rules

@@ -38,8 +38,8 @@ fn main() -> std::io::Result<()> {
     let args = Args::parse();
     let mut buf = String::new();
 
-    let mod_name = if args.command.is_some() {
-        buf = args.command.unwrap();
+    let mod_name = if let Some(cmd) = args.command {
+        buf = cmd;
         args.mod_name.unwrap_or("top".to_string())
     } else {
         match args.input {

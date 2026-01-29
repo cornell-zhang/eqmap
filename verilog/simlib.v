@@ -172,10 +172,10 @@ module NOT (
 endmodule
 
 module INV (
-    input  A,
-    output ZN
+    input  I,
+    output O
 );
-  assign ZN = ~A;
+  assign O = ~I;
 endmodule
 
 module MUX (
