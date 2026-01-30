@@ -65,21 +65,21 @@ where
 {
     let mut rules: Vec<Rewrite<lut::LutLang, A>> = Vec::new();
     // Logic element conversions
-    rules.append(&mut rewrite!("lut1-retime"; "(LUT ?p (REG ?a))" <=> "(REG (LUT ?p ?a))"));
+    rules.append(&mut rewrite!("lut1-retime"; "(LUT ?p (REG ?i ?a ?clk ?ce ?rst))" <=> "(REG ?i (LUT ?p ?a) ?clk ?ce ?rst)"));
     rules.append(
-        &mut rewrite!("lut2-retime"; "(LUT ?p (REG ?a) (REG ?b))" <=> "(REG (LUT ?p ?a ?b))"),
+        &mut rewrite!("lut2-retime"; "(LUT ?p (REG ?i ?a ?clk ?ce ?rst) (REG ?i ?b ?clk ?ce ?rst))" <=> "(REG ?i (LUT ?p ?a ?b) ?clk ?ce ?rst)"),
     );
     rules.append(
-        &mut rewrite!("lut3-retime"; "(LUT ?p (REG ?a) (REG ?b) (REG ?c))" <=> "(REG (LUT ?p ?a ?b ?c))"),
+        &mut rewrite!("lut3-retime"; "(LUT ?p (REG ?i ?a ?clk ?ce ?rst) (REG ?i ?b ?clk ?ce ?rst) (REG ?i ?c ?clk ?ce ?rst))" <=> "(REG ?i (LUT ?p ?a ?b ?c) ?clk ?ce ?rst)"),
     );
     rules.append(
-        &mut rewrite!("lut4-retime"; "(LUT ?p (REG ?a) (REG ?b) (REG ?c) (REG ?d))" <=> "(REG (LUT ?p ?a ?b ?c ?d))"),
+        &mut rewrite!("lut4-retime"; "(LUT ?p (REG ?i ?a ?clk ?ce ?rst) (REG ?i ?b ?clk ?ce ?rst) (REG ?i ?c ?clk ?ce ?rst) (REG ?i ?d ?clk ?ce ?rst))" <=> "(REG ?i (LUT ?p ?a ?b ?c ?d) ?clk ?ce ?rst)"),
     );
     rules.append(
-        &mut rewrite!("lut5-retime"; "(LUT ?p (REG ?a) (REG ?b) (REG ?c) (REG ?d) (REG ?e))" <=> "(REG (LUT ?p ?a ?b ?c ?d ?e))"),
+        &mut rewrite!("lut5-retime"; "(LUT ?p (REG ?i ?a ?clk ?ce ?rst) (REG ?i ?b ?clk ?ce ?rst) (REG ?i ?c ?clk ?ce ?rst) (REG ?i ?d ?clk ?ce ?rst) (REG ?i ?e ?clk ?ce ?rst))" <=> "(REG ?i (LUT ?p ?a ?b ?c ?d ?e) ?clk ?ce ?rst)"),
     );
     rules.append(
-        &mut rewrite!("lut6-retime"; "(LUT ?p (REG ?a) (REG ?b) (REG ?c) (REG ?d) (REG ?e) (REG ?f))" <=> "(REG (LUT ?p ?a ?b ?c ?d ?e ?f))"),
+        &mut rewrite!("lut6-retime"; "(LUT ?p (REG ?i ?a ?clk ?ce ?rst) (REG ?i ?b ?clk ?ce ?rst) (REG ?i ?c ?clk ?ce ?rst) (REG ?i ?d ?clk ?ce ?rst) (REG ?i ?e ?clk ?ce ?rst) (REG ?i ?f ?clk ?ce ?rst))" <=> "(REG ?i (LUT ?p ?a ?b ?c ?d ?e ?f) ?clk ?ce ?rst)"),
     );
 
     rules
@@ -90,30 +90,30 @@ where
 pub fn permute_groups() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
     // LUT permutation groups
-    rules.push(rewrite!("lut2-permute"; "(LUT ?p ?a ?b)" 
+    rules.push(rewrite!("lut2-permute"; "(LUT ?p ?a ?b)"
         => {PermuteInput::new(1, "?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap()])}));
 
     for i in 1..3 {
         let rname = format!("lut3-permute-{i}");
-        rules.push(rewrite!(rname; "(LUT ?p ?a ?b ?c)" 
+        rules.push(rewrite!(rname; "(LUT ?p ?a ?b ?c)"
         => {PermuteInput::new(i, "?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
     }
 
     for i in 1..4 {
         let rname = format!("lut4-permute-{i}");
-        rules.push(rewrite!(rname; "(LUT ?p ?a ?b ?c ?d)" 
+        rules.push(rewrite!(rname; "(LUT ?p ?a ?b ?c ?d)"
         => {PermuteInput::new(i, "?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()])}));
     }
 
     for i in 1..5 {
         let rname = format!("lut5-permute-{i}");
-        rules.push(rewrite!(rname; "(LUT ?p ?a ?b ?c ?d ?e)" 
+        rules.push(rewrite!(rname; "(LUT ?p ?a ?b ?c ?d ?e)"
         => {PermuteInput::new(i, "?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap()])}));
     }
 
     for i in 1..6 {
         let rname = format!("lut6-permute-{i}");
-        rules.push(rewrite!(rname; "(LUT ?p ?a ?b ?c ?d ?e ?f)" 
+        rules.push(rewrite!(rname; "(LUT ?p ?a ?b ?c ?d ?e ?f)"
         => {PermuteInput::new(i, "?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap(), "?f".parse().unwrap()])}));
     }
 

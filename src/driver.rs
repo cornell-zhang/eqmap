@@ -20,6 +20,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
+use safety_net::{Identifier, Parameter};
 use serde::Serialize;
 use std::{
     io::{IsTerminal, Read, Write},
@@ -517,17 +518,17 @@ pub trait CircuitLang:
     /// Capture multiple expressions in a single node
     fn bus(ids: impl Iterator<Item = egg::Id>) -> Self;
 
-    /// Returns a node that stores a constant integer parameter if the Lang supports it
-    fn int(x: u64) -> Option<Self>;
+    /// Returns a node that stores a parameter if the Lang supports it
+    fn parameter(x: Parameter) -> Option<Self>;
 
     /// Returns true is the node is a bus
     fn is_bus(&self) -> bool;
 
-    /// Returns true is the node is a lookup table
-    fn is_lut(&self) -> bool;
+    /// Returns an iterator containing the names of the parameters that the node has
+    fn param_names(&self) -> Option<impl Iterator<Item = Identifier>>;
 
-    /// Returns an integer if the node stores one
-    fn get_int(&self) -> Option<u64>;
+    /// Returns a parameter if the node stores one
+    fn get_parameter(&self) -> Option<Parameter>;
 
     /// Returns the symbol of the node, if is a variable
     fn get_var(&self) -> Option<Symbol>;

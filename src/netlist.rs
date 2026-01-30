@@ -8,7 +8,6 @@ use crate::asic::CellLang;
 use crate::driver::CircuitLang;
 use crate::lut::LutLang;
 use crate::verilog::PrimitiveType;
-use bitvec::field::BitField;
 use egg::{Id, RecExpr, Symbol};
 use nl_compiler::FromId;
 use safety_net::{
@@ -191,7 +190,16 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
                     children.push(mapping[&cid]);
                 }
 
+                // TODO(matth2k): Review following generalized method for CircuitLang to accept parameters
+                for (i, (_, param)) in inst_type.parameters().enumerate() {
+                    let p = expr.add(L::parameter(param).ok_or(format!(
+                        "Language does not support parameter nodes required for cell {}",
+                        inst_type.get_name()
+                    ))?);
+                    children.insert(i, p);
+                }
                 // TODO(matth2k): Generalize a way for CircuitLang to accept parameters
+                /*
                 if inst_type.get_name().to_string().starts_with("LUT") {
                     let tt = inst_type.get_parameter(&"INIT".into()).ok_or(format!(
                         "LUT cell {} missing INIT parameter",
@@ -212,7 +220,7 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
                     ))?);
                     children.insert(0, p);
                 }
-
+                */
                 if let Some(logic) =
                     inst_type.get_logic_func(n.get_output_index().unwrap(), &children)
                 {
@@ -413,8 +421,20 @@ impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping
         for (i, n) in self.expr.iter().enumerate() {
             if let Some(var) = n.get_var() {
                 mapping.insert(i.into(), self.leaves[&var].clone());
-            } else if !n.is_bus() && n.get_int().is_none() {
+            } else if !n.is_bus() {
                 // TODO(matth2k): Generalize a param extractor for CircuitLang
+                let mut params = vec![];
+                if let Some(param_iter) = n.param_names() {
+                    for (param_i, param_name) in param_iter.enumerate() {
+                        let param = &self.expr[n.children()[param_i]];
+                        let param = param.get_parameter().ok_or(Error::ParseError(format!(
+                            "{} node is missing parameter: {}",
+                            n, param
+                        )))?;
+                        params.append(&mut vec![(param_name, param)]);
+                    }
+                }
+                /*
                 let params = if n.is_lut() {
                     let tt = &self.expr[n.children()[0]];
                     let tt = tt.get_int().ok_or(Error::ParseError(format!(
@@ -429,7 +449,7 @@ impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping
                 } else {
                     vec![]
                 };
-
+                */
                 let cell = n.get_cell(&params).ok_or(Error::ParseError(format!(
                     "Cannot reinsert node {} without associated cell",
                     n
@@ -438,7 +458,7 @@ impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping
                     .children()
                     .iter()
                     // TODO(matth2k): Generalize a param extractor for CircuitLang
-                    .skip(if n.is_lut() { 1 } else { 0 })
+                    .skip(params.len())
                     .map(|c| mapping[c].clone())
                     .collect::<Vec<_>>();
                 let inst_name = format_id!("reinst_{}", i);

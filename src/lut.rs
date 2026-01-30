@@ -15,6 +15,7 @@ use egg::Language;
 use egg::RecExpr;
 use egg::Symbol;
 use egg::define_language;
+use safety_net::{Identifier, Logic, Parameter, dont_care};
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
 
@@ -33,7 +34,7 @@ define_language! {
         "NOT" = Not([Id; 1]),
         "LUT" = Lut(Box<[Id]>), // Program is first
         "BUS" = Bus(Box<[Id]>), // a bus of nodes
-        "REG" = Reg([Id; 1]),
+        "REG" = Reg([Id; 5]), // init value and c, ce, d, r
         "ARG" = Arg([Id; 1]),
         "CYCLE" = Cycle([Id; 1]),
     }
@@ -1142,21 +1143,36 @@ impl CircuitLang for LutLang {
         Self::Bus(ids.collect())
     }
 
-    fn int(x: u64) -> Option<Self> {
-        Some(Self::Program(x))
+    fn parameter(x: Parameter) -> Option<Self> {
+        match x {
+            Parameter::BitVec(bv) => Some(Self::Program(bv.load::<u64>())),
+            Parameter::Integer(i) => Some(Self::Program(i)),
+            Parameter::Real(_r) => None,
+            Parameter::Logic(l) => match l {
+                Logic::True | Logic::False => Some(Self::Const(l.unwrap())),
+                _ => Some(Self::DC),
+            },
+        }
     }
 
     fn is_bus(&self) -> bool {
         matches!(self, Self::Bus(_))
     }
 
-    fn is_lut(&self) -> bool {
-        matches!(self, Self::Lut(_))
+    fn param_names(&self) -> Option<impl Iterator<Item = Identifier>> {
+        match self {
+            Self::Lut(_) | Self::Reg(_) => {
+                Some(std::iter::once(Identifier::new("INIT".to_string())))
+            }
+            _ => None,
+        }
     }
 
-    fn get_int(&self) -> Option<u64> {
+    fn get_parameter(&self) -> Option<Parameter> {
         match self {
-            Self::Program(p) => Some(*p),
+            Self::Program(i) => Some(Parameter::bitvec((i.ilog2() + 1) as usize, i.clone())),
+            Self::Const(l) => Some(Parameter::from_bool(l.clone())),
+            Self::DC => Some(Parameter::Logic(dont_care())),
             _ => None,
         }
     }
@@ -1172,6 +1188,12 @@ impl CircuitLang for LutLang {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_empty_expr() {
+        let expr = RecExpr::<LutLang>::default();
+        assert!(verify_expr(&expr).is_ok());
+    }
 
     #[test]
     fn test_bad_cells() {

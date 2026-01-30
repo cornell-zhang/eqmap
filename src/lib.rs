@@ -110,6 +110,7 @@ mod tests {
         assert_eq!(2, info.get_lut_count_k(4));
         assert_eq!(0, info.get_lut_count_k(3));
         assert_eq!(2, info.get_circuit_depth());
+        assert_eq!(6, info.get_inputs().len());
         let lut = make_four_lut();
         let info = LutExprInfo::new(&lut);
         assert_eq!(1, info.get_lut_count_k(4));
@@ -273,22 +274,28 @@ mod tests {
         "module mux_4_1 (
             d,
             clk,
+            ce,
+            rst,
             y
         );
           input d;
           wire d;
           input clk;
           wire clk;
+          input ce;
+          wire ce;
+          input rst;
+          wire rst;
           output y;
           wire y;
           FDRE #(
               .INIT(1'hx)
           ) _0_ (
               .C (clk),
-              .CE(1'h1),
+              .CE(ce),
               .D (d),
               .Q (y),
-              .R (1'h0)
+              .R (rst)
           );
         endmodule"
             .to_string()
@@ -432,37 +439,50 @@ endmodule\n"
     fn test_fdre_verilog() {
         let module = get_fdre_verilog();
         let ast = sv_parse_wrapper(&module, None).unwrap();
-        let module = SVModule::from_ast(&ast);
-        assert!(module.is_ok());
-        let module = module.unwrap();
-        assert_eq!(
-            module.to_single_lut_expr().unwrap().to_string(),
-            "(REG d)".to_string()
-        );
-        let output = module.to_string();
-        let golden = "module mux_4_1 (
+        match SVModule::from_ast(&ast) {
+            Ok(module) => {
+                assert_eq!(
+                    module.to_single_lut_expr().unwrap().to_string(),
+                    "(REG x d clk ce rst)".to_string()
+                );
+                let output = module.to_string();
+                let golden = "module mux_4_1 (
     d,
     clk,
+    ce,
+    rst,
     y
 );
   input d;
   wire d;
   input clk;
   wire clk;
+  input ce;
+  wire ce;
+  input rst;
+  wire rst;
   output y;
   wire y;
   FDRE #(
       .INIT(1'hx)
   ) _0_ (
       .C(clk),
-      .CE(1'h1),
+      .CE(ce),
       .D(d),
-      .R(1'h0),
+      .R(rst),
       .Q(y)
   );
 endmodule\n"
-            .to_string();
-        assert_eq!(output, golden);
+                    .to_string();
+                assert_eq!(output, golden);
+            }
+            Err(e) => {
+                eprintln!("{}", e);
+                assert!(false);
+            }
+        };
+        // assert!(module.is_ok());
+        // let module = module.unwrap();
     }
 
     #[test]
@@ -641,9 +661,6 @@ endmodule\n"
         let mux: RecExpr<LutLang> = "(LUT 202 s1 (LUT 202 s0 a b) (LUT 202 s0 c d))"
             .parse()
             .unwrap();
-        let module = SVModule::from_luts(mux, "mux_4_1".to_string(), Vec::new());
-        assert!(module.is_ok());
-        let module = module.unwrap();
         let golden = "module mux_4_1 (
     s1,
     s0,
@@ -695,33 +712,47 @@ endmodule\n"
   );
 endmodule\n"
             .to_string();
-        assert_eq!(module.to_string(), golden);
+        match SVModule::from_luts(mux, "mux_4_1".to_string(), Vec::new()) {
+            Ok(module) => assert_eq!(module.to_string(), golden),
+            Err(e) => {
+                eprintln!("{}", e);
+                assert!(false);
+            }
+        };
+        // assert!(module.is_ok());
+        // let module = module.unwrap();
     }
 
     #[test]
     fn test_emit_reg() {
-        let reg: RecExpr<LutLang> = "(REG a)".parse().unwrap();
+        let reg: RecExpr<LutLang> = "(REG x a clk ce rst)".parse().unwrap();
         let module = SVModule::from_luts(reg, "my_reg".to_string(), Vec::new());
         assert!(module.is_ok());
         let module = module.unwrap();
         let golden = "module my_reg (
     a,
     clk,
+    ce,
+    rst,
     y
 );
   input a;
   wire a;
   input clk;
   wire clk;
+  input ce;
+  wire ce;
+  input rst;
+  wire rst;
   output y;
   wire y;
   FDRE #(
       .INIT(1'hx)
   ) __0__ (
       .C(clk),
-      .CE(1'h1),
+      .CE(ce),
       .D(a),
-      .R(1'h0),
+      .R(rst),
       .Q(y)
   );
 endmodule\n"
@@ -889,51 +920,64 @@ endmodule\n"
     #[test]
     fn test_reg() {
         // Make sure any expression that include reg return inconclusive equivalence
-        let simple_reg_expr: RecExpr<LutLang> = "(REG a)".parse().unwrap();
-        assert!(LutLang::func_equiv(&simple_reg_expr, &"(REG a)".parse().unwrap()).is_equiv());
+        let simple_reg_expr: RecExpr<LutLang> = "(REG 1 a clk ce rst)".parse().unwrap();
+        assert!(
+            LutLang::func_equiv(&simple_reg_expr, &"(REG 1 a clk ce rst)".parse().unwrap())
+                .is_equiv()
+        );
         assert!(
             LutLang::func_equiv(&simple_reg_expr, &"(AND a b)".parse().unwrap()).is_inconclusive()
         );
         assert!(
-            LutLang::func_equiv(&simple_reg_expr, &"(XOR c (REG d))".parse().unwrap())
-                .is_inconclusive()
+            LutLang::func_equiv(
+                &simple_reg_expr,
+                &"(XOR c (REG 1 d clk ce rst))".parse().unwrap()
+            )
+            .is_inconclusive()
         );
         let compicated_reg_expr: RecExpr<LutLang> =
-            "AND (AND a b) (XOR (AND c (REG a)) d)".parse().unwrap();
+            "AND (AND a b) (XOR (AND c (REG 1 a clk ce rst)) d)"
+                .parse()
+                .unwrap();
         assert!(LutLang::func_equiv(&compicated_reg_expr, &simple_reg_expr).is_inconclusive());
     }
 
     #[test]
     fn test_cycle() {
-        let simple_cycle_expr: RecExpr<LutLang> = "(CYCLE (REG (AND a (ARG 0))))".parse().unwrap();
+        let simple_cycle_expr: RecExpr<LutLang> = "(CYCLE (REG 0 (AND a (ARG 0)) clk ce rst))"
+            .parse()
+            .unwrap();
         assert!(
             LutLang::func_equiv(
                 &simple_cycle_expr,
-                &"(CYCLE (REG (AND a (ARG 0))))".parse().unwrap()
-            )
-            .is_equiv()
-        );
-        let complex_cycle_expr: RecExpr<LutLang> =
-            "(CYCLE (XOR (ARG 0) (CYCLE (REG (AND a (ARG 1))))))"
-                .parse()
-                .unwrap();
-        assert!(
-            LutLang::func_equiv(
-                &complex_cycle_expr,
-                &"(CYCLE (XOR (ARG 0) (CYCLE (REG (AND a (ARG 1))))))"
+                &"(CYCLE (REG 0 (AND a (ARG 0)) clk ce rst))"
                     .parse()
                     .unwrap()
             )
             .is_equiv()
         );
-        let eval_cycle_expr: RecExpr<LutLang> = "(CYCLE (REG in))".parse().unwrap();
+        let complex_cycle_expr: RecExpr<LutLang> =
+            "(CYCLE (XOR (ARG 0) (CYCLE (REG 1 (AND a (ARG 1)) clk ce rst))))"
+                .parse()
+                .unwrap();
         assert!(
-            LutLang::func_equiv(&eval_cycle_expr, &"(REG in)".parse().unwrap()).is_inconclusive()
+            LutLang::func_equiv(
+                &complex_cycle_expr,
+                &"(CYCLE (XOR (ARG 0) (CYCLE (REG 1 (AND a (ARG 1)) clk ce rst))))"
+                    .parse()
+                    .unwrap()
+            )
+            .is_equiv()
+        );
+        let eval_cycle_expr: RecExpr<LutLang> = "(CYCLE (REG 1 in clk ce rst))".parse().unwrap();
+        assert!(
+            LutLang::func_equiv(&eval_cycle_expr, &"(REG 1 in clk ce rst)".parse().unwrap())
+                .is_inconclusive()
         );
         assert!(
             LutLang::func_equiv(
                 &simple_cycle_expr,
-                &"(CYCLE (REG (AND (XOR (AND a 1) (ARG 0)) (ARG 0))))"
+                &"(CYCLE (REG 0 (AND (XOR (AND a 1) (ARG 0)) (ARG 0)) clk ce rst))"
                     .parse()
                     .unwrap()
             )
@@ -943,15 +987,21 @@ endmodule\n"
 
     #[test]
     fn test_cycle_verify() {
-        let bad_cycle: RecExpr<LutLang> = "(CYCLE (REG (AND a (ARG myarg))))".parse().unwrap();
+        let bad_cycle: RecExpr<LutLang> = "(CYCLE (REG 0 (AND a (ARG myarg)) clk ce rst))"
+            .parse()
+            .unwrap();
         let root = bad_cycle.as_ref().last().unwrap();
         assert!(root.verify_rec(&bad_cycle).is_err());
 
-        let good_cycle: RecExpr<LutLang> = "(CYCLE (REG (AND a (ARG 0))))".parse().unwrap();
+        let good_cycle: RecExpr<LutLang> = "(CYCLE (REG 0 (AND a (ARG 0)) clk ce rst))"
+            .parse()
+            .unwrap();
         let root = good_cycle.as_ref().last().unwrap();
         assert!(root.verify_rec(&good_cycle).is_ok());
 
-        let bad_cycle: RecExpr<LutLang> = "(CYCLE (REG (AND a (ARG 1))))".parse().unwrap();
+        let bad_cycle: RecExpr<LutLang> = "(CYCLE (REG 0 (AND a (ARG 1)) clk ce rst))"
+            .parse()
+            .unwrap();
         let root = bad_cycle.as_ref().last().unwrap();
         assert!(root.verify_rec(&bad_cycle).is_err());
     }

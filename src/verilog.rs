@@ -16,8 +16,11 @@ use egg::{Id, Language, RecExpr};
 use sv_parser::{Identifier, Locate, NodeEvent, RefNode, unwrap_node};
 
 use super::asic::CellLang;
+use super::driver::CircuitLang;
 use super::logic::{Logic, dont_care};
 use super::lut::{LutExprInfo, LutLang};
+use bitvec::field::BitField;
+use safety_net::Parameter;
 
 /// A wrapper for parsing verilog at file `path` with content `s`
 pub fn sv_parse_wrapper(
@@ -140,6 +143,61 @@ fn init_format(program: u64, k: usize) -> Result<String, ()> {
     }
 }
 
+trait InitParser<L: Language> {
+    fn init_parser(&self, v: &str) -> Result<L, String>;
+}
+
+impl InitParser<LutLang> for LutLang {
+    fn init_parser(&self, v: &str) -> Result<LutLang, String> {
+        let split = v.split("'").collect::<Vec<&str>>();
+        if split.len() != 2 {
+            return Err("Expected a literal with specific bitwidth/format".to_string());
+        }
+        let literal = split[1];
+        match self {
+            LutLang::Reg(_) => match literal.chars().last().unwrap() {
+                'x' => Ok(LutLang::DC),
+                'z' => Ok(LutLang::DC),
+                '1' => Ok(LutLang::Const(true)),
+                '0' => Ok(LutLang::Const(false)),
+                _ => Err("Invalid INIT value for register {self}".to_string()),
+            },
+            LutLang::Lut(_) => match literal.chars().next() {
+                Some(char) => match char {
+                    'h' => Ok(LutLang::Program(
+                        u64::from_str_radix(literal.strip_prefix("h").unwrap(), 16)
+                            .map_err(|e| e.to_string())?,
+                    )),
+                    'd' => Ok(LutLang::Program(
+                        literal
+                            .strip_prefix("d")
+                            .unwrap()
+                            .parse::<u64>()
+                            .map_err(|e| e.to_string())?,
+                    )),
+                    _ => Err("Expected a literal with specific bitwidth/format".to_string()),
+                },
+                None => Err("{self} has an empty INIT value".to_string()),
+            },
+            _ => Err("{self} does not have an INIT".to_string()),
+        }
+        /*
+            if l == "x" || l == "z" {
+                Ok(LutLang::DC)
+            } else {
+                Ok(LutLang::Program(
+                    l.parse::<u64>().map_err(|e| e.to_string())?,
+                ))
+            }
+
+        } else if let Some(l) => {
+            Err("Expected a literal with specific bitwidth/format".to_string())
+        }
+        */
+    }
+}
+
+/*
 fn init_parser(v: &str) -> Result<u64, String> {
     let split = v.split("'").collect::<Vec<&str>>();
     if split.len() != 2 {
@@ -147,6 +205,7 @@ fn init_parser(v: &str) -> Result<u64, String> {
     }
     let literal = split[1];
     if let Some(l) = split[1].strip_prefix('h') {
+        if l == "x" {}
         u64::from_str_radix(l, 16).map_err(|e| e.to_string())
     } else if let Some(l) = literal.strip_prefix('d') {
         l.parse::<u64>().map_err(|e| e.to_string())
@@ -154,20 +213,31 @@ fn init_parser(v: &str) -> Result<u64, String> {
         Err("Expected a literal with specific bitwidth/format".to_string())
     }
 }
+*/
 
 #[test]
 fn test_verilog_literals() {
-    assert_eq!(init_parser("8'hff").unwrap(), 0xff);
-    assert_eq!(init_parser("8'h00").unwrap(), 0x00);
-    assert_eq!(init_parser("8'h0f").unwrap(), 0x0f);
-    assert_eq!(init_parser("8'd255").unwrap(), 255);
+    let id = Id::from(0);
+    let lut = LutLang::Lut(vec![id.clone()].into());
+    let reg = LutLang::Reg([id.clone(), id.clone(), id.clone(), id.clone(), id]);
+    assert_eq!(lut.init_parser("8'hff").unwrap(), LutLang::Program(0xff));
+    assert_eq!(lut.init_parser("8'h00").unwrap(), LutLang::Program(0x00));
+    assert_eq!(lut.init_parser("8'h0f").unwrap(), LutLang::Program(0x0f));
+    assert_eq!(lut.init_parser("8'd255").unwrap(), LutLang::Program(255));
+    assert_eq!(reg.init_parser("1'h1").unwrap(), LutLang::Const(true));
+    assert_eq!(reg.init_parser("1'h0").unwrap(), LutLang::Const(false));
+    assert_eq!(reg.init_parser("1'hx").unwrap(), LutLang::DC);
+    assert_eq!(reg.init_parser("1'hz").unwrap(), LutLang::DC);
+    assert_eq!(reg.init_parser("1'd1").unwrap(), LutLang::Const(true));
+    assert_eq!(reg.init_parser("1'd0").unwrap(), LutLang::Const(false));
+    assert_eq!(reg.init_parser("1'dx").unwrap(), LutLang::DC);
+    assert_eq!(reg.init_parser("1'dz").unwrap(), LutLang::DC);
     assert_eq!(init_format(1, 1), Ok("2'h1".to_string()));
     assert_eq!(init_format(1, 5), Ok("32'h00000001".to_string()));
-    assert!(init_parser("1'hx").is_err());
-    assert!(init_parser("1'hz").is_err());
+    assert!(lut.init_parser("1'hx").is_err());
+    assert!(lut.init_parser("1'hz").is_err());
 }
 
-const CLK: &str = "clk";
 const REG_NAME: &str = "FDRE";
 const LUT_ROOT: &str = "LUT";
 
@@ -273,7 +343,7 @@ impl PrimitiveType {
             Self::LUT5 => 5,
             Self::LUT6 => 6,
             Self::VCC | Self::GND => 0,
-            Self::FDRE => 1,
+            Self::FDRE => 4,
             Self::MAJ3 => 3,
         }
     }
@@ -368,7 +438,12 @@ impl PrimitiveType {
                 "I0".to_string(),
             ],
             Self::VCC | Self::GND => vec![],
-            Self::FDRE => vec!["D".to_string()],
+            Self::FDRE => vec![
+                "D".to_string(),
+                "C".to_string(),
+                "CE".to_string(),
+                "R".to_string(),
+            ],
         }
     }
 
@@ -629,6 +704,13 @@ impl SVPrimitive {
         prim
     }
 
+    /// Create a new unconnected FDRE primitive with initial value `init` and instance name `name`
+    pub fn new_reg(init: Logic, name: String) -> Self {
+        let mut prim = Self::new("FDRE".to_string(), name, 4);
+        prim.set_attribute("INIT".to_string(), init.to_string().replace('b', "h"));
+        prim
+    }
+
     /// Create a new unconnected gate primitive with instance name `name`
     pub fn new_gate(logic: PrimitiveType, name: String) -> Self {
         let n_inputs: usize = logic.get_num_inputs();
@@ -652,9 +734,11 @@ impl SVPrimitive {
                 prim.set_attribute("VAL".to_string(), "1'b0".to_string());
                 return prim;
             }
+            /*
             PrimitiveType::FDRE => {
                 prim.set_attribute("INIT".to_string(), "1'hx".to_string());
             }
+            */
             _ => {}
         }
         prim
@@ -705,7 +789,7 @@ impl SVPrimitive {
                 self.connect_input(port, signal)
             }
             "O" | "Y" | "Q" | "G" | "P" | "Z" | "ZN" => self.connect_output(port, signal),
-            "C" | "CE" | "R" => Ok(()),
+            "C" | "CE" | "R" => self.connect_input(port, signal),
             _ => Err(format!("Unknown port name {port}")),
         }
     }
@@ -766,19 +850,9 @@ impl fmt::Display for SVPrimitive {
             }
         }
         writeln!(f, "{}) {} (", indent, self.name)?;
-        // TODO(matth2k): refactor as "is clocked"
-        if self.prim.as_str() == REG_NAME {
-            let indent = " ".repeat(level + 4);
-            writeln!(f, "{indent}.C({CLK}),")?;
-            writeln!(f, "{indent}.CE(1'h1),")?;
-        }
         for (input, value) in self.inputs.iter() {
             let indent = " ".repeat(level + 4);
             writeln!(f, "{}.{}({}),", indent, input, emit_id(value.clone()))?;
-        }
-        if self.prim.as_str() == REG_NAME {
-            let indent = " ".repeat(level + 4);
-            writeln!(f, "{indent}.R(1'h0),")?;
         }
         for (i, (value, output)) in self.outputs.iter().enumerate() {
             let indent = " ".repeat(level + 4);
@@ -958,15 +1032,21 @@ impl VerilogEmission for LutLang {
             | LutLang::Mux(_)
             | LutLang::Nor(_)
             | LutLang::Not(_)
-            | LutLang::Reg(_)
-            | LutLang::Xor(_) => {
+            | LutLang::Xor(_)
+            | LutLang::Lut(_)
+            | LutLang::Reg(_) => {
                 let inputs = self.children();
                 let gate_type = self
                     .get_gate_type()
                     .ok_or("LutLang gates should have a primitive type".to_string())?;
                 let port_list = gate_type.get_input_list();
                 let mut prim = SVPrimitive::new_gate(gate_type, fresh_prim_name());
-                for (input, port) in inputs.iter().zip(port_list) {
+                let mut param_nums = 0;
+                if let Some(param_iterator) = self.param_names() {
+                    let param_vec = param_iterator.collect::<Vec<_>>();
+                    param_nums = param_vec.len();
+                }
+                for (input, port) in inputs.iter().skip(param_nums).zip(port_list) {
                     let signal = lookup(input)
                         .ok_or(format!("Could not find signal {input} in the module"))?;
                     prim.connect_input(port, signal)?;
@@ -974,7 +1054,8 @@ impl VerilogEmission for LutLang {
                 prim.connect_output(gate_type.get_output(), fresh_signal_name())?;
                 Ok(Some(prim))
             }
-            LutLang::Lut(l) => {
+            /*
+            LutLang::Lut(l) | LutLang::Reg(l) => {
                 let gate_type = self
                     .get_gate_type()
                     .expect("CellLang gates should have a primitive type");
@@ -988,6 +1069,7 @@ impl VerilogEmission for LutLang {
                 prim.connect_output(gate_type.get_output(), fresh_signal_name())?;
                 Ok(Some(prim))
             }
+            */
             LutLang::Const(b) => Ok(Some(SVPrimitive::new_const(
                 Logic::from(*b),
                 fresh_signal_name(),
@@ -1041,7 +1123,6 @@ impl VerilogParsing for CellLang {
         if map.contains_key(signal) {
             return Ok(map[signal]);
         }
-
         let id = match module.get_driving_primitive(signal) {
             Ok(primitive) => {
                 if primitive.is_gate() {
@@ -1154,7 +1235,15 @@ impl VerilogParsing for LutLang {
                         PrimitiveType::INV | PrimitiveType::NOT => {
                             Ok(expr.add(LutLang::Not([ids[0]])))
                         }
-                        PrimitiveType::FDRE => Ok(expr.add(LutLang::Reg([ids[0]]))),
+                        PrimitiveType::FDRE => {
+                            let reg_init = primitive
+                                .get_attribute("INIT")
+                                .ok_or(format!("FDRE {signal} has no INIT attribute"))?;
+                            let reg_temp = LutLang::Reg([ids[0], ids[0], ids[0], ids[0], ids[0]]);
+                            let reg_init = reg_temp.init_parser(reg_init)?;
+                            let reg_id = expr.add(reg_init);
+                            Ok(expr.add(LutLang::Reg([reg_id, ids[0], ids[1], ids[2], ids[3]])))
+                        }
                         PrimitiveType::LUT1
                         | PrimitiveType::LUT2
                         | PrimitiveType::LUT3
@@ -1164,8 +1253,9 @@ impl VerilogParsing for LutLang {
                             let program = primitive
                                 .get_attribute("INIT")
                                 .ok_or(format!("LUT {signal} has no INIT attribute"))?;
-                            let program = init_parser(program)?;
-                            let mut c = vec![expr.add(LutLang::Program(program))];
+                            let lut_temp = LutLang::Lut(vec![Id::from(0)].into());
+                            let program = lut_temp.init_parser(program)?;
+                            let mut c = vec![expr.add(program)];
                             c.append(&mut ids);
                             Ok(expr.add(LutLang::Lut(c.into())))
                         }
@@ -1309,11 +1399,8 @@ impl SVModule {
         }
     }
 
-    fn add_clk(&mut self) {
-        if !self.clk {
-            self.clk = true;
-            self.append_inputs(&mut vec![SVSignal::new(1, CLK.to_string())]);
-        }
+    fn is_fdre_prim(name: &str) -> bool {
+        matches!(PrimitiveType::from_str(name), Ok(PrimitiveType::FDRE))
     }
 
     /// From a parsed verilog ast, create a new module and fill it with its primitives and connections.
@@ -1369,6 +1456,59 @@ impl SVModule {
                     let mod_name = get_identifier(id, ast).unwrap();
                     let id = unwrap_node!(inst, InstanceIdentifier).unwrap();
                     let inst_name = get_identifier(id, ast).unwrap();
+
+                    if Self::is_fdre_prim(&mod_name) {
+                        let id = unwrap_node!(inst, NamedParameterAssignment).unwrap();
+                        let init_val: Logic = match unwrap_node!(id, HexValue, UnsignedNumber) {
+                            Some(RefNode::HexValue(v)) => {
+                                let loc = v.nodes.0;
+                                let loc = ast.get_str(&loc).unwrap();
+                                match u64::from_str_radix(loc, 16) {
+                                    Ok(x) => match x {
+                                        1 => Logic::True,
+                                        0 => Logic::False,
+                                        _ => {
+                                            return Err(format!(
+                                                "Invalid INIT value for FDRE from INIT string {loc}"
+                                            ));
+                                        }
+                                    },
+                                    Err(_) => match loc {
+                                        "x" => Logic::X,
+                                        "z" => Logic::Z,
+                                        _ => {
+                                            return Err(format!(
+                                                "Invalid INIT value for FDRE from INIT string {loc}"
+                                            ));
+                                        }
+                                    },
+                                }
+                            }
+                            Some(RefNode::UnsignedNumber(v)) => {
+                                let loc = v.nodes.0;
+                                let loc = ast.get_str(&loc).unwrap();
+                                match loc.parse::<u64>() {
+                                    Ok(x) => match x {
+                                        1 => Logic::True,
+                                        0 => Logic::False,
+                                        _ => {
+                                            return Err(format!(
+                                                "Invalid INIT value for FDRE from INIT string {loc}"
+                                            ));
+                                        }
+                                    },
+                                    Err(_) => {
+                                        return Err(format!(
+                                            "Could not parse hex value from INIT string {loc}"
+                                        ));
+                                    }
+                                }
+                            }
+                            _ => Logic::X,
+                        };
+                        cur_insts.push(SVPrimitive::new_reg(init_val, inst_name));
+                        continue;
+                    }
 
                     if let Some(k) = Self::is_lut_prim(&mod_name) {
                         let id = unwrap_node!(inst, NamedParameterAssignment).unwrap();
@@ -1454,44 +1594,32 @@ impl SVModule {
                                 .connect_signal(port_name, arg_name.unwrap())?;
                         }
                         None => {
-                            // Ignore clock enable and reset signals,
-                            // because they are not along the data path
-                            // The verilog emitter just re-inserts them at the end
-                            // This means we can only use D Flip-flops that are constantly *ON*.
-                            if port_name == "CE" || port_name == "R" {
-                                if unwrap_node!(arg, PrimaryLiteral).is_none() {
-                                    return Err(format!(
-                                        "Non-data port {port_name} should be driven constant"
-                                    ));
-                                }
-                            } else {
-                                // If we don't have a identifier, it must be a constant connection
-                                let arg_name = cur_insts.last().unwrap().name.clone()
-                                    + port_name.as_str()
-                                    + "_const";
-                                cur_signals.push(SVSignal::new(1, arg_name.clone()));
-                                cur_insts
-                                    .last_mut()
-                                    .unwrap()
-                                    .connect_signal(port_name.clone(), arg_name.clone())?;
+                            // If we don't have a identifier, it must be a constant connection
+                            let arg_name = cur_insts.last().unwrap().name.clone()
+                                + port_name.as_str()
+                                + "_const";
+                            cur_signals.push(SVSignal::new(1, arg_name.clone()));
+                            cur_insts
+                                .last_mut()
+                                .unwrap()
+                                .connect_signal(port_name.clone(), arg_name.clone())?;
 
-                                // Create the constant
-                                let literal = unwrap_node!(arg, PrimaryLiteral);
-                                if literal.is_none() {
-                                    return Err(format!(
-                                        "Expected a literal for connection on port {port_name}"
-                                    ));
-                                }
-                                let value = parse_literal_as_logic(literal.unwrap(), ast)?;
-                                let const_inst = SVPrimitive::new_const(
-                                    value,
-                                    arg_name.clone(),
-                                    arg_name.clone() + "_inst",
-                                );
-
-                                // Insert the constant before the current instance
-                                cur_insts.insert(cur_insts.len() - 1, const_inst);
+                            // Create the constant
+                            let literal = unwrap_node!(arg, PrimaryLiteral);
+                            if literal.is_none() {
+                                return Err(format!(
+                                    "Expected a literal for connection on port {port_name}"
+                                ));
                             }
+                            let value = parse_literal_as_logic(literal.unwrap(), ast)?;
+                            let const_inst = SVPrimitive::new_const(
+                                value,
+                                arg_name.clone(),
+                                arg_name.clone() + "_inst",
+                            );
+
+                            // Insert the constant before the current instance
+                            cur_insts.insert(cur_insts.len() - 1, const_inst);
                         }
                     }
                 }
@@ -1597,9 +1725,6 @@ impl SVModule {
         if sname.contains("tmp") {
             return Err("'tmp' is a reserved keyword".to_string());
         }
-        if sname.contains(CLK) {
-            return Err(format!("'{CLK}' is a reserved keyword"));
-        }
         if sname.contains("input") {
             return Err("'input' is a reserved keyword".to_string());
         }
@@ -1702,6 +1827,14 @@ impl SVModule {
         let mut module = SVModule::new(mod_name);
         let expr = LutExprInfo::new(&expr).get_cse();
 
+        // First pass: identify which node IDs are used as REG init values (first child)
+        let mut reg_init_ids: std::collections::HashSet<Id> = std::collections::HashSet::new();
+        for node in expr.as_ref().iter() {
+            if let LutLang::Reg(r) = node {
+                reg_init_ids.insert(r[0]);
+            }
+        }
+
         let mut mapping: HashMap<Id, String> = HashMap::new();
 
         // Add output mapping
@@ -1728,6 +1861,7 @@ impl SVModule {
             if !mapping.contains_key(&i.into())
                 && !matches!(l, LutLang::Var(_) | LutLang::Program(_))
                 && i < expr.as_ref().len() - 1
+                && !reg_init_ids.contains(&i.into())
             {
                 mapping.insert(i.into(), format!("__{prim_count}__"));
                 prim_count += 1;
@@ -1741,7 +1875,7 @@ impl SVModule {
             format!("__{}__", *prim_count.borrow() - 1)
         };
 
-        let mut programs: HashMap<Id, u64> = HashMap::new();
+        let mut parameters: HashMap<Id, Parameter> = HashMap::new();
 
         for (id, node) in expr.as_ref().iter().enumerate() {
             let fresh_wire = || {
@@ -1750,20 +1884,43 @@ impl SVModule {
                     format!("__{}__", *prim_count.borrow() - 1)
                 })
             };
+            // Extract parameters
+            if let Some(node_param) = node.get_parameter() {
+                parameters.insert(id.into(), node_param);
+            }
+
+            // Skip DC/Const nodes that are REG init values before creating primitives
+            if reg_init_ids.contains(&id.into()) {
+                continue;
+            }
             if let Some(mut prim) =
                 node.get_verilog_primitive(|x| mapping.get(x).cloned(), fresh_prim, fresh_wire)?
             {
-                if let LutLang::Lut(l) = node {
-                    prim.set_init(programs[&l[0]]);
-                }
-
-                if matches!(node, LutLang::Reg(_)) {
-                    module.add_clk();
-                }
-
+                match node {
+                    LutLang::Lut(l) => match &parameters[&l[0]] {
+                        Parameter::BitVec(bv) => prim.set_init(bv.load::<u64>()),
+                        Parameter::Integer(i) => prim.set_init(*i),
+                        _ => return Err(format!("Invalid Parameter type for LUT {node}")),
+                    },
+                    LutLang::Reg(r) => {
+                        if let Some(param) = parameters.get(&r[0]) {
+                            match param {
+                                Parameter::Logic(lc) => {
+                                    prim.set_attribute(
+                                        "INIT".to_string(),
+                                        lc.to_string().replace('b', "h"),
+                                    );
+                                }
+                                _ => return Err(format!("Invalid Parameter type for REG {node}")),
+                            }
+                        }
+                    }
+                    _ => (),
+                    // prim.set_init(programs[&l[0]]);
+                };
                 let sname = module.insert_instance(prim)?;
                 mapping.insert(id.into(), sname);
-            } else if let Some(v) = node.get_var() {
+            } else if let Some(v) = VerilogEmission::get_var(node) {
                 let sname = module.insert_input(v)?;
 
                 // Check if input directly drives an output
@@ -1777,9 +1934,9 @@ impl SVModule {
                     module.signals.push(SVSignal::new(1, output));
                 }
                 mapping.insert(id.into(), sname);
-            } else if let LutLang::Program(p) = node {
-                programs.insert(id.into(), *p);
-            } else if !matches!(node, LutLang::Bus(_)) {
+                /* LutLang::Program(p) = node {
+                programs.insert(id.into(), *p); */
+            } else if !matches!(node, LutLang::Bus(_)) && !matches!(node, LutLang::Program(_)) {
                 return Err(format!("Unsupported node type: {node:?}"));
             }
         }

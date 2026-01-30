@@ -14,6 +14,7 @@ use egg::{
     Analysis, CostFunction, DidMerge, EGraph, Id, Language, RecExpr, Rewrite, Symbol,
     define_language, rewrite,
 };
+use safety_net::{Identifier, Logic, Parameter};
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -210,20 +211,37 @@ impl CircuitLang for CellLang {
         Self::Bus(ids.collect())
     }
 
-    fn int(_x: u64) -> Option<Self> {
-        None
+    fn parameter(x: Parameter) -> Option<Self> {
+        match x {
+            Parameter::BitVec(_bv) => None,
+            Parameter::Integer(_i) => None,
+            Parameter::Real(_r) => None,
+            Parameter::Logic(l) => match l {
+                Logic::True | Logic::False => Some(Self::Const(l.unwrap())),
+                _ => None,
+            },
+        }
     }
 
     fn is_bus(&self) -> bool {
         matches!(self, Self::Bus(_))
     }
 
-    fn is_lut(&self) -> bool {
-        false
+    fn param_names(&self) -> Option<impl Iterator<Item = Identifier>> {
+        match self {
+            Self::Cell(n, _l) => match n.as_str() {
+                "FDRE" => Some(std::iter::once(Identifier::new("INIT".to_string()))),
+                _ => None,
+            },
+            _ => None,
+        }
     }
 
-    fn get_int(&self) -> Option<u64> {
-        None
+    fn get_parameter(&self) -> Option<Parameter> {
+        match self {
+            Self::Const(l) => Some(Parameter::from_bool(l.clone())),
+            _ => None,
+        }
     }
 
     fn get_var(&self) -> Option<Symbol> {
