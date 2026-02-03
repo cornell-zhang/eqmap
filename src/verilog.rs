@@ -143,6 +143,7 @@ fn init_format(program: u64, k: usize) -> Result<String, ()> {
     }
 }
 
+/*
 trait InitParser<L: Language> {
     fn init_parser(&self, v: &str) -> Result<L, String>;
 }
@@ -196,7 +197,7 @@ impl InitParser<LutLang> for LutLang {
         */
     }
 }
-
+*/
 /*
 fn init_parser(v: &str) -> Result<u64, String> {
     let split = v.split("'").collect::<Vec<&str>>();
@@ -217,6 +218,7 @@ fn init_parser(v: &str) -> Result<u64, String> {
 
 #[test]
 fn test_verilog_literals() {
+    /*
     let id = Id::from(0);
     let lut = LutLang::Lut(vec![id.clone()].into());
     let reg = LutLang::Reg([id.clone(), id.clone(), id.clone(), id.clone(), id]);
@@ -232,10 +234,13 @@ fn test_verilog_literals() {
     assert_eq!(reg.init_parser("1'd0").unwrap(), LutLang::Const(false));
     assert_eq!(reg.init_parser("1'dx").unwrap(), LutLang::DC);
     assert_eq!(reg.init_parser("1'dz").unwrap(), LutLang::DC);
+    */
     assert_eq!(init_format(1, 1), Ok("2'h1".to_string()));
     assert_eq!(init_format(1, 5), Ok("32'h00000001".to_string()));
+    /*
     assert!(lut.init_parser("1'hx").is_err());
     assert!(lut.init_parser("1'hz").is_err());
+    */
 }
 
 const REG_NAME: &str = "FDRE";
@@ -1239,8 +1244,10 @@ impl VerilogParsing for LutLang {
                             let reg_init = primitive
                                 .get_attribute("INIT")
                                 .ok_or(format!("FDRE {signal} has no INIT attribute"))?;
-                            let reg_temp = LutLang::Reg([ids[0], ids[0], ids[0], ids[0], ids[0]]);
-                            let reg_init = reg_temp.init_parser(reg_init)?;
+                            // let reg_temp = LutLang::Reg([ids[0], ids[0], ids[0], ids[0], ids[0]]);
+                            let reg_init =
+                                LutLang::Parameter(Parameter::from_str(reg_init).unwrap());
+                            // let reg_init = reg_temp.init_parser(reg_init)?;
                             let reg_id = expr.add(reg_init);
                             Ok(expr.add(LutLang::Reg([reg_id, ids[0], ids[1], ids[2], ids[3]])))
                         }
@@ -1253,8 +1260,9 @@ impl VerilogParsing for LutLang {
                             let program = primitive
                                 .get_attribute("INIT")
                                 .ok_or(format!("LUT {signal} has no INIT attribute"))?;
-                            let lut_temp = LutLang::Lut(vec![Id::from(0)].into());
-                            let program = lut_temp.init_parser(program)?;
+                            // let lut_temp = LutLang::Lut(vec![Id::from(0)].into());
+                            let program = LutLang::Parameter(Parameter::from_str(program).unwrap());
+                            // let program = lut_temp.init_parser(program)?;
                             let mut c = vec![expr.add(program)];
                             c.append(&mut ids);
                             Ok(expr.add(LutLang::Lut(c.into())))
@@ -1827,6 +1835,7 @@ impl SVModule {
         let mut module = SVModule::new(mod_name);
         let expr = LutExprInfo::new(&expr).get_cse();
 
+        /*
         // First pass: identify which node IDs are used as REG init values (first child)
         let mut reg_init_ids: std::collections::HashSet<Id> = std::collections::HashSet::new();
         for node in expr.as_ref().iter() {
@@ -1834,7 +1843,7 @@ impl SVModule {
                 reg_init_ids.insert(r[0]);
             }
         }
-
+        */
         let mut mapping: HashMap<Id, String> = HashMap::new();
 
         // Add output mapping
@@ -1859,9 +1868,9 @@ impl SVModule {
         let mut prim_count: usize = 0;
         for (i, l) in expr.as_ref().iter().enumerate() {
             if !mapping.contains_key(&i.into())
-                && !matches!(l, LutLang::Var(_) | LutLang::Program(_))
+                && !matches!(l, LutLang::Var(_) | LutLang::Parameter(_))
                 && i < expr.as_ref().len() - 1
-                && !reg_init_ids.contains(&i.into())
+            //     && !reg_init_ids.contains(&i.into())
             {
                 mapping.insert(i.into(), format!("__{prim_count}__"));
                 prim_count += 1;
@@ -1884,6 +1893,8 @@ impl SVModule {
                     format!("__{}__", *prim_count.borrow() - 1)
                 })
             };
+
+            /*
             // Extract parameters
             if let Some(node_param) = node.get_parameter() {
                 parameters.insert(id.into(), node_param);
@@ -1893,6 +1904,7 @@ impl SVModule {
             if reg_init_ids.contains(&id.into()) {
                 continue;
             }
+            */
             if let Some(mut prim) =
                 node.get_verilog_primitive(|x| mapping.get(x).cloned(), fresh_prim, fresh_wire)?
             {
@@ -1936,7 +1948,9 @@ impl SVModule {
                 mapping.insert(id.into(), sname);
                 /* LutLang::Program(p) = node {
                 programs.insert(id.into(), *p); */
-            } else if !matches!(node, LutLang::Bus(_)) && !matches!(node, LutLang::Program(_)) {
+            } else if let LutLang::Parameter(p) = node {
+                parameters.insert(id.into(), p.clone());
+            } else if !matches!(node, LutLang::Bus(_)) {
                 return Err(format!("Unsupported node type: {node:?}"));
             }
         }

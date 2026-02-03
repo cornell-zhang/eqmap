@@ -10,6 +10,7 @@ use bitvec::{bitvec, order::Lsb0, vec::BitVec};
 use egg::{
     Analysis, Applier, FromOp, Language, Pattern, PatternAst, Rewrite, Subst, Symbol, Var, rewrite,
 };
+use safety_net::Parameter;
 use std::fmt::Display;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::{
@@ -365,7 +366,10 @@ impl Applier<lut::LutLang, LutAnalysis> for PermuteInput {
 
         let pos_from_lsb = (operands.len() - 1) - self.pos;
         let new_program = lut::swap_pos(&program, operands.len(), pos_from_lsb);
-        let new_program_id = egraph.add(lut::LutLang::Program(new_program));
+        let new_program_id = egraph.add(lut::LutLang::Parameter(Parameter::bitvec(
+            1 << operands.len(),
+            new_program,
+        )));
 
         assert!(self.pos < operands.len());
 
@@ -450,8 +454,8 @@ impl Applier<lut::LutLang, LutAnalysis> for CombineAlikeInputs {
             let eval_o = lut::eval_lut_bv(program, &lut::to_bitvec((i << 2) + 3, 1 << k).unwrap());
             new_prog.set((i << 1) as usize + 1, eval_o);
         }
-        let new_prog = lut::from_bitvec(&new_prog);
-        let new_prog_id = egraph.add(lut::LutLang::Program(new_prog));
+        let new_prog_u64 = lut::from_bitvec(&new_prog);
+        let new_prog_id = egraph.add(lut::LutLang::Parameter(Parameter::BitVec(new_prog)));
         let mut c = Vec::from(&[new_prog_id]);
         operands.pop();
         c.append(&mut operands);
@@ -459,7 +463,13 @@ impl Applier<lut::LutLang, LutAnalysis> for CombineAlikeInputs {
 
         match searcher_ast {
             Some(ast) => union_with_lut_pattern(
-                ast, new_prog, &new_node, &self.vars, subst, rule_name, egraph,
+                ast,
+                new_prog_u64,
+                &new_node,
+                &self.vars,
+                subst,
+                rule_name,
+                egraph,
             ),
             None => {
                 let new_lut = egraph.add(new_node);
@@ -523,7 +533,7 @@ impl Applier<lut::LutLang, LutAnalysis> for ShannonCondense {
         let k = operands.len();
         assert!(k <= 5);
         let new_prog = (p << (1 << k)) | q;
-        let new_prog_id = egraph.add(lut::LutLang::Program(new_prog));
+        let new_prog_id = egraph.add(lut::LutLang::Parameter(Parameter::bitvec(1 << k, new_prog)));
         let sel = subst[self.sel];
         let mut c = Vec::from(&[new_prog_id, sel]);
         c.append(&mut operands);
@@ -660,8 +670,8 @@ impl Applier<lut::LutLang, LutAnalysis> for FuseCut {
             }
             new_prog.set(i as usize, lut::eval_lut_bv(root_program, &root_bv));
         }
-        let new_prog = lut::from_bitvec(&new_prog);
-        let mut c = vec![egraph.add(lut::LutLang::Program(new_prog)); nk + 1];
+        let new_prog_u64 = lut::from_bitvec(&new_prog);
+        let mut c = vec![egraph.add(lut::LutLang::Parameter(Parameter::BitVec(new_prog))); nk + 1];
         for (&k, &v) in pos_map.iter() {
             c[v + 1] = k;
         }
@@ -677,7 +687,13 @@ impl Applier<lut::LutLang, LutAnalysis> for FuseCut {
                     .chain(self.rhs.iter().cloned())
                     .collect();
                 union_with_lut_pattern(
-                    ast, new_prog, &new_node, &all_vars, subst, rule_name, egraph,
+                    ast,
+                    new_prog_u64,
+                    &new_node,
+                    &all_vars,
+                    subst,
+                    rule_name,
+                    egraph,
                 )
             }
             None => {
@@ -702,6 +718,7 @@ pub mod decomp {
     };
     use bitvec::prelude::*;
     use egg::{Analysis, Applier, Id, Var};
+    use safety_net::Parameter;
 
     #[derive(Debug, Clone, PartialEq, Eq)]
     /// A data type for folding LUTs
@@ -731,7 +748,11 @@ pub mod decomp {
         {
             match self {
                 AbstractNode::Lut(program, mut inputs) => {
-                    let pid = egraph.add(LutLang::Program(program));
+                    let pid = egraph.add(LutLang::Parameter(Parameter::bitvec(
+                        1 << inputs.len(),
+                        program,
+                    )));
+                    // let pid = egraph.add(LutLang::Program(program));
                     let mut c = vec![pid];
                     c.append(&mut inputs);
                     egraph.add(LutLang::Lut(c.into()))
@@ -906,7 +927,7 @@ pub mod decomp {
 
             let c1_id = c1.construct(egraph);
             let c0_id = c0.construct(egraph);
-            let mux_p = egraph.add(lut::LutLang::Program(202));
+            let mux_p = egraph.add(lut::LutLang::Parameter(Parameter::bitvec(8, 202)));
             let new_node = lut::LutLang::Lut(vec![mux_p, operands[0], c1_id, c0_id].into());
             let new_lut = egraph.add(new_node);
             if egraph.union_trusted(eclass, new_lut, rule_name) {

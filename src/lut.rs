@@ -18,7 +18,7 @@ use egg::define_language;
 use safety_net::{Identifier, Logic, Parameter, dont_care};
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
-
+use std::str::FromStr;
 define_language! {
     /// Definitions of e-node types. Programs are the only node type that is not a net/signal.
     #[allow(missing_docs)]
@@ -37,6 +37,7 @@ define_language! {
         "REG" = Reg([Id; 5]), // init value and c, ce, d, r
         "ARG" = Arg([Id; 1]),
         "CYCLE" = Cycle([Id; 1]),
+        Parameter(Parameter),
     }
 }
 
@@ -79,9 +80,9 @@ impl LutLang {
 
         match self {
             Self::Lut(l) => {
-                if let LutLang::Program(p) = expr[l[0]] {
+                if let LutLang::Parameter(Parameter::BitVec(p)) = expr[l[0]].clone() {
                     let k = l.len() - 1;
-                    if k < Self::MAX_LUT_SIZE && p >= (1 << (1 << k)) {
+                    if k < Self::MAX_LUT_SIZE && p.load::<u64>() >= (1 << (1 << k)) {
                         return Err("Program too large for LUT".to_string());
                     }
                 } else {
@@ -90,23 +91,23 @@ impl LutLang {
             }
             Self::And(l) | Self::Xor(l) | Self::Nor(l) => {
                 for j in l {
-                    if matches!(expr[*j], LutLang::Program(_)) {
-                        return Err("Gate argument has unexpected integer.".to_string());
+                    if matches!(expr[*j], LutLang::Parameter(_)) {
+                        return Err("Gate argument has unexpected parameter.".to_string());
                     }
                 }
             }
             Self::Bus(l) => {
                 for id in l.iter() {
-                    if let LutLang::Program(_) = expr[*id] {
-                        return Err("Bus cannot contain a program".to_string());
+                    if let LutLang::Parameter(_) = expr[*id] {
+                        return Err("Bus cannot contain a parameter".to_string());
                     } else if let LutLang::Bus(_) = expr[*id] {
                         return Err("Bus construct cannot be nested".to_string());
                     }
                 }
             }
-            Self::Arg([id]) => match expr[*id] {
-                Self::Program(index) => {
-                    if index >= depth {
+            Self::Arg([id]) => match expr[*id].clone() {
+                Self::Parameter(Parameter::BitVec(index)) => {
+                    if index.load::<u64>() >= depth {
                         return Err("Argument index out of bounds".to_string());
                     }
                 }
@@ -140,8 +141,8 @@ impl LutLang {
             LutLang::Lut(l) => {
                 self.verify()?;
                 let p = l.first().unwrap();
-                match expr[*p] {
-                    LutLang::Program(p) => Ok(p),
+                match expr[*p].clone() {
+                    LutLang::Parameter(Parameter::BitVec(p)) => Ok(p.load::<u64>()),
                     _ => Err("First element of LUT must be a program".to_string()),
                 }
             }
@@ -276,9 +277,15 @@ impl LutLang {
                 }
             }
             LutLang::Lut(a) => {
-                let p = match expr[*a.first().unwrap()] {
-                    LutLang::Program(p) => p,
-                    _ => panic!("First element of LUT must be a program"),
+                let p = match expr[*a.first().unwrap()].clone() {
+                    LutLang::Parameter(Parameter::BitVec(p)) => p.load::<u64>(),
+                    LutLang::Var(v) => panic!("Var, {}", v),
+                    LutLang::Parameter(Parameter::Integer(i)) => panic!("Integer, {}", i),
+                    LutLang::Program(p) => panic!("Program, {}", p),
+                    _ => panic!(
+                        "First element of LUT must be a program, {}",
+                        expr[*a.first().unwrap()].clone().to_string()
+                    ),
                 };
 
                 let mut x: Vec<bool> = Vec::new();
@@ -299,6 +306,7 @@ impl LutLang {
             LutLang::Reg(_) => Err("REG is not combinational logic".to_string()),
             LutLang::Arg(_) => Err("ARG is not combinational logic".to_string()),
             LutLang::Cycle([a]) => expr[*a].eval_rec(inputs, expr),
+            LutLang::Parameter(_) => panic!("Parameter node should not be evaluated"),
         }
     }
 
@@ -414,7 +422,7 @@ impl LutLang {
                         let index = from_bitvec(&index) as usize;
                         nbv.push(pbv[index]);
                     }
-                    let np = dest.add(LutLang::Program(from_bitvec(&nbv)));
+                    let np = dest.add(LutLang::Parameter(Parameter::BitVec(nbv.clone())));
                     let mut c = l.to_vec();
                     c[0] = np;
                     c.remove(pos + 1);
@@ -439,7 +447,7 @@ impl LutLang {
                     nbv.push(pbv[index_lo]);
                 }
                 if nbv.len() == 1 << (k - 1) {
-                    let np = dest.add(LutLang::Program(from_bitvec(&nbv)));
+                    let np = dest.add(LutLang::Parameter(Parameter::BitVec(nbv.clone())));
                     let mut c = l.to_vec();
                     c[0] = np;
                     c.remove(pos + 1);
@@ -836,7 +844,7 @@ impl<'a> LutExprInfo<'a> {
         }
     }
 
-    /// Returns `true` is the expression has common subexpressions that need to be eliminated
+    /// Returns `true` if the expression has common subexpressions that need to be eliminated
     pub fn is_reduntant(&self) -> bool {
         let slice = self.expr.as_ref();
 
@@ -848,7 +856,7 @@ impl<'a> LutExprInfo<'a> {
             let n = &slice[i];
 
             // We honestly don't care about redundant program leaves
-            if matches!(n, LutLang::Program(_)) {
+            if matches!(n, LutLang::Parameter(_)) {
                 continue;
             }
 
@@ -995,8 +1003,12 @@ fn canonicalize_expr(expr: RecExpr<LutLang>) -> RecExpr<LutLang> {
                         rewritten: &mut RecExpr<LutLang>,
                         mapping: &mut HashMap<Id, Id>| {
         let remapped = n.map_children(|c| mapping[&c]);
-        let p = rewritten.add(LutLang::Program(p));
+        // let p = rewritten.add(LutLang::Program(p));
         let mut children = remapped.children().to_vec();
+        let p = rewritten.add(LutLang::Parameter(Parameter::bitvec(
+            1 << children.len(),
+            p,
+        )));
         children.insert(0, p);
         mapping.insert(id, rewritten.add(LutLang::Lut(children.into())));
     };
@@ -1144,15 +1156,18 @@ impl CircuitLang for LutLang {
     }
 
     fn parameter(x: Parameter) -> Option<Self> {
-        match x {
-            Parameter::BitVec(bv) => Some(Self::Program(bv.load::<u64>())),
-            Parameter::Integer(i) => Some(Self::Program(i)),
-            Parameter::Real(_r) => None,
-            Parameter::Logic(l) => match l {
-                Logic::True | Logic::False => Some(Self::Const(l.unwrap())),
-                _ => Some(Self::DC),
-            },
-        }
+        Some(Self::Parameter(x))
+        /*
+            match x {
+                Parameter::BitVec(bv) => Some(Self::Program(bv.load::<u64>())),
+                Parameter::Integer(i) => Some(Self::Program(i)),
+                Parameter::Real(_r) => None,
+                Parameter::Logic(l) => match l {
+                    Logic::True | Logic::False => Some(Self::Const(l.unwrap())),
+                    _ => Some(Self::DC),
+                },
+            }
+        */
     }
 
     fn is_bus(&self) -> bool {
@@ -1170,9 +1185,12 @@ impl CircuitLang for LutLang {
 
     fn get_parameter(&self) -> Option<Parameter> {
         match self {
+            /*
             Self::Program(i) => Some(Parameter::bitvec((i.ilog2() + 1) as usize, i.clone())),
             Self::Const(l) => Some(Parameter::from_bool(l.clone())),
             Self::DC => Some(Parameter::Logic(dont_care())),
+            */
+            Self::Parameter(p) => Some(p.clone()),
             _ => None,
         }
     }
@@ -1198,7 +1216,8 @@ mod tests {
     #[test]
     fn test_bad_cells() {
         let mut expr = RecExpr::<LutLang>::default();
-        let prog = expr.add(LutLang::Program(12345));
+        // let prog = expr.add(LutLang::Program(12345));
+        let prog = expr.add(LutLang::Parameter(Parameter::bitvec(14, 12345)));
         let a = expr.add(LutLang::Var("a".into()));
         let b = expr.add(LutLang::Var("b".into()));
 

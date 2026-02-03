@@ -14,7 +14,7 @@ use egg::{
     Analysis, CostFunction, DidMerge, EGraph, Id, Language, RecExpr, Rewrite, Symbol,
     define_language, rewrite,
 };
-use safety_net::{Identifier, Logic, Parameter};
+use safety_net::{Identifier, Parameter};
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -30,6 +30,7 @@ define_language! {
         "INV" = Inv([Id; 1]),
         Cell(Symbol, Vec<Id>),
         "BUS" = Bus(Box<[Id]>),
+        Parameter(Parameter),
     }
 }
 
@@ -212,15 +213,18 @@ impl CircuitLang for CellLang {
     }
 
     fn parameter(x: Parameter) -> Option<Self> {
-        match x {
-            Parameter::BitVec(_bv) => None,
-            Parameter::Integer(_i) => None,
-            Parameter::Real(_r) => None,
-            Parameter::Logic(l) => match l {
-                Logic::True | Logic::False => Some(Self::Const(l.unwrap())),
-                _ => None,
-            },
-        }
+        Some(Self::Parameter(x))
+        /*
+            match x {
+                Parameter::BitVec(_bv) => None,
+                Parameter::Integer(_i) => None,
+                Parameter::Real(_r) => None,
+                Parameter::Logic(l) => match l {
+                    Logic::True | Logic::False => Some(Self::Const(l.unwrap())),
+                    _ => None,
+                },
+            }
+        */
     }
 
     fn is_bus(&self) -> bool {
@@ -239,7 +243,8 @@ impl CircuitLang for CellLang {
 
     fn get_parameter(&self) -> Option<Parameter> {
         match self {
-            Self::Const(l) => Some(Parameter::from_bool(l.clone())),
+            // Self::Const(l) => Some(Parameter::from_bool(l.clone())),
+            Self::Parameter(p) => Some(p.clone()),
             _ => None,
         }
     }

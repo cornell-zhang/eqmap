@@ -63,6 +63,7 @@ impl CostFunction<LutLang> for KLUTCostFn {
             LutLang::Const(_) => 0,
             LutLang::Var(_) => 1,
             LutLang::DC => 0,
+            LutLang::Parameter(_) => 0,
             _ => u64::MAX,
         };
         enode.fold(op_cost, |sum, id| sum.saturating_add(costs(id)))
@@ -200,6 +201,7 @@ impl CostFunction<LutLang> for GateCostFn {
             LutLang::Var(_) => 1,
             LutLang::DC => 0,
             LutLang::Lut(l) => 10 * l.len() as u64 * l.len() as u64,
+            LutLang::Parameter(_) => 0,
         };
         enode.fold(op_cost, |sum, id| sum.saturating_add(costs(id)))
     }
@@ -243,6 +245,7 @@ impl CostFunction<CellLang> for GateCostFn {
 
                 if self.set.contains(pre) { 1 } else { u64::MAX }
             }
+            CellLang::Parameter(_) => 0,
         };
         enode.fold(op_cost, |sum, id| sum.saturating_add(costs(id)))
     }

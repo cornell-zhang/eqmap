@@ -14,7 +14,7 @@ use safety_net::{
     Analysis, DrivenNet, Error, Identifier, Instantiable, Logic, Net, Netlist, Parameter,
     format_id, iter::DFSIterator,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::rc::Rc;
 use std::str::FromStr;
 
@@ -192,6 +192,9 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
 
                 // TODO(matth2k): Review following generalized method for CircuitLang to accept parameters
                 for (i, (_, param)) in inst_type.parameters().enumerate() {
+                    eprintln!("param = {}", param.to_string());
+                    eprintln!("inst_type = {}", *(inst_type.clone()).get_name());
+                    eprintln!("expr = {}", expr);
                     let p = expr.add(L::parameter(param).ok_or(format!(
                         "Language does not support parameter nodes required for cell {}",
                         inst_type.get_name()
@@ -231,7 +234,10 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
             }
 
             let sym = n.get_identifier();
+            eprintln!("sym = {}", sym);
             let id = expr.add(L::var(sym.to_string().into()));
+            eprintln!("id = {}", id);
+            eprintln!("expr = {}", expr);
             mapping.insert(n.clone(), id);
             leaves.insert(sym.to_string().into(), n.clone());
             leaves_by_id.insert(id, n.clone());
@@ -418,20 +424,31 @@ impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping
     pub fn rewrite(self, netlist: &Rc<Netlist<I>>) -> Result<Vec<DrivenNet<I>>, Error> {
         let mut mapping: HashMap<Id, DrivenNet<I>> = HashMap::new();
 
+        let mut param_queue: VecDeque<Parameter> = VecDeque::new();
         for (i, n) in self.expr.iter().enumerate() {
             if let Some(var) = n.get_var() {
                 mapping.insert(i.into(), self.leaves[&var].clone());
+            } else if let Some(p) = n.get_parameter() {
+                param_queue.push_back(p);
             } else if !n.is_bus() {
                 // TODO(matth2k): Generalize a param extractor for CircuitLang
                 let mut params = vec![];
                 if let Some(param_iter) = n.param_names() {
-                    for (param_i, param_name) in param_iter.enumerate() {
-                        let param = &self.expr[n.children()[param_i]];
+                    for (_param_i, param_name) in param_iter.enumerate() {
+                        /* let param = &self.expr[n.children()[param_i]];
                         let param = param.get_parameter().ok_or(Error::ParseError(format!(
                             "{} node is missing parameter: {}",
                             n, param
                         )))?;
-                        params.append(&mut vec![(param_name, param)]);
+                        */
+                        params.append(&mut vec![(
+                            param_name.clone(),
+                            param_queue.pop_front().expect(&format!(
+                                "{} node is missing parameter: {}",
+                                n,
+                                param_name.get_name()
+                            )),
+                        )]);
                     }
                 }
                 /*

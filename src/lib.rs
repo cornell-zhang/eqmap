@@ -63,6 +63,7 @@ mod tests {
     use driver::{Canonical, SynthRequest};
     use egg::{Analysis, Language, RecExpr};
     use lut::{LutExprInfo, LutLang};
+    use safety_net::Parameter;
     use verilog::{PrimitiveType, SVModule, sv_parse_wrapper};
 
     use super::*;
@@ -126,7 +127,7 @@ mod tests {
         let const_val = true;
         let prog = 1337;
         let const_true = LutLang::Const(const_val);
-        let prog_node = LutLang::Program(prog);
+        let prog_node = LutLang::Parameter(Parameter::bitvec(11, prog));
         let mut egraph = egg::EGraph::default();
         let const_analysis = LutAnalysis::make(&mut egraph, &const_true, egg::Id::default());
         let prog_analysis = LutAnalysis::make(&mut egraph, &prog_node, egg::Id::default());
@@ -173,8 +174,19 @@ mod tests {
         let input_node = LutLang::Var(input.to_string().into());
         let mut expr: RecExpr<LutLang> = RecExpr::default();
         let id = expr.add(input_node.clone());
-        let lut =
-            LutLang::Lut(vec![expr.add(LutLang::Program(0)), id, id, id, id, id, id, id].into());
+        let lut = LutLang::Lut(
+            vec![
+                expr.add(LutLang::Parameter(Parameter::bitvec(1 << 6, 0))),
+                id,
+                id,
+                id,
+                id,
+                id,
+                id,
+                id,
+            ]
+            .into(),
+        );
         expr.add(lut.clone());
         assert!(lut.verify_rec(&expr).is_err());
         assert!(lut.get_program(&expr).is_err());
@@ -370,7 +382,7 @@ endmodule\n"
         let module = module.unwrap();
         assert_eq!(
             module.to_single_lut_expr().unwrap().to_string(),
-            "(LUT 17361601744336890538 true false b a c d)".to_string()
+            "(LUT 64'hf0f0ccccff00aaaa true false b a c d)".to_string()
         );
     }
 
@@ -431,7 +443,7 @@ endmodule\n"
         let expr: RecExpr<LutLang> = module.to_expr().unwrap();
         assert_eq!(
             expr.to_string(),
-            "(LUT 17361601744336890538 s0 s1 b a c d)".to_string()
+            "(LUT 64'hf0f0ccccff00aaaa s0 s1 b a c d)".to_string()
         );
     }
 
@@ -443,7 +455,7 @@ endmodule\n"
             Ok(module) => {
                 assert_eq!(
                     module.to_single_lut_expr().unwrap().to_string(),
-                    "(REG x d clk ce rst)".to_string()
+                    "(REG 1'bx d clk ce rst)".to_string()
                 );
                 let output = module.to_string();
                 let golden = "module mux_4_1 (
@@ -831,8 +843,8 @@ endmodule\n"
 
     #[test]
     fn test_bus_type() {
-        let bus: RecExpr<LutLang> = "(BUS (LUT 202 s0 a b) (MUX s0 a b))".parse().unwrap();
-        let swapped: RecExpr<LutLang> = "(BUS (MUX s0 a b) (LUT 202 s0 a b))".parse().unwrap();
+        let bus: RecExpr<LutLang> = "(BUS (LUT 8'hca s0 a b) (MUX s0 a b))".parse().unwrap();
+        let swapped: RecExpr<LutLang> = "(BUS (MUX s0 a b) (LUT 8'hca s0 a b))".parse().unwrap();
         assert!(LutLang::func_equiv(&bus, &swapped).unwrap());
     }
 
@@ -858,10 +870,10 @@ endmodule\n"
     fn test_not_equiv() {
         let xor: RecExpr<LutLang> = "(XOR a b)".parse().unwrap();
         let nor: RecExpr<LutLang> = "(NOR a b)".parse().unwrap();
-        assert!(LutLang::func_equiv(&xor, &"(LUT 6 a b)".parse().unwrap()).unwrap());
-        assert!(!LutLang::func_equiv(&xor, &"(LUT 4 a b)".parse().unwrap()).unwrap());
-        assert!(!LutLang::func_equiv(&xor, &"(LUT 2 a b)".parse().unwrap()).unwrap());
-        assert!(LutLang::func_equiv(&nor, &"(LUT 1 a b)".parse().unwrap()).unwrap());
+        assert!(LutLang::func_equiv(&xor, &"(LUT 4'h6 a b)".parse().unwrap()).unwrap());
+        assert!(!LutLang::func_equiv(&xor, &"(LUT 4'h4 a b)".parse().unwrap()).unwrap());
+        assert!(!LutLang::func_equiv(&xor, &"(LUT 4'h2 a b)".parse().unwrap()).unwrap());
+        assert!(LutLang::func_equiv(&nor, &"(LUT 4'h1 a b)".parse().unwrap()).unwrap());
         assert!(!LutLang::func_equiv(&xor, &nor).unwrap());
     }
 
@@ -1016,7 +1028,7 @@ endmodule\n"
         let info = LutExprInfo::new(&canon);
         assert_eq!(info.get_num_inputs(), 3);
         assert_eq!(info.get_num_outputs(), 1);
-        assert_eq!(canon.to_string(), "(LUT 202 s a b)".to_string());
+        assert_eq!(canon.to_string(), "(LUT 8'hca s a b)".to_string());
     }
 
     #[test]
@@ -1123,13 +1135,21 @@ endmodule\n"
     #[test]
     fn test_check_equiv() {
         let expr1: RecExpr<LutLang> = "(MUX s1 (MUX s0 a b) (MUX s0 c d))".parse().unwrap();
-        let expr2: RecExpr<LutLang> = "(LUT 51952 s1 (LUT 61642 s1 s0 c d) a b)".parse().unwrap();
-        let expr3: RecExpr<LutLang> = "(LUT 51952 s0 (LUT 61642 s0 s1 b d) a c)".parse().unwrap();
+        let expr2: RecExpr<LutLang> = "(LUT 16'hcac8 s1 (LUT 16'hf0ca s1 s0 c d) a b)"
+            .parse()
+            .unwrap();
+        let expr3: RecExpr<LutLang> = "(LUT 16'hcac8 s0 (LUT 16'hf0ca s0 s1 b d) a c)"
+            .parse()
+            .unwrap();
         assert!(LutLang::func_equiv(&expr1, &expr2).is_equiv());
         assert!(LutLang::func_equiv(&expr2, &expr3).is_equiv());
-        let expr3: RecExpr<LutLang> = "(LUT 51952 s0 (LUT 61642 s1 s0 b d) a c)".parse().unwrap();
+        let expr3: RecExpr<LutLang> = "(LUT 16'hcac8 s0 (LUT 16'hf0ca s1 s0 b d) a c)"
+            .parse()
+            .unwrap();
         assert!(LutLang::func_equiv(&expr2, &expr3).is_not_equiv());
-        let expr3: RecExpr<LutLang> = "(LUT 51952 s0 (LUT 61643 s0 s1 b d) a c)".parse().unwrap();
+        let expr3: RecExpr<LutLang> = "(LUT 16'hcac8 s0 (LUT 16'hf0cb s0 s1 b d) a c)"
+            .parse()
+            .unwrap();
         assert!(LutLang::func_equiv(&expr2, &expr3).is_not_equiv());
     }
 

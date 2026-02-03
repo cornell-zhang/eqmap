@@ -6,7 +6,9 @@
 */
 
 use super::lut;
+use bitvec::field::BitField;
 use egg::{Analysis, DidMerge};
+use safety_net::Parameter;
 #[cfg(feature = "cut_analysis")]
 use std::collections::HashSet;
 
@@ -141,7 +143,10 @@ impl Analysis<lut::LutLang> for LutAnalysis {
         _id: egg::Id,
     ) -> Self::Data {
         match enode {
-            lut::LutLang::Program(p) => LutAnalysisData::new(Some(*p), None, None, None),
+            lut::LutLang::Parameter(Parameter::BitVec(p)) => {
+                //LutAnalysisData::new(Some(*p), None, None, None)
+                LutAnalysisData::new(Some(p.load::<u64>()), None, None, None)
+            }
             lut::LutLang::Const(c) => LutAnalysisData::new(None, Some(*c), None, None),
             lut::LutLang::Var(v) => {
                 let d = LutAnalysisData::new(None, None, Some(v.to_string()), None);
@@ -190,7 +195,7 @@ impl Analysis<lut::LutLang> for LutAnalysis {
                 // Refactor LUT invariant to input at lsb
                 if let Some(np) = lut::remove_lsb_var(program, k) {
                     let mut c = operands.clone();
-                    let pi = egraph.add(lut::LutLang::Program(np));
+                    let pi = egraph.add(lut::LutLang::Parameter(Parameter::bitvec(1 << k, np)));
                     c.pop();
                     c.insert(0, pi);
                     let repl = egraph.add(lut::LutLang::Lut(c.into()));
@@ -205,7 +210,10 @@ impl Analysis<lut::LutLang> for LutAnalysis {
                             operands.len() - 1,
                             msb_const.unwrap(),
                         );
-                        let pi = egraph.add(lut::LutLang::Program(mod_program));
+                        let pi = egraph.add(lut::LutLang::Parameter(Parameter::bitvec(
+                            1 << operands.len(),
+                            mod_program,
+                        )));
                         let mut c = operands.clone();
                         c[0] = pi;
                         let repl = egraph.add(lut::LutLang::Lut(c.into()));
