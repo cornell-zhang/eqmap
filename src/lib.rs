@@ -83,15 +83,17 @@ mod tests {
     }
 
     fn make_simple_nested_lut() -> RecExpr<lut::LutLang> {
-        "(LUT 51952 s1 (LUT 61642 s1 s0 c d) a b)".parse().unwrap()
+        "(LUT 16'hcaf0 s1 (LUT 16'hf0ca s1 s0 c d) a b)"
+            .parse()
+            .unwrap()
     }
 
     fn make_four_lut() -> RecExpr<lut::LutLang> {
-        "(LUT 44234 s1 s0 b a)".parse().unwrap()
+        "(LUT 16'hacca s1 s0 b a)".parse().unwrap()
     }
 
     fn make_three_lut() -> RecExpr<lut::LutLang> {
-        "(LUT 202 s0 a b)".parse().unwrap()
+        "(LUT 8'hca s0 a b)".parse().unwrap()
     }
 
     #[test]
@@ -670,7 +672,7 @@ endmodule\n"
 
     #[test]
     fn test_verilog_emitter() {
-        let mux: RecExpr<LutLang> = "(LUT 202 s1 (LUT 202 s0 a b) (LUT 202 s0 c d))"
+        let mux: RecExpr<LutLang> = "(LUT 8'hca s1 (LUT 8'hca s0 a b) (LUT 8'hca s0 c d))"
             .parse()
             .unwrap();
         let golden = "module mux_4_1 (
@@ -737,7 +739,7 @@ endmodule\n"
 
     #[test]
     fn test_emit_reg() {
-        let reg: RecExpr<LutLang> = "(REG x a clk ce rst)".parse().unwrap();
+        let reg: RecExpr<LutLang> = "(REG 1'hx a clk ce rst)".parse().unwrap();
         let module = SVModule::from_luts(reg, "my_reg".to_string(), Vec::new());
         assert!(module.is_ok());
         let module = module.unwrap();
@@ -851,7 +853,7 @@ endmodule\n"
     #[test]
     fn test_bad_bus() {
         let bus: RecExpr<LutLang> =
-            "(BUS (BUS (LUT 202 s0 a b) (MUX s0 a b)) (BUS (LUT 202 s0 a b) (MUX s0 a b)))"
+            "(BUS (BUS (LUT 8'hca s0 a b) (MUX s0 a b)) (BUS (LUT 8'hca s0 a b) (MUX s0 a b)))"
                 .parse()
                 .unwrap();
         let root = bus.as_ref().last().unwrap();
@@ -999,19 +1001,19 @@ endmodule\n"
 
     #[test]
     fn test_cycle_verify() {
-        let bad_cycle: RecExpr<LutLang> = "(CYCLE (REG 0 (AND a (ARG myarg)) clk ce rst))"
+        let bad_cycle: RecExpr<LutLang> = "(CYCLE (REG 1'b0 (AND a (ARG myarg)) clk ce rst))"
             .parse()
             .unwrap();
         let root = bad_cycle.as_ref().last().unwrap();
         assert!(root.verify_rec(&bad_cycle).is_err());
 
-        let good_cycle: RecExpr<LutLang> = "(CYCLE (REG 0 (AND a (ARG 0)) clk ce rst))"
+        let good_cycle: RecExpr<LutLang> = "(CYCLE (REG 1'b0 (AND a (ARG 0)) clk ce rst))"
             .parse()
             .unwrap();
         let root = good_cycle.as_ref().last().unwrap();
         assert!(root.verify_rec(&good_cycle).is_ok());
 
-        let bad_cycle: RecExpr<LutLang> = "(CYCLE (REG 0 (AND a (ARG 1)) clk ce rst))"
+        let bad_cycle: RecExpr<LutLang> = "(CYCLE (REG 1'b0 (AND a (ARG 1)) clk ce rst))"
             .parse()
             .unwrap();
         let root = bad_cycle.as_ref().last().unwrap();
@@ -1033,7 +1035,7 @@ endmodule\n"
 
     #[test]
     fn test_circuit_stats() {
-        let expr: RecExpr<LutLang> = "(LUT 202 s a b)".parse().unwrap();
+        let expr: RecExpr<LutLang> = "(LUT 8'hca s a b)".parse().unwrap();
         let info = LutExprInfo::new(&expr);
         let stats = info.get_circuit_stats();
         assert_eq!(stats.depth, 1);
@@ -1042,7 +1044,7 @@ endmodule\n"
 
     #[test]
     fn test_celllang() {
-        let expr: RecExpr<CellLang> = "(LUT 202 s a b)".parse().unwrap();
+        let expr: RecExpr<CellLang> = "(LUT 8'hca s a b)".parse().unwrap();
         assert!(CellLang::verify_expr(&expr).is_err());
         let expr: RecExpr<CellLang> = "(MUX s a b)".parse().unwrap();
         assert!(CellLang::verify_expr(&expr).is_ok());
@@ -1135,19 +1137,19 @@ endmodule\n"
     #[test]
     fn test_check_equiv() {
         let expr1: RecExpr<LutLang> = "(MUX s1 (MUX s0 a b) (MUX s0 c d))".parse().unwrap();
-        let expr2: RecExpr<LutLang> = "(LUT 16'hcac8 s1 (LUT 16'hf0ca s1 s0 c d) a b)"
+        let expr2: RecExpr<LutLang> = "(LUT 16'hcaf0 s1 (LUT 16'hf0ca s1 s0 c d) a b)"
             .parse()
             .unwrap();
-        let expr3: RecExpr<LutLang> = "(LUT 16'hcac8 s0 (LUT 16'hf0ca s0 s1 b d) a c)"
+        let expr3: RecExpr<LutLang> = "(LUT 16'hcaf0 s0 (LUT 16'hf0ca s0 s1 b d) a c)"
             .parse()
             .unwrap();
         assert!(LutLang::func_equiv(&expr1, &expr2).is_equiv());
         assert!(LutLang::func_equiv(&expr2, &expr3).is_equiv());
-        let expr3: RecExpr<LutLang> = "(LUT 16'hcac8 s0 (LUT 16'hf0ca s1 s0 b d) a c)"
+        let expr3: RecExpr<LutLang> = "(LUT 16'hcaf0 s0 (LUT 16'hf0ca s1 s0 b d) a c)"
             .parse()
             .unwrap();
         assert!(LutLang::func_equiv(&expr2, &expr3).is_not_equiv());
-        let expr3: RecExpr<LutLang> = "(LUT 16'hcac8 s0 (LUT 16'hf0cb s0 s1 b d) a c)"
+        let expr3: RecExpr<LutLang> = "(LUT 16'hcaf0 s0 (LUT 16'hf0cb s0 s1 b d) a c)"
             .parse()
             .unwrap();
         assert!(LutLang::func_equiv(&expr2, &expr3).is_not_equiv());

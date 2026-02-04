@@ -55,7 +55,7 @@ impl CostFunction<LutLang> for KLUTCostFn {
                     2 * l.len() as u64 * l.len() as u64
                 }
             }
-            LutLang::Program(_) => 0,
+            //       LutLang::Program(_) => 0,
             LutLang::Bus(_) => 0,
             LutLang::Reg(_) => self.reg_cost,
             LutLang::Cycle(_) => 0,
@@ -192,7 +192,7 @@ impl CostFunction<LutLang> for GateCostFn {
                     u64::MAX
                 }
             }
-            LutLang::Program(_) => 0,
+            //      LutLang::Program(_) => 0,
             LutLang::Bus(_) => 0,
             LutLang::Reg(_) => 1,
             LutLang::Cycle(_) => 0,

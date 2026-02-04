@@ -1060,7 +1060,7 @@ where
         if self.result.is_none() {
             self.explore()?;
         }
-
+        eprintln!("recexpr in extract_with = {}", self.expr);
         if let Some(f) = self.purge_fn.take() {
             eprintln!("INFO: Purging e-graph...");
             purge_graph(&mut self.result.as_mut().unwrap().egraph, f.as_ref())?;
@@ -1078,7 +1078,11 @@ where
         // use an Extractor to pick the best element of the root eclass
         eprintln!("INFO: Extracting...");
         let extraction_start = Instant::now();
+        for node in runner.egraph.nodes() {
+            eprintln!("egraph node = {}", node);
+        }
         let best = extractor(&runner.egraph, root);
+        eprintln!("best = {}", best);
         let extraction_time = extraction_start.elapsed();
         if self.gen_proof {
             eprintln!(

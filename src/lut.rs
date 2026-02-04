@@ -24,8 +24,9 @@ define_language! {
     #[allow(missing_docs)]
     pub enum LutLang {
         Const(bool),
-        Program(u64), // The only node type that is not a net
+    //    Program(u64), // The only node type that is not a net
         "x" = DC,
+        Parameter(Parameter),
         Var(Symbol),
         "NOR" = Nor([Id; 2]),
         "MUX" = Mux([Id; 3]), // s, a, b
@@ -37,7 +38,6 @@ define_language! {
         "REG" = Reg([Id; 5]), // init value and c, ce, d, r
         "ARG" = Arg([Id; 1]),
         "CYCLE" = Cycle([Id; 1]),
-        Parameter(Parameter),
     }
 }
 
@@ -77,7 +77,7 @@ impl LutLang {
 
     fn verify_rec_cfg(&self, expr: &RecExpr<Self>, depth: u64) -> Result<(), String> {
         self.verify()?;
-
+        eprintln!("expr = {}", expr);
         match self {
             Self::Lut(l) => {
                 if let LutLang::Parameter(Parameter::BitVec(p)) = expr[l[0]].clone() {
@@ -111,7 +111,15 @@ impl LutLang {
                         return Err("Argument index out of bounds".to_string());
                     }
                 }
-                _ => return Err("Arg must contain an index (u64)".to_string()),
+                Self::Parameter(Parameter::Integer(index)) => {
+                    if index >= depth {
+                        return Err("Argument index out of bounds".to_string());
+                    }
+                }
+                _ => {
+                    eprintln!("Arg must contain an index (u64)");
+                    return Err("Arg must contain an index (u64)".to_string());
+                }
             },
             _ => (),
         }
@@ -205,13 +213,14 @@ impl LutLang {
         inputs: &HashMap<String, bool>,
         expr: &RecExpr<Self>,
     ) -> Result<BitVec, String> {
+        eprintln!("node = {}", self);
         match self {
             LutLang::Const(b) => Ok(bitvec!(usize, Lsb0; *b as usize; 1)),
             LutLang::Var(s) => match inputs.get(s.as_str()) {
                 Some(b) => Ok(bitvec!(usize, Lsb0; *b as usize; 1)),
                 None => Err(format!("Input {} is not driven", s.as_str())),
             },
-            LutLang::Program(_) => panic!("Program node should not be evaluated"),
+            //    LutLang::Program(_) => panic!("Program node should not be evaluated"),
             LutLang::DC => Err("DC".to_string()),
             LutLang::Nor(a) => {
                 let a0 = &a[0];
@@ -281,7 +290,7 @@ impl LutLang {
                     LutLang::Parameter(Parameter::BitVec(p)) => p.load::<u64>(),
                     LutLang::Var(v) => panic!("Var, {}", v),
                     LutLang::Parameter(Parameter::Integer(i)) => panic!("Integer, {}", i),
-                    LutLang::Program(p) => panic!("Program, {}", p),
+                    //   LutLang::Program(p) => panic!("Program, {}", p),
                     _ => panic!(
                         "First element of LUT must be a program, {}",
                         expr[*a.first().unwrap()].clone().to_string()
@@ -467,25 +476,37 @@ impl LutLang {
         if deep_equals(expr, other) {
             return equivalent();
         }
-
+        eprintln!("went here");
         let root = &expr[(expr.as_ref().len() - 1).into()];
+        eprintln!("went here 1");
         let inputs = root.get_input_set(expr);
+        eprintln!("went here 2");
         for i in 0..1 << inputs.len() {
+            eprintln!("for loop iteration");
             let input_map = inputs
                 .iter()
                 .cloned()
                 .zip((0..inputs.len()).map(|j| (i >> j) & 1 == 1))
                 .collect();
-
+            eprintln!("inputs collected in for loop");
+            for (key, value) in &input_map {
+                eprintln!("key: {}, value: {}", key, value);
+            }
             match (Self::eval(expr, &input_map), Self::eval(other, &input_map)) {
                 (Ok(e), Ok(o)) => {
+                    eprintln!("expr = {}", expr);
+                    eprintln!("otherexpr = {}", other);
                     if e != o {
+                        eprintln!("e = {}", e);
+                        eprintln!("o = {}", o);
+                        eprintln!("not equivalent");
                         return not_equivalent();
                     }
                 }
                 _ => return inconclusive(),
             }
         }
+        eprintln!("here");
         equivalent()
     }
 

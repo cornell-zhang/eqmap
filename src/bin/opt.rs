@@ -241,56 +241,61 @@ fn main() -> std::io::Result<()> {
 
 #[test]
 fn simple_tests() {
-    assert_eq!(simplify("(LUT 2 a b)"), "(LUT 2 a b)");
-    assert_eq!(simplify("(LUT 0 a)"), "false");
-    assert_eq!(simplify("(LUT 3 b)"), "true");
-    assert_eq!(simplify("(LUT 1 true)"), "false");
-    assert_eq!(simplify("(LUT 2 true)"), "true");
-    assert_eq!(simplify("(LUT 1 false)"), "true");
-    assert_eq!(simplify("(LUT 2 false)"), "false");
+    assert_eq!(simplify("(LUT 4'h2 a b)"), "(LUT 4'h2 a b)");
+    assert_eq!(simplify("(LUT 2'b0 a)"), "false");
+    assert_eq!(simplify("(LUT 2'd3 b)"), "true");
+    assert_eq!(simplify("(LUT 2'b1 true)"), "false");
+    assert_eq!(simplify("(LUT 2'd2 true)"), "true");
+    assert_eq!(simplify("(LUT 2'b1 false)"), "true");
+    assert_eq!(simplify("(LUT 2'd2 false)"), "false");
     assert_eq!(
-        simplify("(LUT 202 s1 (LUT 8 a b) (LUT 6 a b))"),
-        "(LUT 134 s1 a b)"
+        simplify_w_proof("(LUT 8'hca s1 (LUT 4'h8 a b) (LUT 4'h6 a b))"),
+        "(LUT 8'h86 s1 a b)"
     );
 }
 
 #[test]
 fn redundant_inputs() {
-    assert_eq!(simplify("(LUT 1 a a a a a)"), "(LUT 1 a)");
-    assert_eq!(simplify("(LUT 1 a a a a a a)"), "(LUT 1 a)");
-    assert_eq!(simplify("(LUT 1 a b a b a b)"), "(LUT 1 a b)");
+    assert_eq!(simplify("(LUT 32'h1 a a a a a)"), "(LUT 2'b01 a)");
+    assert_eq!(simplify("(LUT 64'h1 a a a a a a)"), "(LUT 2'b01 a)");
+    assert_eq!(simplify("(LUT 64'h1 a b a b a b)"), "(LUT 4'h1 a b)");
 }
 
 #[test]
 fn test_proof_generation() {
-    assert_eq!(simplify_w_proof("(LUT 1 a b a b a b)"), "(LUT 1 a b)");
+    assert_eq!(
+        simplify_w_proof("(LUT 64'h1 a b a b a b)"),
+        "(LUT 4'h1 a b)"
+    );
 }
 
 #[test]
 fn test_args_egraphs() {
     assert_eq!(
-        simplify("(CYCLE (REG 1 (ARG 0) clk ce rst))"),
-        "(CYCLE (REG 1 (ARG 0) clk ce rst))"
+        simplify("(CYCLE (REG 1'b1 (ARG 0) clk ce rst))"),
+        "(CYCLE (REG 1'b1 (ARG 0) clk ce rst))"
     );
     assert_eq!(
-        simplify("(CYCLE (REG 1 (NOT (ARG 0)) clk ce rst))"),
-        "(CYCLE (LUT 1 (REG 1 (ARG 0) clk ce rst)))"
+        simplify("(CYCLE (REG 1'b1 (NOT (ARG 0)) clk ce rst))"),
+        "(CYCLE (LUT 2'b01 (REG 1'b1 (ARG 0) clk ce rst)))"
     );
 }
 
 #[test]
 fn test_eval() {
     let expr: RecExpr<lut::LutLang> = "(MUX s0 a b)".parse().unwrap();
-    let other: RecExpr<lut::LutLang> = "(LUT 202 s0 a b)".parse().unwrap();
+    let other: RecExpr<lut::LutLang> = "(LUT 8'hca s0 a b)".parse().unwrap();
     assert!(lut::LutLang::func_equiv(&expr, &other).unwrap());
 }
 
 #[test]
 fn test_dsd() {
     let expr: RecExpr<lut::LutLang> = "(MUX s1 (MUX s0 a b) (MUX s0 c d))".parse().unwrap();
-    let other: RecExpr<lut::LutLang> = "(LUT 18374951396690406058 s1 s0 a b c d)".parse().unwrap();
+    let other: RecExpr<lut::LutLang> = "(LUT 64'hff00f0f0ccccaaaa s1 s0 a b c d)".parse().unwrap();
     assert!(lut::LutLang::func_equiv(&expr, &other).unwrap());
-    let dsd: RecExpr<lut::LutLang> = "(LUT 51952 s1 (LUT 61642 s1 s0 c d) a b)".parse().unwrap();
+    let dsd: RecExpr<lut::LutLang> = "(LUT 16'hcaf0 s1 (LUT 16'hf0ca s1 s0 c d) a b)"
+        .parse()
+        .unwrap();
     assert!(lut::LutLang::func_equiv(&other, &dsd).unwrap());
 }
 
@@ -301,7 +306,7 @@ fn test_incorrect_dsd() {
     for i in 0..64 {
         let pos_to_flip: usize = i;
         let p = p ^ (1 << pos_to_flip);
-        let other: RecExpr<lut::LutLang> = format!("(LUT {p} s1 s0 a b c d)").parse().unwrap();
+        let other: RecExpr<lut::LutLang> = format!("(LUT 64'd{p} s1 s0 a b c d)").parse().unwrap();
         assert!(!lut::LutLang::func_equiv(&expr, &other).unwrap());
     }
 }
@@ -309,13 +314,13 @@ fn test_incorrect_dsd() {
 #[test]
 fn test_greedy_folds() {
     use eqmap::driver::Canonical;
-    assert_eq!(simplify("(LUT 202 true a b)"), "a");
-    assert_eq!(simplify("(LUT 0 a)"), "false");
-    assert_eq!(simplify("(LUT 3 a)"), "true");
-    assert_eq!(simplify("(LUT 3 a b c)"), "(LUT 1 a b)");
+    assert_eq!(simplify("(LUT 8'hca true a b)"), "a");
+    assert_eq!(simplify("(LUT 2'b0 a)"), "false");
+    assert_eq!(simplify("(LUT 2'd3 a)"), "true");
+    assert_eq!(simplify("(LUT 8'h3 a b c)"), "(LUT 4'h1 a b)");
     assert_eq!(
         LutLang::canonicalize_expr(
-            "(LUT 6 true (LUT 6 false (LUT 6 true false)))"
+            "(LUT 4'h6 true (LUT 4'h6 false (LUT 4'h6 true false)))"
                 .parse()
                 .unwrap()
         )
@@ -328,5 +333,5 @@ fn test_greedy_folds() {
 fn test_exploration() {
     // Since we have greedy folding now,
     // we need different kinds of inputs that don't optimize as well
-    assert_eq!(simplify("(LUT 6 (LUT 6 c d) b)"), "(LUT 150 c d b)")
+    assert_eq!(simplify("(LUT 4'h6 (LUT 4'h6 c d) b)"), "(LUT 8'h96 c d b)")
 }

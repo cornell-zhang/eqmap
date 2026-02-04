@@ -142,10 +142,14 @@ impl Analysis<lut::LutLang> for LutAnalysis {
         enode: &lut::LutLang,
         _id: egg::Id,
     ) -> Self::Data {
+        eprintln!("enode = {}", enode);
         match enode {
             lut::LutLang::Parameter(Parameter::BitVec(p)) => {
                 //LutAnalysisData::new(Some(*p), None, None, None)
                 LutAnalysisData::new(Some(p.load::<u64>()), None, None, None)
+            }
+            lut::LutLang::Parameter(Parameter::Integer(i)) => {
+                LutAnalysisData::new(Some(*i), None, None, None)
             }
             lut::LutLang::Const(c) => LutAnalysisData::new(None, Some(*c), None, None),
             lut::LutLang::Var(v) => {

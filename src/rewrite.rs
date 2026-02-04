@@ -6,7 +6,7 @@
 use super::analysis::LutAnalysis;
 use super::lut;
 use super::lut::to_bitvec;
-use bitvec::{bitvec, order::Lsb0, vec::BitVec};
+use bitvec::{bitvec, field::BitField, order::Lsb0, vec::BitVec};
 use egg::{
     Analysis, Applier, FromOp, Language, Pattern, PatternAst, Rewrite, Subst, Symbol, Var, rewrite,
 };
@@ -27,11 +27,11 @@ where
     let mut rules: Vec<Rewrite<lut::LutLang, A>> = Vec::new();
     // Logic element conversions
     if bidirectional {
-        rules.append(&mut rewrite!("nor2-conversion"; "(NOR ?a ?b)" <=> "(LUT 1 ?a ?b)"));
-        rules.append(&mut rewrite!("and2-conversion"; "(AND ?a ?b)" <=> "(LUT 8 ?a ?b)"));
-        rules.append(&mut rewrite!("xor2-conversion"; "(XOR ?a ?b)" <=> "(LUT 6 ?a ?b)"));
-        rules.push(rewrite!("or2-conversion"; "(LUT 14 ?a ?b)" => "(NOT (NOR ?a ?b))"));
-        rules.push(rewrite!("and-one-inv-conversion"; "(LUT 2 ?a ?b)" => "(AND (NOT ?a) ?b)"));
+        rules.append(&mut rewrite!("nor2-conversion"; "(NOR ?a ?b)" <=> "(LUT 4'h1 ?a ?b)"));
+        rules.append(&mut rewrite!("and2-conversion"; "(AND ?a ?b)" <=> "(LUT 4'h8 ?a ?b)"));
+        rules.append(&mut rewrite!("xor2-conversion"; "(XOR ?a ?b)" <=> "(LUT 4'h6 ?a ?b)"));
+        rules.push(rewrite!("or2-conversion"; "(LUT 4'he ?a ?b)" => "(NOT (NOR ?a ?b))"));
+        rules.push(rewrite!("and-one-inv-conversion"; "(LUT 4'h2 ?a ?b)" => "(AND (NOT ?a) ?b)"));
         rules.append(&mut rewrite!("xor2-nor-nand"; "(XOR ?a ?b)" <=> "(NOT (NOR (AND (NOT ?a) ?b) (AND (NOT ?b) ?a)))"));
         rules.append(
             &mut rewrite!("and-distributivity"; "(AND ?a (NOT (NOR ?b ?c)))" <=> "(NOT (NOR (AND ?a ?b) (AND ?a ?c)))"),
@@ -47,14 +47,14 @@ where
         );
         rules.append(&mut rewrite!("demorgan"; "(NOR ?a ?b)" <=> "(AND (NOT ?a) (NOT ?b))"));
     } else {
-        rules.push(rewrite!("nor2-conversion"; "(NOR ?a ?b)" => "(LUT 1 ?a ?b)"));
-        rules.push(rewrite!("and2-conversion"; "(AND ?a ?b)" => "(LUT 8 ?a ?b)"));
-        rules.push(rewrite!("xor2-conversion"; "(XOR ?a ?b)" => "(LUT 6 ?a ?b)"));
+        rules.push(rewrite!("nor2-conversion"; "(NOR ?a ?b)" => "(LUT 4'h1 ?a ?b)"));
+        rules.push(rewrite!("and2-conversion"; "(AND ?a ?b)" => "(LUT 4'h8 ?a ?b)"));
+        rules.push(rewrite!("xor2-conversion"; "(XOR ?a ?b)" => "(LUT 4'h6 ?a ?b)"));
     }
 
-    rules.append(&mut rewrite!("inverter-conversion"; "(NOT ?a)" <=> "(LUT 1 ?a)"));
+    rules.append(&mut rewrite!("inverter-conversion"; "(NOT ?a)" <=> "(LUT 2'b01 ?a)"));
     // s? a : b
-    rules.append(&mut rewrite!("mux2-1-conversion"; "(MUX ?s ?a ?b)" <=> "(LUT 202 ?s ?a ?b)"));
+    rules.append(&mut rewrite!("mux2-1-conversion"; "(MUX ?s ?a ?b)" <=> "(LUT 8'hca ?s ?a ?b)"));
 
     rules
 }
@@ -127,16 +127,22 @@ pub fn condense_cofactors() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
 
     // Condense Shannon expansion
     // TODO(matth2k): Rewrite these in terms of LUTs
-    rules.push(rewrite!("mux-make-disjoint-or"; "(LUT 202 ?s true ?a)" => "(LUT 14 ?s ?a)"));
-    rules.push(rewrite!("mux-make-disjoint-or-not"; "(LUT 202 ?s ?a true)" => "(LUT 14 (LUT 8 ?s ?a) (LUT 1 ?s))"));
-    rules.push(rewrite!("mux-make-disjoint-and"; "(LUT 202 ?s ?a false)" => "(LUT 8 ?s ?a)"));
-    rules.push(rewrite!("mux-make-disjoint-and-not"; "(LUT 202 ?s false ?a)" => "(LUT 2 ?s ?a)"));
-    rules.push(rewrite!("mux-make-disjoint-xor"; "(LUT 202 ?s (NOT ?a) ?a)" => "(LUT 6 ?s ?a)"));
-    rules.push(rewrite!("mux-make-disjoint-xnor"; "(LUT 202 ?s ?a (NOT ?a))" => "(LUT 9 ?s ?a)"));
-    rules.push(rewrite!("lut2-shannon-condense"; "(LUT 202 ?s (LUT ?p ?a ?b) (LUT ?q ?a ?b))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap()])}));
-    rules.push(rewrite!("lut3-shannon-condense"; "(LUT 202 ?s (LUT ?p ?a ?b ?c) (LUT ?q ?a ?b ?c))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
-    rules.push(rewrite!("lut4-shannon-condense"; "(LUT 202 ?s (LUT ?p ?a ?b ?c ?d) (LUT ?q ?a ?b ?c ?d))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()])}));
-    rules.push(rewrite!("lut5-shannon-condense"; "(LUT 202 ?s (LUT ?p ?a ?b ?c ?d ?e) (LUT ?q ?a ?b ?c ?d ?e))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap()])}));
+    rules.push(rewrite!("mux-make-disjoint-or"; "(LUT 8'hca ?s true ?a)" => "(LUT 4'he ?s ?a)"));
+    rules.push(rewrite!("mux-make-disjoint-or-not"; "(LUT 8'hca ?s ?a true)" => "(LUT 4'he (LUT 4'h8 ?s ?a) (LUT 2'b01 ?s))"));
+    rules.push(rewrite!("mux-make-disjoint-and"; "(LUT 8'hca ?s ?a false)" => "(LUT 4'h8 ?s ?a)"));
+    rules.push(
+        rewrite!("mux-make-disjoint-and-not"; "(LUT 8'hca ?s false ?a)" => "(LUT 4'h2 ?s ?a)"),
+    );
+    rules.push(
+        rewrite!("mux-make-disjoint-xor"; "(LUT 8'hca ?s (NOT ?a) ?a)" => "(LUT 4'h6 ?s ?a)"),
+    );
+    rules.push(
+        rewrite!("mux-make-disjoint-xnor"; "(LUT 8'hca ?s ?a (NOT ?a))" => "(LUT 4'h9 ?s ?a)"),
+    );
+    rules.push(rewrite!("lut2-shannon-condense"; "(LUT 8'hca ?s (LUT ?p ?a ?b) (LUT ?q ?a ?b))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap()])}));
+    rules.push(rewrite!("lut3-shannon-condense"; "(LUT 8'hca ?s (LUT ?p ?a ?b ?c) (LUT ?q ?a ?b ?c))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()])}));
+    rules.push(rewrite!("lut4-shannon-condense"; "(LUT 8'hca ?s (LUT ?p ?a ?b ?c ?d) (LUT ?q ?a ?b ?c ?d))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()])}));
+    rules.push(rewrite!("lut5-shannon-condense"; "(LUT 8'hca ?s (LUT ?p ?a ?b ?c ?d ?e) (LUT ?q ?a ?b ?c ?d ?e))" => {ShannonCondense::new("?s".parse().unwrap(), "?p".parse().unwrap(), "?q".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap(), "?e".parse().unwrap()])}));
 
     rules
 }
@@ -189,11 +195,17 @@ where
     for k in 2..7 {
         let mask = if k < 6 { (1 << (1 << k)) - 1 } else { u64::MAX };
         let vars = (0..k).map(|i| format!("?v{i}")).collect::<Vec<String>>();
-        let pattern_true: Pattern<lut::LutLang> = format!("(LUT {} {})", mask, vars.join(" "))
-            .parse()
-            .unwrap();
+        let pattern_true: Pattern<lut::LutLang> = format!(
+            "(LUT {} {})",
+            Parameter::bitvec(1 << k, mask),
+            vars.join(" ")
+        )
+        .parse()
+        .unwrap();
         let pattern_false: Pattern<lut::LutLang> =
-            format!("(LUT 0 {})", vars.join(" ")).parse().unwrap();
+            format!("(LUT {} {})", Parameter::bitvec(1 << k, 0), vars.join(" "))
+                .parse()
+                .unwrap();
         let rname_true = format!("lut{k}-const-true");
         let rname_false = format!("lut{k}-const-false");
         rules.push(rewrite!(rname_true; pattern_true => "true"));
@@ -208,7 +220,7 @@ pub fn known_decompositions() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
     // https://people.eecs.berkeley.edu/~alanmi/publications/2008/iccad08_lp.pdf
     // Boolean Factoring and Decomposition of Logic Networks
-    rules.push(rewrite!("mux4-1-dsd"; "(LUT 18374951396690406058 ?s1 ?s0 ?a ?b ?c ?d)" => "(LUT 51952 ?s1 (LUT 61642 ?s1 ?s0 ?c ?d) ?a ?b)"));
+    rules.push(rewrite!("mux4-1-dsd"; "(LUT 64'hff00f0f0ccccaaaa ?s1 ?s0 ?a ?b ?c ?d)" => "(LUT 16'hcaf0 ?s1 (LUT 16'hf0ca ?s1 ?s0 ?c ?d) ?a ?b)"));
     rules
 }
 
@@ -218,7 +230,7 @@ pub fn known_decompositions() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
 pub fn dyn_decompositions(any_order: bool) -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
     rules.push(
-        rewrite!("mux-expand"; "(LUT 202 ?s ?a ?b)" => "(LUT 14 (LUT 8 ?s ?a) (LUT 2 ?s ?b))"),
+        rewrite!("mux-expand"; "(LUT 8'hca ?s ?a ?b)" => "(LUT 4'he (LUT 4'h8 ?s ?a) (LUT 4'h2 ?s ?b))"),
     );
     rules.push(rewrite!("lut3-shannon-expand"; "(LUT ?p ?a ?b ?c)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap()], any_order)}));
     rules.push(rewrite!("lut4-shannon-expand"; "(LUT ?p ?a ?b ?c ?d)" => {decomp::ShannonExpand::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?d".parse().unwrap()], any_order)}));
@@ -230,7 +242,7 @@ pub fn dyn_decompositions(any_order: bool) -> Vec<Rewrite<lut::LutLang, LutAnaly
 /// Canonicalizes LUTs with redundant inputs
 pub fn redundant_inputs() -> Vec<Rewrite<lut::LutLang, LutAnalysis>> {
     let mut rules: Vec<Rewrite<lut::LutLang, LutAnalysis>> = Vec::new();
-    rules.push(rewrite!("lut3-redundant-mux"; "(LUT 202 ?s ?a ?a)" => "?a"));
+    rules.push(rewrite!("lut3-redundant-mux"; "(LUT 8'hca ?s ?a ?a)" => "?a"));
     rules.push(rewrite!("lut2-redundant"; "(LUT ?p ?a ?a)" => {CombineAlikeInputs::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?a".parse().unwrap()])}));
     rules.push(rewrite!("lut3-redundant"; "(LUT ?p ?a ?b ?b)" => {CombineAlikeInputs::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?b".parse().unwrap()])}));
     rules.push(rewrite!("lut4-redundant"; "(LUT ?p ?a ?b ?c ?c)" => {CombineAlikeInputs::new("?p".parse().unwrap(), vec!["?a".parse().unwrap(), "?b".parse().unwrap(), "?c".parse().unwrap(), "?c".parse().unwrap()])}));
@@ -252,12 +264,12 @@ pub fn all_static_rules(bidirectional: bool) -> Vec<Rewrite<lut::LutLang, LutAna
     rules.append(&mut constant_luts());
 
     // Evaluate constant inputs (impl as modify-analysis for multi-input cases)
-    rules.push(rewrite!("lut1-const-false"; "(LUT 0 ?a)" => "false"));
-    rules.push(rewrite!("lut1-const-true"; "(LUT 3 ?a)" => "true"));
-    rules.push(rewrite!("lut1-const-id"; "(LUT 2 ?a)" => "?a"));
-    rules.push(rewrite!("lut2-invariant"; "(LUT 12 ?a ?b)" => "(LUT 2 ?a)"));
-    rules.push(rewrite!("lut1-const-true-inv"; "(LUT 1 false)" => "true"));
-    rules.push(rewrite!("lut1-const-false-inv"; "(LUT 1 true)" => "false"));
+    rules.push(rewrite!("lut1-const-false"; "(LUT 2'b00 ?a)" => "false"));
+    rules.push(rewrite!("lut1-const-true"; "(LUT 2'b11 ?a)" => "true"));
+    rules.push(rewrite!("lut1-const-id"; "(LUT 2'b10 ?a)" => "?a"));
+    rules.push(rewrite!("lut2-invariant"; "(LUT 4'hc ?a ?b)" => "(LUT 2'b10 ?a)"));
+    rules.push(rewrite!("lut1-const-true-inv"; "(LUT 2'b01 false)" => "true"));
+    rules.push(rewrite!("lut1-const-false-inv"; "(LUT 2'b01 true)" => "false"));
     rules.push(rewrite!("double-complement"; "(NOT (NOT ?a))" => "?a"));
 
     // Remove redundant inputs
@@ -310,11 +322,15 @@ where
                 .iter()
                 .map(|id| id_to_var[id].to_string())
                 .collect::<Vec<String>>();
-            let new_ast: PatternAst<lut::LutLang> =
-                format!("(LUT {} {})", program, var_list.join(" "))
-                    .parse()
-                    .unwrap();
+            let new_ast: PatternAst<lut::LutLang> = format!(
+                "(LUT {} {})",
+                Parameter::bitvec(1 << var_list.len(), program),
+                var_list.join(" ")
+            )
+            .parse()
+            .unwrap();
             let (id, b) = egraph.union_instantiations(old_ast, &new_ast, subst, rule_name);
+            eprintln!("b = {}", b);
             if b { vec![id] } else { vec![] }
         }
         _ => panic!("Expected LUT in union_with_lut_pattern"),
@@ -644,6 +660,8 @@ impl Applier<lut::LutLang, LutAnalysis> for FuseCut {
             .data
             .get_program()
             .expect("Expected program");
+        eprintln!("root_program = {}", root_program);
+        eprintln!("rhs_program = {}", rhs_program);
 
         let mut vset: HashSet<egg::Id> = HashSet::new();
         for v in root_operands.iter().chain(rhs_operands.iter()) {
@@ -671,21 +689,29 @@ impl Applier<lut::LutLang, LutAnalysis> for FuseCut {
             new_prog.set(i as usize, lut::eval_lut_bv(root_program, &root_bv));
         }
         let new_prog_u64 = lut::from_bitvec(&new_prog);
+        eprintln!("new_prog_u64 = {}", new_prog_u64);
         let mut c = vec![egraph.add(lut::LutLang::Parameter(Parameter::BitVec(new_prog))); nk + 1];
         for (&k, &v) in pos_map.iter() {
             c[v + 1] = k;
         }
 
         let new_node = lut::LutLang::Lut(c.clone().into());
+        eprintln!("new_node = {}", new_node);
 
         match searcher_ast {
             Some(ast) => {
+                eprintln!("ast = {}", ast);
+                eprintln!("eclass = {}", eclass.to_string());
+                eprintln!("rule_name = {}", rule_name.to_string());
                 let all_vars: Vec<Var> = self
                     .root
                     .iter()
                     .cloned()
                     .chain(self.rhs.iter().cloned())
                     .collect();
+                for var in all_vars.clone() {
+                    eprintln!("var = {}", var);
+                }
                 union_with_lut_pattern(
                     ast,
                     new_prog_u64,
@@ -697,12 +723,50 @@ impl Applier<lut::LutLang, LutAnalysis> for FuseCut {
                 )
             }
             None => {
-                let new_lut = egraph.add(new_node);
-                if egraph.union_trusted(eclass, new_lut, rule_name) {
-                    vec![new_lut]
-                } else {
-                    vec![]
+                eprintln!("None path");
+                //let new_lut = egraph.add(new_node.clone());
+                //eprintln!(
+                //    "union_trusted = {}",
+                //    egraph.union_trusted(eclass, new_lut, rule_name)
+                //);
+                eprintln!("eclass = {}", eclass.to_string());
+                //eprintln!("new_lut = {}", new_lut.to_string());
+                eprintln!("rule_name = {}", rule_name.to_string());
+                //if egraph.union_trusted(eclass, new_lut, rule_name) {
+                //    vec![/*new_lut*/]
+                //} else {
+                //    vec![]
+
+                let ast: PatternAst<lut::LutLang> =
+                    if rule_name.to_string() == "lut4-2-fuse".to_string() {
+                        format!("(LUT ?pp ?p0 ?p1 ?p2 (LUT ?qp ?q0 ?q1))")
+                            .parse()
+                            .unwrap()
+                    } else {
+                        format!("(LUT ?pp ?p0 ?p1 (LUT ?qp ?q0 ?q1))")
+                            .parse()
+                            .unwrap()
+                    };
+                let all_vars: Vec<Var> = self
+                    .root
+                    .iter()
+                    .cloned()
+                    .chain(self.rhs.iter().cloned())
+                    .collect();
+                for var in all_vars.clone() {
+                    eprintln!("var = {}", var);
                 }
+                eprintln!("here");
+                union_with_lut_pattern(
+                    &ast,
+                    new_prog_u64,
+                    &new_node,
+                    &all_vars,
+                    subst,
+                    rule_name,
+                    egraph,
+                )
+                //}
             }
         }
     }
@@ -940,7 +1004,7 @@ pub mod decomp {
 
     #[test]
     fn test_decomp() {
-        let expr: egg::RecExpr<lut::LutLang> = "(LUT 61642 s1 s0 c d)".parse().unwrap();
+        let expr: egg::RecExpr<lut::LutLang> = "(LUT 16'hf0ca s1 s0 c d)".parse().unwrap();
         let mut rules = super::lutpacking_rules();
         rules.append(&mut super::dyn_decompositions(false));
 
@@ -954,7 +1018,7 @@ pub mod decomp {
             .with_joint_limits(20, 20_000, 30);
 
         let ans = req.synth::<SynthReport>().unwrap().get_expr().to_string();
-        assert_eq!(ans, "(LUT 202 s1 s0 (LUT 202 s0 c d))");
+        assert_eq!(ans, "(LUT 8'hca s1 s0 (LUT 8'hca s0 c d))");
     }
 }
 
@@ -1229,7 +1293,7 @@ fn test_parse_rules() {
         manager
             .construct_rule(
                 "test-rule",
-                "(LUT 3 ?a)",
+                "(LUT 2'b11 ?a)",
                 "true",
                 false,
                 Some("constant-folding".to_string())
@@ -1242,7 +1306,7 @@ fn test_parse_rules() {
         manager
             .construct_rule(
                 "test-rule",
-                "(LUT 3 ?a)",
+                "(LUT 2'b11 ?a)",
                 "true",
                 false,
                 Some("constant-folding".to_string())
@@ -1255,7 +1319,7 @@ fn test_parse_rules() {
         manager
             .construct_rule(
                 "test-rule2",
-                "(LUTf 3 ?a)",
+                "(LUTf 2'b11 ?a)",
                 "true",
                 false,
                 Some("constant-folding".to_string())
@@ -1274,7 +1338,7 @@ fn test_parse_rules() {
         manager
             .construct_rule(
                 "test-rule3",
-                "(LUT 3 ?a)",
+                "(LUT 2'b11 ?a)",
                 "true",
                 true,
                 Some("constant-folding".to_string())
