@@ -1,0 +1,112 @@
+#!/bin/bash
+
+# Copyright 2025 The EqMap Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+set -eo pipefail
+LIB="$(dirname $0)/../verilog/celllang.v"
+LIB="$(realpath $LIB)"
+SIMLIB="$(dirname $0)/../verilog/simlib.v"
+SIMLIB="$(realpath $SIMLIB)"
+PIMLIB="$(dirname $0)/../verilog/pim-submodules"
+PIMLIB="$(realpath $PIMLIB)"
+BITBLAST="$(dirname $0)/../verilog/bitblast.v"
+BITBLAST="$(realpath $BITBLAST)"
+RULES="$(dirname $0)/../rules/analog-pim.celllang"
+RULES="$(realpath $RULES)"
+MKFILE=$1.mk
+PIMFILES="$PIMLIB/*.v"
+TOOL=eqmap_asic
+
+# Decide whether to use Vivado or Yosys based on the stem given to Make
+if [ -z $FSTEM ]; then
+    FSTEM=synth
+fi
+
+if [ "$1" == "--help" ] || [ "$2" == "--help" ] || [ "$3" == "--help" ]; then
+    $TOOL --help
+elif [ ! -f "$1" ]; then
+    echo "First argument must be the input file."
+    echo "Usage: $0 <input.v> [$TOOL options]"
+    echo "Check that file exists and it is the first argument"
+else
+    which yosys > /dev/null || { echo "yosys not found in PATH"; exit 1; }
+    which $TOOL > /dev/null || { echo "$TOOL not found in PATH"; exit 1; }
+
+    echo "SRCS=\$(wildcard *.v)" > $MKFILE
+    echo "# Set both Yosys and Vivado to use Ultrascale+ Arch" >> $MKFILE
+    echo "FAMILY=xcup" >> $MKFILE
+    echo "PART=xczu3eg-sbva484-1-i" >> $MKFILE
+    echo "# flatten design before synthesis, no clock buffers, no IO buffers, no carry logic, no MUXes" >> $MKFILE
+    echo "SYNTH_OPT=-flatten -noclkbuf -noiopad -nocarry -nowidelut -nosrl -ise" >> $MKFILE
+    echo "YOSYS=yosys # Yosys 0.33 (git sha1 2584903a060)" >> $MKFILE
+    echo "XILINX_VIVADO?=\$(realpath \$(dirname \$(which vivado))/..)" >> $MKFILE
+    echo "VIVADO=\$(XILINX_VIVADO)/bin/vivado" >> $MKFILE
+    echo "" >> $MKFILE
+    echo ".PHONY: all clean" >> $MKFILE
+    echo "" >> $MKFILE
+    echo "all: $1.xil" >> $MKFILE
+    echo "	pim $*.v" >> $MKFILE
+    echo "" >> $MKFILE
+    echo "clean:" >> $MKFILE
+    echo "	rm -f *.xil *.synth *.ys *.dot *.png" >> $MKFILE
+    echo "" >> $MKFILE
+    echo "%.v.synth: %_synth.ys" >> $MKFILE
+    # Make yosys quiet
+    echo "	+\$(YOSYS) -s \$< >> /dev/null" >> $MKFILE
+    echo "" >> $MKFILE
+    echo "%.v.yxil: %_yxil.ys" >> $MKFILE
+    echo "	+\$(YOSYS) -s \$<" >> $MKFILE
+    echo "" >> $MKFILE
+    echo "# This script synthesizes to LUTs" >> $MKFILE
+    echo "%_yxil.ys: %.v" >> $MKFILE
+    echo "	@echo \"read_verilog \$< $PIMFILES\" > \$@" >> $MKFILE
+    echo "	@echo \"hierarchy -top \$(notdir \$(basename \$<))\" >> \$@" >> $MKFILE
+    echo "	@echo \"flatten\" >> \$@" >> $MKFILE
+    echo "	@echo \"simplemap\" >> \$@" >> $MKFILE
+    echo "	@echo \"synth_xilinx -family \$(FAMILY) \$(SYNTH_OPT)\" >> \$@" >> $MKFILE
+    echo "	@echo \"clean -purge\" >> \$@" >> $MKFILE
+    echo "	@echo \"splitnets -format _\" >> \$@" >> $MKFILE
+    echo "	@echo \"write_verilog -simple-lhs \$<.yxil\" >> \$@" >> $MKFILE
+    echo "" >> $MKFILE
+    echo "# This script synthesizes to AND, NOR, XOR, INV, MUXes" >> $MKFILE
+    echo "%_synth.ys: %.v" >> $MKFILE
+    echo "	@echo \"read_verilog \$< $PIMFILES\" > \$@" >> $MKFILE
+    echo "	@echo \"hierarchy -top \$(notdir \$(basename \$<))\" >> \$@" >> $MKFILE
+    echo "	@echo \"flatten\" >> \$@" >> $MKFILE
+    echo "	@echo \"proc\" >> \$@" >> $MKFILE
+    echo "	@echo \"techmap -map +/techmap.v\" >> \$@" >> $MKFILE
+    echo "	@echo \"techmap -map $BITBLAST\" >> \$@" >> $MKFILE
+    echo "	@echo \"techmap -map $LIB\" >> \$@" >> $MKFILE
+    echo "	@echo \"clean -purge\" >> \$@" >> $MKFILE
+    echo "	@echo \"splitnets -ports -format _\" >> \$@" >> $MKFILE
+#    echo "	@echo \"splitnets -format _\" >> \$@" >> $MKFILE
+    echo "	@echo \"clean -purge\" >> \$@" >> $MKFILE
+    echo "	@echo \"write_verilog -simple-lhs \$<.synth\" >> \$@" >> $MKFILE
+    echo "" >> $MKFILE
+    echo "%.v.vxil: %_vxil.tcl" >> $MKFILE
+    echo "	+\$(VIVADO) -mode tcl -source \$< -nolog -nojournal" >> $MKFILE
+    echo "" >> $MKFILE
+    echo "%_vxil.tcl: %.v" >> $MKFILE
+    echo "	@echo \"add_files \$< $PIMFILES\" > \$@" >> $MKFILE
+    echo "	@echo \"synth_design -top \$(notdir \$(basename \$<)) -mode out_of_context -part \$(PART)\" >> \$@" >> $MKFILE
+    echo "	@echo \"write_verilog -force \$<.vxil\" >> \$@" >> $MKFILE
+    echo "	@echo \"quit\" >> \$@" >> $MKFILE
+    echo "" >> $MKFILE
+
+
+    make -f $MKFILE $1.$FSTEM 1>&2
+    $TOOL $1.$FSTEM --rules $RULES $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} ${16}
+    rm -f $1.$FSTEM $MKFILE
+fi

@@ -1,0 +1,43 @@
+cell_logic_eqn:
+    nand_x1: (INV (AND ?a ?b)) <=> (INV_X1 (AND2_X1 ?a ?b))
+    nor_x1: (INV (OR ?a ?b)) <=> (INV_X1 (OR2_X1 ?a ?b))
+boolean_algebra_rewrites:
+    or-true: (OR ?a true) => true
+    or-false: (OR ?a false) => ?a
+    and-true: (AND ?a true) => ?a
+    and-false: (AND ?a false) => false
+    or-commutative: (OR ?a ?b) => (OR ?b ?a)
+    and-commutative: (AND ?a ?b) => (AND ?b ?a)
+    or-associative: (OR (OR ?a ?b) ?c) => (OR ?a (OR ?b ?c))
+    and-associative: (AND (AND ?a ?b) ?c) => (AND ?a (AND ?b ?c))
+    or-distributive: (OR ?a (AND ?b ?c)) <=> (AND (OR ?a ?b) (OR ?a ?c))
+    and-distributive: (AND ?a (OR ?b ?c)) <=> (OR (AND ?a ?b) (AND ?a ?c))
+    or-complement: (OR ?a (INV ?a)) => true
+    and-complement: (AND ?a (INV ?a)) => false
+    de-morgan-1: (INV (AND ?a ?b)) <=> (OR (INV ?a) (INV ?b))
+    de-morgan-2: (INV (OR ?a ?b)) <=> (AND (INV ?a) (INV ?b))
+    or-idempotent: (OR ?a ?a) => ?a
+    and-idempotent: (AND ?a ?a) => ?a
+    or-absorption: (OR ?a (AND ?a ?b)) => ?a
+    and-absorption: (AND ?a (OR ?a ?b)) => ?a
+    consensus-rule: (OR (AND ?x ?y) (OR (AND (INV ?x) ?z) (AND ?y ?z))) <=> (OR (AND ?x ?y) (AND (INV ?x) ?z))
+    negation-cancel: ?a <=> (INV (INV ?a))
+exp_rewrites:
+    maj3_x1_or_and: (OR (OR (AND ?a ?b) (AND ?a ?c)) (AND ?b ?c)) <=> (MAJ3 ?a ?b ?c)
+    maj3_x1_xor: (OR (AND ?a ?b) (AND ?c (OR (AND ?b (INV ?a)) (AND ?a (INV ?b))))) <=> (MAJ3 ?a ?b ?c)
+    maj3_x1_alt: (OR (AND ?b ?c) (AND ?a (OR ?b ?c))) <=> (MAJ3 ?a ?b ?c)
+    negation-nand: (INV ?a) <=> (INV (AND ?a ?a))
+    negation-xnor: (INV ?a) <=> (OR (AND false ?a) (AND (INV ?a) true))
+    or-mux: (OR ?a ?b) <=> (OR (AND (INV ?a) ?b) (AND ?a true))
+    or-maj: (OR ?a ?b) <=> (OR (OR (AND ?a ?b) (AND ?a true)) (AND ?b true))
+    and-maj: (AND ?a ?b) <=> (OR (OR (AND ?a ?b) (AND ?a false)) (AND ?b false))
+    maj-and: (AND ?a ?b) <=> (MAJ3_X1 ?a ?b false)
+    maj-or: (OR ?a ?b) <=> (MAJ3_X1 ?a ?b true)
+    maj-commutative-1: (MAJ3_X1 ?a ?b ?c) <=> (MAJ3_X1 ?b ?a ?c)
+    maj-commutative-2: (MAJ3_X1 ?a ?b ?c) <=> (MAJ3_X1 ?c ?b ?a)
+    maj-commutative-3: (MAJ3_X1 ?a ?b ?c) <=> (MAJ3_X1 ?a ?c ?b)
+    maj-majority-1: (MAJ3_X1 ?a (INV ?a) ?b) => ?b
+    maj-majority-2: (MAJ3_X1 ?a ?a ?b) => ?a
+    maj-inv-propagate: (INV (MAJ3_X1 ?a ?b ?c)) <=> (MAJ3_X1 (INV ?a) (INV ?b) (INV ?c))
+    maj-associative: (MAJ3_X1 ?a ?d (MAJ3_X1 ?b ?d ?c)) <=> (MAJ3_X1 ?c ?d (MAJ3_X1 ?b ?d ?a))
+    maj-distributive: (MAJ3_X1 ?a ?b (MAJ3_X1 ?d ?e ?c)) <=> (MAJ3_X1 (MAJ3_X1 ?a ?b ?d) (MAJ3_X1 ?a ?b ?e) ?c)

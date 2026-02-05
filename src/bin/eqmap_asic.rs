@@ -86,6 +86,11 @@ struct Args {
     /// Maximum number of rewrite iterations
     #[arg(short = 'n', long)]
     iter_limit: Option<usize>,
+
+    /// Path to a text file containing custom rewrite rules
+    #[cfg(feature = "rewrite_file")]
+    #[arg(short = 'F', long)]
+    rewrite_file: Option<PathBuf>,
 }
 
 fn main() -> std::io::Result<()> {

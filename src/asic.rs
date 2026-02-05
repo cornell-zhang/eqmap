@@ -5,14 +5,14 @@
 */
 
 use super::check::Check;
-use super::cost::GateCostFn;
+use super::cost::{GateCostFn, fold_deduped};
 use super::driver::Comparison;
 use super::driver::Report;
-use super::driver::{Canonical, CircuitLang, EquivCheck, Explanable, Extractable};
+use super::driver::{Canonical, CircuitLang, EquivCheck, Explanable, Extractable, LpExtractable};
 use super::verilog::PrimitiveType;
 use egg::{
-    Analysis, CostFunction, DidMerge, EGraph, Id, Language, RecExpr, Rewrite, Symbol,
-    define_language, rewrite,
+    Analysis, CostFunction, DidMerge, EGraph, Id, Language, LpCostFunction, RecExpr, Rewrite,
+    Symbol, define_language, rewrite,
 };
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -64,8 +64,47 @@ impl CellLang {
     }
 }
 
+/// An empty analysis for CellLang
+#[derive(Default, Clone)]
+pub struct CellAnalysis;
+impl Analysis<CellLang> for CellAnalysis {
+    type Data = ();
+
+    fn merge(&mut self, to: &mut Self::Data, from: Self::Data) -> DidMerge {
+        egg::merge_max(to, from)
+    }
+
+    fn make(_egraph: &mut EGraph<CellLang, Self>, _enode: &CellLang, _id: Id) -> Self::Data {}
+}
+
 /// A cost function that extracts a circuit with the least depth
 pub struct DepthCostFn;
+
+impl DepthCostFn {
+    /// Returns the cost of an e-node.
+    pub fn op_cost(&self, enode: &CellLang) -> i64 {
+        match enode {
+            CellLang::Const(_) | CellLang::Var(_) => 0,
+            CellLang::Cell(_, _) => 1,
+            _ => i64::MAX,
+        }
+    }
+}
+
+impl LpCostFunction<CellLang, CellAnalysis> for DepthCostFn {
+    fn node_cost(
+        &mut self,
+        _egraph: &egg::EGraph<CellLang, CellAnalysis>,
+        _eclass: Id,
+        enode: &CellLang,
+    ) -> f64 {
+        if self.op_cost(enode) == i64::MAX {
+            f64::INFINITY
+        } else {
+            self.op_cost(enode) as f64
+        }
+    }
+}
 
 impl CostFunction<CellLang> for DepthCostFn {
     type Cost = i64;
@@ -73,14 +112,8 @@ impl CostFunction<CellLang> for DepthCostFn {
     where
         C: FnMut(Id) -> Self::Cost,
     {
-        let op_cost = match enode {
-            CellLang::Const(_) => 0,
-            CellLang::Var(_) => 0,
-            CellLang::Cell(_, _) => 1,
-            _ => i64::MAX,
-        };
-        let rt = enode.fold(0, |l, id| l.max(costs(id)));
-        rt.saturating_add(op_cost)
+        let rt = fold_deduped(enode, 0, |l, id| l.max(costs(id)));
+        rt.saturating_add(self.op_cost(enode))
     }
 }
 
@@ -95,15 +128,10 @@ impl CellCountFn {
     pub fn new(cut_size: usize) -> Self {
         Self { cut_size }
     }
-}
 
-impl CostFunction<CellLang> for CellCountFn {
-    type Cost = usize;
-    fn cost<C>(&mut self, enode: &CellLang, mut costs: C) -> Self::Cost
-    where
-        C: FnMut(Id) -> Self::Cost,
-    {
-        let op_cost = match enode {
+    /// Returns the cost of an e-node.
+    pub fn op_cost(&self, enode: &CellLang) -> usize {
+        match enode {
             CellLang::Const(_) | CellLang::Bus(_) => 1,
             CellLang::Var(_) => 2,
             CellLang::Cell(n, l) => {
@@ -116,22 +144,42 @@ impl CostFunction<CellLang> for CellCountFn {
                 }
             }
             _ => usize::MAX,
-        };
+        }
+    }
+}
 
-        enode.fold(op_cost, |sum, id| sum.saturating_add(costs(id)))
+impl LpCostFunction<CellLang, CellAnalysis> for CellCountFn {
+    fn node_cost(
+        &mut self,
+        _egraph: &egg::EGraph<CellLang, CellAnalysis>,
+        _eclass: Id,
+        enode: &CellLang,
+    ) -> f64 {
+        if self.op_cost(enode) == usize::MAX {
+            f64::INFINITY
+        } else {
+            self.op_cost(enode) as f64
+        }
+    }
+}
+
+impl CostFunction<CellLang> for CellCountFn {
+    type Cost = usize;
+    fn cost<C>(&mut self, enode: &CellLang, mut costs: C) -> Self::Cost
+    where
+        C: FnMut(Id) -> Self::Cost,
+    {
+        fold_deduped(enode, self.op_cost(enode), |sum, id| sum.saturating_add(costs(id)))
     }
 }
 
 /// A cost function that extracts a circuit with the least area
 pub struct AreaFn;
 
-impl CostFunction<CellLang> for AreaFn {
-    type Cost = f32;
-    fn cost<C>(&mut self, enode: &CellLang, mut costs: C) -> Self::Cost
-    where
-        C: FnMut(Id) -> Self::Cost,
-    {
-        let op_cost = match enode {
+impl AreaFn {
+    /// Returns the cost of an e-node.
+    pub fn op_cost(&self, enode: &CellLang) -> f32 {
+        match enode {
             CellLang::Const(_) | CellLang::Var(_) | CellLang::Bus(_) => {
                 PrimitiveType::INV.get_min_area().unwrap()
             }
@@ -139,10 +187,29 @@ impl CostFunction<CellLang> for AreaFn {
                 let prim = PrimitiveType::from_str(n.as_str()).unwrap();
                 prim.get_min_area().unwrap_or(1.33)
             }
-            _ => f32::MAX,
-        };
+            _ => f32::INFINITY,
+        }
+    }
+}
 
-        enode.fold(op_cost, |sum, id| sum + costs(id))
+impl LpCostFunction<CellLang, CellAnalysis> for AreaFn {
+    fn node_cost(
+        &mut self,
+        _egraph: &egg::EGraph<CellLang, CellAnalysis>,
+        _eclass: Id,
+        enode: &CellLang,
+    ) -> f64 {
+        self.op_cost(enode) as f64
+    }
+}
+
+impl CostFunction<CellLang> for AreaFn {
+    type Cost = f32;
+    fn cost<C>(&mut self, enode: &CellLang, mut costs: C) -> Self::Cost
+    where
+        C: FnMut(Id) -> Self::Cost,
+    {
+        fold_deduped(enode, self.op_cost(enode), |sum, id| sum + costs(id))
     }
 }
 
@@ -160,6 +227,29 @@ impl Extractable for CellLang {
     }
 
     fn filter_cost_fn(set: std::collections::HashSet<String>) -> impl CostFunction<Self> {
+        GateCostFn::new(set)
+    }
+}
+
+impl LpExtractable<CellAnalysis> for CellLang {
+    fn lp_depth_cost_fn() -> impl LpCostFunction<Self, CellAnalysis> {
+        DepthCostFn
+    }
+
+    fn lp_cell_cost_with_reg_weight_fn(
+        cut_size: usize,
+        _w: u64,
+    ) -> impl LpCostFunction<Self, CellAnalysis> {
+        CellCountFn::new(cut_size)
+    }
+
+    fn lp_exact_area_cost_fn() -> impl LpCostFunction<Self, CellAnalysis> {
+        AreaFn
+    }
+
+    fn lp_filter_cost_fn(
+        set: std::collections::HashSet<String>,
+    ) -> impl LpCostFunction<Self, CellAnalysis> {
         GateCostFn::new(set)
     }
 }
@@ -232,19 +322,6 @@ impl CircuitLang for CellLang {
             _ => None,
         }
     }
-}
-
-/// An empty analysis for CellLang
-#[derive(Default, Clone)]
-pub struct CellAnalysis;
-impl Analysis<CellLang> for CellAnalysis {
-    type Data = ();
-
-    fn merge(&mut self, to: &mut Self::Data, from: Self::Data) -> DidMerge {
-        egg::merge_max(to, from)
-    }
-
-    fn make(_egraph: &mut EGraph<CellLang, Self>, _enode: &CellLang, _id: egg::Id) -> Self::Data {}
 }
 
 #[derive(Debug, Serialize)]
@@ -371,43 +448,46 @@ where
     rules.push(
         rewrite!("xnor2_x1"; "(OR (AND ?b ?a) (AND (INV ?a) (INV ?b)))" <=> "(XNOR2_X1 ?a ?b)"),
     );
-    rules.push(rewrite!("and3_x1"; "(AND (AND ?a ?b) ?c)" <=> "(AND3_X1 ?a ?b ?c)"));
-    rules.push(rewrite!("nand3_x1"; "(INV (AND (AND ?a ?b) ?c))" <=> "(NAND3_X1 ?a ?b ?c)"));
-    rules.push(rewrite!("or3_x1"; "(OR (OR ?a ?b) ?c)" <=> "(OR3_X1 ?a ?b ?c)"));
-    rules.push(rewrite!("nor3_x1"; "(INV (OR (OR ?a ?b) ?c))" <=> "(NOR3_X1 ?a ?b ?c)"));
-    rules.push(rewrite!("and4_x1"; "(AND (AND ?a ?b) (AND ?c ?d))" <=> "(AND4_X1 ?a ?b ?c ?d)"));
     rules.push(
-        rewrite!("nand4_x1"; "(INV (AND (AND ?a ?b) (AND ?c ?d)))" <=> "(NAND4_X1 ?a ?b ?c ?d)"),
+        rewrite!("xnor2_x1_xor"; "(OR (AND ?b ?a) (AND (INV ?a) (INV ?b)))" <=> "(INV (XOR2_X1 ?a ?b))"),
     );
-    rules.push(rewrite!("or4_x1"; "(OR (OR ?a ?b) (OR ?c ?d))" <=> "(OR4_X1 ?a ?b ?c ?d)"));
-    rules.push(rewrite!("nor4_x1"; "(INV (OR (OR ?a ?b) (OR ?c ?d)))" <=> "(NOR4_X1 ?a ?b ?c ?d)"));
+    // rules.push(rewrite!("and3_x1"; "(AND (AND ?a ?b) ?c)" <=> "(AND3_X1 ?a ?b ?c)"));
+    // rules.push(rewrite!("nand3_x1"; "(INV (AND (AND ?a ?b) ?c))" <=> "(NAND3_X1 ?a ?b ?c)"));
+    // rules.push(rewrite!("or3_x1"; "(OR (OR ?a ?b) ?c)" <=> "(OR3_X1 ?a ?b ?c)"));
+    // rules.push(rewrite!("nor3_x1"; "(INV (OR (OR ?a ?b) ?c))" <=> "(NOR3_X1 ?a ?b ?c)"));
+    // rules.push(rewrite!("and4_x1"; "(AND (AND ?a ?b) (AND ?c ?d))" <=> "(AND4_X1 ?a ?b ?c ?d)"));
+    // rules.push(
+    //     rewrite!("nand4_x1"; "(INV (AND (AND ?a ?b) (AND ?c ?d)))" <=> "(NAND4_X1 ?a ?b ?c ?d)"),
+    // );
+    // rules.push(rewrite!("or4_x1"; "(OR (OR ?a ?b) (OR ?c ?d))" <=> "(OR4_X1 ?a ?b ?c ?d)"));
+    // rules.push(rewrite!("nor4_x1"; "(INV (OR (OR ?a ?b) (OR ?c ?d)))" <=> "(NOR4_X1 ?a ?b ?c ?d)"));
     rules.push(rewrite!("inv_x1"; "(INV ?a)" <=> "(INV_X1 ?a)"));
-    rules.push(rewrite!("aoi21_x1"; "(INV (OR (AND ?b ?c) ?a))" <=> "(AOI21_X1 ?a ?b ?c)"));
-    rules.push(rewrite!("oai21_x1"; "(INV (AND (OR ?b ?c) ?a))" <=> "(OAI21_X1 ?a ?b ?c)"));
-    rules.push(
-        rewrite!("aoi22_x1"; "(INV (OR (AND ?c ?d) (AND ?a ?b)))" <=> "(AOI22_X1 ?a ?b ?c ?d)"),
-    );
-    rules.push(
-        rewrite!("oai22_x1"; "(INV (AND (OR ?c ?d) (OR ?a ?b)))" <=> "(OAI22_X1 ?a ?b ?c ?d)"),
-    );
-    rules.push(
-        rewrite!("aoi211_x1"; "(INV (OR ?a (OR (AND ?c ?d) ?b)))" <=> "(AOI211_X1 ?a ?b ?c ?d)"),
-    );
-    rules.push(
-        rewrite!("oai211_x1"; "(INV (AND ?a (AND (OR ?c ?d) ?b)))" <=> "(OAI211_X1 ?a ?b ?c ?d)"),
-    );
-    rules.push(
-        rewrite!("aoi221_x1"; "(INV (OR (AND ?b ?c) (OR ?a (AND ?d ?e))))" <=> "(AOI221_X1 ?a ?b ?c ?d ?e)"),
-    );
-    rules.push(
-        rewrite!("oai221_x1"; "(INV (AND (OR ?b ?c) (AND ?a (OR ?d ?e))))" <=> "(OAI221_X1 ?a ?b ?c ?d ?e)"),
-    );
-    rules.push(
-        rewrite!("aoi222_x1"; "(INV (OR (AND ?e ?f) (OR (AND ?a ?b) (AND ?c ?d))))" <=> "(AOI222_X1 ?a ?b ?c ?d ?e ?f)"),
-    );
-    rules.push(
-        rewrite!("oai222_x1"; "(INV (AND (OR ?e ?f) (AND (OR ?a ?b) (OR ?c ?d))))" <=> "(OAI222_X1 ?a ?b ?c ?d ?e ?f)"),
-    );
+    // rules.push(rewrite!("aoi21_x1"; "(INV (OR (AND ?b ?c) ?a))" <=> "(AOI21_X1 ?a ?b ?c)"));
+    // rules.push(rewrite!("oai21_x1"; "(INV (AND (OR ?b ?c) ?a))" <=> "(OAI21_X1 ?a ?b ?c)"));
+    // rules.push(
+    //     rewrite!("aoi22_x1"; "(INV (OR (AND ?c ?d) (AND ?a ?b)))" <=> "(AOI22_X1 ?a ?b ?c ?d)"),
+    // );
+    // rules.push(
+    //     rewrite!("oai22_x1"; "(INV (AND (OR ?c ?d) (OR ?a ?b)))" <=> "(OAI22_X1 ?a ?b ?c ?d)"),
+    // );
+    // rules.push(
+    //     rewrite!("aoi211_x1"; "(INV (OR ?a (OR (AND ?c ?d) ?b)))" <=> "(AOI211_X1 ?a ?b ?c ?d)"),
+    // );
+    // rules.push(
+    //     rewrite!("oai211_x1"; "(INV (AND ?a (AND (OR ?c ?d) ?b)))" <=> "(OAI211_X1 ?a ?b ?c ?d)"),
+    // );
+    // rules.push(
+    //     rewrite!("aoi221_x1"; "(INV (OR (AND ?b ?c) (OR ?a (AND ?d ?e))))" <=> "(AOI221_X1 ?a ?b ?c ?d ?e)"),
+    // );
+    // rules.push(
+    //     rewrite!("oai221_x1"; "(INV (AND (OR ?b ?c) (AND ?a (OR ?d ?e))))" <=> "(OAI221_X1 ?a ?b ?c ?d ?e)"),
+    // );
+    // rules.push(
+    //     rewrite!("aoi222_x1"; "(INV (OR (AND ?e ?f) (OR (AND ?a ?b) (AND ?c ?d))))" <=> "(AOI222_X1 ?a ?b ?c ?d ?e ?f)"),
+    // );
+    // rules.push(
+    //     rewrite!("oai222_x1"; "(INV (AND (OR ?e ?f) (AND (OR ?a ?b) (OR ?c ?d))))" <=> "(OAI222_X1 ?a ?b ?c ?d ?e ?f)"),
+    // );
     rules.push(rewrite!("mux2_x1"; "(OR (AND (INV ?s) ?b) (AND ?s ?a))" <=> "(MUX2_X1 ?s ?a ?b)"));
 
     rules
@@ -473,6 +553,34 @@ where
     // Negation Rules
     rules.append(&mut rewrite!("negation-cancel"; "?a" <=> "(INV (INV ?a))"));
 
+    rules.append(&mut
+        rewrite!("maj3_x1"; "(OR (OR (AND ?a ?b) (AND ?a ?c)) (AND ?b ?c))" <=> "(MAJ3_X1 ?a ?b ?c)"),
+    );
+
+    rules.append(&mut
+        rewrite!("maj3_x1_xor"; "(OR (AND ?a ?b) (AND ?c (OR (AND ?b (INV ?a)) (AND ?a (INV ?b)))))" <=> "(MAJ3_X1 ?a ?b ?c)"),
+    );
+
+    rules.append(&mut
+        rewrite!("maj3_x1_alt"; "(OR (AND ?b ?c) (AND ?a (OR ?b ?c)))" <=> "(MAJ3_X1 ?a ?b ?c)"),
+    );
+
+    rules.append(&mut rewrite!("xor-mux"; "(XOR2_X1 ?a ?b)" <=> "(MUX2_X1 ?a (INV ?b) ?b)"));
+
+    rules.append(&mut rewrite!("xor-mux-raw"; "(OR (AND ?b (INV ?a)) (AND ?a (INV ?b)))" <=> "(MUX2_X1 ?a (INV ?b) ?b)"));
+
+    rules.append(&mut rewrite!("negation-nand"; "(INV ?a)" <=> "(INV (AND ?a ?a))"));
+    rules.append(
+        &mut rewrite!("negation-xnor"; "(INV ?a)" <=> "(OR (AND false ?a) (AND (INV ?a) true))"),
+    );
+    rules.append(&mut rewrite!("or-mux"; "(OR ?a ?b)" <=> "(OR (AND (INV ?a) ?b) (AND ?a true))"));
+    rules.append(
+        &mut rewrite!("or-maj"; "(OR ?a ?b)" <=> "(OR (OR (AND ?a ?b) (AND ?a true)) (AND ?b true))"),
+    );
+    rules.append(
+        &mut rewrite!("and-maj"; "(AND ?a ?b)" <=> "(OR (OR (AND ?a ?b) (AND ?a false)) (AND ?b false))"),
+    );
+
     rules
 }
 
@@ -497,24 +605,36 @@ pub fn expansion_rewrites<A>() -> Vec<egg::Rewrite<CellLang, A>>
 where
     A: Analysis<CellLang>,
 {
-    let mut rules: Vec<Rewrite<CellLang, A>> = Vec::new();
+    let rules: Vec<Rewrite<CellLang, A>> = Vec::new();
 
     // TODO(matth2k): This rule is a cell rule, but put it here for now since not part of all libraries
-    rules.append(&mut
-        rewrite!("maj3_x1"; "(OR (OR (AND ?a ?b) (AND ?a ?c)) (AND ?b ?c))" <=> "(MAJ3_X1 ?a ?b ?c)"),
-    );
+    //rules.append(&mut
+    //    rewrite!("maj3_x1"; "(OR (OR (AND ?a ?b) (AND ?a ?c)) (AND ?b ?c))" <=> "(MAJ3_X1 ?a ?b ?c)"),
+    //);
 
-    rules.append(&mut rewrite!("negation-nand"; "(INV ?a)" <=> "(INV (AND ?a ?a))"));
-    rules.append(
-        &mut rewrite!("negation-xnor"; "(INV ?a)" <=> "(OR (AND false ?a) (AND (INV ?a) true))"),
-    );
-    rules.append(&mut rewrite!("or-mux"; "(OR ?a ?b)" <=> "(OR (AND (INV ?a) ?b) (AND ?a true))"));
-    rules.append(
-        &mut rewrite!("or-maj"; "(OR ?a ?b)" <=> "(OR (OR (AND ?a ?b) (AND ?a true)) (AND ?b true))"),
-    );
-    rules.append(
-        &mut rewrite!("and-maj"; "(AND ?a ?b)" <=> "(OR (OR (AND ?a ?b) (AND ?a false)) (AND ?b false))"),
-    );
+    //rules.append(&mut
+    //    rewrite!("maj3_x1_xor"; "(OR (AND ?a ?b) (AND ?c (OR (AND ?b (INV ?a)) (AND ?a (INV ?b)))))" <=> "(MAJ3_X1 ?a ?b ?c)"),
+    //);
+
+    //rules.append(&mut
+    //    rewrite!("maj3_x1_alt"; "(OR (AND ?b ?c) (AND ?a (OR ?b ?c)))" <=> "(MAJ3_X1 ?a ?b ?c)"),
+    //);
+
+    //rules.append(&mut rewrite!("xor-mux"; "(XOR2_X1 ?a ?b)" <=> "(MUX2_X1 ?a (INV ?b) ?b)"));
+
+    //rules.append(&mut rewrite!("xor-mux-raw"; "(OR (AND ?b (INV ?a)) (AND ?a (INV ?b)))" <=> "(MUX2_X1 ?a (INV ?b) ?b)"));
+
+    //rules.append(&mut rewrite!("negation-nand"; "(INV ?a)" <=> "(INV (AND ?a ?a))"));
+    //rules.append(
+    //    &mut rewrite!("negation-xnor"; "(INV ?a)" <=> "(OR (AND false ?a) (AND (INV ?a) true))"),
+    //);
+    //rules.append(&mut rewrite!("or-mux"; "(OR ?a ?b)" <=> "(OR (AND (INV ?a) ?b) (AND ?a true))"));
+    //rules.append(
+    //    &mut rewrite!("or-maj"; "(OR ?a ?b)" <=> "(OR (OR (AND ?a ?b) (AND ?a true)) (AND ?b true))"),
+    //);
+    //rules.append(
+    //    &mut rewrite!("and-maj"; "(AND ?a ?b)" <=> "(OR (OR (AND ?a ?b) (AND ?a false)) (AND ?b false))"),
+    //);
 
     rules
 }
