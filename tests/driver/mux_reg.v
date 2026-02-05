@@ -48,31 +48,31 @@ module mux_reg (
       .O (tmp0)
   );
   FDRE #(
-      .INIT(1'hx)
+      .INIT(1'bx)
   ) _pipe_tmp0_ (
       .C (clk),
-      .CE(1'h1),
+      .CE(1'b1),
       .D (tmp0),
       .Q (tmp0_r),
-      .R (1'h0)
+      .R (1'b0)
   );
   FDRE #(
-      .INIT(1'hx)
+      .INIT(1'bx)
   ) _pipe_tmp1_ (
       .C (clk),
-      .CE(1'h1),
+      .CE(1'b1),
       .D (tmp1),
       .Q (tmp1_r),
-      .R (1'h0)
+      .R (1'b0)
   );
   FDRE #(
-      .INIT(1'hx)
+      .INIT(1'bx)
   ) _pipe_s1_ (
       .C (clk),
-      .CE(1'h1),
+      .CE(1'b1),
       .D (s1),
       .Q (s1_r),
-      .R (1'h0)
+      .R (1'b0)
   );
   LUT3 #(
       .INIT(8'hCA)
@@ -85,58 +85,60 @@ module mux_reg (
 endmodule
 
 // CHECK: module mux_reg (
-// CHECK:     b,
-// CHECK:     a,
-// CHECK:     d,
-// CHECK:     c,
-// CHECK:     s0,
-// CHECK:     s1,
-// CHECK:     clk,
-// CHECK:     y
+// CHECK:   a,
+// CHECK:   b,
+// CHECK:   c,
+// CHECK:   clk,
+// CHECK:   d,
+// CHECK:   s0,
+// CHECK:   s1,
+// CHECK:   y
 // CHECK: );
-// CHECK:   input b;
-// CHECK:   wire b;
 // CHECK:   input a;
 // CHECK:   wire a;
-// CHECK:   input d;
-// CHECK:   wire d;
+// CHECK:   input b;
+// CHECK:   wire b;
 // CHECK:   input c;
 // CHECK:   wire c;
+// CHECK:   input clk;
+// CHECK:   wire clk;
+// CHECK:   input d;
+// CHECK:   wire d;
 // CHECK:   input s0;
 // CHECK:   wire s0;
 // CHECK:   input s1;
 // CHECK:   wire s1;
-// CHECK:   input clk;
-// CHECK:   wire clk;
 // CHECK:   output y;
 // CHECK:   wire y;
-// CHECK:   wire __0__;
-// CHECK:   wire __1__;
+// CHECK:   wire __2__;
+// CHECK:   wire __3__;
+// CHECK:   wire __4__;
 // CHECK:   LUT4 #(
-// CHECK:       .INIT(16'hf0ca)
-// CHECK:   ) __2__ (
-// CHECK:       .I0(d),
-// CHECK:       .I1(c),
-// CHECK:       .I2(s0),
-// CHECK:       .I3(s1),
-// CHECK:       .O(__0__)
+// CHECK:     .INIT(16'hf0ca)
+// CHECK:   ) __7__ (
+// CHECK:     .I3(s1),
+// CHECK:     .I2(s0),
+// CHECK:     .I1(c),
+// CHECK:     .I0(d),
+// CHECK:     .O(__2__)
 // CHECK:   );
 // CHECK:   LUT4 #(
-// CHECK:       .INIT(16'hcaf0)
-// CHECK:   ) __3__ (
-// CHECK:       .I0(b),
-// CHECK:       .I1(a),
-// CHECK:       .I2(__0__),
-// CHECK:       .I3(s1),
-// CHECK:       .O(__1__)
+// CHECK:     .INIT(16'hcaf0)
+// CHECK:   ) __8__ (
+// CHECK:     .I3(s1),
+// CHECK:     .I2(__2__),
+// CHECK:     .I1(a),
+// CHECK:     .I0(b),
+// CHECK:     .O(__3__)
 // CHECK:   );
 // CHECK:   FDRE #(
-// CHECK:       .INIT(1'hx)
-// CHECK:   ) __4__ (
-// CHECK:       .C(clk),
-// CHECK:       .CE(1'h1),
-// CHECK:       .D(__1__),
-// CHECK:       .R(1'h0),
-// CHECK:       .Q(y)
+// CHECK:     .INIT(1'bx)
+// CHECK:   ) __9__ (
+// CHECK:     .D(__3__),
+// CHECK:     .C(clk),
+// CHECK:     .CE(1'b1),
+// CHECK:     .R(1'b0),
+// CHECK:     .Q(__4__)
 // CHECK:   );
+// CHECK:   assign y = __4__;
 // CHECK: endmodule

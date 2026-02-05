@@ -10,6 +10,8 @@ use bitvec::{bitvec, order::Lsb0, vec::BitVec};
 use egg::{
     Analysis, Applier, FromOp, Language, Pattern, PatternAst, Rewrite, Subst, Symbol, Var, rewrite,
 };
+use std::fmt::Display;
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::{
     collections::{HashMap, HashSet},
     io::{BufRead, BufReader, Read},
@@ -63,21 +65,21 @@ where
 {
     let mut rules: Vec<Rewrite<lut::LutLang, A>> = Vec::new();
     // Logic element conversions
-    rules.append(&mut rewrite!("lut1-retime"; "(LUT ?p (REG ?a))" <=> "(REG (LUT ?p ?a))"));
+    rules.append(&mut rewrite!("lut1-retime"; "(LUT ?p (REG ?a ?clk ?ce ?rst))" <=> "(REG (LUT ?p ?a) ?clk ?ce ?rst)"));
     rules.append(
-        &mut rewrite!("lut2-retime"; "(LUT ?p (REG ?a) (REG ?b))" <=> "(REG (LUT ?p ?a ?b))"),
+        &mut rewrite!("lut2-retime"; "(LUT ?p (REG ?a ?clk ?ce ?rst) (REG ?b ?clk ?ce ?rst))" <=> "(REG (LUT ?p ?a ?b) ?clk ?ce ?rst)"),
     );
     rules.append(
-        &mut rewrite!("lut3-retime"; "(LUT ?p (REG ?a) (REG ?b) (REG ?c))" <=> "(REG (LUT ?p ?a ?b ?c))"),
+        &mut rewrite!("lut3-retime"; "(LUT ?p (REG ?a ?clk ?ce ?rst) (REG ?b ?clk ?ce ?rst) (REG ?c ?clk ?ce ?rst))" <=> "(REG (LUT ?p ?a ?b ?c) ?clk ?ce ?rst)"),
     );
     rules.append(
-        &mut rewrite!("lut4-retime"; "(LUT ?p (REG ?a) (REG ?b) (REG ?c) (REG ?d))" <=> "(REG (LUT ?p ?a ?b ?c ?d))"),
+        &mut rewrite!("lut4-retime"; "(LUT ?p (REG ?a ?clk ?ce ?rst) (REG ?b ?clk ?ce ?rst) (REG ?c ?clk ?ce ?rst) (REG ?d ?clk ?ce ?rst))" <=> "(REG (LUT ?p ?a ?b ?c ?d) ?clk ?ce ?rst)"),
     );
     rules.append(
-        &mut rewrite!("lut5-retime"; "(LUT ?p (REG ?a) (REG ?b) (REG ?c) (REG ?d) (REG ?e))" <=> "(REG (LUT ?p ?a ?b ?c ?d ?e))"),
+        &mut rewrite!("lut5-retime"; "(LUT ?p (REG ?a ?clk ?ce ?rst) (REG ?b ?clk ?ce ?rst) (REG ?c ?clk ?ce ?rst) (REG ?d ?clk ?ce ?rst) (REG ?e ?clk ?ce ?rst))" <=> "(REG (LUT ?p ?a ?b ?c ?d ?e) ?clk ?ce ?rst)"),
     );
     rules.append(
-        &mut rewrite!("lut6-retime"; "(LUT ?p (REG ?a) (REG ?b) (REG ?c) (REG ?d) (REG ?e) (REG ?f))" <=> "(REG (LUT ?p ?a ?b ?c ?d ?e ?f))"),
+        &mut rewrite!("lut6-retime"; "(LUT ?p (REG ?a ?clk ?ce ?rst) (REG ?b ?clk ?ce ?rst) (REG ?c ?clk ?ce ?rst) (REG ?d ?clk ?ce ?rst) (REG ?e ?clk ?ce ?rst) (REG ?f ?clk ?ce ?rst))" <=> "(REG (LUT ?p ?a ?b ?c ?d ?e ?f) ?clk ?ce ?rst)"),
     );
 
     rules
@@ -957,6 +959,17 @@ where
     }
 }
 
+impl<L, A> Hash for RewriteManager<L, A>
+where
+    L: Language + FromOp + Display + 'static,
+    A: Analysis<L> + Clone + 'static,
+{
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let strings: Vec<String> = self.active.values().map(|r| format!("{r:?}")).collect();
+        strings.hash(state);
+    }
+}
+
 impl<L, A> RewriteManager<L, A>
 where
     L: Language + FromOp,
@@ -1078,6 +1091,23 @@ where
     pub fn categories(&self) -> impl Iterator<Item = &String> {
         self.categories.keys()
     }
+
+    /// Returns the hash of active rewrites rules as a string
+    pub fn rules_hash(&self) -> String
+    where
+        L: Language + FromOp + Display + 'static,
+        A: Analysis<L> + Clone + 'static,
+    {
+        let mut s = DefaultHasher::new();
+        self.hash(&mut s);
+        let hash_value = s.finish();
+        format!("{:x}", hash_value)
+    }
+
+    /// Returns the number of activated rewrite rules
+    pub fn num_active(&self) -> usize {
+        self.active.len()
+    }
 }
 
 impl<L, A> RewriteManager<L, A>
@@ -1110,7 +1140,7 @@ where
         }
 
         if bidirectional {
-            self.construct_rule(&format!("{name}_bwd"), rhs, lhs, false, category)?;
+            self.construct_rule(&format!("{name}-rev"), rhs, lhs, false, category)?;
         }
 
         Ok(rw)

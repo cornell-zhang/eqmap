@@ -36,7 +36,7 @@ define_language! {
         "NOT" = Not([Id; 1]),
         "LUT" = Lut(Box<[Id]>), // Program is first
         "BUS" = Bus(Box<[Id]>), // a bus of nodes
-        "REG" = Reg([Id; 1]),
+        "REG" = Reg([Id; 4]), // D, C, CE, R
         "ARG" = Arg([Id; 1]),
         "CYCLE" = Cycle([Id; 1]),
     }
@@ -525,6 +525,10 @@ where
 
 /// Verify the grammar of a [LutLang] expression from its root
 fn verify_expr(expr: &RecExpr<LutLang>) -> Result<(), String> {
+    if expr.is_empty() {
+        return Ok(());
+    }
+
     expr.as_ref().last().unwrap().verify_rec(expr)?;
     Ok(())
 }
@@ -1164,8 +1168,23 @@ impl CircuitLang for LutLang {
         Self::Bus(ids.collect())
     }
 
+    fn int(x: u64) -> Option<Self> {
+        Some(Self::Program(x))
+    }
+
     fn is_bus(&self) -> bool {
         matches!(self, Self::Bus(_))
+    }
+
+    fn is_lut(&self) -> bool {
+        matches!(self, Self::Lut(_))
+    }
+
+    fn get_int(&self) -> Option<u64> {
+        match self {
+            Self::Program(p) => Some(*p),
+            _ => None,
+        }
     }
 
     fn get_var(&self) -> Option<Symbol> {
@@ -1211,6 +1230,12 @@ impl crate::file_rewrites::FileRewrites for LutLang {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_empty_expr() {
+        let expr = RecExpr::<LutLang>::default();
+        assert!(verify_expr(&expr).is_ok());
+    }
 
     #[test]
     fn test_bad_cells() {

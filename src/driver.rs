@@ -274,6 +274,18 @@ where
         Ok(())
     }
 
+    /// Print the report of the output in a human readable format.
+    pub fn print_report(&self, w: &mut impl Write) -> std::io::Result<()> {
+        writeln!(w, "INFO: Synthesis Report")?;
+        if let Some(rpt) = &self.rpt {
+            let s = toml::to_string_pretty(rpt).map_err(std::io::Error::other)?;
+            for line in s.lines() {
+                writeln!(w, "INFO: {}", line)?;
+            }
+        }
+        Ok(())
+    }
+
     /// Write the report of the output to a string.
     pub fn write_report_to_string(&self) -> Result<String, std::io::Error> {
         match &self.rpt {
@@ -537,8 +549,17 @@ pub trait CircuitLang:
     /// Capture multiple expressions in a single node
     fn bus(ids: impl Iterator<Item = egg::Id>) -> Self;
 
+    /// Returns a node that stores a constant integer parameter if the Lang supports it
+    fn int(x: u64) -> Option<Self>;
+
     /// Returns true is the node is a bus
     fn is_bus(&self) -> bool;
+
+    /// Returns true is the node is a lookup table
+    fn is_lut(&self) -> bool;
+
+    /// Returns an integer if the node stores one
+    fn get_int(&self) -> Option<u64>;
 
     /// Returns the symbol of the node, if is a variable
     fn get_var(&self) -> Option<Symbol>;
@@ -1321,8 +1342,8 @@ pub fn simple_reader(cmd: Option<String>, input_file: Option<PathBuf>) -> std::i
     let mut buf = String::new();
     if let Some(cmd) = cmd {
         buf = cmd;
-    } else if input_file.is_some() {
-        std::fs::File::open(input_file.unwrap())?.read_to_string(&mut buf)?;
+    } else if let Some(input_file) = input_file {
+        std::fs::File::open(input_file)?.read_to_string(&mut buf)?;
     } else {
         let mut stdin = std::io::stdin();
         if stdin.is_terminal() {
@@ -1392,6 +1413,7 @@ where
     if no_verify {
         eprintln!("INFO: Skipping functionality tests...");
     } else {
+        eprintln!("INFO: Checking expression...");
         let check = L::check_expr(&expr, simplified);
         if check.is_inconclusive() && verbose {
             eprintln!("WARNING: Functionality verification inconclusive");

@@ -294,10 +294,13 @@ fn test_proof_generation() {
 */
 #[test]
 fn test_args_egraphs() {
-    assert_eq!(simplify("(CYCLE (REG (ARG 0)))"), "(CYCLE (REG (ARG 0)))");
     assert_eq!(
-        simplify("(CYCLE (REG (NOT (ARG 0))))"),
-        "(CYCLE (LUT 1 (REG (ARG 0))))"
+        simplify("(CYCLE (REG (ARG 0) clk ce rst))"),
+        "(CYCLE (REG (ARG 0) clk ce rst))"
+    );
+    assert_eq!(
+        simplify("(CYCLE (REG (NOT (ARG 0)) clk ce rst))"),
+        "(CYCLE (LUT 1 (REG (ARG 0) clk ce rst)))"
     );
 }
 

@@ -21,5 +21,5 @@ module fdre (
       .R (1'h0)
   );
 
-  // CHECK: (REG d)
+  // CHECK: (REG d clk true false)
 endmodule
