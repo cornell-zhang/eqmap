@@ -142,6 +142,7 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
         let mut sorted = HashSet::new();
 
         while let Some(net) = nets.pop() {
+            eprintln!("net = {}", &net);
             if sorted.contains(&net) {
                 continue;
             }
@@ -156,6 +157,7 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
             let mut rdy = true;
             dfs.next(); // Skip the root node
             while let Some(n) = dfs.next() {
+                eprintln!("n = {}", n);
                 if dfs.check_cycles() {
                     return Err("Cycle detected in netlist".to_string());
                 }
@@ -178,8 +180,11 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
                 topo.push(net);
             }
         }
-
+        for n in topo.clone() {
+            eprintln!("n in topo = {}", n);
+        }
         for n in topo {
+            //eprintln!("expr = {}", expr);
             if mapping.contains_key(&n) {
                 continue;
             } else if let Some(inst_type) = n.get_instance_type() {
