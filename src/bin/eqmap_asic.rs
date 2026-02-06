@@ -2,13 +2,15 @@ use clap::Parser;
 #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
 use clap::ValueEnum;
 use eqmap::{
-    asic::{CellLang, CellRpt, asic_rewrites, expansion_rewrites, expr_is_mapped},
+    asic::{CellAnalysis, CellLang, CellRpt, expansion_rewrites, expr_is_mapped},
     driver::{SynthRequest, process_expression},
+    netlist::{LogicMapper, PrimitiveCell},
     rewrite::RewriteManager,
-    verilog::{SVModule, sv_parse_wrapper},
+    verilog::sv_parse_wrapper,
 };
+use nl_compiler::from_vast;
 use std::{
-    io::{Read, Write, stdin},
+    io::{Read, Write, stderr, stdin},
     path::PathBuf,
 };
 
@@ -116,28 +118,39 @@ fn main() -> std::io::Result<()> {
 
     let ast = sv_parse_wrapper(&buf, path).map_err(std::io::Error::other)?;
 
-    let f = SVModule::from_ast(&ast).map_err(std::io::Error::other)?;
+    let f = from_vast(&ast).map_err(std::io::Error::other)?;
 
     eprintln!(
         "INFO: Module {} has {} outputs",
         f.get_name(),
-        f.get_outputs().len()
+        f.get_output_ports().len()
     );
 
-    let mut rules = RewriteManager::<CellLang, _>::new();
-
-    if let Some(p) = args.rules {
-        let file = std::fs::File::open(p)?;
-        rules.parse_rules(file).map_err(std::io::Error::other)?;
-        let categories = rules.categories().cloned().collect::<Vec<_>>();
-        for cat in categories {
-            rules.enable_category(&cat);
-        }
+    let path = if let Some(p) = args.rules {
+        p
     } else {
-        rules
-            .insert_category("asic_rewrites".to_string(), asic_rewrites())
-            .map_err(|r| std::io::Error::other(format!("Repeat rule: {:?}", r)))?;
-        rules.enable_category("asic_rewrites");
+        let root = match std::env::var("EQMAP_ROOT") {
+            Ok(root) => PathBuf::from(root),
+            Err(_) => std::env::current_exe()?
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .to_path_buf(),
+        };
+        root.join("rules/asic.celllang")
+    };
+
+    eprintln!("INFO: Loading rewrite rules from {path:?}");
+
+    let mut rules = RewriteManager::<CellLang, CellAnalysis>::new();
+    let file = std::fs::File::open(path)?;
+    rules.parse_rules(file).map_err(std::io::Error::other)?;
+    let categories = rules.categories().cloned().collect::<Vec<_>>();
+    for cat in categories {
+        rules.enable_category(&cat);
     }
 
     if args.filter.is_some() {
@@ -147,11 +160,15 @@ fn main() -> std::io::Result<()> {
         rules.enable_category("expansion_rewrites");
     }
 
-    let rules = rules.active_rules();
-
     if args.verbose {
-        eprintln!("INFO: Running with {} rewrite rules", rules.len());
+        eprintln!(
+            "INFO: Running with {} rewrite rules. Hash: {}",
+            rules.num_active(),
+            rules.rules_hash()
+        );
     }
+
+    let rules = rules.active_rules();
 
     let req = SynthRequest::default().with_rules(rules);
 
@@ -217,11 +234,19 @@ fn main() -> std::io::Result<()> {
     }
 
     eprintln!("INFO: Compiling Verilog...");
-    let expr = f.to_single_cell_expr().map_err(std::io::Error::other)?;
+    let mut mapper = f
+        .get_analysis::<LogicMapper<CellLang, PrimitiveCell>>()
+        .map_err(std::io::Error::other)?;
+    mapper
+        .insert(f.outputs().into_iter().map(|x| x.0).collect())
+        .map_err(std::io::Error::other)?;
+    let mut mapping = mapper.mappings();
+    let mapping = mapping.pop().unwrap();
+    let expr = mapping.get_expr();
 
     eprintln!("INFO: Building e-graph...");
     let result = process_expression::<CellLang, _, CellRpt>(expr, req, true, args.verbose)?
-        .with_name(f.get_name());
+        .with_name(f.get_name().as_str());
 
     if !(args.no_assert || expr_is_mapped(result.get_expr())) {
         return Err(std::io::Error::other(
@@ -232,20 +257,12 @@ fn main() -> std::io::Result<()> {
     if let Some(p) = args.report {
         let mut writer = std::fs::File::create(p)?;
         result.write_report(&mut writer)?;
+        result.print_report(&mut stderr().lock())?;
     }
 
     eprintln!("INFO: Writing output to Verilog...");
-    let output_names: Vec<String> = f.get_outputs().iter().map(|x| x.to_string()).collect();
-    let mut module = SVModule::from_cells(
-        result.get_expr().to_owned(),
-        f.get_name().to_string(),
-        output_names,
-    )
-    .map_err(std::io::Error::other)?;
-
-    // Unused inputs from the original module are lost upon conversion to a LutLang expression so
-    // they must be readded to the module here.
-    module.append_inputs_from_module(&f);
+    let mapping = mapping.with_expr(result.get_expr().to_owned());
+    mapping.rewrite(&f).map_err(std::io::Error::other)?;
 
     if let Some(p) = args.output {
         let mut file = std::fs::File::create(p)?;
@@ -254,11 +271,11 @@ fn main() -> std::io::Result<()> {
             "/* Generated by {} {} */\n\n{}",
             env!("CARGO_PKG_NAME"),
             env!("CARGO_PKG_VERSION"),
-            module
+            f
         )?;
         eprintln!("INFO: Goodbye");
     } else {
-        print!("{module}");
+        print!("{f}");
     }
 
     Ok(())

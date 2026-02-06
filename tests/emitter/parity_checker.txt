@@ -1,11 +1,13 @@
 // RUN: emit-verilog --canonicalize %s | FileCheck %s
 
-(REG (XOR (REG (XOR (REG (XOR a0 a1)) (REG (XOR a2 a3)))) (REG (XOR (REG (XOR a4 a5)) (REG (XOR a6 a7))))))
+(REG (XOR (REG (XOR (REG (XOR a0 a1) clk ce rst) (REG (XOR a2 a3) clk ce rst)) clk ce rst) (REG (XOR (REG (XOR a4 a5) clk ce rst) (REG (XOR a6 a7) clk ce rst)) clk ce rst)) clk ce rst)
 
 // CHECK: module parity_checker (
 // CHECK:     a0,
 // CHECK:     a1,
 // CHECK:     clk,
+// CHECK:     ce,
+// CHECK:     rst,
 // CHECK:     a2,
 // CHECK:     a3,
 // CHECK:     a4,
@@ -20,6 +22,10 @@
 // CHECK:   wire a1;
 // CHECK:   input clk;
 // CHECK:   wire clk;
+// CHECK:   input ce;
+// CHECK:   wire ce;
+// CHECK:   input rst;
+// CHECK:   wire rst;
 // CHECK:   input a2;
 // CHECK:   wire a2;
 // CHECK:   input a3;
@@ -58,9 +64,9 @@
 // CHECK:       .INIT(1'hx)
 // CHECK:   ) __14__ (
 // CHECK:       .C(clk),
-// CHECK:       .CE(1'h1),
+// CHECK:       .CE(ce),
 // CHECK:       .D(__0__),
-// CHECK:       .R(1'h0),
+// CHECK:       .R(rst),
 // CHECK:       .Q(__1__)
 // CHECK:   );
 // CHECK:   LUT2 #(
@@ -74,9 +80,9 @@
 // CHECK:       .INIT(1'hx)
 // CHECK:   ) __16__ (
 // CHECK:       .C(clk),
-// CHECK:       .CE(1'h1),
+// CHECK:       .CE(ce),
 // CHECK:       .D(__2__),
-// CHECK:       .R(1'h0),
+// CHECK:       .R(rst),
 // CHECK:       .Q(__3__)
 // CHECK:   );
 // CHECK:   LUT2 #(
@@ -90,9 +96,9 @@
 // CHECK:       .INIT(1'hx)
 // CHECK:   ) __18__ (
 // CHECK:       .C(clk),
-// CHECK:       .CE(1'h1),
+// CHECK:       .CE(ce),
 // CHECK:       .D(__4__),
-// CHECK:       .R(1'h0),
+// CHECK:       .R(rst),
 // CHECK:       .Q(__5__)
 // CHECK:   );
 // CHECK:   LUT2 #(
@@ -106,9 +112,9 @@
 // CHECK:       .INIT(1'hx)
 // CHECK:   ) __20__ (
 // CHECK:       .C(clk),
-// CHECK:       .CE(1'h1),
+// CHECK:       .CE(ce),
 // CHECK:       .D(__6__),
-// CHECK:       .R(1'h0),
+// CHECK:       .R(rst),
 // CHECK:       .Q(__7__)
 // CHECK:   );
 // CHECK:   LUT2 #(
@@ -122,9 +128,9 @@
 // CHECK:       .INIT(1'hx)
 // CHECK:   ) __22__ (
 // CHECK:       .C(clk),
-// CHECK:       .CE(1'h1),
+// CHECK:       .CE(ce),
 // CHECK:       .D(__8__),
-// CHECK:       .R(1'h0),
+// CHECK:       .R(rst),
 // CHECK:       .Q(__9__)
 // CHECK:   );
 // CHECK:   LUT2 #(
@@ -138,9 +144,9 @@
 // CHECK:       .INIT(1'hx)
 // CHECK:   ) __24__ (
 // CHECK:       .C(clk),
-// CHECK:       .CE(1'h1),
+// CHECK:       .CE(ce),
 // CHECK:       .D(__10__),
-// CHECK:       .R(1'h0),
+// CHECK:       .R(rst),
 // CHECK:       .Q(__11__)
 // CHECK:   );
 // CHECK:   LUT2 #(
@@ -154,9 +160,9 @@
 // CHECK:       .INIT(1'hx)
 // CHECK:   ) __26__ (
 // CHECK:       .C(clk),
-// CHECK:       .CE(1'h1),
+// CHECK:       .CE(ce),
 // CHECK:       .D(__12__),
-// CHECK:       .R(1'h0),
+// CHECK:       .R(rst),
 // CHECK:       .Q(y)
 // CHECK:   );
 // CHECK: endmodule
