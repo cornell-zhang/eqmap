@@ -91,7 +91,6 @@ else
     echo "	@echo \"techmap -map $LIB\" >> \$@" >> $MKFILE
     echo "	@echo \"clean -purge\" >> \$@" >> $MKFILE
     echo "	@echo \"splitnets -ports -format _\" >> \$@" >> $MKFILE
-#    echo "	@echo \"splitnets -format _\" >> \$@" >> $MKFILE
     echo "	@echo \"clean -purge\" >> \$@" >> $MKFILE
     echo "	@echo \"write_verilog -simple-lhs \$<.synth\" >> \$@" >> $MKFILE
     echo "" >> $MKFILE

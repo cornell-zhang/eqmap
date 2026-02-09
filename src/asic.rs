@@ -11,8 +11,8 @@ use super::driver::Report;
 use super::driver::{Canonical, CircuitLang, EquivCheck, Explanable, Extractable, LpExtractable};
 use super::verilog::PrimitiveType;
 use egg::{
-    Analysis, CostFunction, DidMerge, EGraph, Id, Language, LpCostFunction, RecExpr, Rewrite,
-    Symbol, define_language, rewrite,
+    Analysis, CostFunction, DidMerge, EGraph, Id, LpCostFunction, RecExpr, Rewrite, Symbol,
+    define_language, rewrite,
 };
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -169,7 +169,9 @@ impl CostFunction<CellLang> for CellCountFn {
     where
         C: FnMut(Id) -> Self::Cost,
     {
-        fold_deduped(enode, self.op_cost(enode), |sum, id| sum.saturating_add(costs(id)))
+        fold_deduped(enode, self.op_cost(enode), |sum, id| {
+            sum.saturating_add(costs(id))
+        })
     }
 }
 
