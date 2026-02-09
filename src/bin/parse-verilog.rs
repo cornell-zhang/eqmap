@@ -7,10 +7,8 @@ use clap::Parser;
 use eqmap::{asic::CellLang, driver::Canonical, lut::LutLang, verilog::VerilogParsing};
 use eqmap::{
     driver::CircuitLang,
-    netlist::{LogicMapper, PrimitiveCell},
     verilog::{SVModule, sv_parse_wrapper},
 };
-use nl_compiler::from_vast;
 /// Parse structural verilog into a LutLang Expression
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -66,8 +64,7 @@ fn main() -> std::io::Result<()> {
         return Ok(());
     }
 
-    eprintln!("Got here");
-    let f = from_vast(&ast).map_err(std::io::Error::other)?;
+    let f = SVModule::from_ast(&ast).map_err(std::io::Error::other)?;
 
     if args.verbose {
         eprintln!("SVModule: ");
@@ -77,39 +74,19 @@ fn main() -> std::io::Result<()> {
     if !args.round_trip {
         if args.multiple_expr {
             if args.asic {
-                eprintln!("{}", &f);
-                //  emit_exprs::<CellLang>(&f)?;
+                emit_exprs::<CellLang>(&f)?;
             } else {
-                eprintln!("{}", &f);
-                //   emit_exprs::<LutLang>(&f)?;
+                emit_exprs::<LutLang>(&f)?;
             }
         } else if args.asic {
-            eprintln!("Got here");
-            eprintln!("{f}");
-            eprintln!("Got here");
-            let mut mapper = f
-                .get_analysis::<LogicMapper<CellLang, PrimitiveCell>>()
-                .map_err(std::io::Error::other)?;
-            eprintln!("Got here");
-            // fails when I try to print the RecExpr resulting from mapper.insert
-            eprintln!(
-                "{}",
-                mapper
-                    .insert(f.outputs().into_iter().map(|x| x.0).collect())
-                    .map_err(std::io::Error::other)?
-            );
-            eprintln!("Got here");
-            let mut mapping = mapper.mappings();
-            let mapping = mapping.pop().unwrap();
-            let expr = mapping.get_expr();
-            //let expr = f.to_single_cell_expr().map_err(std::io::Error::other)?;
-            //eprintln!("{:?}", f.outputs());
+            let expr = f.to_single_cell_expr().map_err(std::io::Error::other)?;
+            eprintln!("{:?}", f.get_outputs());
             println!("{expr}");
         } else {
-            //        let expr = f.to_single_lut_expr().map_err(std::io::Error::other)?;
-            //        LutLang::verify_expr(&expr).map_err(std::io::Error::other)?;
-            //        eprintln!("{:?}", f.get_outputs());
-            //        println!("{expr}");
+            let expr = f.to_single_lut_expr().map_err(std::io::Error::other)?;
+            LutLang::verify_expr(&expr).map_err(std::io::Error::other)?;
+            eprintln!("{:?}", f.get_outputs());
+            println!("{expr}");
         }
     } else {
         print!("{f}");

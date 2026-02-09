@@ -46,8 +46,6 @@ pub mod asic;
 pub mod check;
 pub mod cost;
 pub mod driver;
-#[cfg(feature = "rewrite_file")]
-pub mod file_rewrites;
 pub mod logic;
 pub mod lut;
 pub mod netlist;
@@ -55,8 +53,6 @@ pub mod rewrite;
 #[cfg(feature = "graph_dumps")]
 pub mod serialize;
 pub mod verilog;
-#[cfg(feature = "rewrite_file")]
-pub mod rewrite_file;
 
 #[cfg(test)]
 mod tests {

@@ -1328,11 +1328,6 @@ where
                     L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
                 })
             }
-            #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
-            _ => Err(format!(
-                "{:?} optimization strategy is incomptabile with {:?} extraction.",
-                self.opt_strat, self.extract_strat
-            )),
         }
     }
 }
@@ -1403,10 +1398,6 @@ where
             linecount += 1;
         }
         eprintln!("INFO: Approx. {linecount} lines in proof tree");
-    } else if req.get_expr().as_ref().len() < 240 {
-        let expr = req.get_expr().to_string();
-        let len = expr.len().min(240);
-        eprintln!("INFO: {} ... => ", &expr[0..len]);
     }
     let simplified = result.get_expr();
     // Verify functionality

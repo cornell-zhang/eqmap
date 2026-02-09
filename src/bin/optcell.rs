@@ -2,8 +2,6 @@ use clap::Parser;
 #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
 use clap::ValueEnum;
 use egg::{FromOpError, RecExpr, RecExprParseError};
-#[cfg(feature = "rewrite_file")]
-use eqmap::file_rewrites::FileRewrites;
 use eqmap::{
     asic::{CellAnalysis, CellLang, CellRpt, asic_rewrites},
     driver::{SynthRequest, process_string_expression, simple_reader},
