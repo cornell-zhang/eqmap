@@ -480,7 +480,7 @@ impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping
 
         netlist.clean()?;
 
-        netlist.rename_nets(|i| format_id!("__{i}__"))?;
+        netlist.rename_nets(|_, i| format_id!("__{i}__"))?;
 
         Ok(new_roots)
     }
