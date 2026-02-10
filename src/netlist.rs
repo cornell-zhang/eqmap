@@ -121,6 +121,7 @@ where
     I: Instantiable + LogicFunc<L> + 'a,
 {
     fn build(netlist: &'a Netlist<I>) -> Result<Self, Error> {
+        netlist.verify()?;
         Ok(Self {
             _netlist: netlist,
             mappings: Vec::new(),
@@ -129,8 +130,15 @@ where
 }
 
 impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
-    /// Add a mapping for a specific net
-    pub fn insert(&mut self, nets: Vec<DrivenNet<I>>) -> Result<RecExpr<L>, String> {
+    /// Map `nets` to [CircuitLang] nodes. `nets` that do not pass `filter` become leaves.
+    fn insert_filtered<F>(
+        &mut self,
+        nets: Vec<DrivenNet<I>>,
+        filter: F,
+    ) -> Result<RecExpr<L>, String>
+    where
+        F: Fn(&I) -> bool,
+    {
         let mut expr = RecExpr::<L>::default();
         let mut mapping: HashMap<DrivenNet<I>, Id> = HashMap::new();
         let mut leaves: HashMap<Symbol, DrivenNet<I>> = HashMap::new();
@@ -182,7 +190,9 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
         for n in topo {
             if mapping.contains_key(&n) {
                 continue;
-            } else if let Some(inst_type) = n.get_instance_type() {
+            } else if let Some(inst_type) = n.get_instance_type()
+                && filter(&inst_type)
+            {
                 let mut children = vec![];
                 for (i, c) in n.clone().unwrap().inputs().enumerate() {
                     let cid = c
@@ -244,13 +254,43 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
         Ok(expr)
     }
 
-    /// Add a mapping for a specific net
+    /// Map `nets` to [CircuitLang] nodes.
+    pub fn insert(&mut self, nets: Vec<DrivenNet<I>>) -> Result<RecExpr<L>, String> {
+        self.insert_filtered(nets, |_| true)
+    }
+
+    /// Map a specific `net` to [CircuitLang] nodes.
     pub fn insert_single_net(&mut self, net: DrivenNet<I>) -> Result<RecExpr<L>, String> {
         if net.is_an_input() {
             return Err("Inputs have trivial mappings".to_string());
         }
 
         self.insert(vec![net])
+    }
+
+    /// Map all logic to [CircuitLang] along register-to-register paths. This prevents register retiming.
+    pub fn insert_all_r2g(&mut self) -> Result<RecExpr<L>, String> {
+        let mut nets: HashSet<DrivenNet<I>> = self
+            ._netlist
+            .outputs()
+            .into_iter()
+            .map(|(n, _)| n)
+            .collect();
+
+        for nr in self._netlist.matches(|i| i.is_seq()) {
+            for input in nr.inputs() {
+                if let Some(dr) = input.get_driver()
+                    && let Some(di) = dr.clone().get_instance_type()
+                    && !di.is_seq()
+                {
+                    nets.insert(dr);
+                }
+            }
+        }
+
+        let nets: Vec<DrivenNet<I>> = nets.into_iter().collect();
+
+        self.insert_filtered(nets, |i| !i.is_seq())
     }
 
     /// Get the mapped expressions
