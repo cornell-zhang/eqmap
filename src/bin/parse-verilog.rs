@@ -10,7 +10,8 @@ use eqmap::{
     netlist::{LogicMapper, PrimitiveCell},
     verilog::{SVModule, sv_parse_wrapper},
 };
-use nl_compiler::from_vast;
+use nl_compiler::{from_vast, from_vast_overrides};
+use safety_net::Identifier;
 /// Parse structural verilog into a LutLang Expression
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -32,6 +33,18 @@ struct Args {
     /// Print the parsed module as a data structure
     #[arg(short = 'v', long, default_value_t = false)]
     verbose: bool,
+}
+
+fn xilinx_overrides(id: &Identifier, cell: &PrimitiveCell) -> Option<PrimitiveCell> {
+    if id.get_name() == "INV" {
+        Some(
+            cell.clone()
+                .remap_input(0, "I".into())
+                .remap_output(0, "O".into()),
+        )
+    } else {
+        None
+    }
 }
 
 fn emit_exprs<L: CircuitLang + VerilogParsing>(f: &SVModule) -> std::io::Result<()> {
@@ -66,8 +79,11 @@ fn main() -> std::io::Result<()> {
         return Ok(());
     }
 
-    eprintln!("Got here");
-    let f = from_vast(&ast).map_err(std::io::Error::other)?;
+    let f = if args.asic {
+        from_vast(&ast).map_err(std::io::Error::other)?
+    } else {
+        from_vast_overrides(&ast, xilinx_overrides).map_err(std::io::Error::other)?
+    };
 
     if args.verbose {
         eprintln!("SVModule: ");
@@ -76,43 +92,36 @@ fn main() -> std::io::Result<()> {
 
     if !args.round_trip {
         if args.multiple_expr {
+            eprintln!("{}", &f);
+        } else {
             if args.asic {
-                eprintln!("{}", &f);
-                //  emit_exprs::<CellLang>(&f)?;
-            } else {
-                eprintln!("{}", &f);
-                //   emit_exprs::<LutLang>(&f)?;
-            }
-        } else if args.asic {
-            eprintln!("Got here");
-            eprintln!("{f}");
-            eprintln!("Got here");
-            let mut mapper = f
-                .get_analysis::<LogicMapper<CellLang, PrimitiveCell>>()
-                .map_err(std::io::Error::other)?;
-            eprintln!("Got here");
-            // fails when I try to print the RecExpr resulting from mapper.insert
-            eprintln!(
-                "{}",
+                let mut mapper = f
+                    .get_analysis::<LogicMapper<CellLang, PrimitiveCell>>()
+                    .map_err(std::io::Error::other)?;
                 mapper
                     .insert(f.outputs().into_iter().map(|x| x.0).collect())
-                    .map_err(std::io::Error::other)?
-            );
-            eprintln!("Got here");
-            let mut mapping = mapper.mappings();
-            let mapping = mapping.pop().unwrap();
-            let expr = mapping.get_expr();
-            //let expr = f.to_single_cell_expr().map_err(std::io::Error::other)?;
-            //eprintln!("{:?}", f.outputs());
-            println!("{expr}");
-        } else {
-            //        let expr = f.to_single_lut_expr().map_err(std::io::Error::other)?;
-            //        LutLang::verify_expr(&expr).map_err(std::io::Error::other)?;
-            //        eprintln!("{:?}", f.get_outputs());
-            //        println!("{expr}");
+                    .map_err(std::io::Error::other)?;
+                let mut mapping = mapper.mappings();
+                let mapping = mapping.pop().unwrap();
+                let expr = mapping.get_expr();
+                eprintln!("{:?}", f.outputs());
+                eprintln!("{expr}");
+            } else {
+                let mut mapper = f
+                    .get_analysis::<LogicMapper<LutLang, PrimitiveCell>>()
+                    .map_err(std::io::Error::other)?;
+                mapper
+                    .insert(f.outputs().into_iter().map(|x| x.0).collect())
+                    .map_err(std::io::Error::other)?;
+                let mut mapping = mapper.mappings();
+                let mapping = mapping.pop().unwrap();
+                let expr = mapping.get_expr();
+                eprintln!("{:?}", f.outputs());
+                eprintln!("{expr}");
+            }
         }
     } else {
-        print!("{f}");
+        eprintln!("{f}");
     }
 
     Ok(())
