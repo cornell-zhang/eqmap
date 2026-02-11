@@ -235,11 +235,9 @@ where
 
     /// Get an accounting of rules used in the solution.
     pub fn get_rule_uses(&self) -> Option<String> {
-        self.expl.as_ref()?;
+        let expl_list = self.expl.as_ref()?;
 
         let mut map: BTreeMap<String, usize> = BTreeMap::new();
-
-        let expl_list = self.expl.as_ref().unwrap();
 
         for expl in expl_list {
             Self::get_rule_uses_rec(&mut map, &expl.explanation_trees);
@@ -1289,9 +1287,9 @@ where
             linecount += 1;
         }
         eprintln!("INFO: Approx. {linecount} lines in proof tree");
-    } else if req.get_expr().as_ref().len() < 240 {
+    } else if req.get_expr().as_ref().len() < 128 {
         let expr = req.get_expr().to_string();
-        let len = expr.len().min(240);
+        let len = expr.len().min(160);
         eprintln!("INFO: {} ... => ", &expr[0..len]);
     }
 
