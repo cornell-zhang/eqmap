@@ -13,7 +13,7 @@ use egg::{Id, RecExpr, Symbol};
 use nl_compiler::FromId;
 use safety_net::{
     Analysis, DrivenNet, Error, Identifier, Instantiable, Logic, Net, Netlist, Parameter,
-    format_id, iter::DFSIterator,
+    format_id, iter::NetDFSIterator,
 };
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
@@ -145,11 +145,13 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
         let mut leaves_by_id: HashMap<Id, DrivenNet<I>> = HashMap::new();
 
         let roots = nets.clone();
-        let mut nets = nets;
+        let mut seen: HashSet<DrivenNet<I>> = nets.into_iter().collect();
+        let mut nets: Vec<DrivenNet<I>> = seen.iter().cloned().collect();
         let mut topo = Vec::new();
         let mut sorted = HashSet::new();
 
         while let Some(net) = nets.pop() {
+            seen.remove(&net);
             if sorted.contains(&net) {
                 continue;
             }
@@ -160,21 +162,28 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
                 continue;
             }
 
-            let mut dfs = DFSIterator::new(self._netlist, net.clone().unwrap());
+            // Something that is being filtered-out into a leaf is considered ready/sorted
+            if let Some(inst_type) = net.clone().get_instance_type()
+                && !filter(&inst_type)
+            {
+                sorted.insert(net.clone());
+                topo.push(net);
+                continue;
+            }
+
+            let mut dfs = NetDFSIterator::new(self._netlist, net.clone());
             let mut rdy = true;
             dfs.next(); // Skip the root node
-            while let Some(n) = dfs.next() {
-                if dfs.check_cycles() {
-                    return Err("Cycle detected in netlist".to_string());
-                }
-                if n.is_multi_output() {
-                    // TODO(matth2k): safety-net should have dfs by [DrivenNet]
-                    return Err("Cannot map multi-output cells".to_string());
-                }
-
-                let n = n.get_output(0);
+            for n in dfs {
                 if !sorted.contains(&n) {
                     rdy = false;
+                    seen.insert(net.clone());
+                    if !seen.insert(n.clone()) {
+                        return Err(format!(
+                            "Cycle detected at netlist stemming from {}",
+                            net.get_identifier()
+                        ));
+                    }
                     nets.push(net.clone());
                     nets.push(n);
                     break;
@@ -663,7 +672,7 @@ mod tests {
 
         // Add the the two inputs
         let a = netlist.insert_constant(Logic::True, "a".into()).unwrap();
-        let b = netlist.insert_constant(Logic::False, "a".into()).unwrap();
+        let b = netlist.insert_constant(Logic::False, "b".into()).unwrap();
 
         // Instantiate an AND gate
         let instance = netlist
@@ -748,7 +757,8 @@ mod tests {
         let mut mapper = mapper.unwrap();
 
         // Check the RecExpr is correct
-        let _ = mapper.insert_single_net(output);
+        let check = mapper.insert_single_net(output);
+        assert!(check.is_ok());
 
         let mut mapping = mapper.mappings();
         assert!(!mapping.is_empty());
