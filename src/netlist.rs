@@ -109,6 +109,63 @@ impl<L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapping<L, I> {
     }
 }
 
+/// A helper stack that can check contains in roughly O(1) time.
+#[derive(Clone)]
+struct Walk<T: std::hash::Hash + PartialEq + Eq + Clone> {
+    stack: Vec<T>,
+    counter: HashMap<T, usize>,
+}
+
+impl<T> Walk<T>
+where
+    T: std::hash::Hash + PartialEq + Eq + Clone,
+{
+    /// Create a new, empty Stack.
+    fn new() -> Self {
+        Self {
+            stack: Vec::new(),
+            counter: HashMap::new(),
+        }
+    }
+
+    /// Inserts an element into the stack
+    fn push(&mut self, item: T) {
+        self.stack.push(item.clone());
+        *self.counter.entry(item).or_insert(0) += 1;
+    }
+
+    // Pops an element from the stack
+    fn pop(&mut self) -> Option<T> {
+        if let Some(item) = self.stack.pop() {
+            let count = self.counter.get_mut(&item).unwrap();
+            *count -= 1;
+            if *count == 0 {
+                self.counter.remove(&item);
+            }
+            Some(item)
+        } else {
+            None
+        }
+    }
+
+    /// Creates a stack with one element
+    fn from_elem(elem: T) -> Self {
+        let mut stack = Self::new();
+        stack.push(elem);
+        stack
+    }
+
+    /// Returns true if the stack shows a cycle
+    fn contains_cycle(&self) -> bool {
+        self.counter.values().any(|&count| count > 1)
+    }
+
+    /// Returns a reference to the last element in the stack
+    fn last(&self) -> Option<&T> {
+        self.stack.last()
+    }
+}
+
 /// Extracts the logic equation from a portion of a netlist.
 pub struct LogicMapper<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> {
     _netlist: &'a Netlist<I>,
@@ -145,13 +202,19 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
         let mut leaves_by_id: HashMap<Id, DrivenNet<I>> = HashMap::new();
 
         let roots = nets.clone();
-        let mut seen: HashSet<DrivenNet<I>> = nets.into_iter().collect();
-        let mut nets: Vec<DrivenNet<I>> = seen.iter().cloned().collect();
         let mut topo = Vec::new();
         let mut sorted = HashSet::new();
+        let mut walks: Vec<Walk<DrivenNet<I>>> = nets.into_iter().map(Walk::from_elem).collect();
 
-        while let Some(net) = nets.pop() {
-            seen.remove(&net);
+        while let Some(mut walk) = walks.pop() {
+            if walk.contains_cycle() {
+                return Err(format!(
+                    "Cycle detected at netlist stemming from {}",
+                    walk.last().unwrap()
+                ));
+            }
+
+            let net = walk.pop().unwrap();
             if sorted.contains(&net) {
                 continue;
             }
@@ -177,15 +240,10 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
             for n in dfs {
                 if !sorted.contains(&n) {
                     rdy = false;
-                    seen.insert(net.clone());
-                    if !seen.insert(n.clone()) {
-                        return Err(format!(
-                            "Cycle detected at netlist stemming from {}",
-                            net.get_identifier()
-                        ));
-                    }
-                    nets.push(net.clone());
-                    nets.push(n);
+                    walk.push(net.clone());
+                    walks.push(walk.clone());
+                    walk.push(n);
+                    walks.push(walk);
                     break;
                 }
             }
