@@ -278,7 +278,7 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
     }
 
     /// Map all logic to [CircuitLang] along register-to-register paths. This prevents register retiming.
-    pub fn insert_all_r2g(&mut self) -> Result<RecExpr<L>, String> {
+    pub fn insert_all_r2r(&mut self) -> Result<RecExpr<L>, String> {
         let mut nets: HashSet<DrivenNet<I>> = self
             ._netlist
             .outputs()
