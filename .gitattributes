@@ -1,2 +1,3 @@
 tests/** linguist-vendored
 verilog/multPipe_n4.v linguist-vendored
+Cargo.lock linguist-generated
