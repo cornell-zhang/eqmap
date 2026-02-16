@@ -610,9 +610,8 @@ impl FromId for PrimitiveCell {
 
 #[cfg(test)]
 mod tests {
-    use egg::Language;
-
     use super::*;
+    use egg::Language;
     use std::rc::Rc;
 
     fn and_gate() -> PrimitiveCell {
