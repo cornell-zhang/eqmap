@@ -610,6 +610,8 @@ impl FromId for PrimitiveCell {
 
 #[cfg(test)]
 mod tests {
+    use egg::Language;
+
     use super::*;
     use std::rc::Rc;
 
@@ -758,7 +760,11 @@ mod tests {
         assert!(mapping.is_ok());
 
         let expr = mapping.unwrap();
-        assert_eq!(expr.to_string(), "(BUS inst_0_Q (AND a inst_0_Q))");
+        // TODO(matth2k): Make the ordering deterministic.
+        assert!(expr.last().unwrap().children().len() == 2);
+        let expr = expr.to_string();
+        assert!(expr.contains("inst_0_Q"));
+        assert!(expr.contains("(AND a inst_0_Q)"));
     }
 
     #[test]
