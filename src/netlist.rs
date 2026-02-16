@@ -742,8 +742,23 @@ mod tests {
         assert!(mapping.is_err());
 
         let err = mapping.unwrap_err();
-        // TODO(matth2k): Eventually simple cycles should be supported by breaking them up
+        // This mapping fails because we didn't use new r2r method
         assert!(err.contains("Cycle"));
+    }
+
+    #[test]
+    fn test_divider_r2r() {
+        let netlist = divider_netlist();
+
+        let mapper = netlist.get_analysis::<'_, LogicMapper<'_, CellLang, _>>();
+        assert!(mapper.is_ok());
+        let mut mapper = mapper.unwrap();
+
+        let mapping = mapper.insert_all_r2r();
+        assert!(mapping.is_ok());
+
+        let expr = mapping.unwrap();
+        assert_eq!(expr.to_string(), "(BUS (AND a inst_0_Q) inst_0_Q)");
     }
 
     #[test]
