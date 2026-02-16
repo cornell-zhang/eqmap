@@ -109,63 +109,6 @@ impl<L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapping<L, I> {
     }
 }
 
-/// A helper stack that can check contains in roughly O(1) time.
-#[derive(Clone)]
-struct Walk<T: std::hash::Hash + PartialEq + Eq + Clone> {
-    stack: Vec<T>,
-    counter: HashMap<T, usize>,
-}
-
-impl<T> Walk<T>
-where
-    T: std::hash::Hash + PartialEq + Eq + Clone,
-{
-    /// Create a new, empty Stack.
-    fn new() -> Self {
-        Self {
-            stack: Vec::new(),
-            counter: HashMap::new(),
-        }
-    }
-
-    /// Inserts an element into the stack
-    fn push(&mut self, item: T) {
-        self.stack.push(item.clone());
-        *self.counter.entry(item).or_insert(0) += 1;
-    }
-
-    // Pops an element from the stack
-    fn pop(&mut self) -> Option<T> {
-        if let Some(item) = self.stack.pop() {
-            let count = self.counter.get_mut(&item).unwrap();
-            *count -= 1;
-            if *count == 0 {
-                self.counter.remove(&item);
-            }
-            Some(item)
-        } else {
-            None
-        }
-    }
-
-    /// Creates a stack with one element
-    fn from_elem(elem: T) -> Self {
-        let mut stack = Self::new();
-        stack.push(elem);
-        stack
-    }
-
-    /// Returns true if the stack shows a cycle
-    fn contains_cycle(&self) -> bool {
-        self.counter.values().any(|&count| count > 1)
-    }
-
-    /// Returns a reference to the last element in the stack
-    fn last(&self) -> Option<&T> {
-        self.stack.last()
-    }
-}
-
 /// Extracts the logic equation from a portion of a netlist.
 pub struct LogicMapper<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> {
     _netlist: &'a Netlist<I>,
@@ -190,11 +133,11 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
     /// Map `nets` to [CircuitLang] nodes. `nets` that do not pass `filter` become leaves.
     fn insert_filtered<F>(
         &mut self,
-        nets: Vec<DrivenNet<I>>,
+        mut nets: Vec<DrivenNet<I>>,
         filter: F,
     ) -> Result<RecExpr<L>, String>
     where
-        F: Fn(&I) -> bool,
+        F: Fn(&I) -> bool + 'static + Clone,
     {
         let mut expr = RecExpr::<L>::default();
         let mut mapping: HashMap<DrivenNet<I>, Id> = HashMap::new();
@@ -204,17 +147,8 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
         let roots = nets.clone();
         let mut topo = Vec::new();
         let mut sorted = HashSet::new();
-        let mut walks: Vec<Walk<DrivenNet<I>>> = nets.into_iter().map(Walk::from_elem).collect();
 
-        while let Some(mut walk) = walks.pop() {
-            if walk.contains_cycle() {
-                return Err(format!(
-                    "Cycle detected at netlist stemming from {}",
-                    walk.last().unwrap()
-                ));
-            }
-
-            let net = walk.pop().unwrap();
+        while let Some(net) = nets.pop() {
             if sorted.contains(&net) {
                 continue;
             }
@@ -225,6 +159,8 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
                 continue;
             }
 
+            let filter = filter.clone();
+
             // Something that is being filtered-out into a leaf is considered ready/sorted
             if let Some(inst_type) = net.clone().get_instance_type()
                 && !filter(&inst_type)
@@ -234,18 +170,23 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
                 continue;
             }
 
-            let mut dfs = NetDFSIterator::new(self._netlist, net.clone());
+            let mut dfs = NetDFSIterator::new_filtered(self._netlist, net.clone(), move |n| {
+                n.get_instance_type().is_some_and(|i| !(filter)(&i))
+            });
+
             let mut rdy = true;
             dfs.next(); // Skip the root node
-            for n in dfs {
+            for n in dfs.by_ref() {
                 if !sorted.contains(&n) {
                     rdy = false;
-                    walk.push(net.clone());
-                    walks.push(walk.clone());
-                    walk.push(n);
-                    walks.push(walk);
+                    nets.push(net.clone());
+                    nets.push(n);
                     break;
                 }
+            }
+
+            if dfs.detect_cycles() {
+                return Err(format!("Cycle detected when processing net {}", net));
             }
 
             if rdy {
