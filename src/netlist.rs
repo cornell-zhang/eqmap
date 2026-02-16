@@ -234,7 +234,17 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
                 continue;
             }
 
-            let mut dfs = NetDFSIterator::new(self._netlist, net.clone());
+            let mut dfs = NetDFSIterator::new_with_boundary(self._netlist, net.clone(), |n| {
+                if n.is_an_input() {
+                    return true;
+                }
+
+                if let Some(inst_type) = n.get_instance_type() {
+                    !filter(&*inst_type)
+                } else {
+                    false
+                }
+            });
             let mut rdy = true;
             dfs.next(); // Skip the root node
             for n in dfs {
@@ -803,6 +813,18 @@ mod tests {
         let err = mapping.unwrap_err();
         // TODO(matth2k): Eventually simple cycles should be supported by breaking them up
         assert!(err.contains("Cycle"));
+    }
+
+    #[test]
+    fn test_divider_r2r() {
+        let netlist = divider_netlist();
+
+        let mapper = netlist.get_analysis::<'_, LogicMapper<'_, CellLang, _>>();
+        assert!(mapper.is_ok());
+        let mut mapper = mapper.unwrap();
+
+        let mapping = mapper.insert_all_r2r();
+        assert!(mapping.is_ok());
     }
 
     #[test]
