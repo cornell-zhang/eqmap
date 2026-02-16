@@ -15,7 +15,7 @@ use safety_net::{
     Analysis, DrivenNet, Error, Identifier, Instantiable, Logic, Net, Netlist, Parameter,
     format_id, iter::NetDFSIterator,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::rc::Rc;
 use std::str::FromStr;
 
@@ -278,7 +278,7 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
 
     /// Map all logic to [CircuitLang] along register-to-register paths. This prevents register retiming.
     pub fn insert_all_r2r(&mut self) -> Result<RecExpr<L>, String> {
-        let mut nets: HashSet<DrivenNet<I>> = self
+        let mut nets: BTreeSet<DrivenNet<I>> = self
             ._netlist
             .outputs()
             .into_iter()
@@ -758,7 +758,7 @@ mod tests {
         assert!(mapping.is_ok());
 
         let expr = mapping.unwrap();
-        assert_eq!(expr.to_string(), "(BUS (AND a inst_0_Q) inst_0_Q)");
+        assert_eq!(expr.to_string(), "(BUS inst_0_Q (AND a inst_0_Q))");
     }
 
     #[test]
