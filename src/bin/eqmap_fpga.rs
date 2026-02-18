@@ -261,9 +261,13 @@ fn main() -> std::io::Result<()> {
     let mut mapper = f
         .get_analysis::<LogicMapper<LutLang, PrimitiveCell>>()
         .map_err(std::io::Error::other)?;
-    mapper
-        .insert(f.outputs().into_iter().map(|x| x.0).collect())
-        .map_err(std::io::Error::other)?;
+    if args.no_retime {
+        mapper.insert_all_r2r().map_err(std::io::Error::other)?;
+    } else {
+        mapper
+            .insert(f.outputs().into_iter().map(|x| x.0).collect())
+            .map_err(std::io::Error::other)?;
+    }
     let mut mapping = mapper.mappings();
     let mapping = mapping.pop().unwrap();
     let expr = mapping.get_expr();

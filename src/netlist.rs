@@ -13,9 +13,9 @@ use egg::{Id, RecExpr, Symbol};
 use nl_compiler::FromId;
 use safety_net::{
     Analysis, DrivenNet, Error, Identifier, Instantiable, Logic, Net, Netlist, Parameter,
-    format_id, iter::DFSIterator,
+    format_id, iter::NetDFSIterator,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::rc::Rc;
 use std::str::FromStr;
 
@@ -121,6 +121,7 @@ where
     I: Instantiable + LogicFunc<L> + 'a,
 {
     fn build(netlist: &'a Netlist<I>) -> Result<Self, Error> {
+        netlist.verify()?;
         Ok(Self {
             _netlist: netlist,
             mappings: Vec::new(),
@@ -129,15 +130,21 @@ where
 }
 
 impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
-    /// Add a mapping for a specific net
-    pub fn insert(&mut self, nets: Vec<DrivenNet<I>>) -> Result<RecExpr<L>, String> {
+    /// Map `nets` to [CircuitLang] nodes. `nets` that do not pass `filter` become leaves.
+    fn insert_filtered<F>(
+        &mut self,
+        mut nets: Vec<DrivenNet<I>>,
+        filter: F,
+    ) -> Result<RecExpr<L>, String>
+    where
+        F: Fn(&I) -> bool + 'static + Clone,
+    {
         let mut expr = RecExpr::<L>::default();
         let mut mapping: HashMap<DrivenNet<I>, Id> = HashMap::new();
         let mut leaves: HashMap<Symbol, DrivenNet<I>> = HashMap::new();
         let mut leaves_by_id: HashMap<Id, DrivenNet<I>> = HashMap::new();
 
         let roots = nets.clone();
-        let mut nets = nets;
         let mut topo = Vec::new();
         let mut sorted = HashSet::new();
 
@@ -152,25 +159,34 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
                 continue;
             }
 
-            let mut dfs = DFSIterator::new(self._netlist, net.clone().unwrap());
+            let filter = filter.clone();
+
+            // Something that is being filtered-out into a leaf is considered ready/sorted
+            if let Some(inst_type) = net.clone().get_instance_type()
+                && !filter(&inst_type)
+            {
+                sorted.insert(net.clone());
+                topo.push(net);
+                continue;
+            }
+
+            let mut dfs = NetDFSIterator::new_filtered(self._netlist, net.clone(), move |n| {
+                n.get_instance_type().is_some_and(|i| !(filter)(&i))
+            });
+
             let mut rdy = true;
             dfs.next(); // Skip the root node
-            while let Some(n) = dfs.next() {
-                if dfs.check_cycles() {
-                    return Err("Cycle detected in netlist".to_string());
-                }
-                if n.is_multi_output() {
-                    // TODO(matth2k): safety-net should have dfs by [DrivenNet]
-                    return Err("Cannot map multi-output cells".to_string());
-                }
-
-                let n = n.get_output(0);
+            for n in dfs.by_ref() {
                 if !sorted.contains(&n) {
                     rdy = false;
                     nets.push(net.clone());
                     nets.push(n);
                     break;
                 }
+            }
+
+            if dfs.detect_cycles() {
+                return Err(format!("Cycle detected when processing net {}", net));
             }
 
             if rdy {
@@ -182,7 +198,9 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
         for n in topo {
             if mapping.contains_key(&n) {
                 continue;
-            } else if let Some(inst_type) = n.get_instance_type() {
+            } else if let Some(inst_type) = n.get_instance_type()
+                && filter(&inst_type)
+            {
                 let mut children = vec![];
                 for (i, c) in n.clone().unwrap().inputs().enumerate() {
                     let cid = c
@@ -244,13 +262,43 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
         Ok(expr)
     }
 
-    /// Add a mapping for a specific net
+    /// Map `nets` to [CircuitLang] nodes.
+    pub fn insert(&mut self, nets: Vec<DrivenNet<I>>) -> Result<RecExpr<L>, String> {
+        self.insert_filtered(nets, |_| true)
+    }
+
+    /// Map a specific `net` to [CircuitLang] nodes.
     pub fn insert_single_net(&mut self, net: DrivenNet<I>) -> Result<RecExpr<L>, String> {
         if net.is_an_input() {
             return Err("Inputs have trivial mappings".to_string());
         }
 
         self.insert(vec![net])
+    }
+
+    /// Map all logic to [CircuitLang] along register-to-register paths. This prevents register retiming.
+    pub fn insert_all_r2r(&mut self) -> Result<RecExpr<L>, String> {
+        let mut nets: BTreeSet<DrivenNet<I>> = self
+            ._netlist
+            .outputs()
+            .into_iter()
+            .map(|(n, _)| n)
+            .collect();
+
+        for nr in self._netlist.matches(|i| i.is_seq()) {
+            for input in nr.inputs() {
+                if let Some(dr) = input.get_driver()
+                    && let Some(di) = dr.clone().get_instance_type()
+                    && !di.is_seq()
+                {
+                    nets.insert(dr);
+                }
+            }
+        }
+
+        let nets: Vec<DrivenNet<I>> = nets.into_iter().collect();
+
+        self.insert_filtered(nets, |i| !i.is_seq())
     }
 
     /// Get the mapped expressions
@@ -563,6 +611,7 @@ impl FromId for PrimitiveCell {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use egg::Language;
     use std::rc::Rc;
 
     fn and_gate() -> PrimitiveCell {
@@ -623,7 +672,7 @@ mod tests {
 
         // Add the the two inputs
         let a = netlist.insert_constant(Logic::True, "a".into()).unwrap();
-        let b = netlist.insert_constant(Logic::False, "a".into()).unwrap();
+        let b = netlist.insert_constant(Logic::False, "b".into()).unwrap();
 
         // Instantiate an AND gate
         let instance = netlist
@@ -694,8 +743,27 @@ mod tests {
         assert!(mapping.is_err());
 
         let err = mapping.unwrap_err();
-        // TODO(matth2k): Eventually simple cycles should be supported by breaking them up
+        // This mapping fails because we didn't use new r2r method
         assert!(err.contains("Cycle"));
+    }
+
+    #[test]
+    fn test_divider_r2r() {
+        let netlist = divider_netlist();
+
+        let mapper = netlist.get_analysis::<'_, LogicMapper<'_, CellLang, _>>();
+        assert!(mapper.is_ok());
+        let mut mapper = mapper.unwrap();
+
+        let mapping = mapper.insert_all_r2r();
+        assert!(mapping.is_ok());
+
+        let expr = mapping.unwrap();
+        // TODO(matth2k): Make the ordering deterministic.
+        assert!(expr.last().unwrap().children().len() == 2);
+        let expr = expr.to_string();
+        assert!(expr.contains("inst_0_Q"));
+        assert!(expr.contains("(AND a inst_0_Q)"));
     }
 
     #[test]
@@ -708,7 +776,8 @@ mod tests {
         let mut mapper = mapper.unwrap();
 
         // Check the RecExpr is correct
-        let _ = mapper.insert_single_net(output);
+        let check = mapper.insert_single_net(output);
+        assert!(check.is_ok());
 
         let mut mapping = mapper.mappings();
         assert!(!mapping.is_empty());
