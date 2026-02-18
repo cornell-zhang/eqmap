@@ -213,9 +213,7 @@ def run_eqmap(
 
 def run_eqmap_vivado(input_file, output_file, *args):
     """Run eqmap with Vivado backend"""
-    run_eqmap(
-        input_file, output_file, *args, synth_target="vxil", tool_name="eqmap_fpga"
-    )
+    run_eqmap(input_file, output_file, *args, synth_target="vxil")
 
 
 def run_fam(*args):
@@ -236,40 +234,24 @@ def run_fam(*args):
         sys.exit(1)
 
 
-def run_lvv(*args):
-    """Direct wrapper for eqmap"""
-    if len(args) < 2:
+def run_lvv(input_file, output_file, *args):
+    """Direct wrapper for eqmap - simplified to call run_eqmap directly"""
+    if input_file is None or output_file is None:
         print("Usage: lvv <input.v> <output.v> [options]")
         sys.exit(1)
 
-    try:
-        result = subprocess.run(["runtool"] + ["eqmap"] + list(args))
-        if result.returncode == 0:
-            # Run equiv.sh if the tool succeeded
-            run_equiv_sh(args[0], args[1])
-        else:
-            sys.exit(result.returncode)
-    except FileNotFoundError:
-        print("eqmap not found in PATH")
-        sys.exit(1)
+    # Call run_eqmap directly with default parameters (eqmap uses yxil target)
+    run_eqmap(input_file, output_file, *args)
 
 
-def run_lvv_vivado(*args):
-    """Direct wrapper for eqmap_vivado"""
-    if len(args) < 2:
+def run_lvv_vivado(input_file, output_file, *args):
+    """Direct wrapper for eqmap_vivado - simplified to call run_eqmap_vivado directly"""
+    if input_file is None or output_file is None:
         print("Usage: lvv-vivado <input.v> <output.v> [options]")
         sys.exit(1)
 
-    try:
-        result = subprocess.run(["runtool"] + ["eqmap_vivado"] + list(args))
-        if result.returncode == 0:
-            # Run equiv.sh if the tool succeeded
-            run_equiv_sh(args[0], args[1])
-        else:
-            sys.exit(result.returncode)
-    except FileNotFoundError:
-        print("eqmap_vivado not found in PATH")
-        sys.exit(1)
+    # Call run_eqmap_vivado directly
+    run_eqmap_vivado(input_file, output_file, *args)
 
 
 def run_msynth(input_file, output_file, *args):
@@ -326,9 +308,7 @@ def run_opt_verilog(*args):
 
 def run_resynth(input_file, output_file, *args):
     """FPGA resynthesis functionality"""
-    run_eqmap(
-        input_file, output_file, *args, synth_target="synth", tool_name="eqmap_fpga"
-    )
+    run_eqmap(input_file, output_file, *args, synth_target="synth")
 
 
 def main():
@@ -355,8 +335,16 @@ def main():
             else print("Usage: eqmap_vivado <input.v> <output.v> [options]")
         ),
         "fam": lambda: run_fam(*args),
-        "lvv": lambda: run_lvv(*args),
-        "lvv-vivado": lambda: run_lvv_vivado(*args),
+        "lvv": lambda: (
+            run_lvv(*args)
+            if len(args) >= 2
+            else print("Usage: lvv <input.v> <output.v> [options]")
+        ),
+        "lvv-vivado": lambda: (
+            run_lvv_vivado(*args)
+            if len(args) >= 2
+            else print("Usage: lvv-vivado <input.v> <output.v> [options]")
+        ),
         "msynth": lambda: (
             run_msynth(*args)
             if len(args) >= 2
