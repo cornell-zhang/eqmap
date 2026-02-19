@@ -207,4 +207,8 @@ module FDRE #(
       end
     end
   end
+
+  initial begin
+    q = INIT;
+  end
 endmodule
