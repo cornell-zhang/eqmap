@@ -411,7 +411,7 @@ impl RewriteStrat {
 }
 
 /// The list of gates that must be reachable by the disassembling rewrite rule system.
-pub const GATE_WHITELIST_STR: &str = "MUX,AND,OR,XOR,NOT,INV,FDRE,NAND,NOR";
+pub const GATE_WHITELIST_STR: &str = "MUX,AND,OR,XOR,NOT,INV,FDRE,FDSE,NAND,NOR";
 
 impl OptStrat {
     /// Create an extraction strategy from a comma-separated list of gates.
