@@ -1,6 +1,6 @@
 /*!
 
-  Support for nl-compiler
+  Maps subcircuits of a netlist to Boolean expressions
 
 */
 

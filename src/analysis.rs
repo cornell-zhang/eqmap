@@ -1,7 +1,6 @@
 /*!
 
-  The analysis stored with signals in the LUT network.
-  In most respects, the analysis helps "type check" for any erroneous rewrite rules.
+  E-graph analysis struct that helps "type check" rewrite rules.
 
 */
 

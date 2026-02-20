@@ -1,6 +1,6 @@
 /*!
 
-  Common infrastructure to created command-line tools for logic synthesis using egg.
+  Common infrastructure to configure logic synthesis runs using egg.
 
 */
 use super::check::Check;

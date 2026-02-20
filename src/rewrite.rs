@@ -1,6 +1,6 @@
 /*!
 
-  Shannon decomposition, general cut-fusion, general cut-decomposition (using DSD), LUT symmetry, constant evaluation, and gate conversion rewrite rules.
+  Boolean rewriting techniques for LUT re-synthesis.
 
 */
 use super::analysis::LutAnalysis;
