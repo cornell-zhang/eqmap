@@ -64,7 +64,6 @@ macro_rules! register_passes {
 }
 
 /// A dummy pass that emits the Verilog of the netlist.
-#[derive(Default)]
 pub struct PrintVerilog;
 
 impl Pass for PrintVerilog {
