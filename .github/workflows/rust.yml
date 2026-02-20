@@ -89,11 +89,11 @@ jobs:
       - name: Generate code coverage
         run: cargo llvm-cov --features default --workspace --json > coverage.json
       - name: Coverage (60% by line)
-        run: python3 utils/min-coverage.py -p 60.0 coverage.json --whitelist optcell.rs eqmap_asic.rs eqmap_fpga.rs opt.rs parse-verilog.rs emit-verilog.rs check.rs logic.rs driver.rs cost.rs >> $GITHUB_STEP_SUMMARY
+        run: python3 utils/min-coverage.py -p 60.0 coverage.json --whitelist nl_opt.rs pass.rs optcell.rs eqmap_asic.rs eqmap_fpga.rs opt.rs parse-verilog.rs emit-verilog.rs check.rs logic.rs driver.rs cost.rs >> $GITHUB_STEP_SUMMARY
       - name: Coverage (67% by line)
-        run: python3 utils/min-coverage.py -p 67.0 coverage.json --whitelist optcell.rs eqmap_asic.rs eqmap_fpga.rs opt.rs parse-verilog.rs emit-verilog.rs check.rs logic.rs driver.rs cost.rs >> $GITHUB_STEP_SUMMARY
+        run: python3 utils/min-coverage.py -p 67.0 coverage.json --whitelist nl_opt.rs pass.rs optcell.rs eqmap_asic.rs eqmap_fpga.rs opt.rs parse-verilog.rs emit-verilog.rs check.rs logic.rs driver.rs cost.rs >> $GITHUB_STEP_SUMMARY
       - name: Coverage (80% by line)
-        run: python3 utils/min-coverage.py -p 80.0 coverage.json --whitelist netlist.rs verilog.rs optcell.rs eqmap_asic.rs asic.rs eqmap_fpga.rs opt.rs parse-verilog.rs emit-verilog.rs check.rs logic.rs driver.rs cost.rs >> $GITHUB_STEP_SUMMARY
+        run: python3 utils/min-coverage.py -p 80.0 coverage.json --whitelist nl_opt.rs pass.rs netlist.rs verilog.rs optcell.rs eqmap_asic.rs asic.rs eqmap_fpga.rs opt.rs parse-verilog.rs emit-verilog.rs check.rs logic.rs driver.rs cost.rs >> $GITHUB_STEP_SUMMARY
 
   mdformat:
     name: Markdown format
