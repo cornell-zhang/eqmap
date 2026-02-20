@@ -1,14 +1,26 @@
 use clap::Parser;
 use eqmap::netlist::PrimitiveCell;
-use eqmap::pass::{Error, PrintVerilog};
+use eqmap::pass::{Error, Pass, PrintVerilog};
 use eqmap::register_passes;
 use eqmap::verilog::sv_parse_wrapper;
 use nl_compiler::{from_vast, from_vast_overrides};
-use safety_net::Identifier;
+use safety_net::{Identifier, Netlist};
 use std::io::Read;
 use std::path::PathBuf;
+use std::rc::Rc;
 
-register_passes!(PrimitiveCell; PrintVerilog);
+/// Print the dot graph of the netlist
+pub struct DotGraph;
+
+impl Pass for DotGraph {
+    type I = PrimitiveCell;
+
+    fn run(&self, _netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
+        Ok("TODO: DotGraph".to_string())
+    }
+}
+
+register_passes!(PrimitiveCell; PrintVerilog, DotGraph);
 
 /// Netlist optimization debugging tool
 #[derive(Parser, Debug)]
