@@ -4,7 +4,7 @@ use eqmap::pass::{Error, Pass, PrintVerilog};
 use eqmap::register_passes;
 use eqmap::verilog::sv_parse_wrapper;
 use nl_compiler::{from_vast, from_vast_overrides};
-use safety_net::{Identifier, Netlist};
+use safety_net::{Identifier, Instantiable, MultiDiGraph, Netlist};
 use std::io::Read;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -20,7 +20,65 @@ impl Pass for DotGraph {
     }
 }
 
-register_passes!(PrimitiveCell; PrintVerilog, DotGraph);
+/// Clean the netlist
+pub struct Clean;
+
+impl Pass for Clean {
+    type I = PrimitiveCell;
+
+    fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
+        let cleaned = netlist.clean()?;
+        Ok(format!(
+            "Cleaned {} objects. {} remain.",
+            cleaned.len(),
+            netlist.len()
+        ))
+    }
+}
+
+/// Disconnect all register inputs
+pub struct DisconnectRegisters;
+
+impl Pass for DisconnectRegisters {
+    type I = PrimitiveCell;
+
+    fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
+        let mut i = 0;
+
+        for reg in netlist.matches(|i| i.is_seq()) {
+            let mut disc = false;
+            for input in reg.inputs() {
+                disc |= input.disconnect().is_some();
+            }
+            if disc {
+                i += 1;
+            }
+        }
+
+        Ok(format!("Disconnected {i} registers"))
+    }
+}
+
+/// Disconnect wires based on greedy arc set heuristic
+pub struct DisconnectArcSet;
+
+impl Pass for DisconnectArcSet {
+    type I = PrimitiveCell;
+
+    fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
+        let mut i = 0;
+        let analysis = netlist.get_analysis::<MultiDiGraph<_>>()?;
+
+        for arc in analysis.greedy_feedback_arcs() {
+            arc.target().disconnect();
+            i += 1;
+        }
+
+        Ok(format!("Disconnected {i} arcs"))
+    }
+}
+
+register_passes!(PrimitiveCell; PrintVerilog, DotGraph, Clean, DisconnectRegisters, DisconnectArcSet);
 
 /// Netlist optimization debugging tool
 #[derive(Parser, Debug)]
@@ -32,6 +90,10 @@ struct Args {
     /// Do not parse with Xilinx-specific port names
     #[arg(short = 'x', long, default_value_t = false)]
     no_xilinx: bool,
+
+    /// Verify after every pass (not just the last)
+    #[arg(short = 'v', long, default_value_t = false)]
+    verify: bool,
 
     /// A list of passes to run in order
     #[arg(value_delimiter = ',', short = 'p', long, value_enum)]
@@ -83,11 +145,23 @@ fn main() -> std::io::Result<()> {
         from_vast(&ast).map_err(std::io::Error::other)?
     };
 
+    let n = args.passes.len();
+
     for (i, pass) in args.passes.into_iter().enumerate() {
         eprintln!("INFO: Running pass {i} ({pass})...");
         let pass_instance = pass.get_pass();
-        match pass_instance.run_verified(&f) {
-            Ok(output) => println!("{}", output),
+        match pass_instance.run(&f) {
+            Ok(output) => {
+                if i == n - 1 {
+                    f.verify().map_err(std::io::Error::other)?;
+                    println!("{}", output)
+                } else {
+                    if args.verify {
+                        f.verify().map_err(std::io::Error::other)?;
+                    }
+                    eprintln!("INFO: {pass}: {}", output)
+                }
+            }
             Err(Error::IoError(e)) => return Err(e),
             Err(e) => return Err(std::io::Error::other(e)),
         }
