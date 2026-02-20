@@ -15,8 +15,8 @@ pub struct DotGraph;
 impl Pass for DotGraph {
     type I = PrimitiveCell;
 
-    fn run(&self, _netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
-        Ok("TODO: DotGraph".to_string())
+    fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
+        Ok(netlist.dot_string()?)
     }
 }
 
@@ -34,7 +34,7 @@ struct Args {
     no_xilinx: bool,
 
     /// A list of passes to run in order
-    #[arg(num_args = 1.., value_delimiter = ',', short = 'p', long, value_enum)]
+    #[arg(value_delimiter = ',', short = 'p', long, value_enum)]
     passes: Vec<Passes>,
 }
 
