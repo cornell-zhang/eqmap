@@ -24,6 +24,7 @@ echo "read_verilog $SIMLIB" > equiv.ys
 echo "read_verilog $2" >> equiv.ys
 echo "hierarchy -auto-top" >> equiv.ys
 echo "flatten" >> equiv.ys
+echo "proc" >> equiv.ys
 echo "rename -top gold" >> equiv.ys
 echo "design -stash gold" >> equiv.ys
 
@@ -31,6 +32,7 @@ echo "read_verilog $SIMLIB" >> equiv.ys
 echo "read_verilog $1" >> equiv.ys
 echo "hierarchy -auto-top" >> equiv.ys
 echo "flatten" >> equiv.ys
+echo "proc" >> equiv.ys
 echo "rename -top rewritten" >> equiv.ys
 echo "design -stash rewritten" >> equiv.ys
 
