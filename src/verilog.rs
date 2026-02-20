@@ -245,6 +245,7 @@ pub enum PrimitiveType {
     VCC,
     GND,
     FDRE,
+    FDSE,
     MAJ3,
 }
 
@@ -272,7 +273,7 @@ impl PrimitiveType {
             Self::LUT5 => 5,
             Self::LUT6 => 6,
             Self::VCC | Self::GND => 0,
-            Self::FDRE => 4,
+            Self::FDRE | Self::FDSE => 4,
             Self::MAJ3 => 3,
         }
     }
@@ -373,6 +374,12 @@ impl PrimitiveType {
                 "CE".to_string(),
                 "R".to_string(),
             ],
+            Self::FDSE => vec![
+                "D".to_string(),
+                "C".to_string(),
+                "CE".to_string(),
+                "S".to_string(),
+            ],
         }
     }
 
@@ -398,7 +405,7 @@ impl PrimitiveType {
             | Self::MUXF9 => "O".to_string(),
             Self::VCC => "P".to_string(),
             Self::GND => "G".to_string(),
-            Self::FDRE => "Q".to_string(),
+            Self::FDRE | Self::FDSE => "Q".to_string(),
             Self::MUX2 | Self::XOR2 => "Z".to_string(),
             _ => "ZN".to_string(),
         }
@@ -414,12 +421,12 @@ impl PrimitiveType {
 
     /// Returns true if the primitive is not a LUT
     pub fn is_gate(&self) -> bool {
-        !self.is_lut() && !matches!(self, Self::VCC | Self::GND | Self::FDRE)
+        !self.is_lut() && !matches!(self, Self::VCC | Self::GND | Self::FDRE | Self::FDSE)
     }
 
-    /// Returns true if the primitive is a register (FDRE)
+    /// Returns true if the primitive is a register (FDRE,FDSE)
     pub fn is_reg(&self) -> bool {
-        matches!(self, Self::FDRE)
+        matches!(self, Self::FDRE | Self::FDSE)
     }
 
     /// Get the area of a minimum sized primitive of [PrimitiveType]
@@ -513,6 +520,7 @@ impl FromStr for PrimitiveType {
             "VCC" => Ok(Self::VCC),
             "GND" => Ok(Self::GND),
             "FDRE" => Ok(Self::FDRE),
+            "FDSE" => Ok(Self::FDSE),
             "MAJ3" => Ok(Self::MAJ3),
             _ => Err(format!("Unknown primitive type {pre}")),
         }
@@ -609,7 +617,7 @@ impl SVPrimitive {
                     prim.set_attribute("VAL".to_string(), "1'b0".to_string());
                     return prim;
                 }
-                PrimitiveType::FDRE => {
+                PrimitiveType::FDRE | PrimitiveType::FDSE => {
                     prim.set_attribute("INIT".to_string(), "1'hx".to_string());
                 }
                 _ => {}
@@ -656,7 +664,7 @@ impl SVPrimitive {
                 prim.set_attribute("VAL".to_string(), "1'b0".to_string());
                 return prim;
             }
-            PrimitiveType::FDRE => {
+            PrimitiveType::FDRE | PrimitiveType::FDSE => {
                 prim.set_attribute("INIT".to_string(), "1'hx".to_string());
             }
             _ => {}
@@ -917,7 +925,8 @@ impl VerilogEmission for LutLang {
             },
             LutLang::Mux(_) => Some(PrimitiveType::MUX),
             LutLang::Xor(_) => Some(PrimitiveType::XOR),
-            LutLang::Reg(_) => Some(PrimitiveType::FDRE),
+            LutLang::Fdre(_) => Some(PrimitiveType::FDRE),
+            LutLang::Fdse(_) => Some(PrimitiveType::FDSE),
             _ => None,
         }
     }
@@ -952,7 +961,8 @@ impl VerilogEmission for LutLang {
             | LutLang::Mux(_)
             | LutLang::Nor(_)
             | LutLang::Not(_)
-            | LutLang::Reg(_)
+            | LutLang::Fdre(_)
+            | LutLang::Fdse(_)
             | LutLang::Xor(_) => {
                 let inputs = self.children();
                 let gate_type = self
@@ -1149,7 +1159,10 @@ impl VerilogParsing for LutLang {
                             Ok(expr.add(LutLang::Not([ids[0]])))
                         }
                         PrimitiveType::FDRE => {
-                            Ok(expr.add(LutLang::Reg([ids[0], ids[1], ids[2], ids[3]])))
+                            Ok(expr.add(LutLang::Fdre([ids[0], ids[1], ids[2], ids[3]])))
+                        }
+                        PrimitiveType::FDSE => {
+                            Ok(expr.add(LutLang::Fdse([ids[0], ids[1], ids[2], ids[3]])))
                         }
                         PrimitiveType::LUT1
                         | PrimitiveType::LUT2

@@ -437,7 +437,8 @@ impl LogicFunc<LutLang> for PrimitiveCell {
             PrimitiveType::XOR => Some(LutLang::Xor(children.try_into().ok()?)),
             PrimitiveType::MUX => Some(LutLang::Mux(children.try_into().ok()?)),
             PrimitiveType::NOT => Some(LutLang::Not(children.try_into().ok()?)),
-            PrimitiveType::FDRE => Some(LutLang::Reg(children.try_into().ok()?)),
+            PrimitiveType::FDRE => Some(LutLang::Fdre(children.try_into().ok()?)),
+            PrimitiveType::FDSE => Some(LutLang::Fdse(children.try_into().ok()?)),
             _ if self.ptype.is_lut() => Some(LutLang::Lut(children.into())),
             _ => None,
         }
@@ -567,7 +568,8 @@ impl LogicCell<PrimitiveCell> for LutLang {
                 .remap_output(0, "O".into()),
             LutLang::Const(b) => PrimitiveCell::from_constant(Logic::from(*b))?,
             LutLang::DC => PrimitiveCell::from_constant(Logic::X)?,
-            LutLang::Reg(_) => PrimitiveCell::new(PrimitiveType::FDRE, None),
+            LutLang::Fdre(_) => PrimitiveCell::new(PrimitiveType::FDRE, None),
+            LutLang::Fdse(_) => PrimitiveCell::new(PrimitiveType::FDSE, None),
             LutLang::Xor(_) => PrimitiveCell::new(PrimitiveType::XOR, None),
             LutLang::Lut(l) => match l.len() {
                 2 => PrimitiveCell::new(PrimitiveType::LUT1, None),
