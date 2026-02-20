@@ -23,9 +23,9 @@ enum Solver {
     Highs,
 }
 
-/// ASIC Technology Mapping Optimization with E-Graphs
+/// EqMap: ASIC Technology Mapping w/ E-Graphs
 #[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
+#[command(version, long_about = None)]
 struct Args {
     /// Verilog file to read from (or use stdin)
     input: Option<PathBuf>,
