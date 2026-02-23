@@ -211,4 +211,6 @@ module FDRE #(
   initial begin
     q = INIT;
   end
+
+  assign Q = q;
 endmodule
