@@ -80,7 +80,7 @@ else
     echo "" >> $MKFILE
     echo "%_vxil.tcl: %.v" >> $MKFILE
     echo "	@echo \"add_files \$<\" > \$@" >> $MKFILE
-    echo "	@echo \"synth_design -top \$* -mode out_of_context -part \$(PART)\" >> \$@" >> $MKFILE
+    echo "	@echo \"synth_design -top \$* -no_srlextract -flatten_hierarchy full -mode out_of_context -part \$(PART)\" >> \$@" >> $MKFILE
     echo "	@echo \"write_verilog -force \$<.vxil\" >> \$@" >> $MKFILE
     echo "	@echo \"quit\" >> \$@" >> $MKFILE
     echo "" >> $MKFILE

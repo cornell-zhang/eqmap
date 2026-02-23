@@ -1,6 +1,6 @@
 /*!
 
-  Implement useful utilities around model checking
+  Struct to check equivalence of two models.
 
 */
 

@@ -4,7 +4,7 @@ use eqmap::pass::{Error, Pass, PrintVerilog};
 use eqmap::register_passes;
 use eqmap::verilog::sv_parse_wrapper;
 use nl_compiler::{from_vast, from_vast_overrides};
-use safety_net::{Identifier, Instantiable, MultiDiGraph, Netlist};
+use safety_net::{Identifier, Instantiable, MultiDiGraph, Netlist, format_id};
 use std::io::Read;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -78,11 +78,46 @@ impl Pass for DisconnectArcSet {
     }
 }
 
-register_passes!(PrimitiveCell; PrintVerilog, DotGraph, Clean, DisconnectRegisters, DisconnectArcSet);
+/// Rename wires and instances that are part of the feedback arc set
+pub struct MarkArcSet;
+
+impl Pass for MarkArcSet {
+    type I = PrimitiveCell;
+
+    fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
+        let mut i = 0;
+        let analysis = netlist.get_analysis::<MultiDiGraph<_>>()?;
+
+        for arc in analysis.greedy_feedback_arcs() {
+            let src = arc.src().unwrap();
+            let suffix = src.get_instance_name().unwrap();
+            let prefix: Identifier = "arc_".into();
+            src.set_instance_name(prefix + suffix);
+            i += 1;
+        }
+
+        Ok(format!("Marked {i} arcs"))
+    }
+}
+
+/// Rename wires and instances sequentially __0__, __1__, ...
+pub struct RenameNets;
+
+impl Pass for RenameNets {
+    type I = PrimitiveCell;
+
+    fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
+        netlist.rename_nets(|_, i| format_id!("__{i}__"))?;
+        Ok(format!("Renamed {} cells", netlist.len()))
+    }
+}
+
+register_passes!(PrimitiveCell; PrintVerilog, DotGraph, Clean, DisconnectRegisters,
+                                DisconnectArcSet, MarkArcSet, RenameNets);
 
 /// Netlist optimization debugging tool
 #[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
+#[command(version, long_about = None)]
 struct Args {
     /// Verilog file to read from (or use stdin)
     input: Option<PathBuf>,

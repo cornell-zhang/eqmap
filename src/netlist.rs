@@ -1,6 +1,6 @@
 /*!
 
-  Support for nl-compiler
+  Maps subcircuits of a netlist to Boolean expressions
 
 */
 
@@ -11,6 +11,7 @@ use crate::verilog::PrimitiveType;
 use bitvec::field::BitField;
 use egg::{Id, RecExpr, Symbol};
 use nl_compiler::FromId;
+use safety_net::MultiDiGraph;
 use safety_net::{
     Analysis, DrivenNet, Error, Identifier, Instantiable, Logic, Net, Netlist, Parameter,
     format_id, iter::NetDFSIterator,
@@ -130,14 +131,16 @@ where
 }
 
 impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
-    /// Map `nets` to [CircuitLang] nodes. `nets` that do not pass `filter` become leaves.
-    fn insert_filtered<F>(
+    /// Map `nets` to [CircuitLang] nodes. `nets` that do not pass `filter_netref` *and* `filter_inst` become leaves.
+    fn insert_filtered<F, G>(
         &mut self,
         mut nets: Vec<DrivenNet<I>>,
-        filter: F,
+        filter_netref: F,
+        filter_inst: G,
     ) -> Result<RecExpr<L>, String>
     where
-        F: Fn(&I) -> bool + 'static + Clone,
+        F: Fn(&DrivenNet<I>) -> bool + 'static + Clone,
+        G: Fn(&I) -> bool + 'static + Clone,
     {
         let mut expr = RecExpr::<L>::default();
         let mut mapping: HashMap<DrivenNet<I>, Id> = HashMap::new();
@@ -159,19 +162,18 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
                 continue;
             }
 
-            let filter = filter.clone();
+            let filter_netref = filter_netref.clone();
+            let filter_inst = filter_inst.clone();
 
             // Something that is being filtered-out into a leaf is considered ready/sorted
-            if let Some(inst_type) = net.clone().get_instance_type()
-                && !filter(&inst_type)
-            {
+            if !filter_netref(&net) || net.get_instance_type().is_some_and(|i| !filter_inst(&i)) {
                 sorted.insert(net.clone());
                 topo.push(net);
                 continue;
             }
 
             let mut dfs = NetDFSIterator::new_filtered(self._netlist, net.clone(), move |n| {
-                n.get_instance_type().is_some_and(|i| !(filter)(&i))
+                !filter_netref(n) || n.get_instance_type().is_some_and(|i| !filter_inst(&i))
             });
 
             let mut rdy = true;
@@ -198,8 +200,9 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
         for n in topo {
             if mapping.contains_key(&n) {
                 continue;
-            } else if let Some(inst_type) = n.get_instance_type()
-                && filter(&inst_type)
+            } else if filter_netref(&n)
+                && let Some(inst_type) = n.get_instance_type()
+                && filter_inst(&inst_type)
             {
                 let mut children = vec![];
                 for (i, c) in n.clone().unwrap().inputs().enumerate() {
@@ -264,7 +267,7 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
 
     /// Map `nets` to [CircuitLang] nodes.
     pub fn insert(&mut self, nets: Vec<DrivenNet<I>>) -> Result<RecExpr<L>, String> {
-        self.insert_filtered(nets, |_| true)
+        self.insert_filtered(nets, |_| true, |_| true)
     }
 
     /// Map a specific `net` to [CircuitLang] nodes.
@@ -298,7 +301,44 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
 
         let nets: Vec<DrivenNet<I>> = nets.into_iter().collect();
 
-        self.insert_filtered(nets, |i| !i.is_seq())
+        self.insert_filtered(nets, |_| true, |i| !i.is_seq())
+    }
+
+    /// Map all logic to [CircuitLang] using a greedy arc set to break cycles.
+    pub fn insert_partitioned(&mut self) -> Result<RecExpr<L>, String>
+    where
+        I: 'static,
+    {
+        let mut nets: BTreeSet<DrivenNet<I>> = self
+            ._netlist
+            .outputs()
+            .into_iter()
+            .map(|(n, _)| n)
+            .collect();
+
+        let analysis = self
+            ._netlist
+            .get_analysis::<MultiDiGraph<_>>()
+            .map_err(|e| e.to_string())?;
+
+        let mut blocklist = HashSet::new();
+
+        for c in analysis.greedy_feedback_arcs() {
+            let nr = c.src().clone().unwrap();
+            // Any arc should not be along an input (src) or output (sink)
+            for input in nr.inputs() {
+                if let Some(dr) = input.get_driver()
+                    && !dr.is_an_input()
+                {
+                    nets.insert(dr);
+                }
+            }
+            blocklist.insert(c.src());
+        }
+
+        let nets: Vec<DrivenNet<I>> = nets.into_iter().collect();
+
+        self.insert_filtered(nets, move |d| !blocklist.contains(d), |_| true)
     }
 
     /// Get the mapped expressions
