@@ -89,5 +89,5 @@ else
 
     make -f $MKFILE $1.$FSTEM 1>&2
     $TOOL $1.$FSTEM $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} ${16}
-    rm -f $1.$FSTEM $MKFILE
+    # rm -f $1.$FSTEM $MKFILE
 fi
