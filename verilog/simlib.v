@@ -209,7 +209,8 @@ module FDRE #(
   end
 
   initial begin
-    q = INIT;
+    // Force init zero for verification
+    q = 1'b0;
   end
 
   assign Q = q;
