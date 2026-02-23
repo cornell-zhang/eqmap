@@ -164,9 +164,9 @@ fn main() -> std::io::Result<()> {
         rules.append(&mut dyn_decompositions(true));
     }
 
-    // if !args.no_retime {
-    //     rules.append(&mut register_retiming());
-    // }
+    if !args.no_retime {
+        rules.append(&mut register_retiming());
+    }
 
     if args.verbose {
         eprintln!("INFO: Running with {} rewrite rules", rules.len());
