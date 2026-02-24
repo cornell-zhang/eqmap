@@ -1,0 +1,36 @@
+name: RTL Verification
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+  # Make sure CI fails on all warnings, including Clippy lints
+  RUSTFLAGS: "-Dwarnings"
+  TIMEOUT: 6
+
+jobs:
+
+  verification:
+    name: Verify Select Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Build Release
+        run: cargo build --release --features default && chmod +x ./bin/* ./verilog/equiv.sh
+      - name: Install Yosys
+        run: sudo add-apt-repository universe && sudo apt-get update && sudo apt-get install yosys
+      # TODO(matth2k): Create a separate repo for this
+      - name: Pull benchmarks
+        uses: actions/checkout@v4
+        with:
+          repository: matth2k/synth-benchmarks
+          path: benchmarks
+        run: mv --force benchmarks/verilog/lgsynth91/*.v verilog
+      - name: Check c7552
+        run: cd verilog && eqmap c7552.v -f -t ${TIMEOUT} --report tmp.json tmp.v && ./equiv.sh c7552.v tmp.v
+
