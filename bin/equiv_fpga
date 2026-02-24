@@ -1,0 +1,55 @@
+#!/bin/bash -e
+
+# Copyright 2025 The EqMap Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+if [ "$#" -ne "2" ]; then
+    echo "Usage: equiv <rewritten verilog> <golden verilog>"
+    exit 1
+fi
+
+
+echo "Checking $1 against $2 (golden model)"
+
+SCRIPT=${1}.equiv.ys
+if [ -z $SIMLIB ]; then
+    SIMLIB="$(dirname $0)/../verilog/simlib.v"
+    SIMLIB="$(realpath $SIMLIB)"
+fi
+
+echo "read_verilog $SIMLIB" > $SCRIPT
+echo "read_verilog $2" >> $SCRIPT
+echo "hierarchy -auto-top" >> $SCRIPT
+echo "flatten" >> $SCRIPT
+echo "proc" >> $SCRIPT
+echo "rename -top gold" >> $SCRIPT
+echo "design -stash gold" >> $SCRIPT
+
+echo "read_verilog $SIMLIB" >> $SCRIPT
+echo "read_verilog $1" >> $SCRIPT
+echo "hierarchy -auto-top" >> $SCRIPT
+echo "flatten" >> $SCRIPT
+echo "proc" >> $SCRIPT
+echo "rename -top rewritten" >> $SCRIPT
+echo "design -stash rewritten" >> $SCRIPT
+
+echo "design -copy-from gold gold" >> $SCRIPT
+echo "design -copy-from rewritten rewritten" >> $SCRIPT
+
+echo "equiv_make gold rewritten equiv" >> $SCRIPT
+echo "equiv_simple equiv" >> $SCRIPT
+echo "equiv_status equiv" >> $SCRIPT
+
+yosys -s $SCRIPT
+rm $SCRIPT

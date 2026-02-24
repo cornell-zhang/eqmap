@@ -33,6 +33,7 @@ elif [ ! -f "$1" ]; then
     echo "First argument must be the input file."
     echo "Usage: $0 <input.v> [$TOOL options]"
     echo "Check that file exists and it is the first argument"
+    exit 1
 else
     which yosys > /dev/null || { echo "yosys not found in PATH"; exit 1; }
     which $TOOL > /dev/null || { echo "$TOOL not found in PATH"; exit 1; }
