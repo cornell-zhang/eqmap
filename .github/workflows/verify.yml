@@ -33,5 +33,5 @@ jobs:
       - name: Move Benchmarks
         run: mv --force benchmarks/verilog/iscas85/*.v verilog
       - name: EqMap & EquivCheck
-        run: cd verilog && PATH=../bin/eqmap:../target/release:$PATH c7552.v -f -t ${TIMEOUT} --report tmp.json tmp.v && ./equiv.sh c7552.v tmp.v
+        run: cd verilog && PATH=../bin:../target/release:$PATH eqmap c7552.v -f -t ${TIMEOUT} --report tmp.json tmp.v && ./equiv.sh c7552.v tmp.v
 
