@@ -17,6 +17,9 @@ jobs:
   verification:
     name: Verify Select Benchmarks
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        item: [c17.v, c432.v, c499.v, c1908.v, c7552.v, c880.v, c1355.v]
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -30,7 +33,8 @@ jobs:
         with:
           repository: matth2k/synth-benchmarks
           path: benchmarks
-      - run: mv --force benchmarks/verilog/lgsynth91/*.v verilog
-      - name: Check c7552
-        run: cd verilog && ../bin/eqmap c7552.v -f -t ${TIMEOUT} --report tmp.json tmp.v && ./equiv.sh c7552.v tmp.v
+      - name: Move Benchmarks
+        run: mv --force benchmarks/verilog/iscas85/*.v verilog
+      - name: EqMap & EquivCheck
+        run: cd verilog && ../bin/eqmap ${{ matrix.item }} -f -t ${TIMEOUT} --report tmp.json tmp.v && ./equiv.sh ${{ matrix.item }} tmp.v
 
