@@ -30,7 +30,7 @@ jobs:
         with:
           repository: matth2k/synth-benchmarks
           path: benchmarks
-        run: mv --force benchmarks/verilog/lgsynth91/*.v verilog
+      - run: mv --force benchmarks/verilog/lgsynth91/*.v verilog
       - name: Check c7552
         run: cd verilog && eqmap c7552.v -f -t ${TIMEOUT} --report tmp.json tmp.v && ./equiv.sh c7552.v tmp.v
 
