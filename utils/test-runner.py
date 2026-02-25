@@ -62,11 +62,12 @@ if __name__ == "__main__":
             processes.append((root, file, p, cmd))
         local = list()
         for root, file, p, cmd in processes:
+            reason = p.stderr.read().decode("utf-8")
             p.wait()
             if p.returncode == 0:
                 passes.append((root, file))
             else:
-                reason = p.stderr.read().decode("utf-8")
+                reason += p.stderr.read().decode("utf-8")
                 failures.append((root, file, cmd, reason))
             tests.append((root, file))
             local.append(file)
