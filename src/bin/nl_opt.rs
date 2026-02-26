@@ -112,8 +112,26 @@ impl Pass for RenameNets {
     }
 }
 
+/// Report the number of strongly connected components
+pub struct ReportSccs;
+
+impl Pass for ReportSccs {
+    type I = PrimitiveCell;
+
+    fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
+        let analysis = netlist.get_analysis::<MultiDiGraph<_>>()?;
+        let sccs = analysis.sccs();
+        let nt = sccs.iter().filter(|scc| scc.len() > 1).count();
+        Ok(format!(
+            "Netlist contains {} non-trivial strongly conncected components ({} total)",
+            nt,
+            sccs.len()
+        ))
+    }
+}
+
 register_passes!(PrimitiveCell; PrintVerilog, DotGraph, Clean, DisconnectRegisters,
-                                DisconnectArcSet, MarkArcSet, RenameNets);
+                                DisconnectArcSet, MarkArcSet, RenameNets, ReportSccs);
 
 /// Netlist optimization debugging tool
 #[derive(Parser, Debug)]
