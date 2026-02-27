@@ -57,7 +57,9 @@ impl CostFunction<LutLang> for KLUTCostFn {
             }
             LutLang::Program(_) => 0,
             LutLang::Bus(_) => 0,
-            LutLang::Fdre(_) | LutLang::Fdse(_) => self.reg_cost,
+            LutLang::Fdre(_) | LutLang::Fdse(_) | LutLang::Fdpe(_) | LutLang::Fdce(_) => {
+                self.reg_cost
+            }
             LutLang::Cycle(_) => 0,
             LutLang::Arg(_) => 0,
             LutLang::Const(_) => 0,
@@ -193,7 +195,7 @@ impl CostFunction<LutLang> for GateCostFn {
             }
             LutLang::Program(_) => 0,
             LutLang::Bus(_) => 0,
-            LutLang::Fdre(_) | LutLang::Fdse(_) => 1,
+            LutLang::Fdre(_) | LutLang::Fdse(_) | LutLang::Fdpe(_) | LutLang::Fdce(_) => 1,
             LutLang::Cycle(_) => 0,
             LutLang::Arg(_) => 0,
             LutLang::Const(_) => 0,
