@@ -35,6 +35,8 @@ define_language! {
         "BUS" = Bus(Box<[Id]>), // a bus of nodes
         "REG" = Fdre([Id; 4]), // D, C, CE, R
         "FDSE" = Fdse([Id; 4]), // D, C, CE, S
+        "FDPE" = Fdpe([Id; 4]), // D, C, CE, PR
+        "FDCE" = Fdce([Id; 4]), // D, C, CE, CLR
         "ARG" = Arg([Id; 1]),
         "CYCLE" = Cycle([Id; 1]),
     }
@@ -296,7 +298,7 @@ impl LutLang {
                 }
                 Ok(bv)
             }
-            LutLang::Fdre(_) | LutLang::Fdse(_) => {
+            LutLang::Fdre(_) | LutLang::Fdse(_) | LutLang::Fdpe(_) | LutLang::Fdce(_) => {
                 Err("REG is not combinational logic".to_string())
             }
             LutLang::Arg(_) => Err("ARG is not combinational logic".to_string()),
@@ -330,6 +332,8 @@ impl LutLang {
             | (LutLang::Bus(_), LutLang::Bus(_))
             | (LutLang::Fdre(_), LutLang::Fdre(_))
             | (LutLang::Fdse(_), LutLang::Fdse(_))
+            | (LutLang::Fdpe(_), LutLang::Fdpe(_))
+            | (LutLang::Fdce(_), LutLang::Fdce(_))
             | (LutLang::Arg(_), LutLang::Arg(_))
             | (LutLang::Cycle(_), LutLang::Cycle(_)) => {
                 for (a, b) in self.children().iter().zip(other.children()) {
@@ -778,7 +782,12 @@ impl<'a> LutExprInfo<'a> {
         let cse = self.get_cse();
         cse.as_ref()
             .iter()
-            .filter(|n| matches!(n, LutLang::Fdre(_) | LutLang::Fdse(_)))
+            .filter(|n| {
+                matches!(
+                    n,
+                    LutLang::Fdre(_) | LutLang::Fdse(_) | LutLang::Fdpe(_) | LutLang::Fdce(_)
+                )
+            })
             .count() as u64
     }
 

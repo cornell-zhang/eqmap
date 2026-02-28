@@ -246,6 +246,8 @@ pub enum PrimitiveType {
     GND,
     FDRE,
     FDSE,
+    FDPE,
+    FDCE,
     MAJ3,
 }
 
@@ -273,7 +275,7 @@ impl PrimitiveType {
             Self::LUT5 => 5,
             Self::LUT6 => 6,
             Self::VCC | Self::GND => 0,
-            Self::FDRE | Self::FDSE => 4,
+            Self::FDRE | Self::FDSE | Self::FDPE | Self::FDCE => 4,
             Self::MAJ3 => 3,
         }
     }
@@ -380,6 +382,18 @@ impl PrimitiveType {
                 "CE".to_string(),
                 "S".to_string(),
             ],
+            Self::FDPE => vec![
+                "D".to_string(),
+                "C".to_string(),
+                "CE".to_string(),
+                "PRE".to_string(),
+            ],
+            Self::FDCE => vec![
+                "D".to_string(),
+                "C".to_string(),
+                "CE".to_string(),
+                "CLR".to_string(),
+            ],
         }
     }
 
@@ -405,7 +419,7 @@ impl PrimitiveType {
             | Self::MUXF9 => "O".to_string(),
             Self::VCC => "P".to_string(),
             Self::GND => "G".to_string(),
-            Self::FDRE | Self::FDSE => "Q".to_string(),
+            Self::FDRE | Self::FDSE | Self::FDPE | Self::FDCE => "Q".to_string(),
             Self::MUX2 | Self::XOR2 => "Z".to_string(),
             _ => "ZN".to_string(),
         }
@@ -421,12 +435,16 @@ impl PrimitiveType {
 
     /// Returns true if the primitive is not a LUT
     pub fn is_gate(&self) -> bool {
-        !self.is_lut() && !matches!(self, Self::VCC | Self::GND | Self::FDRE | Self::FDSE)
+        !self.is_lut()
+            && !matches!(
+                self,
+                Self::VCC | Self::GND | Self::FDRE | Self::FDSE | Self::FDPE | Self::FDCE
+            )
     }
 
-    /// Returns true if the primitive is a register (FDRE,FDSE)
+    /// Returns true if the primitive is a register (FDRE,FDSE,FDPE, FDCE)
     pub fn is_reg(&self) -> bool {
-        matches!(self, Self::FDRE | Self::FDSE)
+        matches!(self, Self::FDRE | Self::FDSE | Self::FDPE | Self::FDCE)
     }
 
     /// Get the area of a minimum sized primitive of [PrimitiveType]
@@ -521,6 +539,8 @@ impl FromStr for PrimitiveType {
             "GND" => Ok(Self::GND),
             "FDRE" => Ok(Self::FDRE),
             "FDSE" => Ok(Self::FDSE),
+            "FDPE" => Ok(Self::FDPE),
+            "FDCE" => Ok(Self::FDCE),
             "MAJ3" => Ok(Self::MAJ3),
             _ => Err(format!("Unknown primitive type {pre}")),
         }
@@ -617,7 +637,10 @@ impl SVPrimitive {
                     prim.set_attribute("VAL".to_string(), "1'b0".to_string());
                     return prim;
                 }
-                PrimitiveType::FDRE | PrimitiveType::FDSE => {
+                PrimitiveType::FDRE
+                | PrimitiveType::FDSE
+                | PrimitiveType::FDPE
+                | PrimitiveType::FDCE => {
                     prim.set_attribute("INIT".to_string(), "1'hx".to_string());
                 }
                 _ => {}
@@ -664,7 +687,10 @@ impl SVPrimitive {
                 prim.set_attribute("VAL".to_string(), "1'b0".to_string());
                 return prim;
             }
-            PrimitiveType::FDRE | PrimitiveType::FDSE => {
+            PrimitiveType::FDRE
+            | PrimitiveType::FDSE
+            | PrimitiveType::FDPE
+            | PrimitiveType::FDCE => {
                 prim.set_attribute("INIT".to_string(), "1'hx".to_string());
             }
             _ => {}
@@ -927,6 +953,8 @@ impl VerilogEmission for LutLang {
             LutLang::Xor(_) => Some(PrimitiveType::XOR),
             LutLang::Fdre(_) => Some(PrimitiveType::FDRE),
             LutLang::Fdse(_) => Some(PrimitiveType::FDSE),
+            LutLang::Fdpe(_) => Some(PrimitiveType::FDPE),
+            LutLang::Fdce(_) => Some(PrimitiveType::FDCE),
             _ => None,
         }
     }
@@ -963,6 +991,8 @@ impl VerilogEmission for LutLang {
             | LutLang::Not(_)
             | LutLang::Fdre(_)
             | LutLang::Fdse(_)
+            | LutLang::Fdpe(_)
+            | LutLang::Fdce(_)
             | LutLang::Xor(_) => {
                 let inputs = self.children();
                 let gate_type = self
@@ -1163,6 +1193,12 @@ impl VerilogParsing for LutLang {
                         }
                         PrimitiveType::FDSE => {
                             Ok(expr.add(LutLang::Fdse([ids[0], ids[1], ids[2], ids[3]])))
+                        }
+                        PrimitiveType::FDPE => {
+                            Ok(expr.add(LutLang::Fdpe([ids[0], ids[1], ids[2], ids[3]])))
+                        }
+                        PrimitiveType::FDCE => {
+                            Ok(expr.add(LutLang::Fdce([ids[0], ids[1], ids[2], ids[3]])))
                         }
                         PrimitiveType::LUT1
                         | PrimitiveType::LUT2
