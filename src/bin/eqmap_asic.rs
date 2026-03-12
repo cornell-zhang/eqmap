@@ -97,6 +97,9 @@ fn main() -> std::io::Result<()> {
 
     eprintln!("INFO: ASIC Technology Mapping Optimization with E-Graphs");
 
+    let full_command = std::env::args().collect::<Vec<_>>().join(" ");
+    eprintln!("INFO: {}", full_command);
+
     let mut buf = String::new();
 
     let path: Option<PathBuf> = match args.input {
