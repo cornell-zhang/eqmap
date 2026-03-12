@@ -552,11 +552,11 @@ impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping
         drop(self);
         drop(mapping);
 
-        let mut new_roots = Vec::new();
+        let mut new_roots = HashSet::new();
 
         for (old, new) in root_pairs {
             if old == new {
-                new_roots.push(new);
+                new_roots.insert(new);
                 continue;
             }
 
@@ -566,14 +566,14 @@ impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping
             }
 
             netlist.replace_net_uses(old, &new)?;
-            new_roots.push(new);
+            new_roots.insert(new);
         }
 
-        netlist.clean()?;
+        netlist.retain(&mut new_roots)?;
 
         netlist.rename_nets(|_, i| format_id!("__{i}__"))?;
 
-        Ok(new_roots)
+        Ok(new_roots.into_iter().collect())
     }
 }
 
