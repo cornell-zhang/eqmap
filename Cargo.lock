@@ -583,9 +583,9 @@ dependencies = [
 
 [[package]]
 name = "nl-compiler"
-version = "0.1.15"
+version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee50c22172508d5a4824e8e8f17067b87edef92583e33266a91e02293dee54b2"
+checksum = "b2b319e176dd63a6ac24aa1fd9ee7184094082317443800073277636dafb5004"
 dependencies = [
  "flussab",
  "flussab-aiger",
@@ -866,9 +866,9 @@ checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
 
 [[package]]
 name = "safety-net"
-version = "0.5.5"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa44397503e915778cbe2248fa606baf7359270a4fd50bf327b574bf40985992"
+checksum = "74c3d01a7b7d34bac76081cc4e886dd456904e905da00676d86c2b3e49107692"
 dependencies = [
  "bitvec",
  "petgraph",

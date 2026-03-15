@@ -11,7 +11,7 @@ use crate::verilog::PrimitiveType;
 use bitvec::field::BitField;
 use egg::{Id, RecExpr, Symbol};
 use nl_compiler::FromId;
-use safety_net::MultiDiGraph;
+use safety_net::graph::MultiDiGraph;
 use safety_net::{
     Analysis, DrivenNet, Error, Identifier, Instantiable, Logic, Net, Netlist, Parameter,
     format_id, iter::NetDFSIterator,
