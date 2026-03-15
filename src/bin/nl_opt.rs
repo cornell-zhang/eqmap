@@ -276,7 +276,9 @@ fn main() -> std::io::Result<()> {
                     if args.verify {
                         f.verify().map_err(std::io::Error::other)?;
                     }
-                    eprintln!("INFO: {pass}: {}", output)
+                    for line in output.lines() {
+                        eprintln!("INFO: {pass}: {}", line)
+                    }
                 }
             }
             Err(Error::IoError(e)) => return Err(e),
