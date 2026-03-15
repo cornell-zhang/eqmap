@@ -131,24 +131,71 @@ impl Pass for ReportSccs {
     }
 }
 
-// Report the longest  path in the netlist
-
+/// Report the longest path in the netlist
 pub struct ReportDepth;
 
 impl Pass for ReportDepth {
     type I = PrimitiveCell;
     fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
         let analysis = netlist.get_analysis::<CombDepthInfo<_>>()?;
-        match analysis.get_max_depth() {
-            Some(depth) => Ok(format!("Maximum combinational depth: {depth}")),
-            None => Ok("Maximum combinational depth: undefined".to_string()),
+
+        if analysis.get_max_depth().is_none() {
+            return Ok("Circuit is ill-formed".to_string());
         }
+
+        let depth = analysis.get_max_depth().unwrap();
+        let mut res = format!("Maximum combinational depth is {depth}\n");
+
+        for mut p in analysis.get_critical_points().into_iter().cloned() {
+            let mut line = format!("{p}\n");
+            let mut depth = "  ".to_string();
+            while let Some(next) = analysis.get_crit_input(&p) {
+                p = next.get_driver().unwrap().unwrap();
+                line.push_str(&format!("{depth}<- {p}\n"));
+                depth.push_str("  ");
+            }
+            line.push_str(&depth);
+            line.push_str("<- INPUT\n");
+            res.push_str(&line);
+        }
+        Ok(res)
+    }
+}
+
+/// Mark the node names of cells along the critical path
+pub struct MarkCriticalPath;
+
+impl Pass for MarkCriticalPath {
+    type I = PrimitiveCell;
+    fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
+        let analysis = netlist.get_analysis::<CombDepthInfo<_>>()?;
+
+        if analysis.get_max_depth().is_none() {
+            return Ok("Circuit is ill-formed. No cells marked.".to_string());
+        }
+
+        let p = analysis.build_critical_path();
+
+        if p.is_none() {
+            return Ok("Circuit is ill-formed. No cells marked.".to_string());
+        }
+
+        let p = p.unwrap();
+        let l = p.len();
+
+        for c in p {
+            let suffix = c.get_instance_name().unwrap();
+            let prefix: Identifier = "crit_".into();
+            c.set_instance_name(prefix + suffix);
+        }
+
+        Ok(format!("Marked {} cells as critical", l))
     }
 }
 
 register_passes!(PrimitiveCell; PrintVerilog, DotGraph, Clean, DisconnectRegisters,
                                 DisconnectArcSet, MarkArcSet, RenameNets, ReportSccs,
-                                ReportDepth);
+                                ReportDepth, MarkCriticalPath);
 
 /// Netlist optimization debugging tool
 #[derive(Parser, Debug)]
