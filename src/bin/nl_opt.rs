@@ -195,6 +195,28 @@ impl Pass for MarkCriticalPath {
     }
 }
 
+/// Disconnect non-data inputs to registers for better dot visualization
+pub struct CleanVis;
+
+impl Pass for CleanVis {
+    type I = PrimitiveCell;
+    fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
+        let mut i = 0;
+        for n in netlist.matches(|i| i.is_seq()) {
+            for input in n.inputs() {
+                if input.get_port().get_identifier() != &"D".into() && input.disconnect().is_some()
+                {
+                    i += 1;
+                }
+            }
+        }
+
+        Ok(format!(
+            "Disconnected non-data register inputs ({i}) for visualization"
+        ))
+    }
+}
+
 register_passes!(PrimitiveCell; 
     /// A dummy pass that emits the Verilog of the netlist.
     PrintVerilog, 
@@ -202,6 +224,8 @@ register_passes!(PrimitiveCell;
     DotGraph,
     /// Clean the netlist of cells which are not used
     Clean,
+    /// Disconnect non-data inputs to registers for better dot visualization
+    CleanVis,
     /// Disconnect all register inputs
     DisconnectRegisters,
     /// Disconnect wires based on greedy arc set heuristic, creating a DAG
