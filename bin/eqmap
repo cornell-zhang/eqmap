@@ -15,11 +15,18 @@
 # limitations under the License.
 
 set -eo pipefail
+KEEP_TEMPS=0
+if [ "$1" = "--save-temps" ]; then
+    KEEP_TEMPS=1
+    shift
+fi
+
+INPUT="$1"
 LIB="$(dirname $0)/../verilog/lutlang.v"
 LIB="$(realpath $LIB)"
 SIMLIB="$(dirname $0)/../verilog/simlib.v"
 SIMLIB="$(realpath $SIMLIB)"
-MKFILE=$1.mk
+MKFILE=$INPUT.mk
 TOOL=eqmap_fpga
 
 # Decide whether to use Vivado or Yosys based on the stem given to Make
@@ -29,9 +36,9 @@ fi
 
 if [ "$1" == "--help" ] || [ "$2" == "--help" ] || [ "$3" == "--help" ]; then
     $TOOL --help
-elif [ ! -f "$1" ]; then
+elif [ ! -f "$INPUT" ]; then
     echo "First argument must be the input file."
-    echo "Usage: $0 <input.v> [$TOOL options]"
+    echo "Usage: $0 [--save-temps] <input.v> [$TOOL options]"
     echo "Check that file exists and it is the first argument"
     exit 1
 else
@@ -50,7 +57,7 @@ else
     echo "" >> $MKFILE
     echo ".PHONY: all clean" >> $MKFILE
     echo "" >> $MKFILE
-    echo "all: $1.xil" >> $MKFILE
+    echo "all: $INPUT.xil" >> $MKFILE
     echo "" >> $MKFILE
     echo "clean:" >> $MKFILE
     echo "	rm -f *.xil *.synth *.ys *.dot *.png" >> $MKFILE
@@ -88,7 +95,10 @@ else
     echo "" >> $MKFILE
 
 
-    make -f $MKFILE $1.$FSTEM 1>&2
-    $TOOL $1.$FSTEM $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} ${16}
-    rm -f $1.$FSTEM $MKFILE
+    make -f $MKFILE $INPUT.$FSTEM 1>&2
+    $TOOL "$INPUT.$FSTEM" $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12} ${13} ${14} ${15} ${16}
+    if [ "$KEEP_TEMPS" != "1" ]; then
+        rm -f "$INPUT.$FSTEM" "$MKFILE"
+    fi
+    
 fi
