@@ -72,6 +72,10 @@ struct Args {
     #[arg(long, default_value_t = false)]
     min_depth: bool,
 
+    /// Extract randomly
+    #[arg(long, default_value_t = false)]
+    random: bool,
+
     /// Max fan in size allowed for extracted Cells
     #[arg(short = 'k', long, default_value_t = 6)]
     k: usize,
@@ -205,6 +209,8 @@ fn main() -> std::io::Result<()> {
             .map_err(std::io::Error::other)?
     } else if args.min_depth {
         req.with_min_depth()
+    } else if args.random {
+        req.with_randomness()
     } else if args.area {
         req.with_area()
     } else {

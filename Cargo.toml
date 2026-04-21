@@ -1,6 +1,6 @@
 [package]
 name = "eqmap"
-version = "0.9.3"
+version = "0.9.4"
 edition = "2024"
 default-run = "eqmap_fpga"
 license = "Apache-2.0"
@@ -51,6 +51,7 @@ good_lp = { version = "1.14.2", optional = true }
 nl-compiler = { version = "0.1.18" }
 log = "0.4.29"
 simplelog = "0.12.2"
+rand = "0.10.1"
 
 [lints.clippy]
 manual_range_contains = "allow"

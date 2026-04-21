@@ -9,6 +9,7 @@ use super::lut::{CircuitStats, LutExprInfo, LutLang};
 #[cfg(feature = "graph_dumps")]
 use super::serialize::serialize_egraph;
 use super::verilog::PrimitiveType;
+use crate::cost::RandomExtract;
 use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
     RecExpr, RecExprParseError, Rewrite, Runner, StopReason, Symbol, TreeTerm,
@@ -390,6 +391,8 @@ enum OptStrat {
 enum ExtractStrat {
     /// Use greedy extraction algorithm.
     Greedy,
+    /// Use a random extraction (regardless of opt metric)
+    Random,
     /// Use exact HiGHS ILP extraction with timeout in seconds.
     #[cfg(feature = "exact_highs")]
     Highs(u64),
@@ -750,6 +753,14 @@ where
         Self {
             opt_strat: OptStrat::MaxDepth,
             extract_strat: ExtractStrat::Greedy,
+            ..self
+        }
+    }
+
+    /// Extract randomly.
+    pub fn with_randomness(self) -> Self {
+        Self {
+            extract_strat: ExtractStrat::Random,
             ..self
         }
     }
@@ -1206,6 +1217,9 @@ where
             }
             (OptStrat::Disassemble(set), ExtractStrat::Greedy) => {
                 self.greedy_extract_with(L::filter_cost_fn(set))
+            }
+            (_, ExtractStrat::Random) => {
+                self.extract_with(|e, r| RandomExtract::new().extract(e, r))
             }
             #[cfg(feature = "exact_cbc")]
             (
