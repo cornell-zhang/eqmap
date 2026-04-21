@@ -24,7 +24,7 @@ enum Solver {
     Highs,
 }
 
-/// EqMap: ASIC Technology Mapping w/ E-Graphs
+/// ASIC Technology Mapping Optimization with E-Graphs
 #[derive(Parser, Debug)]
 #[command(version, long_about = None)]
 struct Args {
@@ -97,6 +97,7 @@ fn main() -> std::io::Result<()> {
         warn!("Debug assertions are enabled");
     }
 
+    eprintln!("ASIC Technology Mapping Optimization with E-Graphs");
     info!("ASIC Technology Mapping Optimization with E-Graphs");
 
     let full_command = std::env::args().collect::<Vec<_>>().join(" ");

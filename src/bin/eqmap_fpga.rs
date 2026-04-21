@@ -126,7 +126,8 @@ fn main() -> std::io::Result<()> {
         warn!("Debug assertions are enabled");
     }
 
-    info!("EqMap (FPGA Technology Mapping w/ E-Graphs)");
+    eprintln!("EqMap: FPGA Technology Mapping w/ E-Graphs");
+    info!("EqMap: FPGA Technology Mapping w/ E-Graphs");
 
     let full_command = std::env::args().collect::<Vec<_>>().join(" ");
     info!("{}", full_command);
