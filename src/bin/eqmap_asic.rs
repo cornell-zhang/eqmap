@@ -8,6 +8,7 @@ use eqmap::{
     rewrite::RewriteManager,
     verilog::sv_parse_wrapper,
 };
+use log::{info, warn};
 use nl_compiler::from_vast;
 use std::{
     io::{Read, Write, stderr, stdin},
@@ -89,16 +90,17 @@ struct Args {
 }
 
 fn main() -> std::io::Result<()> {
+    env_logger::init();
     let args = Args::parse();
 
     if cfg!(debug_assertions) {
-        eprintln!("WARNING: Debug assertions are enabled");
+        warn!("Debug assertions are enabled");
     }
 
-    eprintln!("INFO: ASIC Technology Mapping Optimization with E-Graphs");
+    info!("ASIC Technology Mapping Optimization with E-Graphs");
 
     let full_command = std::env::args().collect::<Vec<_>>().join(" ");
-    eprintln!("INFO: {}", full_command);
+    info!("{}", full_command);
 
     let mut buf = String::new();
 
@@ -108,7 +110,7 @@ fn main() -> std::io::Result<()> {
             Some(p)
         }
         None => {
-            eprintln!("INFO: Reading from stdin...");
+            info!("Reading from stdin...");
             stdin().read_to_string(&mut buf)?;
             None
         }
@@ -141,7 +143,7 @@ fn main() -> std::io::Result<()> {
         root.join("rules/asic.celllang")
     };
 
-    eprintln!("INFO: Loading rewrite rules from {path:?}");
+    info!("Loading rewrite rules from {path:?}");
 
     let mut rules = RewriteManager::<CellLang, CellAnalysis>::new();
     let file = std::fs::File::open(path)?;
@@ -231,7 +233,7 @@ fn main() -> std::io::Result<()> {
         ));
     }
 
-    eprintln!("INFO: Compiling Verilog...");
+    info!("Compiling Verilog...");
     let mut mapper = f
         .get_analysis::<LogicMapper<CellLang, PrimitiveCell>>()
         .map_err(std::io::Error::other)?;
@@ -240,7 +242,7 @@ fn main() -> std::io::Result<()> {
     let mapping = mapping.pop().unwrap();
     let expr = mapping.get_expr();
 
-    eprintln!("INFO: Building e-graph...");
+    info!("Building e-graph...");
     let result = process_expression::<CellLang, _, CellRpt>(expr, req, true, args.verbose)?
         .with_name(f.get_name().as_str());
 
@@ -256,7 +258,7 @@ fn main() -> std::io::Result<()> {
         result.print_report(&mut stderr().lock())?;
     }
 
-    eprintln!("INFO: Writing output to Verilog...");
+    info!("Writing output to Verilog...");
     let mapping = mapping.with_expr(result.get_expr().to_owned());
     mapping.rewrite(&f).map_err(std::io::Error::other)?;
 
@@ -269,7 +271,7 @@ fn main() -> std::io::Result<()> {
             env!("CARGO_PKG_VERSION"),
             f
         )?;
-        eprintln!("INFO: Goodbye");
+        info!("Goodbye");
     } else {
         print!("{f}");
     }

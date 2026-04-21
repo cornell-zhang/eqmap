@@ -10,6 +10,7 @@ use eqmap::{
     rewrite::{all_static_rules, register_retiming},
     verilog::sv_parse_wrapper,
 };
+use log::{info, warn};
 use nl_compiler::from_vast_overrides;
 use safety_net::Identifier;
 use std::{
@@ -118,16 +119,17 @@ fn xilinx_overrides(id: &Identifier, cell: &PrimitiveCell) -> Option<PrimitiveCe
 }
 
 fn main() -> std::io::Result<()> {
+    env_logger::init();
     let args = Args::parse();
 
     if cfg!(debug_assertions) {
-        eprintln!("WARNING: Debug assertions are enabled");
+        warn!("Debug assertions are enabled");
     }
 
-    eprintln!("INFO: EqMap (FPGA Technology Mapping w/ E-Graphs)");
+    info!("EqMap (FPGA Technology Mapping w/ E-Graphs)");
 
     let full_command = std::env::args().collect::<Vec<_>>().join(" ");
-    eprintln!("INFO: {}", full_command);
+    info!("{}", full_command);
 
     let mut buf = String::new();
 
@@ -137,16 +139,16 @@ fn main() -> std::io::Result<()> {
             Some(p)
         }
         None => {
-            eprintln!("INFO: Reading from stdin...");
+            info!("Reading from stdin...");
             stdin().read_to_string(&mut buf)?;
             None
         }
     };
 
-    eprintln!("INFO: Parsing Verilog...");
+    info!("Parsing Verilog...");
     let ast = sv_parse_wrapper(&buf, path).map_err(std::io::Error::other)?;
 
-    eprintln!("INFO: Compiling Verilog...");
+    info!("Compiling Verilog...");
     let f = from_vast_overrides(&ast, xilinx_overrides).map_err(std::io::Error::other)?;
 
     eprintln!(
@@ -172,7 +174,7 @@ fn main() -> std::io::Result<()> {
     }
 
     if args.verbose {
-        eprintln!("INFO: Running with {} rewrite rules", rules.len());
+        info!("Running with {} rewrite rules", rules.len());
         #[cfg(feature = "dyn_decomp")]
         eprintln!(
             "INFO: Dynamic Decomposition {}",
@@ -260,7 +262,7 @@ fn main() -> std::io::Result<()> {
         ));
     }
 
-    eprintln!("INFO: Extracting logic...");
+    info!("Extracting logic...");
     let mut mapper = f
         .get_analysis::<LogicMapper<LutLang, PrimitiveCell>>()
         .map_err(std::io::Error::other)?;
@@ -273,7 +275,7 @@ fn main() -> std::io::Result<()> {
     let mapping = mapping.pop().unwrap();
     let expr = mapping.get_expr();
 
-    eprintln!("INFO: Building e-graph...");
+    info!("Building e-graph...");
     let result = process_expression::<_, _, SynthReport>(expr, req, args.no_verify, args.verbose)?
         .with_name(f.get_name().as_str());
 
@@ -283,7 +285,7 @@ fn main() -> std::io::Result<()> {
         result.print_report(&mut stderr().lock())?;
     }
 
-    eprintln!("INFO: Writing output to Verilog...");
+    info!("Writing output to Verilog...");
     let mapping = mapping.with_expr(result.get_expr().to_owned());
     mapping.rewrite(&f).map_err(std::io::Error::other)?;
 
@@ -296,7 +298,7 @@ fn main() -> std::io::Result<()> {
             env!("CARGO_PKG_VERSION"),
             f
         )?;
-        eprintln!("INFO: Goodbye");
+        info!("Goodbye");
     } else {
         print!("{f}");
     }

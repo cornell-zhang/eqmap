@@ -20,6 +20,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
+use log::{info, warn};
 use serde::Serialize;
 use std::{
     io::{IsTerminal, Read, Write},
@@ -912,7 +913,7 @@ where
 
     fn explore(&mut self) -> Result<(), String> {
         let runner = if self.gen_proof {
-            eprintln!("WARNING: Proof generation is on (slow)");
+            warn!("Proof generation is on (slow)");
             Runner::default().with_explanations_enabled()
         } else {
             Runner::default().with_explanations_disabled()
@@ -1040,9 +1041,9 @@ where
             let runner = self.result.as_ref().unwrap();
             let croot = runner.egraph.find(runner.roots[0]);
             let data = &runner.egraph[croot].data;
-            eprintln!("INFO: Root analysis");
-            eprintln!("INFO: =============");
-            eprintln!("INFO:\t{data:?}");
+            info!("Root analysis");
+            info!("=============");
+            info!("\t{data:?}");
         }
 
         Ok(())
@@ -1059,7 +1060,7 @@ where
         }
 
         if let Some(f) = self.purge_fn.take() {
-            eprintln!("INFO: Purging e-graph...");
+            info!("Purging e-graph...");
             purge_graph(&mut self.result.as_mut().unwrap().egraph, f.as_ref())?;
         }
 
@@ -1069,11 +1070,11 @@ where
         let root = runner.egraph.find(runner.roots[0]);
         if self.gen_proof {
             let report = runner.report();
-            eprintln!("INFO: {}", report.to_string().replace('\n', "\nINFO: "));
+            info!("{report}");
         }
 
         // use an Extractor to pick the best element of the root eclass
-        eprintln!("INFO: Extracting...");
+        info!("Extracting...");
         let extraction_start = Instant::now();
         let best = extractor(&runner.egraph, root);
         let extraction_time = extraction_start.elapsed();
@@ -1101,7 +1102,7 @@ where
         }
 
         let rpt = if self.produce_rpt {
-            eprintln!("INFO: Generating report...");
+            info!("Generating report...");
             Some(R::new(
                 &self.expr,
                 &best,
@@ -1182,7 +1183,7 @@ where
                 self.greedy_extract_with(L::depth_cost_fn())
             }
             (OptStrat::MaxDepth, ExtractStrat::Greedy) => {
-                eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");
+                warn!("Maximizing cost on e-graphs with cycles will crash.");
                 self.greedy_extract_with(NegativeCostFn::new(L::depth_cost_fn()))
             }
             (OptStrat::CellCount(k), ExtractStrat::Greedy) => {
@@ -1199,7 +1200,7 @@ where
                 OptStrat::CellCount(6) | OptStrat::CellCountRegWeighted(6, 1) | OptStrat::AstSize,
                 ExtractStrat::Cbc(t),
             ) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: ILP ON");
+                info!("ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
                 L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
             }),
@@ -1208,7 +1209,7 @@ where
                 OptStrat::CellCount(6) | OptStrat::CellCountRegWeighted(6, 1) | OptStrat::AstSize,
                 ExtractStrat::Highs(t),
             ) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: ILP ON");
+                info!("ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
                 L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
             }),
@@ -1263,7 +1264,7 @@ where
     }
 
     if cfg!(debug_assertions) {
-        eprintln!("WARNING: Running with debug assertions is slow");
+        warn!("Running with debug assertions is slow");
     }
 
     let mut req = req.with_expr(expr.clone());
@@ -1272,37 +1273,37 @@ where
 
     #[cfg(feature = "graph_dumps")]
     if let Some(p) = &req.dump_egraph {
-        eprintln!("INFO: Dumping e-graph...");
+        info!("Dumping e-graph...");
         let mut file = std::fs::File::create(p)?;
         req.serialize_with_greedy_cost(L::depth_cost_fn(), &mut file)?;
     }
 
     if verbose && result.has_explanation() {
-        eprintln!("INFO: Rule uses in proof");
-        eprintln!("INFO: =============");
+        info!("Rule uses in proof");
+        info!("=============");
         let proof = result.get_rule_uses().unwrap();
         let mut linecount = 0;
         for line in proof.lines() {
-            eprintln!("INFO:\t{line}");
+            info!("\t{line}");
             linecount += 1;
         }
-        eprintln!("INFO: Approx. {linecount} lines in proof tree");
+        info!("Approx. {linecount} lines in proof tree");
     } else if req.get_expr().as_ref().len() < 128 {
         let expr = req.get_expr().to_string();
         let len = expr.len().min(160);
-        eprintln!("INFO: {} ... => ", &expr[0..len]);
+        info!("{} ... => ", &expr[0..len]);
     }
 
     let simplified = result.get_expr();
 
     // Verify functionality
     if no_verify {
-        eprintln!("INFO: Skipping functionality tests...");
+        info!("Skipping functionality tests...");
     } else {
-        eprintln!("INFO: Checking expression...");
+        info!("Checking expression...");
         let check = L::check_expr(&expr, simplified);
         if check.is_inconclusive() && verbose {
-            eprintln!("WARNING: Functionality verification inconclusive");
+            warn!("Functionality verification inconclusive");
         }
         if check.is_not_equiv() {
             match result.get_expl() {

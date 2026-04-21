@@ -8,6 +8,7 @@ use eqmap::{
     rewrite::RewriteManager,
     verilog::SVModule,
 };
+use log::{info, warn};
 use std::path::PathBuf;
 
 fn get_main_runner(
@@ -115,10 +116,11 @@ struct Args {
 }
 
 fn main() -> std::io::Result<()> {
+    env_logger::init();
     let args = Args::parse();
 
     if cfg!(debug_assertions) {
-        eprintln!("WARNING: Debug assertions are enabled");
+        warn!("Debug assertions are enabled");
     }
 
     let buf = simple_reader(args.command, args.input)?;
@@ -140,7 +142,7 @@ fn main() -> std::io::Result<()> {
         root.join("rules/asic.celllang")
     };
 
-    eprintln!("INFO: Loading rewrite rules from {path:?}");
+    info!("Loading rewrite rules from {path:?}");
 
     let mut rules = RewriteManager::<CellLang, CellAnalysis>::new();
     let file = std::fs::File::open(path)?;

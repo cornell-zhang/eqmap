@@ -49,6 +49,8 @@ ctrlc = "3.5.1"
 safety-net = { version = "0.6.3", features = ["graph"] }
 good_lp = { version = "1.14.2", optional = true }
 nl-compiler = { version = "0.1.18" }
+log = "0.4.29"
+env_logger = "0.9.3"
 
 [lints.clippy]
 manual_range_contains = "allow"

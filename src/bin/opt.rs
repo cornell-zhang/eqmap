@@ -11,6 +11,7 @@ use eqmap::{
     lut::LutLang,
     rewrite::{all_static_rules, register_retiming},
 };
+use log::{info, warn};
 use std::path::PathBuf;
 
 fn get_main_runner(
@@ -129,10 +130,11 @@ struct Args {
 }
 
 fn main() -> std::io::Result<()> {
+    env_logger::init();
     let args = Args::parse();
 
     if cfg!(debug_assertions) {
-        eprintln!("WARNING: Debug assertions are enabled");
+        warn!("Debug assertions are enabled");
     }
 
     let buf = simple_reader(args.command, args.input)?;
@@ -154,7 +156,7 @@ fn main() -> std::io::Result<()> {
     }
 
     if args.verbose {
-        eprintln!("INFO: Running with {} rewrite rules", rules.len());
+        info!("Running with {} rewrite rules", rules.len());
         #[cfg(feature = "dyn_decomp")]
         eprintln!(
             "INFO: Dynamic Decomposition {}",
