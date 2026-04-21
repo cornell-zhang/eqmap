@@ -1,8 +1,10 @@
 use clap::Parser;
+use eqmap::driver::logger_init;
 use eqmap::netlist::PrimitiveCell;
 use eqmap::pass::{Error, Pass, PrintVerilog};
 use eqmap::register_passes;
 use eqmap::verilog::sv_parse_wrapper;
+use log::{info, warn};
 use nl_compiler::{from_vast, from_vast_overrides};
 use safety_net::graph::{CombDepthInfo, MultiDiGraph};
 use safety_net::{Identifier, Instantiable, Netlist, format_id};
@@ -231,12 +233,13 @@ fn xilinx_overrides(id: &Identifier, cell: &PrimitiveCell) -> Option<PrimitiveCe
 
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
+    logger_init(false);
 
     if cfg!(debug_assertions) {
-        eprintln!("WARNING: Debug assertions are enabled");
+        warn!("Debug assertions are enabled");
     }
 
-    eprintln!("INFO: Netlist optimization debugging tool");
+    info!("Netlist optimization debugging tool");
 
     let mut buf = String::new();
 
@@ -246,16 +249,16 @@ fn main() -> std::io::Result<()> {
             Some(p)
         }
         None => {
-            eprintln!("INFO: Reading from stdin...");
+            info!("Reading from stdin...");
             std::io::stdin().read_to_string(&mut buf)?;
             None
         }
     };
 
-    eprintln!("INFO: Parsing Verilog...");
+    info!("Parsing Verilog...");
     let ast = sv_parse_wrapper(&buf, path).map_err(std::io::Error::other)?;
 
-    eprintln!("INFO: Compiling Verilog...");
+    info!("Compiling Verilog...");
     let f = if !args.no_xilinx {
         from_vast_overrides(&ast, xilinx_overrides).map_err(std::io::Error::other)?
     } else {
@@ -265,7 +268,7 @@ fn main() -> std::io::Result<()> {
     let n = args.passes.len();
 
     for (i, pass) in args.passes.into_iter().enumerate() {
-        eprintln!("INFO: Running pass {i} ({pass})...");
+        info!("Running pass {i} ({pass})...");
         let pass_instance = pass.get_pass();
         match pass_instance.run(&f) {
             Ok(output) => {
@@ -277,7 +280,7 @@ fn main() -> std::io::Result<()> {
                         f.verify().map_err(std::io::Error::other)?;
                     }
                     for line in output.lines() {
-                        eprintln!("INFO: {pass}: {}", line)
+                        info!("{pass}: {}", line)
                     }
                 }
             }

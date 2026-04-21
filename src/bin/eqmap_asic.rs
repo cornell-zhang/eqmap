@@ -3,11 +3,12 @@ use clap::Parser;
 use clap::ValueEnum;
 use eqmap::{
     asic::{CellAnalysis, CellLang, CellRpt, expansion_rewrites, expr_is_mapped},
-    driver::{SynthRequest, process_expression},
+    driver::{SynthRequest, logger_init, process_expression},
     netlist::{LogicMapper, PrimitiveCell},
     rewrite::RewriteManager,
     verilog::sv_parse_wrapper,
 };
+use log::{debug, info, warn};
 use nl_compiler::from_vast;
 use std::{
     io::{Read, Write, stderr, stdin},
@@ -23,7 +24,7 @@ enum Solver {
     Highs,
 }
 
-/// EqMap: ASIC Technology Mapping w/ E-Graphs
+/// ASIC Technology Mapping Optimization with E-Graphs
 #[derive(Parser, Debug)]
 #[command(version, long_about = None)]
 struct Args {
@@ -90,15 +91,17 @@ struct Args {
 
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
+    logger_init(args.verbose);
 
     if cfg!(debug_assertions) {
-        eprintln!("WARNING: Debug assertions are enabled");
+        warn!("Debug assertions are enabled");
     }
 
-    eprintln!("INFO: ASIC Technology Mapping Optimization with E-Graphs");
+    eprintln!("ASIC Technology Mapping Optimization with E-Graphs");
+    info!("ASIC Technology Mapping Optimization with E-Graphs");
 
     let full_command = std::env::args().collect::<Vec<_>>().join(" ");
-    eprintln!("INFO: {}", full_command);
+    info!("{}", full_command);
 
     let mut buf = String::new();
 
@@ -108,7 +111,7 @@ fn main() -> std::io::Result<()> {
             Some(p)
         }
         None => {
-            eprintln!("INFO: Reading from stdin...");
+            info!("Reading from stdin...");
             stdin().read_to_string(&mut buf)?;
             None
         }
@@ -118,8 +121,8 @@ fn main() -> std::io::Result<()> {
 
     let f = from_vast(&ast).map_err(std::io::Error::other)?;
 
-    eprintln!(
-        "INFO: Module {} has {} outputs",
+    info!(
+        "Module {} has {} outputs",
         f.get_name(),
         f.get_output_ports().len()
     );
@@ -141,7 +144,7 @@ fn main() -> std::io::Result<()> {
         root.join("rules/asic.celllang")
     };
 
-    eprintln!("INFO: Loading rewrite rules from {path:?}");
+    info!("Loading rewrite rules from {path:?}");
 
     let mut rules = RewriteManager::<CellLang, CellAnalysis>::new();
     let file = std::fs::File::open(path)?;
@@ -158,13 +161,11 @@ fn main() -> std::io::Result<()> {
         rules.enable_category("expansion_rewrites");
     }
 
-    if args.verbose {
-        eprintln!(
-            "INFO: Running with {} rewrite rules. Hash: {}",
-            rules.num_active(),
-            rules.rules_hash()
-        );
-    }
+    debug!(
+        "Running with {} rewrite rules. Hash: {}",
+        rules.num_active(),
+        rules.rules_hash()
+    );
 
     let rules = rules.active_rules();
 
@@ -231,7 +232,7 @@ fn main() -> std::io::Result<()> {
         ));
     }
 
-    eprintln!("INFO: Compiling Verilog...");
+    info!("Compiling Verilog...");
     let mut mapper = f
         .get_analysis::<LogicMapper<CellLang, PrimitiveCell>>()
         .map_err(std::io::Error::other)?;
@@ -240,8 +241,8 @@ fn main() -> std::io::Result<()> {
     let mapping = mapping.pop().unwrap();
     let expr = mapping.get_expr();
 
-    eprintln!("INFO: Building e-graph...");
-    let result = process_expression::<CellLang, _, CellRpt>(expr, req, true, args.verbose)?
+    info!("Building e-graph...");
+    let result = process_expression::<CellLang, _, CellRpt>(expr, req, true)?
         .with_name(f.get_name().as_str());
 
     if !(args.no_assert || expr_is_mapped(result.get_expr())) {
@@ -256,7 +257,7 @@ fn main() -> std::io::Result<()> {
         result.print_report(&mut stderr().lock())?;
     }
 
-    eprintln!("INFO: Writing output to Verilog...");
+    info!("Writing output to Verilog...");
     let mapping = mapping.with_expr(result.get_expr().to_owned());
     mapping.rewrite(&f).map_err(std::io::Error::other)?;
 
@@ -269,7 +270,7 @@ fn main() -> std::io::Result<()> {
             env!("CARGO_PKG_VERSION"),
             f
         )?;
-        eprintln!("INFO: Goodbye");
+        info!("Goodbye");
     } else {
         print!("{f}");
     }

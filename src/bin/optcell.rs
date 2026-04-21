@@ -4,10 +4,11 @@ use clap::ValueEnum;
 use egg::{FromOpError, RecExpr, RecExprParseError};
 use eqmap::{
     asic::{CellAnalysis, CellLang, CellRpt, asic_rewrites},
-    driver::{SynthRequest, process_string_expression, simple_reader},
+    driver::{SynthRequest, logger_init, process_string_expression, simple_reader},
     rewrite::RewriteManager,
     verilog::SVModule,
 };
+use log::{debug, info, warn};
 use std::path::PathBuf;
 
 fn get_main_runner(
@@ -116,9 +117,10 @@ struct Args {
 
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
+    logger_init(args.verbose);
 
     if cfg!(debug_assertions) {
-        eprintln!("WARNING: Debug assertions are enabled");
+        warn!("Debug assertions are enabled");
     }
 
     let buf = simple_reader(args.command, args.input)?;
@@ -140,7 +142,7 @@ fn main() -> std::io::Result<()> {
         root.join("rules/asic.celllang")
     };
 
-    eprintln!("INFO: Loading rewrite rules from {path:?}");
+    info!("Loading rewrite rules from {path:?}");
 
     let mut rules = RewriteManager::<CellLang, CellAnalysis>::new();
     let file = std::fs::File::open(path)?;
@@ -155,13 +157,11 @@ fn main() -> std::io::Result<()> {
         }
     }
 
-    if args.verbose {
-        eprintln!(
-            "INFO: Running with {} rewrite rules. Hash: {}",
-            rules.num_active(),
-            rules.rules_hash()
-        );
-    }
+    debug!(
+        "Running with {} rewrite rules. Hash: {}",
+        rules.num_active(),
+        rules.rules_hash()
+    );
 
     let rules = rules.active_rules();
 
@@ -214,12 +214,8 @@ fn main() -> std::io::Result<()> {
     };
 
     for line in buf.lines() {
-        let result = process_string_expression::<CellLang, _, CellRpt>(
-            line,
-            req.clone(),
-            !args.verify,
-            args.verbose,
-        )?;
+        let result =
+            process_string_expression::<CellLang, _, CellRpt>(line, req.clone(), !args.verify)?;
         if !result.is_empty() {
             if args.verilog {
                 let module = SVModule::from_cells(

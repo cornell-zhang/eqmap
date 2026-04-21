@@ -14,17 +14,33 @@ use egg::{
     RecExpr, RecExprParseError, Rewrite, Runner, StopReason, Symbol, TreeTerm,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use simplelog::{ColorChoice, ConfigBuilder, TermLogger, TerminalMode};
 use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
+use log::{info, warn};
 use serde::Serialize;
 use std::{
     io::{IsTerminal, Read, Write},
     path::PathBuf,
 };
+
+/// Initializes the logger
+pub fn logger_init(verbose: bool) {
+    let level = if verbose {
+        log::LevelFilter::Debug
+    } else {
+        log::LevelFilter::Info
+    };
+    let config = ConfigBuilder::new()
+        .add_filter_ignore_str("egg")
+        .set_thread_level(log::LevelFilter::Off)
+        .build();
+    TermLogger::init(level, config, TerminalMode::Stderr, ColorChoice::Auto).unwrap();
+}
 
 const MAX_CANON_SIZE: usize = 30000;
 
@@ -912,7 +928,7 @@ where
 
     fn explore(&mut self) -> Result<(), String> {
         let runner = if self.gen_proof {
-            eprintln!("WARNING: Proof generation is on (slow)");
+            warn!("Proof generation is on (slow)");
             Runner::default().with_explanations_enabled()
         } else {
             Runner::default().with_explanations_disabled()
@@ -1040,9 +1056,9 @@ where
             let runner = self.result.as_ref().unwrap();
             let croot = runner.egraph.find(runner.roots[0]);
             let data = &runner.egraph[croot].data;
-            eprintln!("INFO: Root analysis");
-            eprintln!("INFO: =============");
-            eprintln!("INFO:\t{data:?}");
+            info!("Root analysis");
+            info!("=============");
+            info!("\t{data:?}");
         }
 
         Ok(())
@@ -1059,7 +1075,7 @@ where
         }
 
         if let Some(f) = self.purge_fn.take() {
-            eprintln!("INFO: Purging e-graph...");
+            info!("Purging e-graph...");
             purge_graph(&mut self.result.as_mut().unwrap().egraph, f.as_ref())?;
         }
 
@@ -1069,19 +1085,16 @@ where
         let root = runner.egraph.find(runner.roots[0]);
         if self.gen_proof {
             let report = runner.report();
-            eprintln!("INFO: {}", report.to_string().replace('\n', "\nINFO: "));
+            info!("{report}");
         }
 
         // use an Extractor to pick the best element of the root eclass
-        eprintln!("INFO: Extracting...");
+        info!("Extracting...");
         let extraction_start = Instant::now();
         let best = extractor(&runner.egraph, root);
         let extraction_time = extraction_start.elapsed();
         if self.gen_proof {
-            eprintln!(
-                "INFO: Extraction time: {} seconds",
-                extraction_time.as_secs_f64()
-            );
+            info!("Extraction time: {} seconds", extraction_time.as_secs_f64());
         }
 
         let stop_reason = runner.stop_reason.as_ref().unwrap().clone();
@@ -1093,15 +1106,15 @@ where
                 stop_reason
             ));
         } else {
-            eprintln!(
-                "INFO: Grown to {} nodes with reason {:?}",
+            info!(
+                "Grown to {} nodes with reason {:?}",
                 runner.egraph.total_number_of_nodes(),
                 stop_reason
             );
         }
 
         let rpt = if self.produce_rpt {
-            eprintln!("INFO: Generating report...");
+            info!("Generating report...");
             Some(R::new(
                 &self.expr,
                 &best,
@@ -1182,7 +1195,7 @@ where
                 self.greedy_extract_with(L::depth_cost_fn())
             }
             (OptStrat::MaxDepth, ExtractStrat::Greedy) => {
-                eprintln!("WARNING: Maximizing cost on e-graphs with cycles will crash.");
+                warn!("Maximizing cost on e-graphs with cycles will crash.");
                 self.greedy_extract_with(NegativeCostFn::new(L::depth_cost_fn()))
             }
             (OptStrat::CellCount(k), ExtractStrat::Greedy) => {
@@ -1199,7 +1212,7 @@ where
                 OptStrat::CellCount(6) | OptStrat::CellCountRegWeighted(6, 1) | OptStrat::AstSize,
                 ExtractStrat::Cbc(t),
             ) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: ILP ON");
+                info!("ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
                 L::canonicalize_expr(e.solve_with_timeout(root, good_lp::coin_cbc, t as f64))
             }),
@@ -1208,7 +1221,7 @@ where
                 OptStrat::CellCount(6) | OptStrat::CellCountRegWeighted(6, 1) | OptStrat::AstSize,
                 ExtractStrat::Highs(t),
             ) => self.extract_with(|egraph, root| {
-                eprintln!("INFO: ILP ON");
+                info!("ILP ON");
                 let mut e = egg::LpExtractor::new(egraph, egg::AstSize);
                 L::canonicalize_expr(e.solve_with_timeout(root, good_lp::highs, t as f64))
             }),
@@ -1251,7 +1264,6 @@ pub fn process_expression<L, A, R>(
     expr: RecExpr<L>,
     req: SynthRequest<L, A>,
     no_verify: bool,
-    verbose: bool,
 ) -> std::io::Result<SynthOutput<L, R>>
 where
     L: CircuitLang,
@@ -1263,7 +1275,7 @@ where
     }
 
     if cfg!(debug_assertions) {
-        eprintln!("WARNING: Running with debug assertions is slow");
+        warn!("Running with debug assertions is slow");
     }
 
     let mut req = req.with_expr(expr.clone());
@@ -1272,37 +1284,37 @@ where
 
     #[cfg(feature = "graph_dumps")]
     if let Some(p) = &req.dump_egraph {
-        eprintln!("INFO: Dumping e-graph...");
+        info!("Dumping e-graph...");
         let mut file = std::fs::File::create(p)?;
         req.serialize_with_greedy_cost(L::depth_cost_fn(), &mut file)?;
     }
 
-    if verbose && result.has_explanation() {
-        eprintln!("INFO: Rule uses in proof");
-        eprintln!("INFO: =============");
+    if result.has_explanation() {
+        info!("Rule uses in proof");
+        info!("=============");
         let proof = result.get_rule_uses().unwrap();
         let mut linecount = 0;
         for line in proof.lines() {
-            eprintln!("INFO:\t{line}");
+            info!("\t{line}");
             linecount += 1;
         }
-        eprintln!("INFO: Approx. {linecount} lines in proof tree");
+        info!("Approx. {linecount} lines in proof tree");
     } else if req.get_expr().as_ref().len() < 128 {
         let expr = req.get_expr().to_string();
         let len = expr.len().min(160);
-        eprintln!("INFO: {} ... => ", &expr[0..len]);
+        info!("{} ... => ", &expr[0..len]);
     }
 
     let simplified = result.get_expr();
 
     // Verify functionality
     if no_verify {
-        eprintln!("INFO: Skipping functionality tests...");
+        info!("Skipping functionality tests...");
     } else {
-        eprintln!("INFO: Checking expression...");
+        info!("Checking expression...");
         let check = L::check_expr(&expr, simplified);
-        if check.is_inconclusive() && verbose {
-            eprintln!("WARNING: Functionality verification inconclusive");
+        if check.is_inconclusive() {
+            warn!("Functionality verification inconclusive");
         }
         if check.is_not_equiv() {
             match result.get_expl() {
@@ -1328,7 +1340,6 @@ pub fn process_string_expression<L, A, R>(
     line: &str,
     req: SynthRequest<L, A>,
     no_verify: bool,
-    verbose: bool,
 ) -> std::io::Result<SynthOutput<L, R>>
 where
     L: CircuitLang,
@@ -1347,5 +1358,5 @@ where
     let expr = line.split("//").next().unwrap();
     let expr: RecExpr<L> = expr.parse().map_err(std::io::Error::other)?;
 
-    process_expression(expr, req, no_verify, verbose)
+    process_expression(expr, req, no_verify)
 }

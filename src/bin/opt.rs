@@ -6,11 +6,11 @@ use egg::*;
 use eqmap::rewrite::dyn_decompositions;
 use eqmap::{
     analysis::LutAnalysis,
-    driver::{SynthReport, SynthRequest, process_string_expression, simple_reader},
-    lut,
-    lut::LutLang,
+    driver::{SynthReport, SynthRequest, logger_init, process_string_expression, simple_reader},
+    lut::{self, LutLang},
     rewrite::{all_static_rules, register_retiming},
 };
+use log::{debug, warn};
 use std::path::PathBuf;
 
 fn get_main_runner(
@@ -130,9 +130,10 @@ struct Args {
 
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
+    logger_init(args.verbose);
 
     if cfg!(debug_assertions) {
-        eprintln!("WARNING: Debug assertions are enabled");
+        warn!("Debug assertions are enabled");
     }
 
     let buf = simple_reader(args.command, args.input)?;
@@ -153,14 +154,12 @@ fn main() -> std::io::Result<()> {
         rules.append(&mut register_retiming());
     }
 
-    if args.verbose {
-        eprintln!("INFO: Running with {} rewrite rules", rules.len());
-        #[cfg(feature = "dyn_decomp")]
-        eprintln!(
-            "INFO: Dynamic Decomposition {}",
-            if args.decomp { "ON" } else { "OFF" }
-        );
-    }
+    debug!("Running with {} rewrite rules", rules.len());
+    #[cfg(feature = "dyn_decomp")]
+    debug!(
+        "Dynamic Decomposition {}",
+        if args.decomp { "ON" } else { "OFF" }
+    );
 
     let req = SynthRequest::default().with_rules(rules).with_k(args.k);
 
@@ -226,12 +225,8 @@ fn main() -> std::io::Result<()> {
     };
 
     for line in buf.lines() {
-        let result = process_string_expression::<_, _, SynthReport>(
-            line,
-            req.clone(),
-            args.no_verify,
-            args.verbose,
-        )?;
+        let result =
+            process_string_expression::<_, _, SynthReport>(line, req.clone(), args.no_verify)?;
         if !result.is_empty() {
             println!("{result}");
         }
