@@ -242,7 +242,7 @@ fn main() -> std::io::Result<()> {
     let expr = mapping.get_expr();
 
     info!("Building e-graph...");
-    let result = process_expression::<CellLang, _, CellRpt>(expr, req, true, args.verbose)?
+    let result = process_expression::<CellLang, _, CellRpt>(expr, req, true)?
         .with_name(f.get_name().as_str());
 
     if !(args.no_assert || expr_is_mapped(result.get_expr())) {

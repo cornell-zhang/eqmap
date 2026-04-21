@@ -1264,7 +1264,6 @@ pub fn process_expression<L, A, R>(
     expr: RecExpr<L>,
     req: SynthRequest<L, A>,
     no_verify: bool,
-    verbose: bool,
 ) -> std::io::Result<SynthOutput<L, R>>
 where
     L: CircuitLang,
@@ -1290,7 +1289,7 @@ where
         req.serialize_with_greedy_cost(L::depth_cost_fn(), &mut file)?;
     }
 
-    if verbose && result.has_explanation() {
+    if result.has_explanation() {
         info!("Rule uses in proof");
         info!("=============");
         let proof = result.get_rule_uses().unwrap();
@@ -1314,7 +1313,7 @@ where
     } else {
         info!("Checking expression...");
         let check = L::check_expr(&expr, simplified);
-        if check.is_inconclusive() && verbose {
+        if check.is_inconclusive() {
             warn!("Functionality verification inconclusive");
         }
         if check.is_not_equiv() {
@@ -1341,7 +1340,6 @@ pub fn process_string_expression<L, A, R>(
     line: &str,
     req: SynthRequest<L, A>,
     no_verify: bool,
-    verbose: bool,
 ) -> std::io::Result<SynthOutput<L, R>>
 where
     L: CircuitLang,
@@ -1360,5 +1358,5 @@ where
     let expr = line.split("//").next().unwrap();
     let expr: RecExpr<L> = expr.parse().map_err(std::io::Error::other)?;
 
-    process_expression(expr, req, no_verify, verbose)
+    process_expression(expr, req, no_verify)
 }

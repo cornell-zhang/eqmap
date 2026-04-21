@@ -225,12 +225,8 @@ fn main() -> std::io::Result<()> {
     };
 
     for line in buf.lines() {
-        let result = process_string_expression::<_, _, SynthReport>(
-            line,
-            req.clone(),
-            args.no_verify,
-            args.verbose,
-        )?;
+        let result =
+            process_string_expression::<_, _, SynthReport>(line, req.clone(), args.no_verify)?;
         if !result.is_empty() {
             println!("{result}");
         }

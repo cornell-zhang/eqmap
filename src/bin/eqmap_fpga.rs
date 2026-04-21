@@ -275,7 +275,7 @@ fn main() -> std::io::Result<()> {
     let expr = mapping.get_expr();
 
     info!("Building e-graph...");
-    let result = process_expression::<_, _, SynthReport>(expr, req, args.no_verify, args.verbose)?
+    let result = process_expression::<_, _, SynthReport>(expr, req, args.no_verify)?
         .with_name(f.get_name().as_str());
 
     if let Some(p) = args.report {

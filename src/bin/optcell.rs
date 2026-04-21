@@ -214,12 +214,8 @@ fn main() -> std::io::Result<()> {
     };
 
     for line in buf.lines() {
-        let result = process_string_expression::<CellLang, _, CellRpt>(
-            line,
-            req.clone(),
-            !args.verify,
-            args.verbose,
-        )?;
+        let result =
+            process_string_expression::<CellLang, _, CellRpt>(line, req.clone(), !args.verify)?;
         if !result.is_empty() {
             if args.verilog {
                 let module = SVModule::from_cells(
