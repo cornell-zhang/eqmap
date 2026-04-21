@@ -4,7 +4,7 @@ use clap::ValueEnum;
 use egg::{FromOpError, RecExpr, RecExprParseError};
 use eqmap::{
     asic::{CellAnalysis, CellLang, CellRpt, asic_rewrites},
-    driver::{SynthRequest, process_string_expression, simple_reader},
+    driver::{SynthRequest, logger_init, process_string_expression, simple_reader},
     rewrite::RewriteManager,
     verilog::SVModule,
 };
@@ -116,8 +116,8 @@ struct Args {
 }
 
 fn main() -> std::io::Result<()> {
-    env_logger::init();
     let args = Args::parse();
+    logger_init(args.verbose);
 
     if cfg!(debug_assertions) {
         warn!("Debug assertions are enabled");

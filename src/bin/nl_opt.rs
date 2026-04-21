@@ -1,4 +1,5 @@
 use clap::Parser;
+use eqmap::driver::logger_init;
 use eqmap::netlist::PrimitiveCell;
 use eqmap::pass::{Error, Pass, PrintVerilog};
 use eqmap::register_passes;
@@ -231,8 +232,8 @@ fn xilinx_overrides(id: &Identifier, cell: &PrimitiveCell) -> Option<PrimitiveCe
 }
 
 fn main() -> std::io::Result<()> {
-    env_logger::init();
     let args = Args::parse();
+    logger_init(false);
 
     if cfg!(debug_assertions) {
         warn!("Debug assertions are enabled");

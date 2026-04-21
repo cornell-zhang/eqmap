@@ -6,9 +6,8 @@ use egg::*;
 use eqmap::rewrite::dyn_decompositions;
 use eqmap::{
     analysis::LutAnalysis,
-    driver::{SynthReport, SynthRequest, process_string_expression, simple_reader},
-    lut,
-    lut::LutLang,
+    driver::{SynthReport, SynthRequest, logger_init, process_string_expression, simple_reader},
+    lut::{self, LutLang},
     rewrite::{all_static_rules, register_retiming},
 };
 use log::{debug, warn};
@@ -130,8 +129,8 @@ struct Args {
 }
 
 fn main() -> std::io::Result<()> {
-    env_logger::init();
     let args = Args::parse();
+    logger_init(args.verbose);
 
     if cfg!(debug_assertions) {
         warn!("Debug assertions are enabled");

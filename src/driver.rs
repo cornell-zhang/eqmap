@@ -14,6 +14,7 @@ use egg::{
     RecExpr, RecExprParseError, Rewrite, Runner, StopReason, Symbol, TreeTerm,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use simplelog::{ColorChoice, ConfigBuilder, TermLogger, TerminalMode};
 use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
 use std::sync::Arc;
@@ -26,6 +27,20 @@ use std::{
     io::{IsTerminal, Read, Write},
     path::PathBuf,
 };
+
+/// Initializes the logger
+pub fn logger_init(verbose: bool) {
+    let level = if verbose {
+        log::LevelFilter::Debug
+    } else {
+        log::LevelFilter::Info
+    };
+    let config = ConfigBuilder::new()
+        .add_filter_ignore_str("egg")
+        .set_thread_level(log::LevelFilter::Off)
+        .build();
+    TermLogger::init(level, config, TerminalMode::Stderr, ColorChoice::Auto).unwrap();
+}
 
 const MAX_CANON_SIZE: usize = 30000;
 

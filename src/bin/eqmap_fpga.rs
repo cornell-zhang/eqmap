@@ -4,7 +4,7 @@ use clap::ValueEnum;
 #[cfg(feature = "dyn_decomp")]
 use eqmap::rewrite::dyn_decompositions;
 use eqmap::{
-    driver::{SynthReport, SynthRequest, process_expression},
+    driver::{SynthReport, SynthRequest, logger_init, process_expression},
     lut::LutLang,
     netlist::{LogicMapper, PrimitiveCell},
     rewrite::{all_static_rules, register_retiming},
@@ -119,8 +119,8 @@ fn xilinx_overrides(id: &Identifier, cell: &PrimitiveCell) -> Option<PrimitiveCe
 }
 
 fn main() -> std::io::Result<()> {
-    env_logger::init();
     let args = Args::parse();
+    logger_init(args.verbose);
 
     if cfg!(debug_assertions) {
         warn!("Debug assertions are enabled");

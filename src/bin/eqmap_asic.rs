@@ -3,7 +3,7 @@ use clap::Parser;
 use clap::ValueEnum;
 use eqmap::{
     asic::{CellAnalysis, CellLang, CellRpt, expansion_rewrites, expr_is_mapped},
-    driver::{SynthRequest, process_expression},
+    driver::{SynthRequest, logger_init, process_expression},
     netlist::{LogicMapper, PrimitiveCell},
     rewrite::RewriteManager,
     verilog::sv_parse_wrapper,
@@ -90,8 +90,8 @@ struct Args {
 }
 
 fn main() -> std::io::Result<()> {
-    env_logger::init();
     let args = Args::parse();
+    logger_init(args.verbose);
 
     if cfg!(debug_assertions) {
         warn!("Debug assertions are enabled");
