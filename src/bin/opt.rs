@@ -11,7 +11,7 @@ use eqmap::{
     lut::LutLang,
     rewrite::{all_static_rules, register_retiming},
 };
-use log::{info, warn};
+use log::{debug, warn};
 use std::path::PathBuf;
 
 fn get_main_runner(
@@ -155,14 +155,12 @@ fn main() -> std::io::Result<()> {
         rules.append(&mut register_retiming());
     }
 
-    if args.verbose {
-        info!("Running with {} rewrite rules", rules.len());
-        #[cfg(feature = "dyn_decomp")]
-        eprintln!(
-            "INFO: Dynamic Decomposition {}",
-            if args.decomp { "ON" } else { "OFF" }
-        );
-    }
+    debug!("Running with {} rewrite rules", rules.len());
+    #[cfg(feature = "dyn_decomp")]
+    debug!(
+        "Dynamic Decomposition {}",
+        if args.decomp { "ON" } else { "OFF" }
+    );
 
     let req = SynthRequest::default().with_rules(rules).with_k(args.k);
 

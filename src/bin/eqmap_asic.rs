@@ -8,7 +8,7 @@ use eqmap::{
     rewrite::RewriteManager,
     verilog::sv_parse_wrapper,
 };
-use log::{info, warn};
+use log::{debug, info, warn};
 use nl_compiler::from_vast;
 use std::{
     io::{Read, Write, stderr, stdin},
@@ -121,8 +121,8 @@ fn main() -> std::io::Result<()> {
 
     let f = from_vast(&ast).map_err(std::io::Error::other)?;
 
-    eprintln!(
-        "INFO: Module {} has {} outputs",
+    info!(
+        "Module {} has {} outputs",
         f.get_name(),
         f.get_output_ports().len()
     );
@@ -161,13 +161,11 @@ fn main() -> std::io::Result<()> {
         rules.enable_category("expansion_rewrites");
     }
 
-    if args.verbose {
-        eprintln!(
-            "INFO: Running with {} rewrite rules. Hash: {}",
-            rules.num_active(),
-            rules.rules_hash()
-        );
-    }
+    debug!(
+        "Running with {} rewrite rules. Hash: {}",
+        rules.num_active(),
+        rules.rules_hash()
+    );
 
     let rules = rules.active_rules();
 

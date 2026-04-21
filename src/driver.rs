@@ -1079,10 +1079,7 @@ where
         let best = extractor(&runner.egraph, root);
         let extraction_time = extraction_start.elapsed();
         if self.gen_proof {
-            eprintln!(
-                "INFO: Extraction time: {} seconds",
-                extraction_time.as_secs_f64()
-            );
+            info!("Extraction time: {} seconds", extraction_time.as_secs_f64());
         }
 
         let stop_reason = runner.stop_reason.as_ref().unwrap().clone();
@@ -1094,8 +1091,8 @@ where
                 stop_reason
             ));
         } else {
-            eprintln!(
-                "INFO: Grown to {} nodes with reason {:?}",
+            info!(
+                "Grown to {} nodes with reason {:?}",
                 runner.egraph.total_number_of_nodes(),
                 stop_reason
             );

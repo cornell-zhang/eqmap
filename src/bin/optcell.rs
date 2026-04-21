@@ -8,7 +8,7 @@ use eqmap::{
     rewrite::RewriteManager,
     verilog::SVModule,
 };
-use log::{info, warn};
+use log::{debug, info, warn};
 use std::path::PathBuf;
 
 fn get_main_runner(
@@ -157,13 +157,11 @@ fn main() -> std::io::Result<()> {
         }
     }
 
-    if args.verbose {
-        eprintln!(
-            "INFO: Running with {} rewrite rules. Hash: {}",
-            rules.num_active(),
-            rules.rules_hash()
-        );
-    }
+    debug!(
+        "Running with {} rewrite rules. Hash: {}",
+        rules.num_active(),
+        rules.rules_hash()
+    );
 
     let rules = rules.active_rules();
 

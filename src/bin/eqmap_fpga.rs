@@ -10,7 +10,7 @@ use eqmap::{
     rewrite::{all_static_rules, register_retiming},
     verilog::sv_parse_wrapper,
 };
-use log::{info, warn};
+use log::{debug, info, warn};
 use nl_compiler::from_vast_overrides;
 use safety_net::Identifier;
 use std::{
@@ -152,8 +152,8 @@ fn main() -> std::io::Result<()> {
     info!("Compiling Verilog...");
     let f = from_vast_overrides(&ast, xilinx_overrides).map_err(std::io::Error::other)?;
 
-    eprintln!(
-        "INFO: Module {} has {} outputs",
+    info!(
+        "Module {} has {} outputs",
         f.get_name(),
         f.get_output_ports().len()
     );
@@ -174,18 +174,16 @@ fn main() -> std::io::Result<()> {
         rules.append(&mut register_retiming());
     }
 
-    if args.verbose {
-        info!("Running with {} rewrite rules", rules.len());
-        #[cfg(feature = "dyn_decomp")]
-        eprintln!(
-            "INFO: Dynamic Decomposition {}",
-            if args.decomp { "ON" } else { "OFF" }
-        );
-        eprintln!(
-            "INFO: Retiming rewrites {}",
-            if args.no_retime { "OFF" } else { "ON" }
-        );
-    }
+    debug!("Running with {} rewrite rules", rules.len());
+    #[cfg(feature = "dyn_decomp")]
+    debug!(
+        "Dynamic Decomposition {}",
+        if args.decomp { "ON" } else { "OFF" }
+    );
+    debug!(
+        "Retiming rewrites {}",
+        if args.no_retime { "OFF" } else { "ON" }
+    );
 
     let req = SynthRequest::default().with_rules(rules);
 
