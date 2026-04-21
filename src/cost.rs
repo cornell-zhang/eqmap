@@ -6,7 +6,7 @@
 use super::asic::CellLang;
 use super::lut::LutLang;
 use egg::{CostFunction, Id, Language};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 /// A cost function that extracts LUTs with at most `k` fan-in.
 /// Gates have cost [u64::MAX] to prevent their extraction.
@@ -247,5 +247,74 @@ impl CostFunction<CellLang> for GateCostFn {
             }
         };
         enode.fold(op_cost, |sum, id| sum.saturating_add(costs(id)))
+    }
+}
+
+/// A randomized extractor to use for program fuzzing.
+pub struct RandomExtract<L> {
+    choice_func: fn(&[L]) -> usize,
+}
+
+impl<L> RandomExtract<L>
+where
+    L: Language,
+{
+    /// Build an equivalent expression with random choices.
+    /// The function returns the ID of term in the output expression.
+    fn extract_term<A>(
+        &self,
+        egraph: &egg::EGraph<L, A>,
+        id: Id,
+        expr: &mut egg::RecExpr<L>,
+        res: &mut HashMap<Id, Id>,
+    ) -> Id
+    where
+        A: egg::Analysis<L>,
+    {
+        if res.contains_key(&id) {
+            return res[&id];
+        }
+
+        let choices = &egraph[id].nodes;
+        let choice = (self.choice_func)(choices);
+        let node = choices[choice]
+            .clone()
+            .map_children(|child| self.extract_term(egraph, child, expr, res));
+
+        res.insert(id, expr.add(node));
+        res[&id]
+    }
+
+    /// Create a randomized extractor using the rand crate.
+    pub fn new() -> Self {
+        use rand::{RngExt, rng};
+        RandomExtract {
+            choice_func: |choices| rng().random_range(0..choices.len()),
+        }
+    }
+
+    /// Use an arbitrary choice function to perform extraction with
+    pub fn with_choice_func(choice_func: fn(&[L]) -> usize) -> Self {
+        RandomExtract { choice_func }
+    }
+
+    /// Extract a random expression from the egraph using rand crate.
+    pub fn extract<A>(&self, egraph: &egg::EGraph<L, A>, id: egg::Id) -> egg::RecExpr<L>
+    where
+        A: egg::Analysis<L>,
+    {
+        let mut expr = egg::RecExpr::default();
+        let id = egraph.find(id);
+        self.extract_term(egraph, id, &mut expr, &mut HashMap::new());
+        expr
+    }
+}
+
+impl<L> Default for RandomExtract<L>
+where
+    L: egg::Language,
+{
+    fn default() -> Self {
+        Self::new()
     }
 }
