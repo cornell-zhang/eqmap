@@ -1,5 +1,4 @@
 use clap::Parser;
-#[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
 use clap::ValueEnum;
 #[cfg(feature = "dyn_decomp")]
 use eqmap::rewrite::dyn_decompositions;
@@ -25,6 +24,13 @@ enum Solver {
     Cbc,
     #[cfg(feature = "exact_highs")]
     Highs,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+enum PartitionMethod {
+    R2R,
+    ArcSet,
+    DelayPaths,
 }
 
 /// EqMap: FPGA Technology Mapping w/ E-Graphs
@@ -73,9 +79,9 @@ struct Args {
     #[arg(long, value_enum)]
     exact: Option<Solver>,
 
-    /// Do not use register retiming
-    #[arg(short = 'r', long, default_value_t = false)]
-    no_retime: bool,
+    /// Netlist partitioning method for re-synthesis
+    #[arg(long, value_enum, default_value_t = PartitionMethod::ArcSet)]
+    partition: PartitionMethod,
 
     /// Print explanations (generates a proof and runs slower)
     #[arg(short = 'v', long, default_value_t = false)]
@@ -174,7 +180,8 @@ fn main() -> std::io::Result<()> {
         rules.append(&mut dyn_decompositions(true));
     }
 
-    if !args.no_retime {
+    // Cannot retime broken up paths
+    if args.partition != PartitionMethod::R2R {
         rules.append(&mut register_retiming());
     }
 
@@ -186,7 +193,11 @@ fn main() -> std::io::Result<()> {
     );
     debug!(
         "Retiming rewrites {}",
-        if args.no_retime { "OFF" } else { "ON" }
+        if args.partition == PartitionMethod::R2R {
+            "OFF"
+        } else {
+            "ON"
+        }
     );
 
     let req = SynthRequest::default().with_rules(rules);
@@ -271,11 +282,17 @@ fn main() -> std::io::Result<()> {
     let mut mapper = f
         .get_analysis::<LogicMapper<LutLang, PrimitiveCell>>()
         .map_err(std::io::Error::other)?;
-    if args.no_retime {
-        mapper.insert_all_r2r().map_err(std::io::Error::other)?;
-    } else {
-        mapper.insert_partitioned().map_err(std::io::Error::other)?;
+
+    match args.partition {
+        PartitionMethod::R2R => {
+            mapper.insert_all_r2r().map_err(std::io::Error::other)?;
+        }
+        PartitionMethod::ArcSet => {
+            mapper.insert_partitioned().map_err(std::io::Error::other)?;
+        }
+        PartitionMethod::DelayPaths => todo!("Implement delay-based partitioning"),
     }
+
     let mut mapping = mapper.mappings();
     let mapping = mapping.pop().unwrap();
     let expr = mapping.get_expr();

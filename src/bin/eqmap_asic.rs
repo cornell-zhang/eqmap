@@ -1,5 +1,4 @@
 use clap::Parser;
-#[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
 use clap::ValueEnum;
 use eqmap::{
     asic::{CellAnalysis, CellLang, CellRpt, expansion_rewrites, expr_is_mapped},
@@ -22,6 +21,13 @@ enum Solver {
     Cbc,
     #[cfg(feature = "exact_highs")]
     Highs,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+enum PartitionMethod {
+    R2R,
+    ArcSet,
+    DelayPaths,
 }
 
 /// ASIC Technology Mapping Optimization with E-Graphs
@@ -63,6 +69,10 @@ struct Args {
     #[cfg(any(feature = "exact_cbc", feature = "exact_highs"))]
     #[arg(long, value_enum)]
     exact: Option<Solver>,
+
+    /// Netlist partitioning method for re-synthesis
+    #[arg(long, value_enum, default_value_t = PartitionMethod::ArcSet)]
+    partition: PartitionMethod,
 
     /// Print explanations (generates a proof and runs slower)
     #[arg(short = 'v', long, default_value_t = false)]
@@ -242,7 +252,17 @@ fn main() -> std::io::Result<()> {
     let mut mapper = f
         .get_analysis::<LogicMapper<CellLang, PrimitiveCell>>()
         .map_err(std::io::Error::other)?;
-    mapper.insert_all_r2r().map_err(std::io::Error::other)?;
+
+    match args.partition {
+        PartitionMethod::R2R => {
+            mapper.insert_all_r2r().map_err(std::io::Error::other)?;
+        }
+        PartitionMethod::ArcSet => {
+            mapper.insert_partitioned().map_err(std::io::Error::other)?;
+        }
+        PartitionMethod::DelayPaths => todo!("Implement delay-based partitioning"),
+    }
+
     let mut mapping = mapper.mappings();
     let mapping = mapping.pop().unwrap();
     let expr = mapping.get_expr();
