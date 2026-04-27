@@ -4,7 +4,7 @@
 
 `eqmap`: FPGA LUT Remapping using E-Graphs
 
-This Verilog-to-Verilog tool seeks to evaluate the use of logic rewriting and equality saturation for improving FPGA technology mapping.
+This Verilog-to-Verilog tool uses logic rewriting and equality saturation for improving FPGA technology mapping.
 
 The LUT representation can be found in the [lut] module, whereas a lot of the bit-twiddling of truth tables happens in [rewrite]. [driver] has all the code related to tooling and end-to-end integration.
 
@@ -12,7 +12,7 @@ The LUT representation can be found in the [lut] module, whereas a lot of the bi
 
 ```bash
 $ eqmap --help
-Technology Mapping Optimization with E-Graphs
+EqMap: FPGA Technology Mapping w/ E-Graphs
 
 Usage: eqmap_fpga [OPTIONS] [INPUT] [OUTPUT]
 
@@ -27,9 +27,11 @@ Options:
   -c, --no-canonicalize            Do not canonicalize the input into LUTs
   -d, --decomp                     Find new decompositions at runtime
       --disassemble <DISASSEMBLE>  Comma separated list of cell types to decompose into
-  -r, --no-retime                  Do not use register retiming
+      --partition <PARTITION>      Netlist partitioning method for re-synthesis
+                           [default: arc-set] [possible values: r2r, arc-set, delay-paths]
   -v, --verbose                    Print explanations (generates a proof and runs slower)
       --min-depth                  Extract for minimum circuit depth
+      --random                     Extract randomly
   -k, --k <K>                      Max fan in size allowed for extracted LUTs [default: 6]
   -w, --reg-weight <REG_WEIGHT>    Ratio of register cost to LUT cost [default: 1]
   -t, --timeout <TIMEOUT>          Build/extraction timeout in seconds

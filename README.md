@@ -46,7 +46,7 @@ Use `--help` to get an overview of all the options the compiler has:
 
 ```
 $ eqmap --help
-Technology Mapping Optimization with E-Graphs
+EqMap: FPGA Technology Mapping w/ E-Graphs
 
 Usage: eqmap_fpga [OPTIONS] [INPUT] [OUTPUT]
 
@@ -61,11 +61,13 @@ Options:
   -c, --no-canonicalize            Do not canonicalize the input into LUTs
   -d, --decomp                     Find new decompositions at runtime
       --disassemble <DISASSEMBLE>  Comma separated list of cell types to decompose into
-  -r, --no-retime                  Do not use register retiming
+      --partition <PARTITION>      Netlist partitioning method for re-synthesis
+                           [default: arc-set] [possible values: r2r, arc-set, delay-paths]
   -v, --verbose                    Print explanations (generates a proof and runs slower)
       --min-depth                  Extract for minimum circuit depth
-  -k, --k <K>                      Max fan in size allowed for extracted LUTs
-  -w, --reg-weight <REG_WEIGHT>    Ratio of register cost to LUT cost
+      --random                     Extract randomly
+  -k, --k <K>                      Max fan in size allowed for extracted LUTs [default: 6]
+  -w, --reg-weight <REG_WEIGHT>    Ratio of register cost to LUT cost [default: 1]
   -t, --timeout <TIMEOUT>          Build/extraction timeout in seconds
   -s, --node-limit <NODE_LIMIT>    Maximum number of nodes in graph
   -n, --iter-limit <ITER_LIMIT>    Maximum number of rewrite iterations

@@ -72,7 +72,7 @@ struct Args {
 
     /// Netlist partitioning method for re-synthesis
     #[arg(long, value_enum, default_value_t = PartitionMethod::ArcSet)]
-    partitioning: PartitionMethod,
+    partition: PartitionMethod,
 
     /// Print explanations (generates a proof and runs slower)
     #[arg(short = 'v', long, default_value_t = false)]
@@ -253,7 +253,7 @@ fn main() -> std::io::Result<()> {
         .get_analysis::<LogicMapper<CellLang, PrimitiveCell>>()
         .map_err(std::io::Error::other)?;
 
-    match args.partitioning {
+    match args.partition {
         PartitionMethod::R2R => {
             mapper.insert_all_r2r().map_err(std::io::Error::other)?;
         }
