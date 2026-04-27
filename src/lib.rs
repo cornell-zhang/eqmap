@@ -53,6 +53,7 @@ pub mod pass;
 pub mod rewrite;
 #[cfg(feature = "graph_dumps")]
 pub mod serialize;
+pub mod timing;
 pub mod verilog;
 
 #[cfg(test)]
