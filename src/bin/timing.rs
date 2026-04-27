@@ -66,7 +66,7 @@ fn main() -> std::io::Result<()> {
         .with_joint_limits(10, 48_000, 32)
         .with_min_depth();
 
-    let result = process_expression::<_, _, SynthReport>(extracted_expr, req, false, false)?
+    let result = process_expression::<_, _, SynthReport>(extracted_expr, req, false)?
         .with_name(netlist.get_name().as_str());
 
     drop(critical_path);
