@@ -39,11 +39,14 @@ pub trait Pass {
 /// Register all these passes in an enum for clap args
 #[macro_export]
 macro_rules! register_passes {
-    ($i:ty ; $($pass:ident),+ $(,)?) => {
+    ($i:ty ; $($(#[$meta:meta])* $pass:ident),+ $(,)?) => {
         /// Enum containing all registered passes for argument parsing.
         #[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
         pub enum Passes {
-            $($pass),+
+            $(
+                $(#[$meta])*
+                $pass
+            ),+
         }
 
         impl std::fmt::Display for Passes {
