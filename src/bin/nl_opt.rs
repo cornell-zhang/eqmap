@@ -195,9 +195,27 @@ impl Pass for MarkCriticalPath {
     }
 }
 
-register_passes!(PrimitiveCell; PrintVerilog, DotGraph, Clean, DisconnectRegisters,
-                                DisconnectArcSet, MarkArcSet, RenameNets, ReportSccs,
-                                ReportDepth, MarkCriticalPath);
+register_passes!(PrimitiveCell; 
+    /// A dummy pass that emits the Verilog of the netlist.
+    PrintVerilog, 
+    /// Print the dot graph of the netlist
+    DotGraph,
+    /// Clean the netlist of cells which are not used
+    Clean,
+    /// Disconnect all register inputs
+    DisconnectRegisters,
+    /// Disconnect wires based on greedy arc set heuristic, creating a DAG
+    DisconnectArcSet,
+    /// Rename wires and instances that are part of the feedback arc set (prefixed with "arc_")
+    MarkArcSet,
+    /// Rename wires and instances sequentially 0, 1, ...
+    RenameNets,
+    /// Report the number of strongly connected components
+    ReportSccs,
+    /// Report the longest path in the netlist
+    ReportDepth,
+    /// Mark the node names of cells along the critical path (prefixed with "crit_")
+    MarkCriticalPath);
 
 /// Netlist optimization debugging tool
 #[derive(Parser, Debug)]

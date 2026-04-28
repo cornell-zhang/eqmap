@@ -37,13 +37,28 @@ pub trait Pass {
 }
 
 /// Register all these passes in an enum for clap args
+///
+/// # Example
+/// ```
+/// use eqmap::register_passes;
+/// use eqmap::netlist::PrimitiveCell;
+/// use eqmap::pass::PrintVerilog;
+/// // This defines a enum called `Passes` with unit variants.
+/// // They operate on netlists containing `PrimitiveCell` cells.
+/// register_passes!(PrimitiveCell;
+///   /// A dummy pass that emits the Verilog of the netlist.
+///   PrintVerilog);
+/// ```
 #[macro_export]
 macro_rules! register_passes {
-    ($i:ty ; $($pass:ident),+ $(,)?) => {
+    ($i:ty ; $($(#[$meta:meta])* $pass:ident),+ $(,)?) => {
         /// Enum containing all registered passes for argument parsing.
         #[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
         pub enum Passes {
-            $($pass),+
+            $(
+                $(#[$meta])*
+                $pass
+            ),+
         }
 
         impl std::fmt::Display for Passes {
