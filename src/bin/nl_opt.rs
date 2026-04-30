@@ -6,15 +6,23 @@ use eqmap::verilog::sv_parse_wrapper;
 use nl_compiler::{from_vast, from_vast_overrides};
 use safety_net::graph::{CombDepthInfo, MultiDiGraph};
 use safety_net::{Identifier, Instantiable, Netlist, format_id};
+use sv_parser::Rand;
 use std::io::Read;
 use std::path::PathBuf;
 use std::rc::Rc;
+use clap::ValueEnum;
+
 
 /// Print the dot graph of the netlist
 pub struct DotGraph;
 
 impl Pass for DotGraph {
     type I = PrimitiveCell;
+
+    fn description(&self) -> &str {
+        "Print the dot graph of the netlist"
+    }
+
 
     fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
         Ok(netlist.dot_string()?)
@@ -26,6 +34,10 @@ pub struct Clean;
 
 impl Pass for Clean {
     type I = PrimitiveCell;
+
+    fn description(&self) -> &str {
+        "Clean the netlist."
+    }
 
     fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
         let cleaned = netlist.clean()?;
@@ -42,6 +54,10 @@ pub struct DisconnectRegisters;
 
 impl Pass for DisconnectRegisters {
     type I = PrimitiveCell;
+
+    fn description(&self) -> &str {
+        "Disconnect all register inputs."
+    }
 
     fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
         let mut i = 0;
@@ -66,6 +82,10 @@ pub struct DisconnectArcSet;
 impl Pass for DisconnectArcSet {
     type I = PrimitiveCell;
 
+    fn description(&self) -> &str {
+        "Disconnect wires based on greedy arc set heuristic."
+    }
+
     fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
         let mut i = 0;
         let analysis = netlist.get_analysis::<MultiDiGraph<_>>()?;
@@ -84,6 +104,10 @@ pub struct MarkArcSet;
 
 impl Pass for MarkArcSet {
     type I = PrimitiveCell;
+
+    fn description(&self) -> &str {
+        "Rename wires and instances that are part of the feedback arc set."
+    }
 
     fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
         let mut i = 0;
@@ -107,17 +131,26 @@ pub struct RenameNets;
 impl Pass for RenameNets {
     type I = PrimitiveCell;
 
+    fn description(&self) -> &str {
+        "Rename wires and instances squentially __0__, __1__, ..."
+    }
+
     fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
         netlist.rename_nets(|_, i| format_id!("__{i}__"))?;
         Ok(format!("Renamed {} cells", netlist.len()))
     }
 }
 
+
 /// Report the number of strongly connected components
 pub struct ReportSccs;
 
 impl Pass for ReportSccs {
     type I = PrimitiveCell;
+
+    fn description(&self) -> &str {
+        "Report the number of strongly connected components"
+    }
 
     fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
         let analysis = netlist.get_analysis::<MultiDiGraph<_>>()?;
@@ -136,6 +169,11 @@ pub struct ReportDepth;
 
 impl Pass for ReportDepth {
     type I = PrimitiveCell;
+
+    fn description(&self) -> &str {
+        "Report the longest path in the netlist"
+    }
+
     fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
         let analysis = netlist.get_analysis::<CombDepthInfo<_>>()?;
 
@@ -167,6 +205,11 @@ pub struct MarkCriticalPath;
 
 impl Pass for MarkCriticalPath {
     type I = PrimitiveCell;
+
+    fn description(&self) -> &str {
+        "Mark the node names of cells along the critical path"
+    }
+
     fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
         let analysis = netlist.get_analysis::<CombDepthInfo<_>>()?;
 
@@ -198,6 +241,11 @@ pub struct CleanVis;
 
 impl Pass for CleanVis {
     type I = PrimitiveCell;
+
+    fn description(&self) -> &str {
+        "Disconnect non-data inputs to registers for better dot visualization"
+    }
+
     fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
         let mut i = 0;
         for n in netlist.matches(|i| i.is_seq()) {
@@ -219,9 +267,24 @@ register_passes!(PrimitiveCell; PrintVerilog, DotGraph, Clean, DisconnectRegiste
                                 DisconnectArcSet, MarkArcSet, RenameNets, ReportSccs,
                                 ReportDepth, MarkCriticalPath, CleanVis);
 
+                                
+impl Passes {
+    pub fn help_dump() {
+        println!("{:<30} {}", "Pass", "Description");
+        println!("{}", "-".repeat(60)); // Horizontal Line to improve readability
+        for pass in Passes::value_variants() {
+            let instance = pass.get_pass();
+            println!("{:<30} | {}", format!("{}", pass), instance.description());
+
+
+        }
+    }
+}
+
 /// Netlist optimization debugging tool
 #[derive(Parser, Debug)]
 #[command(version, long_about = None)]
+
 struct Args {
     /// Verilog file to read from (or use stdin)
     input: Option<PathBuf>,
@@ -237,6 +300,11 @@ struct Args {
     /// A list of passes to run in order
     #[arg(value_delimiter = ',', short = 'p', long, value_enum)]
     passes: Vec<Passes>,
+
+    /// Print all passes and their descriptions
+    #[arg(long, default_value_t = false)] // 
+    help_passes: bool,
+
 }
 
 fn xilinx_overrides(id: &Identifier, cell: &PrimitiveCell) -> Option<PrimitiveCell> {
@@ -253,6 +321,12 @@ fn xilinx_overrides(id: &Identifier, cell: &PrimitiveCell) -> Option<PrimitiveCe
 
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
+
+    if args.help_passes {
+        Passes::help_dump();
+        return Ok(());
+    }
+
 
     if cfg!(debug_assertions) {
         eprintln!("WARNING: Debug assertions are enabled");

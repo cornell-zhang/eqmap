@@ -26,6 +26,9 @@ pub trait Pass {
     /// The type of Instantiable in the netlist
     type I: Instantiable;
 
+    /// Description of what the method does
+    fn description(&self) -> &str;
+
     /// Run the pass on the given netlist and return any info as a string.
     fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error>;
 
@@ -68,6 +71,11 @@ pub struct PrintVerilog;
 
 impl Pass for PrintVerilog {
     type I = PrimitiveCell;
+
+
+    fn description(&self) -> &str {
+        "Prints the Verilog of the netlist."
+    }
 
     fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
         Ok(netlist.to_string())
