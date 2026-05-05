@@ -7,6 +7,7 @@ source ../../utils/setup.sh
 cat feedback.v | grep //
 
 # Check out the nl_opt tool we will using
+# nl_opt --passes <passes> <input> > <output>
 nl_opt --help
 
 # We will be comparing graph partitioning techniques
@@ -14,7 +15,8 @@ nl_opt --help
 # 2. A more minimal feedback edge set (disconnect-arc-set)
 
 # First let's just visualize the initial netlist.
-# Do you have dot to create an image?
+# Do you have dot installed to create an image?
+# https://graphviz.org/download/
 which dot
 
 # It should look pretty similar
@@ -29,24 +31,25 @@ read -n 1 -s -r -p "Press any key to continue"
 
 # You can see that there was no logic between the registers. So they are basically completely separated from the graph.
 
-# However, if we use a more minimal feedback edge set, we can isolate the critical feedback edge and keep the rest of the graph intact.
+# Using a more minimal feedback edge set, we can isolate the critical feedback edge and keep the rest of the graph intact.
+# The difference is subtle, but look at the missing feedback edge.
 nl_opt feedback.v --passes disconnect-arc-set,clean-vis,dot-graph | dot -Tpng > feedback_disconn_arc_set.png
 echo "Open feedback_disconn_arc_set.png in any image viewer"
 read -n 1 -s -r -p "Press any key to continue"
 
 # You can see the consequences of this technique in action with eqmap
 
-# Optimize reg2reg paths individually (--no retime)
-eqmap_fpga feedback.v --no-retime -k 3 | nl_opt --passes clean-vis,dot-graph | dot -Tpng > r2r.png
+# Optimize reg2reg paths individually (--partition r2r)
+eqmap_fpga feedback.v --partition r2r -k 3 | nl_opt --passes clean-vis,dot-graph | dot -Tpng > r2r.png
 echo "Open r2r.png in any image viewer"
 read -n 1 -s -r -p "Press any key to continue"
 
 # Optimize with only feedback edge remapped
-eqmap_fpga feedback.v -k 3 | nl_opt --passes clean-vis,dot-graph | dot -Tpng > arc.png
+eqmap_fpga feedback.v --partition arc-set -k 3 | nl_opt --passes clean-vis,dot-graph | dot -Tpng > arc.png
 echo "Open arc.png in any image viewer"
 read -n 1 -s -r -p "Press any key to continue"
 
 # You can see how much better the optimization result is when the graph is left more intact
-# The entire register chains are seen as structurally equivalent. And then the AND3 can optimize away.
+# The entire register chains are seen as structurally equivalent. And then the AND3 can be optimized away.
 
 echo "Done!"
