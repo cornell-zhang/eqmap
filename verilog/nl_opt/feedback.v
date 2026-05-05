@@ -27,7 +27,7 @@ module feedback (
   //
   //              Input d        +-----------critical feedback edge----------+
   //                    |        |                                           |
-  //                    v        |                                           |
+  //                    v        v                                           |
   //                    +---OR---+                                           |
   //                         |                                               |
   //                         v                                               |
