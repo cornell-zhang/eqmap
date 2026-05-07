@@ -132,7 +132,7 @@ where
 
 impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
     /// Map `nets` to [CircuitLang] nodes. `nets` that do not pass `filter_netref` *and* `filter_inst` become leaves.
-    fn insert_filtered<F, G>(
+    pub fn insert_filtered<F, G>(
         &mut self,
         mut nets: Vec<DrivenNet<I>>,
         filter_netref: F,
