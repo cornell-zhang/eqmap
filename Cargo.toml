@@ -47,7 +47,7 @@ thiserror = { version = "2.0.16" }
 sv-parser = "0.13.4"
 ctrlc = "3.5.1"
 safety-net = { version = "0.7.0", features = ["graph"] }
-safety-pass = { version = "0.3.0", features = ["id"] }
+safety-pass = { version = "0.4.0", features = ["id"] }
 good_lp = { version = "1.14.2", optional = true }
 nl-compiler = { version = "0.1.19" }
 log = "0.4.29"

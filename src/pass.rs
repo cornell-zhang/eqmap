@@ -6,50 +6,13 @@
 
 use crate::netlist::PrimitiveCell;
 use safety_net::graph::{CombDepthInfo, MultiDiGraph};
-use safety_net::{Error, Identifier, Instantiable, Netlist, format_id};
-use safety_pass::{Pass, register_passes};
+use safety_net::{Error, Identifier, Instantiable, Netlist};
+use safety_pass::{
+    Pass,
+    passes::{Clean, DotGraph, PrintVerilog, RenameNets},
+    register_passes,
+};
 use std::{fmt, rc::Rc};
-
-/// Print the dot graph of the netlist
-#[derive(Debug)]
-pub struct DotGraph;
-
-impl fmt::Display for DotGraph {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "DotGraph")
-    }
-}
-
-impl Pass for DotGraph {
-    type I = PrimitiveCell;
-
-    fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
-        netlist.dot_string()
-    }
-}
-
-/// Clean the netlist
-#[derive(Debug)]
-pub struct Clean;
-
-impl fmt::Display for Clean {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Clean")
-    }
-}
-
-impl Pass for Clean {
-    type I = PrimitiveCell;
-
-    fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
-        let cleaned = netlist.clean()?;
-        Ok(format!(
-            "Cleaned {} objects. {} remain.",
-            cleaned.len(),
-            netlist.len()
-        ))
-    }
-}
 
 /// Disconnect all register inputs
 #[derive(Debug)]
@@ -133,25 +96,6 @@ impl Pass for MarkArcSet {
         }
 
         Ok(format!("Marked {i} arcs"))
-    }
-}
-
-/// Rename wires and instances sequentially __0__, __1__, ...
-#[derive(Debug)]
-pub struct RenameNets;
-
-impl fmt::Display for RenameNets {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "RenameNets")
-    }
-}
-
-impl Pass for RenameNets {
-    type I = PrimitiveCell;
-
-    fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
-        netlist.rename_nets(|_, i| format_id!("__{i}__"))?;
-        Ok(format!("Renamed {} cells", netlist.len()))
     }
 }
 
@@ -258,42 +202,24 @@ impl Pass for MarkCriticalPath {
     }
 }
 
-/// A dummy pass that emits the Verilog of the netlist.
-#[derive(Debug)]
-pub struct PrintVerilog;
-
-impl fmt::Display for PrintVerilog {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "PrintVerilog")
-    }
-}
-
-impl Pass for PrintVerilog {
-    type I = PrimitiveCell;
-
-    fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
-        Ok(netlist.to_string())
-    }
-}
-
 register_passes!(Passes<PrimitiveCell>;
-    /// A dummy pass that emits the Verilog of the netlist.
-    PrintVerilog,
-    /// Print the dot graph of the netlist
-    DotGraph,
     /// Clean the netlist of cells which are not used
-    Clean,
+    Clean<PrimitiveCell>,
     /// Disconnect all register inputs
     DisconnectRegisters,
     /// Disconnect wires based on greedy arc set heuristic, creating a DAG
     DisconnectArcSet,
+    /// Print the dot graph of the netlist
+    DotGraph<PrimitiveCell>,
     /// Rename wires and instances that are part of the feedback arc set (prefixed with "arc_")
     MarkArcSet,
+    /// Mark the node names of cells along the critical path (prefixed with "crit_")
+    MarkCriticalPath,
+    /// A dummy pass that emits the Verilog of the netlist.
+    PrintVerilog<PrimitiveCell>,
     /// Rename wires and instances sequentially 0, 1, ...
-    RenameNets,
-    /// Report the number of strongly connected components
-    ReportSccs,
+    RenameNets<PrimitiveCell>,
     /// Report the longest path in the netlist
     ReportDepth,
-    /// Mark the node names of cells along the critical path (prefixed with "crit_")
-    MarkCriticalPath);
+    /// Report the number of strongly connected components
+    ReportSccs);

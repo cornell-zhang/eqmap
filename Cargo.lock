@@ -987,9 +987,9 @@ dependencies = [
 
 [[package]]
 name = "safety-pass"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1fde7f1e351ebbf7a237ee1d9f2fc8e777f7c129e89ba79d001dfff187e63bfd"
+checksum = "66ddd618d77e4fd05148a5028b23642f9566c35cde889458c4861c9273b30a18"
 dependencies = [
  "clap",
  "log",
