@@ -380,6 +380,7 @@ dependencies = [
  "nl-compiler",
  "rand",
  "safety-net",
+ "safety-pass",
  "serde",
  "serde_json",
  "simplelog",
@@ -981,6 +982,19 @@ checksum = "acc8b3d2bee49e8555fbcd8c8b5d8f3cd5cc803e9e823beccdabf68623984761"
 dependencies = [
  "bitvec",
  "petgraph",
+ "thiserror 2.0.18",
+]
+
+[[package]]
+name = "safety-pass"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fde7f1e351ebbf7a237ee1d9f2fc8e777f7c129e89ba79d001dfff187e63bfd"
+dependencies = [
+ "clap",
+ "log",
+ "nl-compiler",
+ "safety-net",
  "thiserror 2.0.18",
 ]
 
