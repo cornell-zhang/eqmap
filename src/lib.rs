@@ -66,7 +66,8 @@ mod tests {
     use driver::{Canonical, SynthRequest};
     use egg::{Analysis, Language, RecExpr};
     use lut::{LutExprInfo, LutLang};
-    use verilog::{PrimitiveType, SVModule, sv_parse_wrapper};
+    use safety_pass::CellType;
+    use verilog::{SVModule, sv_parse_wrapper};
 
     use super::*;
 
@@ -1030,42 +1031,61 @@ endmodule\n"
     #[test]
     fn test_input_lists() {
         assert_eq!(
-            PrimitiveType::AND4.get_input_list(),
-            vec!["A1", "A2", "A3", "A4"]
+            CellType::AND4.get_input_ports(),
+            vec!["A1".into(), "A2".into(), "A3".into(), "A4".into()]
         );
         assert_eq!(
-            PrimitiveType::AOI22.get_input_list(),
-            vec!["A1", "A2", "B1", "B2"]
+            CellType::AOI22.get_input_ports(),
+            vec!["A1".into(), "A2".into(), "B1".into(), "B2".into()]
         );
 
         assert_eq!(
-            PrimitiveType::AOI211.get_input_list(),
-            vec!["A", "B", "C1", "C2"]
+            CellType::AOI211.get_input_ports(),
+            vec!["A".into(), "B".into(), "C1".into(), "C2".into()]
         );
 
         assert_eq!(
-            PrimitiveType::AOI221.get_input_list(),
-            vec!["A", "B1", "B2", "C1", "C2"]
+            CellType::AOI221.get_input_ports(),
+            vec![
+                "A".into(),
+                "B1".into(),
+                "B2".into(),
+                "C1".into(),
+                "C2".into()
+            ]
         );
 
-        assert_eq!(PrimitiveType::XOR2.get_output(), "Z".to_string());
+        assert_eq!(CellType::XOR2.get_output_ports()[0], "Z".into());
 
         // LUT input list is backwards relative to the IR
         assert_eq!(
-            PrimitiveType::LUT5.get_input_list(),
-            vec!["I4", "I3", "I2", "I1", "I0"]
+            CellType::LUT5.get_input_ports(),
+            vec![
+                "I4".into(),
+                "I3".into(),
+                "I2".into(),
+                "I1".into(),
+                "I0".into()
+            ]
         );
 
         assert_eq!(
-            PrimitiveType::LUT6.get_input_list(),
-            vec!["I5", "I4", "I3", "I2", "I1", "I0"]
+            CellType::LUT6.get_input_ports(),
+            vec![
+                "I5".into(),
+                "I4".into(),
+                "I3".into(),
+                "I2".into(),
+                "I1".into(),
+                "I0".into()
+            ]
         );
 
-        assert_eq!(PrimitiveType::AOI222.get_num_inputs(), 6);
+        assert_eq!(CellType::AOI222.get_num_inputs(), 6);
 
         assert_eq!(
-            PrimitiveType::AOI222.get_input_list().len(),
-            PrimitiveType::AOI222.get_num_inputs()
+            CellType::AOI222.get_input_ports().len(),
+            CellType::AOI222.get_num_inputs()
         );
     }
 
@@ -1121,8 +1141,8 @@ endmodule\n"
 
     #[test]
     fn test_cell_area() {
-        assert!(PrimitiveType::INV.get_min_area().is_some());
-        assert_eq!(PrimitiveType::INV.get_min_area().unwrap(), 0.532);
+        assert!(CellType::INV.get_min_area().is_some());
+        assert_eq!(CellType::INV.get_min_area().unwrap(), 0.532);
         let expr: RecExpr<CellLang> = "(INV a)".parse().unwrap();
         let mut req: SynthRequest<CellLang, CellAnalysis> = SynthRequest::default()
             .with_expr(expr)

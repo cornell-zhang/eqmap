@@ -4,6 +4,7 @@
 
 */
 
+use safety_pass::CellType;
 use std::{
     cell::RefCell,
     collections::{BTreeMap, HashMap, HashSet, hash_map::Entry},
@@ -196,370 +197,13 @@ impl SVSignal {
     }
 }
 
-#[allow(missing_docs)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PrimitiveType {
-    AND,
-    NAND,
-    OR,
-    NOR,
-    XOR,
-    XNOR,
-    NOT,
-    INV,
-    AND2,
-    NAND2,
-    OR2,
-    NOR2,
-    XOR2,
-    XNOR2,
-    AND3,
-    NAND3,
-    OR3,
-    NOR3,
-    AND4,
-    NAND4,
-    OR4,
-    NOR4,
-    MUX,
-    MUX2,
-    MUXF7,
-    MUXF8,
-    MUXF9,
-    AOI21,
-    OAI21,
-    AOI211,
-    AOI22,
-    OAI211,
-    OAI22,
-    OAI221,
-    AOI221,
-    OAI222,
-    AOI222,
-    LUT1,
-    LUT2,
-    LUT3,
-    LUT4,
-    LUT5,
-    LUT6,
-    VCC,
-    GND,
-    FDRE,
-    FDSE,
-    FDPE,
-    FDCE,
-    MAJ3,
-}
-
-impl PrimitiveType {
-    /// Return the number of inputs of the primitive of this type
-    pub fn get_num_inputs(&self) -> usize {
-        match self {
-            Self::AND2 | Self::AND => 2,
-            Self::NAND2 | Self::NAND => 2,
-            Self::OR2 | Self::OR => 2,
-            Self::NOR2 | Self::NOR => 2,
-            Self::XOR2 | Self::XOR => 2,
-            Self::XNOR2 | Self::XNOR => 2,
-            Self::NOT | Self::INV | Self::LUT1 => 1,
-            Self::MUX | Self::MUX2 | Self::MUXF7 | Self::MUXF8 | Self::MUXF9 => 3,
-            Self::AND3 | Self::NAND3 | Self::OR3 | Self::NOR3 => 3,
-            Self::AND4 | Self::NAND4 | Self::OR4 | Self::NOR4 => 4,
-            Self::AOI21 | Self::OAI21 => 3,
-            Self::AOI211 | Self::AOI22 | Self::OAI211 | Self::OAI22 => 4,
-            Self::AOI221 | Self::OAI221 => 5,
-            Self::AOI222 | Self::OAI222 => 6,
-            Self::LUT2 => 2,
-            Self::LUT3 => 3,
-            Self::LUT4 => 4,
-            Self::LUT5 => 5,
-            Self::LUT6 => 6,
-            Self::VCC | Self::GND => 0,
-            Self::FDRE | Self::FDSE | Self::FDPE | Self::FDCE => 4,
-            Self::MAJ3 => 3,
-        }
-    }
-
-    /// Get the list of inputs for the primitive
-    pub fn get_input_list(&self) -> Vec<String> {
-        match self {
-            Self::AND
-            | Self::NAND
-            | Self::OR
-            | Self::NOR
-            | Self::XOR
-            | Self::XNOR
-            | Self::XOR2
-            | Self::XNOR2 => {
-                vec!["A".to_string(), "B".to_string()]
-            }
-            Self::INV | Self::NOT => vec!["A".to_string()],
-            Self::AND2 | Self::NAND2 | Self::OR2 | Self::NOR2 => {
-                vec!["A1".to_string(), "A2".to_string()]
-            }
-            Self::AND3 | Self::NAND3 | Self::OR3 | Self::NOR3 | Self::MAJ3 => {
-                vec!["A1".to_string(), "A2".to_string(), "A3".to_string()]
-            }
-            Self::AND4 | Self::NAND4 | Self::OR4 | Self::NOR4 => {
-                vec![
-                    "A1".to_string(),
-                    "A2".to_string(),
-                    "A3".to_string(),
-                    "A4".to_string(),
-                ]
-            }
-            Self::MUX => {
-                vec!["S".to_string(), "A".to_string(), "B".to_string()]
-            }
-            Self::MUX2 => {
-                vec!["S".to_string(), "B".to_string(), "A".to_string()]
-            }
-            Self::MUXF7 | Self::MUXF8 | Self::MUXF9 => {
-                vec!["S".to_string(), "I1".to_string(), "I0".to_string()]
-            }
-            Self::AOI21 | Self::OAI21 => vec!["A".to_string(), "B1".to_string(), "B2".to_string()],
-            Self::AOI22 | Self::OAI22 => vec![
-                "A1".to_string(),
-                "A2".to_string(),
-                "B1".to_string(),
-                "B2".to_string(),
-            ],
-            Self::AOI211 | Self::OAI211 => vec![
-                "A".to_string(),
-                "B".to_string(),
-                "C1".to_string(),
-                "C2".to_string(),
-            ],
-            Self::AOI221 | Self::OAI221 => vec![
-                "A".to_string(),
-                "B1".to_string(),
-                "B2".to_string(),
-                "C1".to_string(),
-                "C2".to_string(),
-            ],
-            Self::AOI222 | Self::OAI222 => vec![
-                "A1".to_string(),
-                "A2".to_string(),
-                "B1".to_string(),
-                "B2".to_string(),
-                "C1".to_string(),
-                "C2".to_string(),
-            ],
-            Self::LUT1 => vec!["I0".to_string()],
-            Self::LUT2 => vec!["I1".to_string(), "I0".to_string()],
-            Self::LUT3 => vec!["I2".to_string(), "I1".to_string(), "I0".to_string()],
-            Self::LUT4 => vec![
-                "I3".to_string(),
-                "I2".to_string(),
-                "I1".to_string(),
-                "I0".to_string(),
-            ],
-            Self::LUT5 => vec![
-                "I4".to_string(),
-                "I3".to_string(),
-                "I2".to_string(),
-                "I1".to_string(),
-                "I0".to_string(),
-            ],
-            Self::LUT6 => vec![
-                "I5".to_string(),
-                "I4".to_string(),
-                "I3".to_string(),
-                "I2".to_string(),
-                "I1".to_string(),
-                "I0".to_string(),
-            ],
-            Self::VCC | Self::GND => vec![],
-            Self::FDRE => vec![
-                "D".to_string(),
-                "C".to_string(),
-                "CE".to_string(),
-                "R".to_string(),
-            ],
-            Self::FDSE => vec![
-                "D".to_string(),
-                "C".to_string(),
-                "CE".to_string(),
-                "S".to_string(),
-            ],
-            Self::FDPE => vec![
-                "D".to_string(),
-                "C".to_string(),
-                "CE".to_string(),
-                "PRE".to_string(),
-            ],
-            Self::FDCE => vec![
-                "D".to_string(),
-                "C".to_string(),
-                "CE".to_string(),
-                "CLR".to_string(),
-            ],
-        }
-    }
-
-    /// Get the name of the output port for the primitive type
-    pub fn get_output(&self) -> String {
-        match self {
-            Self::AND
-            | Self::NAND
-            | Self::OR
-            | Self::NOR
-            | Self::XOR
-            | Self::XNOR
-            | Self::NOT
-            | Self::MUX => "Y".to_string(),
-            Self::LUT1
-            | Self::LUT2
-            | Self::LUT3
-            | Self::LUT4
-            | Self::LUT5
-            | Self::LUT6
-            | Self::MUXF7
-            | Self::MUXF8
-            | Self::MUXF9 => "O".to_string(),
-            Self::VCC => "P".to_string(),
-            Self::GND => "G".to_string(),
-            Self::FDRE | Self::FDSE | Self::FDPE | Self::FDCE => "Q".to_string(),
-            Self::MUX2 | Self::XOR2 => "Z".to_string(),
-            _ => "ZN".to_string(),
-        }
-    }
-
-    /// Returns true if the primitive is a k-LUT
-    pub fn is_lut(&self) -> bool {
-        matches!(
-            self,
-            Self::LUT1 | Self::LUT2 | Self::LUT3 | Self::LUT4 | Self::LUT5 | Self::LUT6
-        )
-    }
-
-    /// Returns true if the primitive is not a LUT
-    pub fn is_gate(&self) -> bool {
-        !self.is_lut()
-            && !matches!(
-                self,
-                Self::VCC | Self::GND | Self::FDRE | Self::FDSE | Self::FDPE | Self::FDCE
-            )
-    }
-
-    /// Returns true if the primitive is a register (FDRE,FDSE,FDPE, FDCE)
-    pub fn is_reg(&self) -> bool {
-        matches!(self, Self::FDRE | Self::FDSE | Self::FDPE | Self::FDCE)
-    }
-
-    /// Get the area of a minimum sized primitive of [PrimitiveType]
-    pub fn get_min_area(&self) -> Option<f32> {
-        match self {
-            Self::AND2 => Some(1.064),
-            Self::AND3 => Some(1.33),
-            Self::AND4 => Some(1.596),
-            Self::AOI21 => Some(1.064),
-            Self::AOI22 => Some(1.33),
-            Self::AOI211 => Some(1.33),
-            Self::AOI221 => Some(1.596),
-            Self::AOI222 => Some(2.128),
-            Self::INV => Some(0.532),
-            Self::MUX2 => Some(1.862),
-            Self::NAND2 => Some(0.798),
-            Self::NAND3 => Some(1.064),
-            Self::NAND4 => Some(1.33),
-            Self::NOR2 => Some(0.798),
-            Self::NOR3 => Some(1.064),
-            Self::NOR4 => Some(1.33),
-            Self::OAI21 => Some(1.064),
-            Self::OAI22 => Some(1.33),
-            Self::OAI211 => Some(1.33),
-            Self::OAI221 => Some(1.596),
-            Self::OAI222 => Some(2.128),
-            Self::OR2 => Some(1.064),
-            Self::OR3 => Some(1.33),
-            Self::OR4 => Some(1.596),
-            Self::XNOR2 => Some(1.596),
-            Self::XOR2 => Some(1.596),
-            Self::MAJ3 => Some(1.064),
-            _ => None,
-        }
-    }
-}
-
-impl FromStr for PrimitiveType {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let pre = match s.split_once("_X") {
-            Some((p, _)) => p,
-            None => s,
-        };
-
-        match pre {
-            "INV" => Ok(Self::INV),
-            "MUX" => Ok(Self::MUX),
-            "AND2" => Ok(Self::AND2),
-            "NAND2" => Ok(Self::NAND2),
-            "OR2" => Ok(Self::OR2),
-            "NOR2" => Ok(Self::NOR2),
-            "XOR2" => Ok(Self::XOR2),
-            "XNOR2" => Ok(Self::XNOR2),
-            "AND3" => Ok(Self::AND3),
-            "NAND3" => Ok(Self::NAND3),
-            "OR3" => Ok(Self::OR3),
-            "NOR3" => Ok(Self::NOR3),
-            "AND4" => Ok(Self::AND4),
-            "NAND4" => Ok(Self::NAND4),
-            "OR4" => Ok(Self::OR4),
-            "NOR4" => Ok(Self::NOR4),
-            "AOI21" => Ok(Self::AOI21),
-            "OAI21" => Ok(Self::OAI21),
-            "AOI211" => Ok(Self::AOI211),
-            "AOI22" => Ok(Self::AOI22),
-            "OAI211" => Ok(Self::OAI211),
-            "OAI22" => Ok(Self::OAI22),
-            "AOI221" => Ok(Self::AOI221),
-            "OAI221" => Ok(Self::OAI221),
-            "AOI222" => Ok(Self::AOI222),
-            "OAI222" => Ok(Self::OAI222),
-            "MUX2" => Ok(Self::MUX2),
-            "AND" => Ok(Self::AND),
-            "NAND" => Ok(Self::NAND),
-            "OR" => Ok(Self::OR),
-            "NOR" => Ok(Self::NOR),
-            "XOR" => Ok(Self::XOR),
-            "XNOR" => Ok(Self::XNOR),
-            "NOT" => Ok(Self::NOT),
-            "MUXF7" => Ok(Self::MUXF7),
-            "MUXF8" => Ok(Self::MUXF8),
-            "MUXF9" => Ok(Self::MUXF9),
-            "LUT1" => Ok(Self::LUT1),
-            "LUT2" => Ok(Self::LUT2),
-            "LUT3" => Ok(Self::LUT3),
-            "LUT4" => Ok(Self::LUT4),
-            "LUT5" => Ok(Self::LUT5),
-            "LUT6" => Ok(Self::LUT6),
-            "VCC" => Ok(Self::VCC),
-            "GND" => Ok(Self::GND),
-            "FDRE" => Ok(Self::FDRE),
-            "FDSE" => Ok(Self::FDSE),
-            "FDPE" => Ok(Self::FDPE),
-            "FDCE" => Ok(Self::FDCE),
-            "MAJ3" => Ok(Self::MAJ3),
-            _ => Err(format!("Unknown primitive type {pre}")),
-        }
-    }
-}
-
-impl fmt::Display for PrimitiveType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{self:?}")
-    }
-}
-
 /// The [SVPrimitive] struct represents a primitive instance within a netlist.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SVPrimitive {
     /// The type of the primitive
     prim: String,
     /// The logic of the primitive
-    logic: Option<PrimitiveType>,
+    logic: Option<CellType>,
     /// The name of the instance
     name: String,
     /// Number of inputs when this primitive is fully connected
@@ -611,7 +255,7 @@ impl SVPrimitive {
     }
 
     /// Returns the logic function of the primitive if it exists
-    pub fn get_logic(&self) -> Option<PrimitiveType> {
+    pub fn get_logic(&self) -> Option<CellType> {
         self.logic
     }
 
@@ -619,7 +263,7 @@ impl SVPrimitive {
     pub fn new(prim: String, name: String, n_inputs: usize) -> Self {
         let mut prim = SVPrimitive {
             prim: prim.clone(),
-            logic: PrimitiveType::from_str(prim.as_str()).ok(),
+            logic: CellType::from_str(prim.as_str()).ok(),
             name,
             n_inputs,
             inputs: BTreeMap::new(),
@@ -629,18 +273,15 @@ impl SVPrimitive {
 
         if let Some(l) = prim.logic {
             match l {
-                PrimitiveType::VCC => {
+                CellType::VCC => {
                     prim.set_attribute("VAL".to_string(), "1'b1".to_string());
                     return prim;
                 }
-                PrimitiveType::GND => {
+                CellType::GND => {
                     prim.set_attribute("VAL".to_string(), "1'b0".to_string());
                     return prim;
                 }
-                PrimitiveType::FDRE
-                | PrimitiveType::FDSE
-                | PrimitiveType::FDPE
-                | PrimitiveType::FDCE => {
+                CellType::FDRE | CellType::FDSE | CellType::FDPE | CellType::FDCE => {
                     prim.set_attribute("INIT".to_string(), "1'hx".to_string());
                 }
                 _ => {}
@@ -665,7 +306,7 @@ impl SVPrimitive {
     }
 
     /// Create a new unconnected gate primitive with instance name `name`
-    pub fn new_gate(logic: PrimitiveType, name: String) -> Self {
+    pub fn new_gate(logic: CellType, name: String) -> Self {
         let n_inputs: usize = logic.get_num_inputs();
 
         // Special cases
@@ -679,18 +320,15 @@ impl SVPrimitive {
             attributes: BTreeMap::new(),
         };
         match logic {
-            PrimitiveType::VCC => {
+            CellType::VCC => {
                 prim.set_attribute("VAL".to_string(), "1'b1".to_string());
                 return prim;
             }
-            PrimitiveType::GND => {
+            CellType::GND => {
                 prim.set_attribute("VAL".to_string(), "1'b0".to_string());
                 return prim;
             }
-            PrimitiveType::FDRE
-            | PrimitiveType::FDSE
-            | PrimitiveType::FDPE
-            | PrimitiveType::FDCE => {
+            CellType::FDRE | CellType::FDSE | CellType::FDPE | CellType::FDCE => {
                 prim.set_attribute("INIT".to_string(), "1'hx".to_string());
             }
             _ => {}
@@ -699,11 +337,7 @@ impl SVPrimitive {
     }
 
     /// Create a new unconnected gate primitive with instance name `name` and `drive_strength`
-    pub fn new_gate_with_strength(
-        logic: PrimitiveType,
-        name: String,
-        drive_strength: usize,
-    ) -> Self {
+    pub fn new_gate_with_strength(logic: CellType, name: String, drive_strength: usize) -> Self {
         let n_inputs: usize = logic.get_num_inputs();
         Self::new(format!("{logic}_X{drive_strength}"), name, n_inputs)
     }
@@ -751,21 +385,21 @@ impl SVPrimitive {
     fn is_gate(&self) -> bool {
         match &self.logic {
             Some(logic) => logic.is_gate(),
-            None => PrimitiveType::from_str(&self.prim).is_ok_and(|p| p.is_gate()),
+            None => CellType::from_str(&self.prim).is_ok_and(|p| p.is_gate()),
         }
     }
 
     fn is_lut(&self) -> bool {
         match &self.logic {
             Some(logic) => logic.is_lut(),
-            None => PrimitiveType::from_str(&self.prim).is_ok_and(|p| p.is_lut()),
+            None => CellType::from_str(&self.prim).is_ok_and(|p| p.is_lut()),
         }
     }
 
     fn is_reg(&self) -> bool {
         match &self.logic {
             Some(logic) => logic.is_reg(),
-            None => PrimitiveType::from_str(&self.prim).is_ok_and(|p| p.is_reg()),
+            None => CellType::from_str(&self.prim).is_ok_and(|p| p.is_reg()),
         }
     }
 
@@ -848,7 +482,7 @@ where
     Self: Language + std::fmt::Display,
 {
     /// Returns the primitive type (i.e. the logic) of the language node
-    fn get_gate_type(&self) -> Option<PrimitiveType>;
+    fn get_gate_type(&self) -> Option<CellType>;
 
     /// Returns all the ids which need to be mapped to Verilog outputs
     fn get_output_ids(expr: &RecExpr<Self>) -> Vec<Id>;
@@ -872,12 +506,12 @@ where
 }
 
 impl VerilogEmission for CellLang {
-    fn get_gate_type(&self) -> Option<PrimitiveType> {
+    fn get_gate_type(&self) -> Option<CellType> {
         match self {
-            CellLang::And(_) => Some(PrimitiveType::AND),
-            CellLang::Or(_) => Some(PrimitiveType::OR),
-            CellLang::Inv(_) => Some(PrimitiveType::INV),
-            CellLang::Cell(s, _) => PrimitiveType::from_str(s.as_str()).ok(),
+            CellLang::And(_) => Some(CellType::AND),
+            CellLang::Or(_) => Some(CellType::OR),
+            CellLang::Inv(_) => Some(CellType::INV),
+            CellLang::Cell(s, _) => CellType::from_str(s.as_str()).ok(),
             _ => None,
         }
     }
@@ -913,7 +547,11 @@ impl VerilogEmission for CellLang {
                 let gate_type = self
                     .get_gate_type()
                     .ok_or("CellLang gates should have a primitive type".to_string())?;
-                let port_list = gate_type.get_input_list();
+                let port_list = gate_type
+                    .get_input_ports()
+                    .into_iter()
+                    .map(|s| s.to_string())
+                    .collect::<Vec<String>>();
                 // TODO(matth2k): Carry through drive strength
                 let mut prim = SVPrimitive::new_gate_with_strength(gate_type, fresh_prim_name(), 1);
                 for (input, port) in inputs.iter().zip(port_list) {
@@ -921,7 +559,9 @@ impl VerilogEmission for CellLang {
                         .ok_or(format!("Could not find signal {input} in the module"))?;
                     prim.connect_input(port, signal)?;
                 }
-                prim.connect_output(gate_type.get_output(), fresh_signal_name())?;
+                let outputs = gate_type.get_output_ports();
+                assert_eq!(outputs.len(), 1);
+                prim.connect_output(outputs[0].to_string(), fresh_signal_name())?;
                 Ok(Some(prim))
             }
             CellLang::Const(b) => Ok(Some(SVPrimitive::new_const(
@@ -935,26 +575,26 @@ impl VerilogEmission for CellLang {
 }
 
 impl VerilogEmission for LutLang {
-    fn get_gate_type(&self) -> Option<PrimitiveType> {
+    fn get_gate_type(&self) -> Option<CellType> {
         match self {
-            LutLang::And(_) => Some(PrimitiveType::AND),
-            LutLang::Nor(_) => Some(PrimitiveType::NOR),
-            LutLang::Not(_) => Some(PrimitiveType::NOT),
+            LutLang::And(_) => Some(CellType::AND),
+            LutLang::Nor(_) => Some(CellType::NOR),
+            LutLang::Not(_) => Some(CellType::NOT),
             LutLang::Lut(l) => match l.len() {
-                2 => Some(PrimitiveType::LUT1),
-                3 => Some(PrimitiveType::LUT2),
-                4 => Some(PrimitiveType::LUT3),
-                5 => Some(PrimitiveType::LUT4),
-                6 => Some(PrimitiveType::LUT5),
-                7 => Some(PrimitiveType::LUT6),
+                2 => Some(CellType::LUT1),
+                3 => Some(CellType::LUT2),
+                4 => Some(CellType::LUT3),
+                5 => Some(CellType::LUT4),
+                6 => Some(CellType::LUT5),
+                7 => Some(CellType::LUT6),
                 _ => None,
             },
-            LutLang::Mux(_) => Some(PrimitiveType::MUX),
-            LutLang::Xor(_) => Some(PrimitiveType::XOR),
-            LutLang::Fdre(_) => Some(PrimitiveType::FDRE),
-            LutLang::Fdse(_) => Some(PrimitiveType::FDSE),
-            LutLang::Fdpe(_) => Some(PrimitiveType::FDPE),
-            LutLang::Fdce(_) => Some(PrimitiveType::FDCE),
+            LutLang::Mux(_) => Some(CellType::MUX),
+            LutLang::Xor(_) => Some(CellType::XOR),
+            LutLang::Fdre(_) => Some(CellType::FDRE),
+            LutLang::Fdse(_) => Some(CellType::FDSE),
+            LutLang::Fdpe(_) => Some(CellType::FDPE),
+            LutLang::Fdce(_) => Some(CellType::FDCE),
             _ => None,
         }
     }
@@ -998,28 +638,40 @@ impl VerilogEmission for LutLang {
                 let gate_type = self
                     .get_gate_type()
                     .ok_or("LutLang gates should have a primitive type".to_string())?;
-                let port_list = gate_type.get_input_list();
+                let port_list = gate_type
+                    .get_input_ports()
+                    .into_iter()
+                    .map(|s| s.to_string())
+                    .collect::<Vec<String>>();
                 let mut prim = SVPrimitive::new_gate(gate_type, fresh_prim_name());
                 for (input, port) in inputs.iter().zip(port_list) {
                     let signal = lookup(input)
                         .ok_or(format!("Could not find signal {input} in the module"))?;
                     prim.connect_input(port, signal)?;
                 }
-                prim.connect_output(gate_type.get_output(), fresh_signal_name())?;
+                let outputs = gate_type.get_output_ports();
+                assert_eq!(outputs.len(), 1);
+                prim.connect_output(outputs[0].to_string(), fresh_signal_name())?;
                 Ok(Some(prim))
             }
             LutLang::Lut(l) => {
                 let gate_type = self
                     .get_gate_type()
                     .expect("CellLang gates should have a primitive type");
-                let port_list = gate_type.get_input_list();
+                let port_list = gate_type
+                    .get_input_ports()
+                    .into_iter()
+                    .map(|s| s.to_string())
+                    .collect::<Vec<String>>();
                 let mut prim = SVPrimitive::new_gate(gate_type, fresh_prim_name());
                 for (input, port) in l.iter().skip(1).zip(port_list) {
                     let signal = lookup(input)
                         .ok_or(format!("Could not find signal {input} in the module"))?;
                     prim.connect_input(port, signal)?;
                 }
-                prim.connect_output(gate_type.get_output(), fresh_signal_name())?;
+                let outputs = gate_type.get_output_ports();
+                assert_eq!(outputs.len(), 1);
+                prim.connect_output(outputs[0].to_string(), fresh_signal_name())?;
                 Ok(Some(prim))
             }
             LutLang::Const(b) => Ok(Some(SVPrimitive::new_const(
@@ -1083,10 +735,10 @@ impl VerilogParsing for CellLang {
                     let subexpr = Self::map_inputs(primitive, module, expr, map)?;
                     let logic = primitive.get_logic().unwrap();
                     let ids: Vec<Result<Id, String>> = logic
-                        .get_input_list()
+                        .get_input_ports()
                         .iter()
                         .map(|x| {
-                            subexpr.get(x.as_str()).cloned().ok_or(format!(
+                            subexpr.get(x.to_string().as_str()).cloned().ok_or(format!(
                                 "Missing input {} on {} {}",
                                 x, logic, primitive.name
                             ))
@@ -1094,11 +746,9 @@ impl VerilogParsing for CellLang {
                         .collect();
                     let ids = ids.into_iter().collect::<Result<Vec<Id>, String>>()?;
                     match logic {
-                        PrimitiveType::AND => Ok(expr.add(CellLang::And([ids[0], ids[1]]))),
-                        PrimitiveType::OR => Ok(expr.add(CellLang::Or([ids[0], ids[1]]))),
-                        PrimitiveType::INV | PrimitiveType::NOT => {
-                            Ok(expr.add(CellLang::Inv([ids[0]])))
-                        }
+                        CellType::AND => Ok(expr.add(CellLang::And([ids[0], ids[1]]))),
+                        CellType::OR => Ok(expr.add(CellLang::Or([ids[0], ids[1]]))),
+                        CellType::INV | CellType::NOT => Ok(expr.add(CellLang::Inv([ids[0]]))),
                         _ => Ok(expr.add(CellLang::Cell(primitive.prim.clone().into(), ids))),
                     }
                 } else if primitive.is_assign() {
@@ -1148,7 +798,7 @@ impl VerilogParsing for LutLang {
                     // Update the mapping
                     let subexpr = Self::map_inputs(primitive, module, expr, map)?;
                     let logic = primitive.get_logic().unwrap();
-                    let ids: Vec<Result<Id, String>> = if matches!(logic, PrimitiveType::INV) {
+                    let ids: Vec<Result<Id, String>> = if matches!(logic, CellType::INV) {
                         if let Some(a) = subexpr.get("A") {
                             vec![Ok(*a)]
                         } else if let Some(i) = subexpr.get("I") {
@@ -1158,10 +808,10 @@ impl VerilogParsing for LutLang {
                         }
                     } else {
                         logic
-                            .get_input_list()
+                            .get_input_ports()
                             .iter()
                             .map(|x| {
-                                subexpr.get(x.as_str()).cloned().ok_or(format!(
+                                subexpr.get(x.to_string().as_str()).cloned().ok_or(format!(
                                     "Missing input {} on {} {}",
                                     x, logic, primitive.name
                                 ))
@@ -1170,42 +820,37 @@ impl VerilogParsing for LutLang {
                     };
                     let mut ids = ids.into_iter().collect::<Result<Vec<Id>, String>>()?;
                     match logic {
-                        PrimitiveType::AND | PrimitiveType::AND2 => {
+                        CellType::AND | CellType::AND2 => {
                             Ok(expr.add(LutLang::And([ids[0], ids[1]])))
                         }
-                        PrimitiveType::XOR | PrimitiveType::XOR2 => {
+                        CellType::XOR | CellType::XOR2 => {
                             Ok(expr.add(LutLang::Xor([ids[0], ids[1]])))
                         }
-                        PrimitiveType::NOR | PrimitiveType::NOR2 => {
+                        CellType::NOR | CellType::NOR2 => {
                             Ok(expr.add(LutLang::Nor([ids[0], ids[1]])))
                         }
-                        PrimitiveType::MUX
-                        | PrimitiveType::MUXF7
-                        | PrimitiveType::MUXF8
-                        | PrimitiveType::MUXF9 => {
+                        CellType::MUX | CellType::MUXF7 | CellType::MUXF8 | CellType::MUXF9 => {
                             Ok(expr.add(LutLang::Mux([ids[0], ids[1], ids[2]])))
                         }
-                        PrimitiveType::INV | PrimitiveType::NOT => {
-                            Ok(expr.add(LutLang::Not([ids[0]])))
-                        }
-                        PrimitiveType::FDRE => {
+                        CellType::INV | CellType::NOT => Ok(expr.add(LutLang::Not([ids[0]]))),
+                        CellType::FDRE => {
                             Ok(expr.add(LutLang::Fdre([ids[0], ids[1], ids[2], ids[3]])))
                         }
-                        PrimitiveType::FDSE => {
+                        CellType::FDSE => {
                             Ok(expr.add(LutLang::Fdse([ids[0], ids[1], ids[2], ids[3]])))
                         }
-                        PrimitiveType::FDPE => {
+                        CellType::FDPE => {
                             Ok(expr.add(LutLang::Fdpe([ids[0], ids[1], ids[2], ids[3]])))
                         }
-                        PrimitiveType::FDCE => {
+                        CellType::FDCE => {
                             Ok(expr.add(LutLang::Fdce([ids[0], ids[1], ids[2], ids[3]])))
                         }
-                        PrimitiveType::LUT1
-                        | PrimitiveType::LUT2
-                        | PrimitiveType::LUT3
-                        | PrimitiveType::LUT4
-                        | PrimitiveType::LUT5
-                        | PrimitiveType::LUT6 => {
+                        CellType::LUT1
+                        | CellType::LUT2
+                        | CellType::LUT3
+                        | CellType::LUT4
+                        | CellType::LUT5
+                        | CellType::LUT6 => {
                             let program = primitive
                                 .get_attribute("INIT")
                                 .ok_or(format!("LUT {signal} has no INIT attribute"))?;
@@ -1343,13 +988,13 @@ impl SVModule {
     }
 
     fn is_lut_prim(name: &str) -> Option<usize> {
-        match PrimitiveType::from_str(name) {
-            Ok(PrimitiveType::LUT1) => Some(1),
-            Ok(PrimitiveType::LUT2) => Some(2),
-            Ok(PrimitiveType::LUT3) => Some(3),
-            Ok(PrimitiveType::LUT4) => Some(4),
-            Ok(PrimitiveType::LUT5) => Some(5),
-            Ok(PrimitiveType::LUT6) => Some(6),
+        match CellType::from_str(name) {
+            Ok(CellType::LUT1) => Some(1),
+            Ok(CellType::LUT2) => Some(2),
+            Ok(CellType::LUT3) => Some(3),
+            Ok(CellType::LUT4) => Some(4),
+            Ok(CellType::LUT5) => Some(5),
+            Ok(CellType::LUT6) => Some(6),
             _ => None,
         }
     }
@@ -1445,7 +1090,7 @@ impl SVModule {
                         continue;
                     }
 
-                    if let Ok(p) = PrimitiveType::from_str(&mod_name) {
+                    if let Ok(p) = CellType::from_str(&mod_name) {
                         cur_insts.push(SVPrimitive::new(mod_name, inst_name, p.get_num_inputs()));
                         continue;
                     }

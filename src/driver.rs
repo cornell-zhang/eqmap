@@ -8,13 +8,13 @@ use super::cost::NegativeCostFn;
 use super::lut::{CircuitStats, LutExprInfo, LutLang};
 #[cfg(feature = "graph_dumps")]
 use super::serialize::serialize_egraph;
-use super::verilog::PrimitiveType;
 use crate::cost::RandomExtract;
 use egg::{
     Analysis, BackoffScheduler, CostFunction, Explanation, Extractor, FromOpError, Language,
     RecExpr, RecExprParseError, Rewrite, Runner, StopReason, Symbol, TreeTerm,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use safety_pass::CellType;
 use simplelog::{ColorChoice, ConfigBuilder, TermLogger, TerminalMode};
 use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
@@ -443,7 +443,7 @@ impl OptStrat {
         // list is a comma-deliminted string
         let gates: HashSet<String> = list.split(',').map(|s| s.to_string()).collect();
         for gate in &gates {
-            if PrimitiveType::from_str(gate).is_err() {
+            if CellType::from_str(gate).is_err() {
                 return Err(format!("Gate {gate} is not a valid cell type"));
             }
         }
@@ -774,7 +774,7 @@ where
         }
     }
 
-    /// Extract by disassembling into the logic gates in `list`. Elements in the list will be matched against [PrimitiveType::from_str].
+    /// Extract by disassembling into the logic gates in `list`. Elements in the list will be matched against [CellType::from_str].
     pub fn with_disassembly_into(self, list: &str) -> Result<Self, String> {
         Ok(Self {
             opt_strat: OptStrat::from_gate_set(list)?,

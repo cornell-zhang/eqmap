@@ -9,11 +9,11 @@ use super::cost::GateCostFn;
 use super::driver::Comparison;
 use super::driver::Report;
 use super::driver::{Canonical, CircuitLang, EquivCheck, Explanable, Extractable};
-use super::verilog::PrimitiveType;
 use egg::{
     Analysis, CostFunction, DidMerge, EGraph, Id, Language, RecExpr, Rewrite, Symbol,
     define_language, rewrite,
 };
+use safety_pass::CellType;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -133,10 +133,10 @@ impl CostFunction<CellLang> for AreaFn {
     {
         let op_cost = match enode {
             CellLang::Const(_) | CellLang::Var(_) | CellLang::Bus(_) => {
-                PrimitiveType::INV.get_min_area().unwrap()
+                CellType::INV.get_min_area().unwrap()
             }
             CellLang::Cell(n, _l) => {
-                let prim = PrimitiveType::from_str(n.as_str()).unwrap();
+                let prim = CellType::from_str(n.as_str()).unwrap();
                 prim.get_min_area().unwrap_or(1.33)
             }
             _ => f32::MAX,
@@ -274,12 +274,12 @@ impl CircuitStats {
         expr.iter()
             .map(|n| {
                 if let CellLang::Cell(name, _) = n {
-                    PrimitiveType::from_str(name.as_str())
+                    CellType::from_str(name.as_str())
                         .unwrap()
                         .get_min_area()
                         .unwrap_or(1.33)
                 } else if matches!(n, CellLang::Const(_) | CellLang::Var(_)) {
-                    PrimitiveType::INV.get_min_area().unwrap()
+                    CellType::INV.get_min_area().unwrap()
                 } else {
                     0.0
                 }
