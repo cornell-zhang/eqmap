@@ -241,9 +241,7 @@ impl Pass for InsertInv {
         let n = everything.len();
 
         // We use i to differentiate between nets that have the same base identifer.
-        let mut i = 0usize;
-
-        for net in everything {
+        for (i, net) in everything.into_iter().enumerate() {
             // Combine the net's base name (n) and i to to create unique instance names
             // across both repeated runs of this pass and nets with identical base names.
             let inst_name = net.as_net().get_identifier().clone()
@@ -303,6 +301,4 @@ register_passes!(Passes<PrimitiveCell>;
     ReportSccs,
     /// Inserts a double inverter at every node in the graph
     InsertInv,
-    // Eliminates all double inverters in the graph
-
 );
