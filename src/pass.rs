@@ -202,7 +202,7 @@ impl Pass for MarkCriticalPath {
     }
 }
 
-/// Mark the node names of cells along the critical path
+/// Insert a double inverter at every net in the netlist.
 #[derive(Debug)]
 pub struct InsertInv;
 
@@ -222,12 +222,6 @@ impl Pass for InsertInv {
         let inv_type = PrimitiveCell::new(CellType::INV, None);
         let mut everything = HashSet::new();
 
-        // Prevent infinite loop!
-        // If we inserted inverters mid-loop iter, we would be iterating over the new inverters
-        // Instead, collect everything we will replace first.
-
-        // Gather all internal nets we will double-invert before we modify the netlist.
-        // This prevents iteration over the new inverters that will be inserted.
         for node in netlist.objects() {
             for output in node.outputs() {
                 // We skip the top level output ports, as they cannot be replaced without breaking the circuit connections.
@@ -285,6 +279,8 @@ register_passes!(Passes<PrimitiveCell>;
     DisconnectArcSet,
     /// Print the dot graph of the netlist
     DotGraph<PrimitiveCell>,
+    /// Inserts a double inverter at every internal net in the graph
+    InsertInv,
     /// Rename wires and instances that are part of the feedback arc set (prefixed with "arc_")
     MarkArcSet,
     /// Mark the node names of cells along the critical path (prefixed with "crit_")
@@ -297,6 +293,4 @@ register_passes!(Passes<PrimitiveCell>;
     ReportDepth,
     /// Report the number of strongly connected components
     ReportSccs,
-    /// Inserts a double inverter at every node in the graph
-    InsertInv,
 );
