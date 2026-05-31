@@ -231,9 +231,9 @@ impl Pass for InsertInv {
         for node in netlist.objects() {
             for output in node.outputs() {
                 // We skip the top level output ports, as they cannot be replaced without breaking the circuit connections.
-                if !output.is_top_level_output() { 
+                if !output.is_top_level_output() {
                     everything.insert(output);
-             }
+                }
             }
         }
 
@@ -246,14 +246,22 @@ impl Pass for InsertInv {
         for net in everything {
             // Combine the net's base name (n) and i to to create unique instance names
             // across both repeated runs of this pass and nets with identical base names.
-            let inst_name = net.as_net().get_identifier().clone() + "_inv".into() + n.to_string().into() + "_".into() + i.to_string().into();
+            let inst_name = net.as_net().get_identifier().clone()
+                + "_inv".into()
+                + n.to_string().into()
+                + "_".into()
+                + i.to_string().into();
             // Insert, but don't connect it yet!
             // We will get a combinational loop if we call replace() on this connection
             // Daniel figured this one out.
             let output_inv = netlist.insert_gate_disconnected(inv_type.clone(), inst_name.clone());
 
             // Repeat the pattern for the second inverter
-            let inst_name = inst_name + "_inv".into() + n.to_string().into() + "_".into() + i.to_string().into();
+            let inst_name = inst_name
+                + "_inv".into()
+                + n.to_string().into()
+                + "_".into()
+                + i.to_string().into();
             let output_inv_inv =
                 netlist.insert_gate(inv_type.clone(), inst_name, &[output_inv.clone().into()])?;
 
@@ -294,4 +302,7 @@ register_passes!(Passes<PrimitiveCell>;
     /// Report the number of strongly connected components
     ReportSccs,
     /// Inserts a double inverter at every node in the graph
-    InsertInv,);
+    InsertInv,
+    // Eliminates all double inverters in the graph
+
+);
