@@ -270,8 +270,6 @@ impl Pass for InsertInv {
 
             // Now take our disconnected net and drive the inverter pair
             output_inv.get_input(0).connect(disconnected);
-
-            i += 1;
         }
 
         Ok(format!("Inserted {} pairs of inverters", n))
