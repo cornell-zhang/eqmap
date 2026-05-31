@@ -202,6 +202,76 @@ impl Pass for MarkCriticalPath {
     }
 }
 
+/// Mark the node names of cells along the critical path
+#[derive(Debug)]
+pub struct InsertInv;
+
+impl fmt::Display for InsertInv {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "InsertInv")
+    }
+}
+
+impl Pass for InsertInv {
+    type I = PrimitiveCell;
+    fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
+        use safety_pass::CellType;
+        use std::collections::HashSet;
+
+        // An inverter cell which we use as a template for the inserted gates.
+        let inv_type = PrimitiveCell::new(CellType::INV, None);
+        let mut everything = HashSet::new();
+
+        // Prevent infinite loop!
+        // If we inserted inverters mid-loop iter, we would be iterating over the new inverters
+        // Instead, collect everything we will replace first.
+
+        // Gather all internal nets we will double-invert before we modify the netlist.
+        // This prevents iteration over the new inverters that will be inserted.
+        for node in netlist.objects() {
+            for output in node.outputs() {
+                // We skip the top level output ports, as they cannot be replaced without breaking the circuit connections.
+                if !output.is_top_level_output() { 
+                    everything.insert(output);
+             }
+            }
+        }
+
+        // n increases with every run of InsertInv, ensuring the net names are unique.
+        let n = everything.len();
+
+        // We use i to differentiate between nets that have the same base identifer.
+        let mut i = 0usize;
+
+        for net in everything {
+            // Combine the net's base name (n) and i to to create unique instance names
+            // across both repeated runs of this pass and nets with identical base names.
+            let inst_name = net.as_net().get_identifier().clone() + "_inv".into() + n.to_string().into() + "_".into() + i.to_string().into();
+            // Insert, but don't connect it yet!
+            // We will get a combinational loop if we call replace() on this connection
+            // Daniel figured this one out.
+            let output_inv = netlist.insert_gate_disconnected(inv_type.clone(), inst_name.clone());
+
+            // Repeat the pattern for the second inverter
+            let inst_name = inst_name + "_inv".into() + n.to_string().into() + "_".into() + i.to_string().into();
+            let output_inv_inv =
+                netlist.insert_gate(inv_type.clone(), inst_name, &[output_inv.clone().into()])?;
+
+            // Replace the uses of the original net
+            let replacement = output_inv_inv.get_output(0);
+            // replace() gives us back the net
+            let disconnected = netlist.replace_net_uses(net, &replacement)?;
+
+            // Now take our disconnected net and drive the inverter pair
+            output_inv.get_input(0).connect(disconnected);
+
+            i += 1;
+        }
+
+        Ok(format!("Inserted {} pairs of inverters", n))
+    }
+}
+
 register_passes!(Passes<PrimitiveCell>;
     /// Clean the netlist of cells which are not used
     Clean<PrimitiveCell>,
@@ -222,4 +292,6 @@ register_passes!(Passes<PrimitiveCell>;
     /// Report the longest path in the netlist
     ReportDepth,
     /// Report the number of strongly connected components
-    ReportSccs);
+    ReportSccs,
+    /// Inserts a double inverter at every node in the graph
+    InsertInv,);
