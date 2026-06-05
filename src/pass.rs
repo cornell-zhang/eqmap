@@ -270,6 +270,99 @@ impl Pass for InsertInv {
     }
 }
 
+// For Remove insert inverter, collect all cells that are of type inverter first, and put them into the array of everything.
+// Then, for all of those inverters, put the ones that are being driven by an inverter into a finalized list (or just have TWO SIMALTENOUS CHECKS)
+// Then, delete those inverters, and you must reconnect them, so the input of the first inverter, replaces the output of the second inverter, this is the hard bit.
+
+/// Remove all double inverters from the netlist.
+#[derive(Debug)]
+pub struct RemoveInv;
+
+impl fmt::Display for RemoveInv {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "RemoveInv")
+    }
+}
+
+impl Pass for RemoveInv {
+    type I = PrimitiveCell;
+    fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
+        //use safety_pass::CellType;
+        use std::collections::HashSet;
+
+        // An inverter cell which we use as a template for the inserted gates.
+        //let inv_type = PrimitiveCell::new(CellType::INV, None);
+        let mut inverter_list = HashSet::new();
+        let mut n = 0; // number of double inverters
+
+        // for node in netlist.objects() {
+        //     for output in node.outputs() {
+        //         // A double inverter is an inverter that is being driven by an inverter, don't check if it drives an inverter
+        //         if !output.is_top_level_output() && matches!(node.get_instance_type(), inv_type) &&
+        //         (matches!(node.get_output(0).get_instance_type(), inv_type))
+        //         {
+        //             inverter_list.insert(node.clone());
+        //         }
+        //     }
+        // }
+
+        for node in netlist.matches(|c| c.is_inv()) {
+            let driver = node.get_input(0).get_driver();
+            if driver.is_none() {
+                continue;
+            }
+            let driver = driver.unwrap();
+            if driver.get_instance_type().is_some_and(|t| t.is_inv()) {
+                inverter_list.insert(node);
+            }
+        }
+
+        // We now have a list of all SECOND inverters
+        // AND -> NOT -> {NOT} -> OR
+
+        // Iterate through inverter_list, for each node, cur, get a reference to it's input node, A.
+        // Get the output node of cur. Set it's input to be driven by the input to A
+
+        // FIRST ATTEMPT -> would create a dangling reference error, b/c we would remove a, but then try to acess it again later
+        // for node in inverter_list {
+        //     // let a = node.get_input(0).get_driver().unwrap().unwrap().get_input(0).get_driver().unwrap();
+        //     let first_inv = node.get_input(0).get_driver().unwrap();
+        //     let a = first_inv.unwrap().get_input(0).get_driver().unwrap();
+        //     let b = node.get_output(0);
+        //     netlist.replace_net_uses(b, &a)?;
+        // }
+        // netlist.clean()?;
+
+        let mut pairs = Vec::new(); // Need to collect the pairs to avoid dangling reference
+
+        for node in inverter_list {
+            let first_inv = node.get_input(0).get_driver().unwrap();
+            let a = first_inv.unwrap().get_input(0).get_driver();
+            if a.is_none() {
+                continue; // Skip if a has 0 inputs
+            }
+            let a = a.unwrap();
+            // Only remove if a is not itself an inverter output (avoid chained pairs), prevents errors with NOT NOT NOT NOT
+            if a.get_instance_type().is_some_and(|t| t.is_inv()) {
+                continue;
+            }
+            let b = node.get_output(0);
+            pairs.push((b, a));
+        }
+
+        for (b, a) in pairs {
+            netlist.replace_net_uses(b, &a)?;
+            n += 1;
+        }
+        netlist.clean()?;
+
+        Ok(format!(
+            "Removed {} pairs of inverters (double inverters)",
+            n
+        ))
+    }
+}
+
 register_passes!(Passes<PrimitiveCell>;
     /// Clean the netlist of cells which are not used
     Clean<PrimitiveCell>,
@@ -287,6 +380,8 @@ register_passes!(Passes<PrimitiveCell>;
     MarkCriticalPath,
     /// A dummy pass that emits the Verilog of the netlist.
     PrintVerilog<PrimitiveCell>,
+    /// Removes all the double inverters in the graph
+    RemoveInv,
     /// Rename wires and instances sequentially 0, 1, ...
     RenameNets<PrimitiveCell>,
     /// Report the longest path in the netlist
