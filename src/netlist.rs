@@ -394,6 +394,11 @@ impl PrimitiveCell {
         net.set_identifier(name);
         self
     }
+
+    /// Returns true if this cell is an inverter
+    pub fn is_inv(&self) -> bool {
+        self.ptype == CellType::INV || self.ptype == CellType::NOT
+    }
 }
 
 impl Instantiable for PrimitiveCell {
