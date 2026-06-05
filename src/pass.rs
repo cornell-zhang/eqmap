@@ -289,13 +289,14 @@ impl Pass for RemoveInv {
             }
         }
 
-        let mut pairs = Vec::new(); // Need to collect the pairs to avoid dangling reference
+        // Need to collect the pairs to avoid dangling reference errors
+        let mut pairs = Vec::new();
 
         for node in inverter_list {
             let first_inv = node.get_input(0).get_driver().unwrap();
             let a = first_inv.unwrap().get_input(0).get_driver();
             if let Some(a) = a {
-                // Only remove if a is not itself an inverter output (avoid chained pairs), prevents errors with NOT NOT NOT NOT
+                // Only remove if a is not itself an inverter output (avoid chained pairs), prevents errors with a -> NOT -> NOT -> NOT -> NOT
                 if a.get_instance_type().is_some_and(|t| t.is_inv()) {
                     continue;
                 }
