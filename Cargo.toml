@@ -37,20 +37,20 @@ repository = "https://github.com/cornell-zhang/eqmap"
 
 [dependencies]
 bitvec = "1.0.1"
-clap = { version = "4.5.53", features = ["derive"] }
+clap = { version = "4.6.1", features = ["derive"] }
 egg = "0.11.0"
-indicatif = "0.18.3"
+indicatif = "0.18.4"
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.145"
-toml = "0.9.11"
-thiserror = { version = "2.0.16" }
-sv-parser = "0.13.4"
-ctrlc = "3.5.1"
-safety-net = { version = "0.7.0", features = ["graph"] }
-safety-pass = { version = "0.4.1", features = ["id"] }
-good_lp = { version = "1.14.2", optional = true }
-nl-compiler = { version = "0.1.19" }
-log = "0.4.29"
+serde_json = "1.0.150"
+toml = "1.1.2"
+thiserror = { version = "2.0.18" }
+sv-parser = "0.13.5"
+ctrlc = "3.5.2"
+safety-net = { version = "0.7.1", features = ["graph"] }
+safety-pass = { version = "0.4.2", features = ["id"] }
+good_lp = { version = "1.15.2", optional = true }
+nl-compiler = { version = "0.1.20" }
+log = "0.4.32"
 simplelog = "0.12.2"
 rand = "0.10.1"
 

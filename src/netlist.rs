@@ -564,11 +564,6 @@ impl<I: Instantiable + LogicFunc<L>, L: CircuitLang + LogicCell<I>> LogicMapping
                 continue;
             }
 
-            if !old.is_an_input() && old.is_top_level_output() {
-                let id = old.get_identifier() + "_overwritten".into();
-                old.as_net_mut().set_identifier(id);
-            }
-
             netlist.replace_net_uses(old, &new)?;
             new_roots.insert(new);
         }

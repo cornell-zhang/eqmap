@@ -216,18 +216,12 @@ impl Pass for InsertInv {
     type I = PrimitiveCell;
     fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
         use safety_pass::CellType;
-        use std::collections::HashSet;
-
-        // An inverter cell which we use as a template for the inserted gates.
         let inv_type = PrimitiveCell::new(CellType::INV, None);
-        let mut everything = HashSet::new();
+        let mut everything = Vec::new();
 
         for node in netlist.objects() {
             for output in node.outputs() {
-                // We skip the top level output ports, as they cannot be replaced without breaking the circuit connections.
-                if !output.is_top_level_output() {
-                    everything.insert(output);
-                }
+                everything.push(output);
             }
         }
 
@@ -241,29 +235,21 @@ impl Pass for InsertInv {
             let inst_name = net.as_net().get_identifier().clone()
                 + "_inv".into()
                 + n.to_string().into()
-                + "_".into()
                 + i.to_string().into();
-            // Insert, but don't connect it yet!
-            // We will get a combinational loop if we call replace() on this connection
-            // Daniel figured this one out.
-            let output_inv = netlist.insert_gate_disconnected(inv_type.clone(), inst_name.clone());
+
+            let net_inv = netlist.insert_gate_disconnected(inv_type.clone(), inst_name.clone());
 
             // Repeat the pattern for the second inverter
-            let inst_name = inst_name
-                + "_inv".into()
-                + n.to_string().into()
-                + "_".into()
-                + i.to_string().into();
-            let output_inv_inv =
-                netlist.insert_gate(inv_type.clone(), inst_name, &[output_inv.clone().into()])?;
+            let inst_name = inst_name + "inv".into() + n.to_string().into() + i.to_string().into();
+            let net_inv_inv =
+                netlist.insert_gate(inv_type.clone(), inst_name, &[net_inv.clone().into()])?;
 
             // Replace the uses of the original net
-            let replacement = output_inv_inv.get_output(0);
-            // replace() gives us back the net
+            let replacement = net_inv_inv.get_output(0);
             let disconnected = netlist.replace_net_uses(net, &replacement)?;
 
             // Now take our disconnected net and drive the inverter pair
-            output_inv.get_input(0).connect(disconnected);
+            net_inv.get_input(0).connect(disconnected);
         }
 
         Ok(format!("Inserted {} pairs of inverters", n))
