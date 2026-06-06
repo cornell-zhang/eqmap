@@ -6,7 +6,7 @@
 
 use crate::netlist::PrimitiveCell;
 use safety_net::graph::{CombDepthInfo, MultiDiGraph};
-use safety_net::{Error, Identifier, Instantiable, Netlist};
+use safety_net::{Error, Identifier, Instantiable, Netlist, format_id, rewriter::NetMapper};
 use safety_pass::{
     Pass,
     passes::{Clean, DotGraph, PrintVerilog, RenameNets},
@@ -228,29 +228,30 @@ impl Pass for InsertInv {
         // n increases with every run of InsertInv, ensuring the net names are unique.
         let n = everything.len();
 
+        let mut mapper = NetMapper::new(netlist)?;
+
         // We use i to differentiate between nets that have the same base identifer.
         for (i, net) in everything.into_iter().enumerate() {
             // Combine the net's base name (n) and i to to create unique instance names
             // across both repeated runs of this pass and nets with identical base names.
-            let inst_name = net.as_net().get_identifier().clone()
-                + "_inv".into()
-                + n.to_string().into()
-                + i.to_string().into();
+            let inst_name = net.as_net().get_identifier().clone() + format_id!("_{i}_{n}");
 
             let net_inv = netlist.insert_gate_disconnected(inv_type.clone(), inst_name.clone());
 
             // Repeat the pattern for the second inverter
-            let inst_name = inst_name + "inv".into() + n.to_string().into() + i.to_string().into();
+            let inst_name = inst_name + "inv".into();
             let net_inv_inv =
                 netlist.insert_gate(inv_type.clone(), inst_name, &[net_inv.clone().into()])?;
 
             // Replace the uses of the original net
             let replacement = net_inv_inv.get_output(0);
-            let disconnected = netlist.replace_net_uses(net, &replacement)?;
+            let disconnected = mapper.replace(net, replacement);
 
             // Now take our disconnected net and drive the inverter pair
             net_inv.get_input(0).connect(disconnected);
         }
+
+        mapper.apply()?;
 
         Ok(format!("Inserted {} pairs of inverters", n))
     }
