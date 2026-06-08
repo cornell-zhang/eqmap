@@ -48,7 +48,7 @@ sv-parser = "0.13.5"
 ctrlc = "3.5.2"
 safety-net = { version = "0.8.0", features = ["graph"] }
 safety-pass = { version = "0.4.3", features = ["id"] }
-good_lp = { version = "1.14.2", optional = true }
+good_lp = { version = "1.15.2", optional = true }
 nl-compiler = { version = "0.1.21" }
 log = "0.4.32"
 simplelog = "0.12.2"
