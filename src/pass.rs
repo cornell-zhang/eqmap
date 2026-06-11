@@ -147,12 +147,14 @@ impl Pass for ReportDepth {
         let depth = analysis.get_max_depth().unwrap();
         let mut res = format!("Maximum combinational depth is {depth}\n");
 
-        for mut p in analysis.get_critical_points().into_iter().cloned() {
+        for p in analysis.get_critical_points().into_iter() {
             let mut line = format!("{p}\n");
+            let mut cell = p.unwrap();
             let mut depth = "  ".to_string();
-            while let Some(next) = analysis.get_crit_input(&p) {
-                p = next.get_driver().unwrap().unwrap();
-                line.push_str(&format!("{depth}<- {p}\n"));
+            while let Some(next) = analysis.get_crit_input(&cell) {
+                let d = next.get_driver().unwrap();
+                line.push_str(&format!("{depth}<- {d}\n"));
+                cell = d.unwrap();
                 depth.push_str("  ");
             }
             line.push_str(&depth);
@@ -189,7 +191,11 @@ impl Pass for MarkCriticalPath {
             return Ok("Circuit is ill-formed. No cells marked.".to_string());
         }
 
-        let p = p.unwrap();
+        let p = p
+            .unwrap()
+            .into_iter()
+            .map(|d| d.unwrap())
+            .collect::<std::collections::HashSet<_>>();
         let l = p.len();
 
         for c in p {
