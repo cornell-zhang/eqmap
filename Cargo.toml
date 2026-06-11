@@ -46,10 +46,10 @@ toml = "1.1.2"
 thiserror = { version = "2.0.18" }
 sv-parser = "0.13.5"
 ctrlc = "3.5.2"
-safety-net = { version = "0.8.0", features = ["graph"] }
-safety-pass = { version = "0.4.3", features = ["id"] }
+safety-net = { version = "0.9.0", features = ["graph"] }
+safety-pass = { version = "0.4.4", features = ["id"] }
 good_lp = { version = "1.15.2", optional = true }
-nl-compiler = { version = "0.1.21" }
+nl-compiler = { version = "0.1.22" }
 log = "0.4.32"
 simplelog = "0.12.2"
 rand = "0.10.1"
