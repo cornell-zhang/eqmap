@@ -208,17 +208,17 @@ impl Pass for MarkCriticalPath {
     }
 }
 
-/// Insert a double inverter at every net in the netlist.
+/// Insert a inverter pair at every net in the netlist.
 #[derive(Debug)]
-pub struct InsertInv;
+pub struct InsertInvPair;
 
-impl fmt::Display for InsertInv {
+impl fmt::Display for InsertInvPair {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "InsertInv")
+        write!(f, "InsertInvPair")
     }
 }
 
-impl Pass for InsertInv {
+impl Pass for InsertInvPair {
     type I = PrimitiveCell;
     fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
         use safety_pass::CellType;
@@ -231,7 +231,7 @@ impl Pass for InsertInv {
             }
         }
 
-        // n increases with every run of InsertInv, ensuring the net names are unique.
+        // n increases with every run of InsertInvPair, ensuring the net names are unique.
         let n = everything.len();
 
         let mut mapper = NetMapper::new(netlist)?;
@@ -262,60 +262,49 @@ impl Pass for InsertInv {
         Ok(format!("Inserted {} pairs of inverters", n))
     }
 }
-/// Remove all double inverters from the netlist.
+/// Remove all inverter pairs from the netlist.
 #[derive(Debug)]
-pub struct RemoveInv;
+pub struct RemoveInvPair;
 
-impl fmt::Display for RemoveInv {
+impl fmt::Display for RemoveInvPair {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "RemoveInv")
     }
 }
 
-impl Pass for RemoveInv {
+impl Pass for RemoveInvPair {
     type I = PrimitiveCell;
     fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
-        use std::collections::HashSet;
-
-        let mut inverter_list = HashSet::new();
-        for node in netlist.matches(|c| c.is_inv()) {
-            let driver = node.get_input(0).get_driver();
-            if driver.is_none() {
-                continue;
-            }
-            let driver = driver.unwrap();
-            if driver.get_instance_type().is_some_and(|t| t.is_inv()) {
-                inverter_list.insert(node);
-            }
-        }
+        use safety_net::rewriter::NetMapper;
 
         // Need to collect the pairs to avoid dangling reference errors
         let mut pairs = Vec::new();
 
-        for node in inverter_list {
-            let first_inv = node.get_input(0).get_driver().unwrap();
-            let a = first_inv.unwrap().get_input(0).get_driver();
-            if let Some(a) = a {
-                // Only remove if a is not itself an inverter output (avoid chained pairs), prevents errors with a -> NOT -> NOT -> NOT -> NOT
-                if a.get_instance_type().is_some_and(|t| t.is_inv()) {
-                    continue;
+        for node in netlist.matches(|c| c.is_inv()) {
+            let Some(driver) = node.get_input(0).get_driver() else {
+                continue;
+            };
+            let driver = driver.unwrap();
+            if driver.get_instance_type().is_some_and(|t| t.is_inv()) {
+                let a = driver.get_input(0).get_driver();
+                if let Some(a) = a {
+                    // Only remove if a is not itself an inverter output(avoid chained pairs)
+                    if a.get_instance_type().is_some_and(|t| t.is_inv()) {
+                        continue;
+                    }
+                    let b = node.get_output(0);
+                    pairs.push((b, a));
                 }
-                let b = node.get_output(0);
-                pairs.push((b, a));
             }
         }
-
-        let mut num_inverters = 0;
+        let n = pairs.len();
+        let mut mapper = NetMapper::new(netlist)?;
         for (b, a) in pairs {
-            netlist.replace_net_uses(b, &a)?;
-            num_inverters += 1;
+            mapper.replace(b, a);
         }
-        netlist.clean()?;
+        mapper.apply()?;
 
-        Ok(format!(
-            "Removed {} pairs of inverters (double inverters)",
-            num_inverters
-        ))
+        Ok(format!("Removed {} inverter pairs", n))
     }
 }
 
@@ -328,8 +317,8 @@ register_passes!(Passes<PrimitiveCell>;
     DisconnectArcSet,
     /// Print the dot graph of the netlist
     DotGraph<PrimitiveCell>,
-    /// Inserts a double inverter at every internal net in the graph
-    InsertInv,
+    /// Inserts a inverter pair at every internal net in the graph
+    InsertInvPair,
     /// Rename wires and instances that are part of the feedback arc set (prefixed with "arc_")
     MarkArcSet,
     /// Mark the node names of cells along the critical path (prefixed with "crit_")
@@ -338,8 +327,8 @@ register_passes!(Passes<PrimitiveCell>;
     PrintVerilog<PrimitiveCell>,
     /// Rename wires and instances sequentially 0, 1, ...
     RenameNets<PrimitiveCell>,
-    /// Removes all the double inverters in the graph
-    RemoveInv,
+    /// Removes all the inverter pairs in the graph
+    RemoveInvPair,
     /// Report the longest path in the netlist
     ReportDepth,
     /// Report the number of strongly connected components
