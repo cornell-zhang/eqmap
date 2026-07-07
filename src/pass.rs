@@ -277,8 +277,7 @@ impl Pass for RemoveInvPair {
     fn run(&self, netlist: &Rc<Netlist<Self::I>>) -> Result<String, Error> {
         use safety_net::rewriter::NetMapper;
 
-        // Need to collect the pairs to avoid dangling reference errors
-        let mut pairs = Vec::new();
+        let mut mapper = NetMapper::new(netlist)?;
 
         for node in netlist.matches(|c| c.is_inv()) {
             let Some(driver) = node.get_input(0).get_driver() else {
@@ -288,21 +287,13 @@ impl Pass for RemoveInvPair {
             if driver.get_instance_type().is_some_and(|t| t.is_inv()) {
                 let a = driver.get_input(0).get_driver();
                 if let Some(a) = a {
-                    // Only remove if a is not itself an inverter output(avoid chained pairs)
-                    if a.get_instance_type().is_some_and(|t| t.is_inv()) {
-                        continue;
-                    }
                     let b = node.get_output(0);
-                    pairs.push((b, a));
+                    mapper.replace(b, a);
                 }
             }
         }
-        let n = pairs.len();
-        let mut mapper = NetMapper::new(netlist)?;
-        for (b, a) in pairs {
-            mapper.replace(b, a);
-        }
-        mapper.apply()?;
+        let n = mapper.apply()?.len();
+        netlist.clean()?;
 
         Ok(format!("Removed {} inverter pairs", n))
     }
