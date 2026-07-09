@@ -6,14 +6,10 @@ module dropped_input (
     c,
     y
 );
-  input a;
-  wire a;
-  input b;
-  wire b;
-  input c;
-  wire c;
-  output y;
-  wire y;
+  input wire a;
+  input wire b;
+  input wire c;
+  output wire y;
   AND _0_ (
       .A(a),
       .B(b),
@@ -28,14 +24,10 @@ endmodule
 // CHECK:   c,
 // CHECK:   y
 // CHECK: );
-// CHECK:   input a;
-// CHECK:   wire a;
-// CHECK:   input b;
-// CHECK:   wire b;
-// CHECK:   input c;
-// CHECK:   wire c;
-// CHECK:   output y;
-// CHECK:   wire y;
+// CHECK:   input wire a;
+// CHECK:   input wire b;
+// CHECK:   input wire c;
+// CHECK:   output wire y;
 // CHECK:   wire __0__;
 // CHECK:   LUT2 #(
 // CHECK:     .INIT(4'h8)

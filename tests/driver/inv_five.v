@@ -4,10 +4,8 @@ module inv_five (
     a,
     y
 );
-  input a;
-  wire a;
-  output y;
-  wire y;
+  input wire a;
+  output wire y;
   wire tmp0;
   wire tmp1;
   wire tmp2;
@@ -42,10 +40,8 @@ module inv_five (
   // CHECK:   a,
   // CHECK:   y
   // CHECK: );
-  // CHECK:   input a;
-  // CHECK:   wire a;
-  // CHECK:   output y;
-  // CHECK:   wire y;
+  // CHECK:   input wire a;
+  // CHECK:   output wire y;
   // CHECK:   INV
   // CHECK:     .A(a),
   // CHECK:     .ZN([[TMP:.*]])

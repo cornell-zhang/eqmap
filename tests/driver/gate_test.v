@@ -79,22 +79,14 @@ endmodule
 // CHECK:   g,
 // CHECK:   y
 // CHECK: );
-// CHECK:   input a;
-// CHECK:   wire a;
-// CHECK:   input b;
-// CHECK:   wire b;
-// CHECK:   input c;
-// CHECK:   wire c;
-// CHECK:   input d;
-// CHECK:   wire d;
-// CHECK:   input e;
-// CHECK:   wire e;
-// CHECK:   input f;
-// CHECK:   wire f;
-// CHECK:   input g;
-// CHECK:   wire g;
-// CHECK:   output y;
-// CHECK:   wire y;
+// CHECK:   input wire a;
+// CHECK:   input wire b;
+// CHECK:   input wire c;
+// CHECK:   input wire d;
+// CHECK:   input wire e;
+// CHECK:   input wire f;
+// CHECK:   input wire g;
+// CHECK:   output wire y;
 // CHECK:   wire __0__;
 // CHECK:   wire __1__;
 // CHECK:   wire __2__;

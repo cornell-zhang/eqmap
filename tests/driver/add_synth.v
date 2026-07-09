@@ -10,22 +10,14 @@ module add (
     g,
     y
 );
-  input a;
-  wire a;
-  input b;
-  wire b;
-  input c;
-  wire c;
-  input d;
-  wire d;
-  input e;
-  wire e;
-  input f;
-  wire f;
-  input g;
-  wire g;
-  output y;
-  wire y;
+  input wire a;
+  input wire b;
+  input wire c;
+  input wire d;
+  input wire e;
+  input wire f;
+  input wire g;
+  output wire y;
 
   // wire [2:0] sum = {2'b0, a} + {2'b0, b} + {2'b0, c} + {2'b0, d} + {2'b0, e} + {2'b0, f} + {2'b0, g};
   // assign y = sum[2];
@@ -72,22 +64,14 @@ endmodule
 // CHECK:   g,
 // CHECK:   y
 // CHECK: );
-// CHECK:   input a;
-// CHECK:   wire a;
-// CHECK:   input b;
-// CHECK:   wire b;
-// CHECK:   input c;
-// CHECK:   wire c;
-// CHECK:   input d;
-// CHECK:   wire d;
-// CHECK:   input e;
-// CHECK:   wire e;
-// CHECK:   input f;
-// CHECK:   wire f;
-// CHECK:   input g;
-// CHECK:   wire g;
-// CHECK:   output y;
-// CHECK:   wire y;
+// CHECK:   input wire a;
+// CHECK:   input wire b;
+// CHECK:   input wire c;
+// CHECK:   input wire d;
+// CHECK:   input wire e;
+// CHECK:   input wire f;
+// CHECK:   input wire g;
+// CHECK:   output wire y;
 // CHECK:   wire __0__;
 // CHECK:   wire __1__;
 // CHECK:   wire __2__;
