@@ -10,22 +10,14 @@ module mux_reg (
     s1,
     y
 );
-  input a;
-  wire a;
-  input b;
-  wire b;
-  input c;
-  wire c;
-  input clk;
-  wire clk;
-  input d;
-  wire d;
-  input s0;
-  wire s0;
-  input s1;
-  wire s1;
-  output y;
-  wire y;
+  input wire a;
+  input wire b;
+  input wire c;
+  input wire clk;
+  input wire d;
+  input wire s0;
+  input wire s1;
+  output wire y;
   wire tmp0;
   wire tmp1;
   wire tmp0_r;
@@ -94,22 +86,14 @@ endmodule
 // CHECK:   s1,
 // CHECK:   y
 // CHECK: );
-// CHECK:   input a;
-// CHECK:   wire a;
-// CHECK:   input b;
-// CHECK:   wire b;
-// CHECK:   input c;
-// CHECK:   wire c;
-// CHECK:   input clk;
-// CHECK:   wire clk;
-// CHECK:   input d;
-// CHECK:   wire d;
-// CHECK:   input s0;
-// CHECK:   wire s0;
-// CHECK:   input s1;
-// CHECK:   wire s1;
-// CHECK:   output y;
-// CHECK:   wire y;
+// CHECK:   input wire a;
+// CHECK:   input wire b;
+// CHECK:   input wire c;
+// CHECK:   input wire clk;
+// CHECK:   input wire d;
+// CHECK:   input wire s0;
+// CHECK:   input wire s1;
+// CHECK:   output wire y;
 // CHECK:   wire __2__;
 // CHECK:   wire __3__;
 // CHECK:   wire __4__;
