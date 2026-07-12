@@ -1,7 +1,7 @@
 use clap::Parser;
 use eqmap::netlist::PrimitiveCell;
 use eqmap::pass::Passes;
-use log::{info, warn};
+use log::{error, info, warn};
 use nl_compiler::{from_vast, from_vast_overrides};
 use safety_net::Identifier;
 use safety_pass::Pipeline;
@@ -102,9 +102,17 @@ fn main() -> std::io::Result<()> {
 
     info!("Compiling Verilog...");
     let f = if !args.no_xilinx {
-        from_vast_overrides(&ast, xilinx_overrides).map_err(std::io::Error::other)?
+        from_vast_overrides(&ast, xilinx_overrides)
     } else {
-        from_vast(&ast).map_err(std::io::Error::other)?
+        from_vast(&ast)
+    };
+
+    let f = match f {
+        Ok(f) => f,
+        Err(e) => {
+            error!("{e}");
+            return Err(std::io::Error::other(e));
+        }
     };
 
     let mut pipeline = Pipeline::default();
