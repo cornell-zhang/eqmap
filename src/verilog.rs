@@ -926,7 +926,7 @@ impl SVModule {
     fn append_insts(&mut self, insts: &mut Vec<SVPrimitive>) {
         let new_index = self.instances.len();
         for (i, inst) in insts.iter().enumerate() {
-            for (signal, _port) in inst.outputs.iter() {
+            for signal in inst.outputs.keys() {
                 self.driving_module.insert(signal.clone(), new_index + i);
             }
         }
@@ -1550,7 +1550,7 @@ impl SVModule {
             return Ok(());
         }
         let driving = driving.unwrap();
-        for (_, driver) in driving.inputs.iter() {
+        for driver in driving.inputs.values() {
             self.contains_cycles_rec(driver, walk, visited)?
         }
         walk.remove(signal);
