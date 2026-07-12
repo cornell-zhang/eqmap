@@ -9,7 +9,7 @@ use eqmap::{
     rewrite::{all_static_rules, register_retiming},
     verilog::sv_parse_wrapper,
 };
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
 use nl_compiler::from_vast_overrides;
 use safety_net::Identifier;
 use std::{
@@ -160,7 +160,15 @@ fn main() -> std::io::Result<()> {
     let ast = sv_parse_wrapper(&buf, path).map_err(std::io::Error::other)?;
 
     info!("Compiling Verilog...");
-    let f = from_vast_overrides(&ast, xilinx_overrides).map_err(std::io::Error::other)?;
+    let f = from_vast_overrides(&ast, xilinx_overrides);
+
+    let f = match f {
+        Ok(f) => f,
+        Err(e) => {
+            error!("{e}");
+            return Err(std::io::Error::other(e));
+        }
+    };
 
     info!(
         "Module {} has {} outputs",

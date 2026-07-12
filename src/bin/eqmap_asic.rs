@@ -7,7 +7,7 @@ use eqmap::{
     rewrite::RewriteManager,
     verilog::sv_parse_wrapper,
 };
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
 use nl_compiler::from_vast;
 use std::{
     io::{Read, Write, stderr, stdin},
@@ -133,7 +133,15 @@ fn main() -> std::io::Result<()> {
 
     let ast = sv_parse_wrapper(&buf, path).map_err(std::io::Error::other)?;
 
-    let f = from_vast(&ast).map_err(std::io::Error::other)?;
+    let f = from_vast(&ast);
+
+    let f = match f {
+        Ok(f) => f,
+        Err(e) => {
+            error!("{e}");
+            return Err(std::io::Error::other(e));
+        }
+    };
 
     info!(
         "Module {} has {} outputs",
