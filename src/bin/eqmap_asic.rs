@@ -8,7 +8,10 @@ use eqmap::{
     verilog::sv_parse_wrapper,
 };
 use log::{debug, error, info, warn};
-use nl_compiler::from_vast;
+use nl_compiler::{from_aig_bytes, from_vast};
+use safety_net::Netlist;
+use safety_pass::CellType;
+use std::rc::Rc;
 use std::{
     io::{Read, Write, stderr, stdin},
     path::PathBuf,
@@ -61,6 +64,10 @@ struct Args {
     #[arg(short = 'a', long, default_value_t = false)]
     area: bool,
 
+    /// Use the binary AIG compiler
+    #[arg(long = "aig", default_value_t = false)]
+    aig: bool,
+
     /// Do not check that all cells have been mapped
     #[arg(short = 'm', long, default_value_t = false)]
     no_assert: bool,
@@ -103,6 +110,35 @@ struct Args {
     iter_limit: Option<usize>,
 }
 
+fn verilog_compilation(
+    buf: &[u8],
+    path: Option<PathBuf>,
+) -> std::io::Result<Rc<Netlist<PrimitiveCell>>> {
+    info!("Parsing Verilog...");
+    let buf = std::str::from_utf8(buf)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+    let ast = sv_parse_wrapper(buf, path).map_err(std::io::Error::other)?;
+
+    info!("Compiling Verilog...");
+    let f = from_vast(&ast);
+
+    f.inspect_err(|e| error!("{e}"))
+        .map_err(std::io::Error::other)
+}
+
+fn aig_compilation(buf: &[u8]) -> std::io::Result<Rc<Netlist<PrimitiveCell>>> {
+    info!("Compiling AIG...");
+    let netlist = from_aig_bytes::<PrimitiveCell>(
+        buf,
+        PrimitiveCell::new(CellType::AND, None),
+        PrimitiveCell::new(CellType::INV, None),
+    );
+
+    netlist
+        .inspect_err(|e| error!("{e}"))
+        .map_err(std::io::Error::other)
+}
+
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
     logger_init(args.verbose);
@@ -117,30 +153,24 @@ fn main() -> std::io::Result<()> {
     let full_command = std::env::args().collect::<Vec<_>>().join(" ");
     info!("{}", full_command);
 
-    let mut buf = String::new();
+    let mut buf = Vec::new();
 
     let path: Option<PathBuf> = match args.input {
         Some(p) => {
-            std::fs::File::open(&p)?.read_to_string(&mut buf)?;
+            std::fs::File::open(&p)?.read_to_end(&mut buf)?;
             Some(p)
         }
         None => {
             info!("Reading from stdin...");
-            stdin().read_to_string(&mut buf)?;
+            stdin().read_to_end(&mut buf)?;
             None
         }
     };
 
-    let ast = sv_parse_wrapper(&buf, path).map_err(std::io::Error::other)?;
-
-    let f = from_vast(&ast);
-
-    let f = match f {
-        Ok(f) => f,
-        Err(e) => {
-            error!("{e}");
-            return Err(std::io::Error::other(e));
-        }
+    let f = if args.aig {
+        aig_compilation(&buf)?
+    } else {
+        verilog_compilation(&buf, path)?
     };
 
     info!(
