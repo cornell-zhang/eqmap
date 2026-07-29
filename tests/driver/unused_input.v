@@ -1,4 +1,4 @@
-// RUN: eqmap_fpga %s --assert-sat | FileCheck %s
+// RUN: eqmap_fpga %s --assert-sat --non-ansi | FileCheck %s
 
 module dropped_input (
     a,
