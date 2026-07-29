@@ -1,11 +1,9 @@
 // RUN: nl_opt %s -x -p remove-inv-pair,print-verilog | FileCheck %s
 
 module inv_five (
-    a,
-    y
+    input  wire a,
+    output wire y
 );
-  input wire a;
-  output wire y;
   wire tmp0;
   wire tmp1;
   wire tmp2;
@@ -37,11 +35,9 @@ module inv_five (
   );
 
   // CHECK: module inv_five (
-  // CHECK:   a,
-  // CHECK:   y
+  // CHECK:   input wire a,
+  // CHECK:   output wire y
   // CHECK: );
-  // CHECK:   input wire a;
-  // CHECK:   output wire y;
   // CHECK:   INV
   // CHECK:     .A(a),
   // CHECK:     .ZN([[TMP:.*]])

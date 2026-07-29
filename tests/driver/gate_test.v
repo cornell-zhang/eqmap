@@ -70,23 +70,15 @@ module gate_test (
 endmodule
 
 // CHECK: module gate_test (
-// CHECK:   a,
-// CHECK:   b,
-// CHECK:   c,
-// CHECK:   d,
-// CHECK:   e,
-// CHECK:   f,
-// CHECK:   g,
-// CHECK:   y
+// CHECK:   input wire a,
+// CHECK:   input wire b,
+// CHECK:   input wire c,
+// CHECK:   input wire d,
+// CHECK:   input wire e,
+// CHECK:   input wire f,
+// CHECK:   input wire g,
+// CHECK:   output wire y
 // CHECK: );
-// CHECK:   input wire a;
-// CHECK:   input wire b;
-// CHECK:   input wire c;
-// CHECK:   input wire d;
-// CHECK:   input wire e;
-// CHECK:   input wire f;
-// CHECK:   input wire g;
-// CHECK:   output wire y;
 // CHECK:   wire __0__;
 // CHECK:   wire __1__;
 // CHECK:   wire __2__;
