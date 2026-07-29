@@ -9,7 +9,7 @@ use safety_net::graph::{CombDepthInfo, MultiDiGraph};
 use safety_net::{Error, Identifier, Instantiable, Netlist, format_id, rewriter::NetMapper};
 use safety_pass::{
     Pass,
-    passes::{Clean, DotGraph, PrintVerilog, RenameNets},
+    passes::{CellStats, Clean, DotGraph, PrintVerilog, RenameNets},
     register_passes,
 };
 use std::{fmt, rc::Rc};
@@ -300,6 +300,8 @@ impl Pass for RemoveInvPair {
 }
 
 register_passes!(Passes<PrimitiveCell>;
+    /// Report cell usage by type
+    CellStats<PrimitiveCell>,
     /// Clean the netlist of cells which are not used
     Clean<PrimitiveCell>,
     /// Disconnect all register inputs
