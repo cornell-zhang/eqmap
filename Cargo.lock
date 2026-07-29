@@ -359,7 +359,7 @@ dependencies = [
 
 [[package]]
 name = "eqmap"
-version = "0.9.7"
+version = "0.10.0"
 dependencies = [
  "bitvec",
  "clap",
