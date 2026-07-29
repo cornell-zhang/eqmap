@@ -28,10 +28,6 @@ struct Args {
     #[arg(long, default_value_t = false)]
     verify_each: bool,
 
-    /// Verify after every pass (not just the last)
-    #[arg(long, default_value_t = false)]
-    verify: bool,
-
     /// Verbose logging
     #[arg(short, long, default_value_t = false)]
     verbose: bool,
