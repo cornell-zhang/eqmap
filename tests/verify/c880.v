@@ -1,4 +1,4 @@
-// RUN: eqmap %s -f -t 8 %s.opt && equiv_fpga %s.opt %s | FileCheck %s && rm %s.opt
+// RUN: eqmap %s -t 8 %s.opt && equiv_fpga %s.opt %s | FileCheck %s && rm %s.opt
 
 // Verilog
 // c880

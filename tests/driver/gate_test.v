@@ -1,4 +1,4 @@
-// RUN: eqmap_fpga %s --assert-sat -n 40 -k 4 | FileCheck %s
+// RUN: eqmap_fpga %s --verify --assert-sat -n 40 -k 4 | FileCheck %s
 
 module gate_test (
     a,

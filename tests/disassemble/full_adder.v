@@ -1,5 +1,5 @@
 
-// RUN: eqmap_fpga %s --disassemble INV,AND -s 80000 -n 40 -t 2 2>>/dev/null | FileCheck %s
+// RUN: eqmap_fpga %s --verify --disassemble INV,AND -s 80000 -n 40 -t 2 2>>/dev/null | FileCheck %s
 
 module full_adder (
     a,

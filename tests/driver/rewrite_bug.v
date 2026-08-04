@@ -1,4 +1,4 @@
-// RUN: eqmap_fpga %s --assert-sat --partition r2r -k 4 | FileCheck %s
+// RUN: eqmap_fpga %s --verify --assert-sat --partition r2r -k 4 | FileCheck %s
 
 module rewrite_bug (
     clk,
