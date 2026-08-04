@@ -7,10 +7,11 @@
 use crate::asic::CellLang;
 use crate::driver::CircuitLang;
 use crate::lut::LutLang;
+use crate::timing::get_critical_paths;
 use bitvec::field::BitField;
 use egg::{Id, RecExpr, Symbol};
 use nl_compiler::FromId;
-use safety_net::graph::MultiDiGraph;
+use safety_net::graph::{CombDepthInfo, MultiDiGraph};
 use safety_net::{
     Analysis, DrivenNet, Error, Identifier, Instantiable, Logic, Net, Netlist, Parameter,
     format_id, iter::NetDFSIterator,
@@ -129,8 +130,7 @@ where
         })
     }
 }
-
-impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
+impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L> + 'static> LogicMapper<'a, L, I> {
     /// Map `nets` to [CircuitLang] nodes. `nets` that do not pass `filter_netref` *and* `filter_inst` become leaves.
     fn insert_filtered<F, G>(
         &mut self,
@@ -344,6 +344,33 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
     /// Get the mapped expressions
     pub fn mappings(self) -> Vec<LogicMapping<L, I>> {
         self.mappings
+    }
+
+    /// Maps a critical delay path plus a bounded amount of surrounding fan-in logic.
+    pub fn insert_delay_paths(
+        &mut self,
+        topk: usize,
+        branch_factor: usize,
+    ) -> Result<RecExpr<L>, String> {
+        let analysis = self
+            ._netlist
+            .get_analysis::<CombDepthInfo<_>>()
+            .map_err(|e| e.to_string())?;
+
+        let mut expanded_nodes = HashSet::new();
+        let mut roots = Vec::new();
+
+        for critical_path in get_critical_paths(&analysis).take(topk) {
+            let endpoint = critical_path.endpoint();
+            expanded_nodes.extend(critical_path.expand_n_nodes(branch_factor));
+            roots.push(endpoint);
+        }
+
+        if roots.is_empty() {
+            return Err("No critical endpoints found".to_string());
+        }
+
+        self.insert_filtered(roots, move |d| expanded_nodes.contains(d), |_| true)
     }
 }
 
