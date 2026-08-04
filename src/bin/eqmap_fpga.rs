@@ -56,9 +56,9 @@ struct Args {
     #[arg(short = 'a', long, default_value_t = false)]
     assert_sat: bool,
 
-    /// Do not verify the functionality of the output
-    #[arg(short = 'f', long, default_value_t = false)]
-    no_verify: bool,
+    /// Exhaustively verify the functionality of the output
+    #[arg(short = 'e', long, default_value_t = false)]
+    verify: bool,
 
     /// Do not canonicalize the input into LUTs
     #[arg(short = 'c', long, default_value_t = false)]
@@ -310,7 +310,7 @@ fn main() -> std::io::Result<()> {
     let expr = mapping.get_expr();
 
     info!("Building e-graph...");
-    let result = process_expression::<_, _, SynthReport>(expr, req, args.no_verify)?
+    let result = process_expression::<_, _, SynthReport>(expr, req, args.verify)?
         .with_name(f.get_name().to_string().as_str());
 
     if let Some(p) = args.report {
