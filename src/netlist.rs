@@ -10,6 +10,7 @@ use crate::lut::LutLang;
 use bitvec::field::BitField;
 use egg::{Id, RecExpr, Symbol};
 use nl_compiler::FromId;
+use safety_net::dont_touch_filter;
 use safety_net::graph::MultiDiGraph;
 use safety_net::{
     Analysis, DrivenNet, Error, Identifier, Instantiable, Logic, Net, Netlist, Parameter,
@@ -280,7 +281,10 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
     }
 
     /// Map all logic to [CircuitLang] along register-to-register paths. This prevents register retiming.
-    pub fn insert_all_r2r(&mut self) -> Result<RecExpr<L>, String> {
+    pub fn insert_all_r2r(&mut self) -> Result<RecExpr<L>, String>
+    where
+        I: 'static,
+    {
         let mut nets: BTreeSet<DrivenNet<I>> = self
             ._netlist
             .outputs()
@@ -299,9 +303,16 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
             }
         }
 
+        let mut blocklist = HashSet::new();
+        for cell in dont_touch_filter(self._netlist) {
+            for output in cell.outputs() {
+                blocklist.insert(output);
+            }
+        }
+
         let nets: Vec<DrivenNet<I>> = nets.into_iter().collect();
 
-        self.insert_filtered(nets, |_| true, |i| !i.is_seq())
+        self.insert_filtered(nets, move |d| !blocklist.contains(d), |i| !i.is_seq())
     }
 
     /// Map all logic to [CircuitLang] using a greedy arc set to break cycles.
@@ -334,6 +345,12 @@ impl<'a, L: CircuitLang, I: Instantiable + LogicFunc<L>> LogicMapper<'a, L, I> {
                 }
             }
             blocklist.insert(c.src());
+        }
+
+        for cell in dont_touch_filter(self._netlist) {
+            for output in cell.outputs() {
+                blocklist.insert(output);
+            }
         }
 
         let nets: Vec<DrivenNet<I>> = nets.into_iter().collect();
