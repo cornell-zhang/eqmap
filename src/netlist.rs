@@ -670,7 +670,7 @@ mod tests {
     }
 
     fn and_netlist() -> Rc<Netlist<PrimitiveCell>> {
-        let netlist = Netlist::new("example".to_string());
+        let netlist = Netlist::new("example".into());
 
         // Add the the two inputs
         let a = netlist.insert_input("a".into());
@@ -693,7 +693,7 @@ mod tests {
     }
 
     fn divider_netlist() -> Rc<Netlist<PrimitiveCell>> {
-        let netlist = Netlist::new("example".to_string());
+        let netlist = Netlist::new("example".into());
 
         // Add the the input
         let a = netlist.insert_input("a".into());
@@ -715,7 +715,7 @@ mod tests {
     }
 
     fn and_const_netlist() -> Rc<Netlist<PrimitiveCell>> {
-        let netlist = Netlist::new("example".to_string());
+        let netlist = Netlist::new("example".into());
 
         // Add the the two inputs
         let a = netlist.insert_constant(Logic::True, "a".into()).unwrap();

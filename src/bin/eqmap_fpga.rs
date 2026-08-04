@@ -311,7 +311,7 @@ fn main() -> std::io::Result<()> {
 
     info!("Building e-graph...");
     let result = process_expression::<_, _, SynthReport>(expr, req, args.no_verify)?
-        .with_name(f.get_name().as_str());
+        .with_name(f.get_name().to_string().as_str());
 
     if let Some(p) = args.report {
         let mut writer = std::fs::File::create(p)?;
