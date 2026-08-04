@@ -779,6 +779,26 @@ mod tests {
     }
 
     #[test]
+    fn test_dont_touch_gate() {
+        let netlist = and_netlist();
+        let output = netlist.last().unwrap().get_output(0);
+
+        output
+            .clone()
+            .unwrap()
+            .set_attribute("dont_touch".to_string());
+
+        let mut mapper = netlist
+            .get_analysis::<'_, LogicMapper<'_, CellLang, _>>()
+            .unwrap();
+        let res = mapper.insert_all_r2r();
+        assert!(res.is_ok());
+        let res = res.unwrap();
+        // Basically an empty expr
+        assert_eq!(res.len(), 1);
+    }
+
+    #[test]
     fn test_consts() {
         let netlist = and_const_netlist();
         let output = netlist.last().unwrap().get_output(0);
