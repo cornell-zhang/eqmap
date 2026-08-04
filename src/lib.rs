@@ -23,7 +23,7 @@ Arguments:
 Options:
       --report <REPORT>            If provided, output a JSON file with result data
   -a, --assert-sat                 Return an error if the graph does not reach saturation
-  -f, --no-verify                  Do not verify the functionality of the output
+  -e, --verify                     Exhaustively verify the functionality of the output
   -c, --no-canonicalize            Do not canonicalize the input into LUTs
   -d, --decomp                     Find new decompositions at runtime
       --disassemble <DISASSEMBLE>  Comma separated list of cell types to decompose into
@@ -37,6 +37,7 @@ Options:
   -t, --timeout <TIMEOUT>          Build/extraction timeout in seconds
   -s, --node-limit <NODE_LIMIT>    Maximum number of nodes in graph
   -n, --iter-limit <ITER_LIMIT>    Maximum number of rewrite iterations
+      --non-ansi                   Emit the verilog in non-ANSI style
   -h, --help                       Print help
   -V, --version                    Print version
 ```

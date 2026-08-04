@@ -77,7 +77,7 @@ jobs:
       - name: Run comparator (release,)
         run: echo "comparator (release,)" >> $GITHUB_STEP_SUMMARY; (time cargo run --release --bin opt -- tests/lutlang/gate_compare.txt 2>>/dev/null) 2>> $GITHUB_STEP_SUMMARY
       - name: Run eqmap_fpga (release,)
-        run: echo "eqmap_fpga (release,)" >> $GITHUB_STEP_SUMMARY; (time cargo run --release --bin eqmap_fpga -- verilog/multPipe_n4.v --no-verify 1>>/dev/null 2>>/dev/null) 2>> $GITHUB_STEP_SUMMARY
+        run: echo "eqmap_fpga (release,)" >> $GITHUB_STEP_SUMMARY; (time cargo run --release --bin eqmap_fpga -- verilog/multPipe_n4.v 1>>/dev/null 2>>/dev/null) 2>> $GITHUB_STEP_SUMMARY
 
   coverage:
     name: Code Coverage

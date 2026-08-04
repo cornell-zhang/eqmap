@@ -1277,14 +1277,14 @@ pub fn simple_reader(cmd: Option<String>, input_file: Option<PathBuf>) -> std::i
 pub fn process_expression<L, A, R>(
     expr: RecExpr<L>,
     req: SynthRequest<L, A>,
-    no_verify: bool,
+    verify: bool,
 ) -> std::io::Result<SynthOutput<L, R>>
 where
     L: CircuitLang,
     A: Analysis<L> + Clone + Default,
     R: Report<L>,
 {
-    if !no_verify {
+    if verify {
         L::verify_expr(&expr).map_err(std::io::Error::other)?;
     }
 
@@ -1322,7 +1322,7 @@ where
     let simplified = result.get_expr();
 
     // Verify functionality
-    if no_verify {
+    if !verify {
         info!("Skipping functionality tests...");
     } else {
         info!("Checking expression...");
@@ -1353,7 +1353,7 @@ where
 pub fn process_string_expression<L, A, R>(
     line: &str,
     req: SynthRequest<L, A>,
-    no_verify: bool,
+    verify: bool,
 ) -> std::io::Result<SynthOutput<L, R>>
 where
     L: CircuitLang,
@@ -1372,5 +1372,5 @@ where
     let expr = line.split("//").next().unwrap();
     let expr: RecExpr<L> = expr.parse().map_err(std::io::Error::other)?;
 
-    process_expression(expr, req, no_verify)
+    process_expression(expr, req, verify)
 }

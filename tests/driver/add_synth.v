@@ -1,4 +1,4 @@
-// RUN: eqmap_fpga %s --assert-sat | FileCheck %s
+// RUN: eqmap_fpga %s --verify --assert-sat | FileCheck %s
 
 module add (
     a,
