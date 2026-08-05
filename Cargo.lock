@@ -359,7 +359,7 @@ dependencies = [
 
 [[package]]
 name = "eqmap"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "bitvec",
  "clap",
@@ -993,9 +993,9 @@ dependencies = [
 
 [[package]]
 name = "safety-pass"
-version = "0.4.10"
+version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "049d2f04d7ad138c702800e1979ad6ffeefee974732e5d8dafe89588dc2edbe1"
+checksum = "5cefe203f5a5be164130fa673cdd744239688450d5d4024bf23f8e40d1537e72"
 dependencies = [
  "clap",
  "log",

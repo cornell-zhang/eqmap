@@ -9,7 +9,7 @@ use safety_net::graph::{CombDepthInfo, MultiDiGraph};
 use safety_net::{Error, Identifier, Instantiable, Netlist, format_id, rewriter::NetMapper};
 use safety_pass::{
     Pass,
-    passes::{CellStats, Clean, DotGraph, PrintVerilog, RenameNets},
+    passes::{CellStats, Clean, DotGraph, ListNets, PrintVerilog, RenameNets, StripAttributes},
     register_passes,
 };
 use std::{fmt, rc::Rc};
@@ -312,6 +312,8 @@ register_passes!(Passes<PrimitiveCell>;
     DotGraph<PrimitiveCell>,
     /// Inserts a inverter pair at every internal net in the graph
     InsertInvPair,
+    /// List all the nets and fanout in the netlist
+    ListNets<PrimitiveCell>,
     /// Rename wires and instances that are part of the feedback arc set (prefixed with "arc_")
     MarkArcSet,
     /// Mark the node names of cells along the critical path (prefixed with "crit_")
@@ -326,4 +328,6 @@ register_passes!(Passes<PrimitiveCell>;
     ReportDepth,
     /// Report the number of strongly connected components
     ReportSccs,
+    /// Strip all attributes that are not dont_touch and keep
+    StripAttributes<PrimitiveCell>,
 );
