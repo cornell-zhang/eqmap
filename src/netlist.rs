@@ -900,4 +900,13 @@ mod tests {
         assert!(rewrite.is_ok());
         assert!(netlist.objects().count() == 3);
     }
+
+    #[test]
+    fn test_bad_lut() {
+        let mut lut = PrimitiveCell::new(CellType::LUT2, None);
+        assert!(!lut.has_parameter(&"INIT".into()));
+        assert!(lut.verify().is_err());
+        lut.set_parameter(&"INIT".into(), Parameter::bitvec(4, 0b1010));
+        assert!(lut.verify().is_ok());
+    }
 }
