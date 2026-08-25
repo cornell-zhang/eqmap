@@ -423,12 +423,12 @@ impl Instantiable for PrimitiveCell {
         &self.name
     }
 
-    fn get_input_ports(&self) -> impl IntoIterator<Item = &Net> {
-        self.inputs.iter()
+    fn get_input_ports(&self) -> &[Net] {
+        &self.inputs
     }
 
-    fn get_output_ports(&self) -> impl IntoIterator<Item = &Net> {
-        self.outputs.iter()
+    fn get_output_ports(&self) -> &[Net] {
+        &self.outputs
     }
 
     fn has_parameter(&self, id: &Identifier) -> bool {
@@ -443,8 +443,12 @@ impl Instantiable for PrimitiveCell {
         self.params.insert(id.clone(), val)
     }
 
-    fn parameters(&self) -> impl Iterator<Item = (Identifier, Parameter)> {
-        self.params.clone().into_iter()
+    fn clear_parameter(&mut self, id: &Identifier) -> Option<Parameter> {
+        self.params.remove(id)
+    }
+
+    fn parameters(&self) -> Vec<(Identifier, Parameter)> {
+        self.params.clone().into_iter().collect()
     }
 
     fn from_constant(val: Logic) -> Option<Self> {
@@ -465,6 +469,17 @@ impl Instantiable for PrimitiveCell {
 
     fn is_seq(&self) -> bool {
         self.ptype.is_reg()
+    }
+
+    fn verify(&self) -> Result<(), String> {
+        if self.ptype.is_lut() && !self.has_parameter(&"INIT".into()) {
+            return Err(format!(
+                "LUT cell {} missing INIT parameter",
+                self.get_name()
+            ));
+        }
+
+        Ok(())
     }
 }
 
@@ -666,9 +681,20 @@ impl LogicCell<PrimitiveCell> for LutLang {
 
 impl FromId for PrimitiveCell {
     fn from_id(s: &Identifier) -> Result<Self, Error> {
-        CellType::from_str(&s.to_string()).map(|ptype| {
-            PrimitiveCell::new(ptype, None /* Drop the size for logic synthesis */)
-        })
+        let string = s.to_string();
+        let (cell, size) = match string.split_once("_X") {
+            Some((p, s)) => (p, Some(s)),
+            None => (string.as_str(), None),
+        };
+
+        let ctype = CellType::from_str(cell)?;
+        let size = match size {
+            Some(s) => Some(s.parse::<usize>().map_err(|_| {
+                safety_net::Error::ParseError(format!("Invalid size for cell {}: {}", cell, s))
+            })?),
+            None => None,
+        };
+        Ok(PrimitiveCell::new(ctype, size))
     }
 }
 
@@ -873,5 +899,14 @@ mod tests {
         let rewrite = mapping.rewrite(&netlist);
         assert!(rewrite.is_ok());
         assert!(netlist.objects().count() == 3);
+    }
+
+    #[test]
+    fn test_bad_lut() {
+        let mut lut = PrimitiveCell::new(CellType::LUT2, None);
+        assert!(!lut.has_parameter(&"INIT".into()));
+        assert!(lut.verify().is_err());
+        lut.set_parameter(&"INIT".into(), Parameter::bitvec(4, 0b1010));
+        assert!(lut.verify().is_ok());
     }
 }
