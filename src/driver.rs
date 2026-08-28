@@ -22,7 +22,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
-use log::{info, warn};
+use log::{error, info, warn};
 use serde::Serialize;
 use std::{
     io::{IsTerminal, Read, Write},
@@ -283,16 +283,19 @@ where
         Ok(())
     }
 
-    /// Print the report of the output in a human readable format.
-    pub fn print_report(&self, w: &mut impl Write) -> std::io::Result<()> {
-        writeln!(w, "INFO: Synthesis Report")?;
+    /// Print the report of the output to the info stream
+    pub fn info_report(&self) {
+        info!("Synthesis Report");
         if let Some(rpt) = &self.rpt {
-            let s = toml::to_string_pretty(rpt).map_err(std::io::Error::other)?;
-            for line in s.lines() {
-                writeln!(w, "INFO: {}", line)?;
+            match toml::to_string_pretty(rpt) {
+                Ok(s) => {
+                    for line in s.lines() {
+                        info!("{line}");
+                    }
+                }
+                Err(e) => error!("{e}"),
             }
         }
-        Ok(())
     }
 
     /// Write the report of the output to a string.

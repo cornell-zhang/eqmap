@@ -1,6 +1,6 @@
 [package]
 name = "eqmap"
-version = "0.10.2"
+version = "0.10.3"
 edition = "2024"
 default-run = "eqmap_fpga"
 license = "Apache-2.0"
@@ -47,9 +47,9 @@ thiserror = { version = "2.0.18" }
 sv-parser = "0.13.5"
 ctrlc = "3.5.2"
 safety-net = { version = "0.14.0", features = ["graph"] }
-safety-pass = { version = "0.4.14", features = ["id"] }
+safety-pass = { version = "0.4.15", features = ["id"] }
 good_lp = { version = "1.15.2", optional = true }
-nl-compiler = { version = "0.2.6" }
+nl-compiler = { version = "0.3.1" }
 log = "0.4.32"
 simplelog = "0.12.2"
 rand = "0.10.1"
