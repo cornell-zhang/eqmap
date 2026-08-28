@@ -11,7 +11,7 @@ use log::{debug, error, info, warn};
 use nl_compiler::from_vast;
 use safety_net::emitter::{VerilogEmitter, VerilogEmitterConfig};
 use std::{
-    io::{Read, Write, stderr, stdin},
+    io::{Read, Write, stdin},
     path::PathBuf,
 };
 
@@ -136,8 +136,10 @@ fn main() -> std::io::Result<()> {
         }
     };
 
+    info!("Parsing Verilog...");
     let ast = sv_parse_wrapper(&buf, path).map_err(std::io::Error::other)?;
 
+    info!("Compiling Verilog...");
     let nls = from_vast(&ast);
 
     let nls = match nls {
@@ -263,8 +265,16 @@ fn main() -> std::io::Result<()> {
         ));
     }
 
-    info!("Compiling Verilog...");
+    if let Some(p) = &args.report {
+        std::fs::File::options()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(p)?;
+    }
+
     for f in &nls {
+        info!("Extracting logic...");
         let mut mapper = f
             .get_analysis::<LogicMapper<CellLang, PrimitiveCell>>()
             .map_err(std::io::Error::other)?;
@@ -294,9 +304,10 @@ fn main() -> std::io::Result<()> {
         }
 
         if let Some(p) = &args.report {
-            let mut writer = std::fs::File::options().append(true).create(true).open(p)?;
+            let mut writer = std::fs::File::options().append(true).open(p)?;
             result.write_report(&mut writer)?;
-            result.print_report(&mut stderr().lock())?;
+            writeln!(writer)?;
+            result.info_report();
         }
 
         info!("Updating netlist...");

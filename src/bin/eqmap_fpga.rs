@@ -16,7 +16,7 @@ use safety_net::{
     emitter::{VerilogEmitter, VerilogEmitterConfig},
 };
 use std::{
-    io::{Read, Write, stderr, stdin},
+    io::{Read, Write, stdin},
     path::PathBuf,
 };
 
@@ -295,8 +295,16 @@ fn main() -> std::io::Result<()> {
         ));
     }
 
-    info!("Extracting logic...");
+    if let Some(p) = &args.report {
+        std::fs::File::options()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(p)?;
+    }
+
     for f in &nls {
+        info!("Extracting logic...");
         let mut mapper = f
             .get_analysis::<LogicMapper<LutLang, PrimitiveCell>>()
             .map_err(std::io::Error::other)?;
@@ -320,9 +328,10 @@ fn main() -> std::io::Result<()> {
             .with_name(f.get_name().to_string().as_str());
 
         if let Some(p) = &args.report {
-            let mut writer = std::fs::File::options().append(true).create(true).open(p)?;
+            let mut writer = std::fs::File::options().append(true).open(p)?;
             result.write_report(&mut writer)?;
-            result.print_report(&mut stderr().lock())?;
+            writeln!(writer)?;
+            result.info_report();
         }
 
         info!("Updating netlist...");
